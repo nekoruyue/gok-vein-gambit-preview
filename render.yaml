@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: gok-vein-gambit-preview
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: "npm install"
+    startCommand: "node server/server.js"
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: GOK_CHANNEL
+        value: "preview"
+      - key: TRIAL_KEEPALIVE
+        value: "1"
+      - key: NODE_VERSION
+        value: "20"
