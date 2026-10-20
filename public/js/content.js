@@ -158,6 +158,16 @@
         action: () => renderMirror()
       }
     ];
+    if (global.GOK_IS_PREVIEW && typeof app.openLabPage === "function") {
+      modes.splice(2, 0, {
+        id: "lab",
+        title: "疯狂实验",
+        tag: "抢先版",
+        desc: "自由组合流脉暴走、行动力沸腾、全员突进、跨阵营乱斗、实验卡牌与随机事件。只影响本局，不进稳定版。",
+        status: "抢先版实验玩法",
+        action: () => app.openLabPage("content")
+      });
+    }
     for (const mode of modes) {
       const card = el("article", "mode-card mode-" + mode.id);
       card.appendChild(el("span", "mode-tag", mode.tag));

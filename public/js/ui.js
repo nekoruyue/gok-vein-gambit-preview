@@ -6120,8 +6120,9 @@
     return deck.slice(0, 30).concat(relic);
   }
 
-  function openLabPage() {
+  function openLabPage(returnTo) {
     if (!window.GOK_IS_PREVIEW) { toast("疯狂实验只在抢先版开放。"); return; }
+    app.labReturn = returnTo || "home";
     showScreen("lab");
     renderLabPage();
   }
@@ -6130,7 +6131,7 @@
     const root = $("lab-page-root");
     if (!root) return;
     clear(root);
-    let faction = D.FACTIONS[app.faction] ? app.faction : "pus";
+    let faction = D.FACTIONS[app.labFaction] ? app.labFaction : (D.FACTIONS[app.faction] ? app.faction : "pus");
     const selected = new Set(Array.isArray(app.labMods) ? app.labMods : []);
     const intro = el("div", "lab-intro");
     intro.appendChild(el("div", "eyebrow", "PREVIEW / CHAOS LAB"));
@@ -6165,7 +6166,7 @@
       copy.appendChild(el("strong", null, fact.name));
       copy.appendChild(el("small", null, D.HEROES[fact.hero] ? "领袖 · " + D.HEROES[fact.hero].name : "领袖"));
       b.appendChild(emblem); b.appendChild(copy);
-      b.onclick = () => { faction = id; renderLabPage(); };
+      b.onclick = () => { app.labFaction = id; renderLabPage(); };
       factionRow.appendChild(b);
     }
     root.appendChild(factionRow);
@@ -6186,6 +6187,7 @@
   }
 
   function startLabGame(faction, mods) {
+    app.labFaction = faction;
     const opponent = D.nextFaction(faction);
     const includeExperimental = mods.indexOf("experimentalCards") >= 0;
     const chaos = mods.indexOf("crossFaction") >= 0 || includeExperimental;
@@ -7205,7 +7207,6 @@
 
   function initChannelUI() {
     const preview = window.GOK_CHANNEL === "preview";
-    if (window.GOK_IS_PREVIEW) { const lab = $("btn-lab-home"); if (lab) lab.hidden = false; }
     const badge = $("channel-badge");
     if (badge) {
       badge.hidden = false;
@@ -7943,8 +7944,10 @@
     if ($("mode-online")) $("mode-online").onclick = () => { AudioBox.play("ui_open"); openRoomPage(); };
     if ($("btn-match-back")) $("btn-match-back").onclick = () => { showScreen("mode"); showModeMulti(true); };
     if ($("btn-room-back")) $("btn-room-back").onclick = () => { showScreen("mode"); showModeMulti(true); };
-    if ($("btn-lab-home")) $("btn-lab-home").onclick = () => { AudioBox.play("ui_open"); openLabPage(); };
-    if ($("btn-lab-back")) $("btn-lab-back").onclick = () => showScreen("home");
+    if ($("btn-lab-back")) $("btn-lab-back").onclick = () => {
+      if (app.labReturn === "content" && global.GokContent) { showScreen("content"); global.GokContent.renderHub(); }
+      else showScreen("home");
+    };
     if ($("mode-match")) $("mode-match").onclick = () => { AudioBox.play("ui_open"); openMatchPage(); };
     if ($("btn-mode-multi")) $("btn-mode-multi").onclick = () => setStartSubmenu(true);
     if ($("btn-mode-back")) $("btn-mode-back").onclick = () => setStartSubmenu(false);
@@ -8227,6 +8230,7 @@
     app.endTurn = endTurn;
     app.render = renderGame;
     app.showEnd = showEnd;
+    app.openLabPage = openLabPage;
     app.openCodex = openCodex;
     app.openAchievements = openAchievements;
     app.openSettings = openSettings;
