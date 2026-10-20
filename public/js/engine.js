@@ -255,6 +255,7 @@
     }
     const m = makeMinion(state, player, cardId, z, opts);
     player.board[z].push(m);
+    if (state.experimentalIronRush) grantRush(state, m);
     if (m.passive && m.passive.type === "tauntAura" && !m.silenced) {
       for (const ally of aliveMinions(player)) {
         if (ally.uid !== m.uid && ally.taunt) buffMinion(state, ally, m.passive.attack || 0, m.passive.health || m.passive.amount || 1, "盾墙教官", true);
@@ -817,6 +818,16 @@
     } else if (d.type === "damageHero") {
       damageHero(state, opponentOf(state, player), d.amount || 2, null, "余响", true);
       log(state, "余响：" + m.name + " 对敌方领袖造成 " + (d.amount || 2) + " 点伤害。", player, "deathrattle");
+    } else if (d.type === "summonRandomCost") {
+      const pool = Object.keys(D.CARDS).filter(id => {
+        const def = D.CARDS[id];
+        return def && !def.token && !def.disabled && def.experimental !== true && def.type === "minion" && def.cost === (d.cost || 5);
+      });
+      if (pool.length) {
+        const pick = pool[randomInt(state, pool.length)];
+        summonMinion(state, player, pick, openZones(player)[0], null);
+        log(state, "余响：" + m.name + " 孵化了 " + D.CARDS[pick].name + "。", player, "deathrattle");
+      }
     }
   }
 
@@ -1676,6 +1687,13 @@
       }
     } else if (b.type === "buffAlly") {
       if (target && !target.dead) buffMinion(state, target, b.attack || 0, b.health || 0, "登场", true);
+    } else if (b.type === "damageRandomEnemy") {
+      const enemy = opponentOf(state, player);
+      const enemies = aliveMinions(enemy);
+      const pick = randomInt(state, enemies.length + 1);
+      if (pick >= enemies.length) damageHero(state, enemy, b.amount || 3, null, "命运赌徒", true);
+      else damageMinion(state, enemies[pick], b.amount || 3, minion, "命运赌徒");
+      log(state, "命运赌徒：随机对敌方单位造成 " + (b.amount || 3) + " 点伤害。", player, "damage");
     }
   }
 
@@ -1721,6 +1739,17 @@
     } else if (s.type === "drawIfBountyThisTurn") {
       drawCard(state, player, s.draw || 1);
       if ((player.bountiesClaimedThisTurn || 0) > 0) drawCard(state, player, s.bonus || 1);
+    } else if (s.type === "destroyRandomEnemy") {
+      const enemies = aliveMinions(opponentOf(state, player));
+      if (enemies.length) {
+        const target2 = enemies[randomInt(state, enemies.length)];
+        target2.dead = true;
+        log(state, "混沌裂隙：随机消灭了 " + target2.name + "。", player, "spell");
+        processDeaths(state);
+      }
+    } else if (s.type === "veinSurge") {
+      addVein(state, s.amount || 3, "流脉超载");
+      log(state, "流脉超载：流脉 +" + (s.amount || 3) + "。", player, "vein");
     } else if (s.type === "buffZone") {
       if (!target || target.dead) return;
       const z = target.zone;
@@ -2581,6 +2610,13 @@
     }
     log(state, "—— " + player.name + " 的回合开始（第 " + state.round + " 轮，行动力 " + player.mana + "/" + player.maxMana + "）——", player, "turn");
     drawCard(state, player, 1);
+    if (Array.isArray(state.experimental) && state.experimental.indexOf("chaosEvents") >= 0 && state.turnNumber > 2 && state.turnNumber % 3 === 0 && state.status === "playing") {
+      const roll = randomInt(state, 4);
+      if (roll === 0) { addVein(state, 2, "混沌事件"); log(state, "混沌事件：流脉 +2。", player, "vein"); }
+      else if (roll === 1) { healHero(state, state.players[0], 2); healHero(state, state.players[1], 2); log(state, "混沌事件：双方领袖恢复 2 点生命。", player, "heal"); }
+      else if (roll === 2) { drawCard(state, player, 1); log(state, "混沌事件：抽 1 张牌。", player, "draw"); }
+      else { const all = state.players.flatMap(p => aliveMinions(p)); if (all.length) { const pick = all[randomInt(state, all.length)]; damageMinion(state, pick, 2, null, "混沌事件"); log(state, "混沌事件：" + pick.name + " 受到 2 点伤害。", player, "damage"); processDeaths(state); } }
+    }
     checkGameOver(state);
   }
 

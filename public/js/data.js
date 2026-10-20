@@ -1936,7 +1936,7 @@
   function cardPool(faction) {
     return Object.keys(CARDS).filter((id) => {
       const d = CARDS[id];
-      if (d.token || d.disabled) return false;
+      if (d.token || d.disabled || d.experimental) return false;
       return d.faction === faction || d.faction === "neutral";
     });
   }
@@ -2122,6 +2122,133 @@
   Object.assign(CARDS.faceless_king, { keywords: ["battlecry"], target: "friendly", battlecry: { type: "copyFriendly" }, text: "登场：复制一个友方随从。" });
 
   // ===== 阵营软克制卡 / 2.0 =====
+  Object.assign(CARDS, {
+  "chaos_rift": {
+    "id": "chaos_rift",
+    "name": "混沌裂隙",
+    "faction": "neutral",
+    "type": "spell",
+    "cost": 3,
+    "rarity": "epic",
+    "experimental": true,
+    "art": null,
+    "noGeneratedArt": false,
+    "target": "none",
+    "text": "随机消灭一个敌方随从。",
+    "flavor": "裂隙不挑食。",
+    "spell": {
+      "type": "destroyRandomEnemy"
+    },
+    "noArtwork": false
+  },
+  "mutant_egg": {
+    "id": "mutant_egg",
+    "name": "变异之卵",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 1,
+    "attack": 0,
+    "health": 3,
+    "rarity": "epic",
+    "experimental": true,
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "deathrattle"
+    ],
+    "target": "none",
+    "text": "余响：召唤一个随机 5 费随从。",
+    "flavor": "没人知道里面会孵出什么。",
+    "deathrattle": {
+      "type": "summonRandomCost",
+      "cost": 5
+    },
+    "noArtwork": false
+  },
+  "fate_gambler": {
+    "id": "fate_gambler",
+    "name": "命运赌徒",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 3,
+    "attack": 3,
+    "health": 3,
+    "rarity": "epic",
+    "experimental": true,
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：随机对一个敌方单位造成 3 点伤害。",
+    "flavor": "他把命运押在对面。",
+    "battlecry": {
+      "type": "damageRandomEnemy",
+      "amount": 3
+    },
+    "noArtwork": false
+  },
+  "forbidden_knowledge": {
+    "id": "forbidden_knowledge",
+    "name": "禁忌知识",
+    "faction": "neutral",
+    "type": "spell",
+    "cost": 3,
+    "rarity": "epic",
+    "experimental": true,
+    "art": null,
+    "noGeneratedArt": false,
+    "target": "none",
+    "text": "抽 3 张牌；你的领袖受到 3 点伤害。",
+    "flavor": "知识没有代价，阅读有。",
+    "spell": {
+      "type": "selfDamageDraw",
+      "self": 3,
+      "draw": 3
+    },
+    "noArtwork": false
+  },
+  "time_loan": {
+    "id": "time_loan",
+    "name": "时间借贷",
+    "faction": "neutral",
+    "type": "spell",
+    "cost": 0,
+    "rarity": "epic",
+    "experimental": true,
+    "art": null,
+    "noGeneratedArt": false,
+    "target": "none",
+    "text": "抽 2 张牌；反噬 1。",
+    "flavor": "先花未来的时间，再还。",
+    "spell": {
+      "type": "draw",
+      "amount": 2
+    },
+    "overload": 1,
+    "noArtwork": false
+  },
+  "vein_surge": {
+    "id": "vein_surge",
+    "name": "流脉超载",
+    "faction": "neutral",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "epic",
+    "experimental": true,
+    "art": null,
+    "noGeneratedArt": false,
+    "target": "none",
+    "text": "流脉 +3。",
+    "flavor": "把世界的脉搏调快一点。",
+    "spell": {
+      "type": "veinSurge",
+      "amount": 3
+    },
+    "noArtwork": false
+  }
+});
   Object.assign(CARDS, {
     armor_break: {
       id: "armor_break", name: "破甲演算", faction: "academy", type: "spell",
@@ -5352,7 +5479,381 @@
   }
 });
 
-  const newCardIdsForGenericArt = ["formation_bugler","formation_artificer","bulwark_lieutenant","ley_surveyor","field_medic","pulse_banner","frost_line_guard","frost_archivist","frost_page","white_frost_hall","page_scholar","double_column_note","blood_pact_collector","monster_overseer","pressure_warlock","blood_incense_divination","tide_scout","bloodroad_guide","reborn_rite","shield_instructor","echo_standard","reborn_shield_guard","recruiter","parliament_debate","wall_recruit","battlefield_bill","powder_apprentice","detonation_sapper","powder_foreman","ironflow_charge","powder_martyr","battlefield_salvage","quartermaster","bounty_clerk","bounty_accountant","execution_supervisor","venom_attendant","poison_mist_thrower","venom_blade","venom_sac_guard","blackmarket_bodyguard","silence_informant","commission_advance","greyharbor_broker"];
+  Object.assign(CARDS, {
+  "pulse_herbalist": {
+    "id": "pulse_herbalist",
+    "name": "脉流采药人",
+    "faction": "pus",
+    "type": "minion",
+    "cost": 2,
+    "attack": 2,
+    "health": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：恢复你的领袖 2 点生命。",
+    "flavor": "药草长在地脉最浅的地方。",
+    "battlecry": {
+      "type": "healHero",
+      "amount": 2
+    },
+    "noArtwork": false
+  },
+  "reflux_physician": {
+    "id": "reflux_physician",
+    "name": "回流医师",
+    "faction": "pus",
+    "type": "minion",
+    "cost": 3,
+    "attack": 2,
+    "health": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "deathrattle"
+    ],
+    "target": "none",
+    "text": "余响：恢复你的领袖 3 点生命。",
+    "flavor": "她把每一次退潮都记成一次复诊。",
+    "deathrattle": {
+      "type": "healHero",
+      "amount": 3
+    },
+    "noArtwork": false
+  },
+  "vein_needle": {
+    "id": "vein_needle",
+    "name": "地脉织针",
+    "faction": "pus",
+    "type": "minion",
+    "cost": 1,
+    "attack": 1,
+    "health": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：流脉 +1；引脉 3：获得 +1 攻击和拦截。",
+    "flavor": "针脚沿着地脉走，线就不会断。",
+    "battlecry": {
+      "type": "veinBuff",
+      "amount": 1,
+      "vein": 3,
+      "attack": 1,
+      "health": 0
+    },
+    "noArtwork": false
+  },
+  "deepvein_guard": {
+    "id": "deepvein_guard",
+    "name": "深脉守卫",
+    "faction": "pus",
+    "type": "minion",
+    "cost": 4,
+    "attack": 3,
+    "health": 5,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "taunt",
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "拦截。登场：恢复所有友方随从 2 点生命。",
+    "flavor": "他守的不是门，是门后面的泉眼。",
+    "battlecry": {
+      "type": "healAllAllies",
+      "amount": 2
+    },
+    "noArtwork": false
+  },
+  "spring_watcher": {
+    "id": "spring_watcher",
+    "name": "泉眼守望",
+    "faction": "pus",
+    "type": "minion",
+    "cost": 5,
+    "attack": 3,
+    "health": 6,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "taunt",
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "拦截。登场：恢复所有友方随从 2 点生命。",
+    "flavor": "泉眼不出声，但所有人都知道它在那里。",
+    "battlecry": {
+      "type": "healAllAllies",
+      "amount": 2
+    },
+    "noArtwork": false
+  },
+  "formation_watcher": {
+    "id": "formation_watcher",
+    "name": "旗阵守望",
+    "faction": "pus",
+    "type": "minion",
+    "cost": 3,
+    "attack": 2,
+    "health": 4,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "taunt",
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "拦截。登场：同阵位其他友方随从获得 +0/+1。",
+    "flavor": "旗子立起来之后，守望才真正开始。",
+    "battlecry": {
+      "type": "formationBanner",
+      "attack": 0,
+      "health": 1,
+      "taunt": false
+    },
+    "noArtwork": false
+  },
+  "formation_officer": {
+    "id": "formation_officer",
+    "name": "地脉阵线官",
+    "faction": "pus",
+    "type": "minion",
+    "cost": 4,
+    "attack": 3,
+    "health": 4,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：若该阵位有阵型，获得 +0/+1 并抽 1 张牌。",
+    "flavor": "她负责让阵线从纸上站到地上。",
+    "battlecry": {
+      "type": "formationPayoff"
+    },
+    "noArtwork": false
+  },
+  "survey_apprentice": {
+    "id": "survey_apprentice",
+    "name": "测绘学徒",
+    "faction": "pus",
+    "type": "minion",
+    "cost": 1,
+    "attack": 1,
+    "health": 1,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：若你控制阵型，抽 1 张牌。",
+    "flavor": "先学会量地，再学会量人心。",
+    "battlecry": {
+      "type": "drawIfFormation",
+      "draw": 1
+    },
+    "noArtwork": false
+  },
+  "pulse_recorder": {
+    "id": "pulse_recorder",
+    "name": "回脉记录员",
+    "faction": "pus",
+    "type": "minion",
+    "cost": 3,
+    "attack": 2,
+    "health": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "deathrattle"
+    ],
+    "target": "none",
+    "text": "余响：恢复你的领袖 2 点生命；若同阵位有其他友方，抽 1 张牌。",
+    "flavor": "她记下每一次回流，也记下谁还站着。",
+    "deathrattle": {
+      "type": "healDrawIfZoneAlly",
+      "heal": 2,
+      "draw": 1
+    },
+    "noArtwork": false
+  },
+  "arcane_scribe": {
+    "id": "arcane_scribe",
+    "name": "奥能抄写员",
+    "faction": "academy",
+    "type": "minion",
+    "cost": 2,
+    "attack": 2,
+    "health": 2,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：本回合你的下一张战术牌行动力消耗 -1。",
+    "flavor": "她把咒语抄在更便宜的纸上。",
+    "battlecry": {
+      "type": "discountSpell",
+      "amount": 1
+    },
+    "noArtwork": false
+  },
+  "index_assistant": {
+    "id": "index_assistant",
+    "name": "索引助手",
+    "faction": "academy",
+    "type": "minion",
+    "cost": 1,
+    "attack": 1,
+    "health": 1,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：抽 1 张牌。",
+    "flavor": "她记不住内容，但记得内容在哪一页。",
+    "battlecry": {
+      "type": "draw",
+      "amount": 1
+    },
+    "noArtwork": false
+  },
+  "blood_corpse_collector": {
+    "id": "blood_corpse_collector",
+    "name": "血祭收尸人",
+    "faction": "xizhao",
+    "type": "minion",
+    "cost": 3,
+    "attack": 3,
+    "health": 2,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "deathrattle"
+    ],
+    "target": "none",
+    "text": "余响：恢复你的领袖 2 点生命。",
+    "flavor": "在他眼里，尸体只是还没结算的账。",
+    "deathrattle": {
+      "type": "healHero",
+      "amount": 2
+    },
+    "noArtwork": false
+  },
+  "monster_command": {
+    "id": "monster_command",
+    "name": "魔物号令",
+    "faction": "xizhao",
+    "type": "spell",
+    "cost": 3,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "target": "none",
+    "text": "召唤一个 3/3 的洛斯汰巨兽。",
+    "flavor": "号角一响，潮里就会站起来东西。",
+    "spell": {
+      "type": "summonMonster",
+      "doubleIfZoneEmpty": false
+    },
+    "noArtwork": false
+  },
+  "phalanx_drill": {
+    "id": "phalanx_drill",
+    "name": "方阵教习",
+    "faction": "republic",
+    "type": "minion",
+    "cost": 2,
+    "attack": 2,
+    "health": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：若你控制其他拦截随从，获得 +0/+1。",
+    "flavor": "方阵不是站出来的，是练出来的。",
+    "battlecry": {
+      "type": "buffSelfIfTaunt",
+      "health": 1
+    },
+    "noArtwork": false
+  },
+  "forge_technician": {
+    "id": "forge_technician",
+    "name": "锻炉技师",
+    "faction": "empire",
+    "type": "minion",
+    "cost": 3,
+    "attack": 2,
+    "health": 4,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：获得 3 点护甲。",
+    "flavor": "他不是在修炮，是在给炮加一层皮。",
+    "battlecry": {
+      "type": "armor",
+      "amount": 3
+    },
+    "noArtwork": false
+  },
+  "armory_keeper": {
+    "id": "armory_keeper",
+    "name": "军械库管理员",
+    "faction": "empire",
+    "type": "minion",
+    "cost": 2,
+    "attack": 2,
+    "health": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：若你有护甲，抽 1 张牌。",
+    "flavor": "库存清单比战场伤亡表还长。",
+    "battlecry": {
+      "type": "drawIfArmor",
+      "draw": 1
+    },
+    "noArtwork": false
+  }
+});
+
+  const newCardIdsForGenericArt = ["formation_bugler","formation_artificer","bulwark_lieutenant","ley_surveyor","field_medic","pulse_banner","frost_line_guard","frost_archivist","frost_page","white_frost_hall","page_scholar","double_column_note","blood_pact_collector","monster_overseer","pressure_warlock","blood_incense_divination","tide_scout","bloodroad_guide","reborn_rite","shield_instructor","echo_standard","reborn_shield_guard","recruiter","parliament_debate","wall_recruit","battlefield_bill","powder_apprentice","detonation_sapper","powder_foreman","ironflow_charge","powder_martyr","battlefield_salvage","quartermaster","bounty_clerk","bounty_accountant","execution_supervisor","venom_attendant","poison_mist_thrower","venom_blade","venom_sac_guard","blackmarket_bodyguard","silence_informant","commission_advance","greyharbor_broker","pulse_herbalist","reflux_physician","vein_needle","deepvein_guard","spring_watcher","formation_watcher","formation_officer","survey_apprentice","pulse_recorder","arcane_scribe","index_assistant","blood_corpse_collector","monster_command","phalanx_drill","forge_technician","armory_keeper","chaos_rift","mutant_egg","fate_gambler","forbidden_knowledge","time_loan","vein_surge"];;;
   for (const id of newCardIdsForGenericArt) if (CARDS[id]) CARDS[id].noArtwork = true;
 
   return { FACTIONS, FACTION_IDS, nextFaction, HEROES, CARDS, DECKS, NEUTRAL_DECK, KEYWORDS, DECK_STRATEGIES, DECK_SPECIALS, DECK_TRIM, cardPool, validateDeck, autoBuildDeck, maxCopies };

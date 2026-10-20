@@ -432,7 +432,7 @@
     document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
     const target = $("screen-" + name);
     if (target) target.classList.add("active");
-    if (name === "home" || name === "mode" || name === "sim" || name === "setup" || name === "lan" || name === "deck" || name === "tutorial" || name === "codex" || name === "achievements" || name === "settings" || name === "rank" || name === "rules" || name === "match" || name === "room") AudioBox.bgm("bgm_title");
+    if (name === "home" || name === "mode" || name === "sim" || name === "setup" || name === "lan" || name === "deck" || name === "tutorial" || name === "codex" || name === "achievements" || name === "settings" || name === "rank" || name === "rules" || name === "match" || name === "room" || name === "lab") AudioBox.bgm("bgm_title");
     if (name === "game") AudioBox.bgm("bgm_game");
     if (name !== "home") closeStartMenu();
     if (name === "home") { updateHomeLegendary(); updateHomeAccount(); renderHomeDash(); }
@@ -485,6 +485,7 @@
       case "rank": showScreen("home"); return;
       case "match": showScreen("mode"); showModeMulti(true); return;
       case "room": showScreen("mode"); showModeMulti(true); return;
+      case "lab": showScreen("home"); return;
       case "sim": showScreen("home"); return;
       case "rules": closeRulesScreen(); return;
       case "game":
@@ -709,6 +710,7 @@
       seed: config.seed == null ? ((Date.now() >>> 0) ^ Math.floor(Math.random() * 0x7fffffff)) : config.seed
     });
     if (typeof config.setup === "function") config.setup(state);
+    if (config.experimental && config.experimental.length) applyExperimentalMods(state, config.experimental);
     state.ranked = !!config.ranked;
     app.matchmaking = !!config.matchmaking;
     const onlineNames = !!(config.matchmaking || config.ranked || config.online);
@@ -897,6 +899,12 @@
     if (oppEmblem) oppEmblem.style.backgroundImage = "url('" + (D.FACTIONS[top.faction].emblem || "") + "')";
     if (myEmblem) myEmblem.style.backgroundImage = "url('" + (D.FACTIONS[viewer.faction].emblem || "") + "')";
     $("game-mode-label").textContent = s.players[0].factionName + " 对阵 " + s.players[1].factionName + (s.ranked ? " · 排位" : app.net ? " · 在线房间" : " · 单人 AI");
+    const experimentBadge = $("game-experiment-badge");
+    if (experimentBadge) {
+      const mods = s.experimental || [];
+      experimentBadge.hidden = !mods.length;
+      if (mods.length) experimentBadge.textContent = "实验：" + mods.map(id => (LAB_MODS.find(m => m.id === id) || {}).name || id).join(" · ");
+    }
     const turnBadge = $("turn-badge");
     if (turnBadge) {
       if (s.status === "gameover") turnBadge.textContent = "推演结束";
@@ -5029,7 +5037,7 @@
     if (scope === "all") scope = "faction";
     let poolSource;
     if (scope === "neutral") poolSource = Object.keys(D.CARDS).filter(id => D.CARDS[id].faction === "neutral" && !D.CARDS[id].token && !D.CARDS[id].disabled);
-    else poolSource = Object.keys(D.CARDS).filter(id => (D.CARDS[id].faction === f) && !D.CARDS[id].token && !D.CARDS[id].disabled);
+    else poolSource = Object.keys(D.CARDS).filter(id => (D.CARDS[id].faction === f) && !D.CARDS[id].token && !D.CARDS[id].disabled && !D.CARDS[id].experimental);
     const pool = poolSource.filter(id => filter === "all" || D.CARDS[id].type === filter)
       .sort((a, b) => D.CARDS[a].cost - D.CARDS[b].cost || D.CARDS[a].name.localeCompare(D.CARDS[b].name));
     $("deck-pool-count").textContent = "卡池 " + pool.length + " 张";
@@ -6054,6 +6062,148 @@
     });
   }
 
+  const LAB_MODS = [
+    { id: "veinStorm", name: "流脉暴走", desc: "开局流脉直接 +6。世界会更早替你们结算。" },
+    { id: "manaFlood", name: "行动力沸腾", desc: "双方开局最大行动力 +2，当前行动力也补满。" },
+    { id: "ironRush", name: "全员突进", desc: "双方之后召唤的所有随从获得突进。" },
+    { id: "crossFaction", name: "跨阵营乱斗", desc: "双方牌组从六阵营卡池随机混编，不再讲阵营纪律。" },
+    { id: "experimentalCards", name: "实验卡牌", desc: "把当前 6 张实验牌混入乱斗牌组：混沌裂隙、变异之卵、命运赌徒、禁忌知识、时间借贷、流脉超载。" },
+    { id: "chaosEvents", name: "随机事件", desc: "从第 3 回合开始，每隔 3 个回合触发一次随机实验事件。" }
+  ];
+
+  function applyExperimentalMods(state, mods) {
+    if (!state || !Array.isArray(mods)) return;
+    state.experimental = mods.slice();
+    for (const mod of mods) {
+      if (mod === "veinStorm") state.vein = Math.min(12, (state.vein || 0) + 6);
+      if (mod === "manaFlood") {
+        for (const p of state.players) {
+          p.maxMana = Math.min(10, (p.maxMana || 1) + 2);
+          p.mana = p.maxMana;
+        }
+      }
+      if (mod === "ironRush") state.experimentalIronRush = true;
+    }
+  }
+
+  function buildChaosDeck(faction, includeExperimental) {
+    const pool = Object.keys(D.CARDS).filter(id => {
+      const d = D.CARDS[id];
+      return d && !d.token && !d.disabled && d.type !== "relic" && (!d.experimental || includeExperimental);
+    });
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    const deck = [];
+    const counts = {};
+    if (includeExperimental) {
+      for (const id of Object.keys(D.CARDS)) {
+        if (D.CARDS[id] && D.CARDS[id].experimental) { deck.push(id); counts[id] = 1; }
+      }
+    }
+    for (const id of pool) {
+      if (deck.length >= 30) break;
+      const max = D.maxCopies(D.CARDS[id]) || 2;
+      const n = counts[id] || 0;
+      if (n >= max) continue;
+      deck.push(id);
+      counts[id] = n + 1;
+      if (deck.length < 30 && n + 1 < max && Math.random() > 0.45) {
+        deck.push(id);
+        counts[id] = n + 2;
+      }
+    }
+    const source = D.DECKS[faction] || [];
+    const relic = source.find(id => D.CARDS[id] && D.CARDS[id].type === "relic") || "vein_heart";
+    deck.push(relic);
+    return deck.slice(0, 30).concat(relic);
+  }
+
+  function openLabPage() {
+    if (!window.GOK_IS_PREVIEW) { toast("疯狂实验只在抢先版开放。"); return; }
+    showScreen("lab");
+    renderLabPage();
+  }
+
+  function renderLabPage() {
+    const root = $("lab-page-root");
+    if (!root) return;
+    clear(root);
+    let faction = D.FACTIONS[app.faction] ? app.faction : "pus";
+    const selected = new Set(Array.isArray(app.labMods) ? app.labMods : []);
+    const intro = el("div", "lab-intro");
+    intro.appendChild(el("div", "eyebrow", "PREVIEW / CHAOS LAB"));
+    intro.appendChild(el("h3", null, "疯狂实验"));
+    intro.appendChild(el("p", null, "这里可以组合一些不稳定、未平衡的规则。它们只影响本局，不会写入稳定版。建议先单人试。"));
+    root.appendChild(intro);
+    root.appendChild(el("p", "muted", "实验牌池：混沌裂隙、变异之卵、命运赌徒、禁忌知识、时间借贷、流脉超载。只有勾选「实验卡牌」或跨阵营乱斗时才会进入牌组。"));
+    root.appendChild(el("div", "eyebrow", "选择实验规则"));
+    const modsBox = el("div", "lab-mods");
+    for (const mod of LAB_MODS) {
+      const b = el("button", "lab-mod" + (selected.has(mod.id) ? " active" : ""));
+      b.type = "button";
+      b.appendChild(el("strong", null, mod.name));
+      b.appendChild(el("small", null, mod.desc));
+      b.onclick = () => {
+        if (selected.has(mod.id)) selected.delete(mod.id);
+        else selected.add(mod.id);
+        app.labMods = Array.from(selected);
+        b.classList.toggle("active", selected.has(mod.id));
+      };
+      modsBox.appendChild(b);
+    }
+    root.appendChild(modsBox);
+    root.appendChild(el("div", "eyebrow", "选择阵营"));
+    const factionRow = el("div", "match-faction-grid");
+    for (const id of D.FACTION_IDS) {
+      const fact = D.FACTIONS[id];
+      const b = el("button", "match-faction-card" + (id === faction ? " active" : ""));
+      b.type = "button";
+      const emblem = el("img", "match-faction-emblem"); emblem.src = fact.emblem; emblem.alt = "";
+      const copy = el("span", "match-faction-copy");
+      copy.appendChild(el("strong", null, fact.name));
+      copy.appendChild(el("small", null, D.HEROES[fact.hero] ? "领袖 · " + D.HEROES[fact.hero].name : "领袖"));
+      b.appendChild(emblem); b.appendChild(copy);
+      b.onclick = () => { faction = id; renderLabPage(); };
+      factionRow.appendChild(b);
+    }
+    root.appendChild(factionRow);
+    const actions = el("div", "lab-actions");
+    const start = el("button", "btn btn-primary", "开始实验");
+    start.onclick = () => startLabGame(faction, Array.from(selected));
+    const back = el("button", "btn btn-small btn-ghost", "返回档案处");
+    back.onclick = () => showScreen("home");
+    const daily = el("button", "btn btn-small btn-ghost", "今日混沌");
+    daily.onclick = () => {
+      const seed = new Date();
+      const key = seed.getFullYear() * 10000 + (seed.getMonth() + 1) * 100 + seed.getDate();
+      const picks = [LAB_MODS[key % LAB_MODS.length].id, LAB_MODS[(key + 3) % LAB_MODS.length].id];
+      startLabGame(faction, Array.from(new Set(picks)));
+    };
+    actions.appendChild(daily); actions.appendChild(back); actions.appendChild(start);
+    root.appendChild(actions);
+  }
+
+  function startLabGame(faction, mods) {
+    const opponent = D.nextFaction(faction);
+    const includeExperimental = mods.indexOf("experimentalCards") >= 0;
+    const chaos = mods.indexOf("crossFaction") >= 0 || includeExperimental;
+    const p1Deck = chaos ? buildChaosDeck(faction, includeExperimental) : getSelectedPlayDeck(faction, "preset");
+    const p2Deck = chaos ? buildChaosDeck(opponent, includeExperimental) : getSelectedPlayDeck(opponent, "preset");
+    startGame({
+      faction: faction,
+      opponent: opponent,
+      p1Deck: p1Deck,
+      p2Deck: p2Deck,
+      mode: "ai",
+      aiDifficulty: "hard",
+      mulligan: false,
+      skipIntro: true,
+      experimental: mods
+    });
+  }
+
   function openSettings(returnScreen) {
     app.settingsReturn = returnScreen === "game" ? "game" : (returnScreen || "home");
     const back = $("btn-settings-back");
@@ -7055,6 +7205,7 @@
 
   function initChannelUI() {
     const preview = window.GOK_CHANNEL === "preview";
+    if (window.GOK_IS_PREVIEW) { const lab = $("btn-lab-home"); if (lab) lab.hidden = false; }
     const badge = $("channel-badge");
     if (badge) {
       badge.hidden = false;
@@ -7792,6 +7943,8 @@
     if ($("mode-online")) $("mode-online").onclick = () => { AudioBox.play("ui_open"); openRoomPage(); };
     if ($("btn-match-back")) $("btn-match-back").onclick = () => { showScreen("mode"); showModeMulti(true); };
     if ($("btn-room-back")) $("btn-room-back").onclick = () => { showScreen("mode"); showModeMulti(true); };
+    if ($("btn-lab-home")) $("btn-lab-home").onclick = () => { AudioBox.play("ui_open"); openLabPage(); };
+    if ($("btn-lab-back")) $("btn-lab-back").onclick = () => showScreen("home");
     if ($("mode-match")) $("mode-match").onclick = () => { AudioBox.play("ui_open"); openMatchPage(); };
     if ($("btn-mode-multi")) $("btn-mode-multi").onclick = () => setStartSubmenu(true);
     if ($("btn-mode-back")) $("btn-mode-back").onclick = () => setStartSubmenu(false);
