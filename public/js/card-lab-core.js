@@ -248,7 +248,7 @@
         if (passive === "tauntAura") {
           const before = D.CARDS.guard.health || 3;
           const g = E.summonMinion(s, p0, "guard", played.zone, null);
-          return result(!!g && g.health > before, "同阵位拦截随从生命 " + (g && g.health) + "（基础 " + before + "）");
+          return result(!!g && g.health > before, "同阵位守备随从生命 " + (g && g.health) + "（基础 " + before + "）");
         }
         if (passive === "firstCardDiscount") {
           s.players[0].cardsPlayedThisTurn = 0;
@@ -269,7 +269,7 @@
           if (passive === "spellDrawOne") return result(p0.deck.length < beforeDeck, "牌库 " + beforeDeck + " → " + p0.deck.length);
           if (passive === "spellGrowth") return result(played.attack > beforeAttack, "自身攻击 " + beforeAttack + " → " + played.attack);
           if (passive === "spellFreezeOnce") return result(all(p1).some(m => (m.frozenTurns || 0) > 0) || beforeFrozen > 0, "敌方冻结触发");
-          return result(p0.hand.length > beforeHand || !!s.pendingChoice, "施法后检索/手牌变化");
+          return result(p0.hand.length > beforeHand || !!s.pendingChoice, "施法后预兆/手牌变化");
         }
         if (passive === "attackDestroyFrozen") {
           const enemy = all(p1)[0];
@@ -294,7 +294,7 @@
           if (!ally) return result(false, "没有其他友方可牺牲");
           const beforeHand = p0.hand.length;
           killFriendly(ally);
-          return result(p0.hand.length > beforeHand || !!s.pendingChoice, "友方死亡后检索");
+          return result(p0.hand.length > beforeHand || !!s.pendingChoice, "友方死亡后预兆");
         }
         if (passive === "deathRecordShot") {
           const ally = all(p0).find(m => m.uid !== played.uid);
@@ -316,10 +316,10 @@
         }
         if (passive === "tauntDeathDraw") {
           const g = E.summonMinion(s, p0, "guard", played.zone, null);
-          if (!g) return result(false, "无法召唤拦截随从");
+          if (!g) return result(false, "无法召唤守备随从");
           const before = p0.hand.length;
           killFriendly(g);
-          return result(p0.hand.length > before, "拦截随从死亡后抽牌");
+          return result(p0.hand.length > before, "守备随从死亡后抽牌");
         }
         if (passive === "bountyClaimGrowth" || passive === "bountyClaimDamage") {
           const enemy = all(p1)[0];

@@ -1208,24 +1208,26 @@
       return;
     }
     if (app.targetInfo) {
-      title.textContent = "选择目标";
-      text.textContent = "点击高亮随从完成施放；点同卡、右键、Esc 或提示条上的「取消选择」可以取消。";
+      title.textContent = "第 3/6 步 · 选择目标";
+      text.textContent = "点击高亮随从完成施放；点同卡、右键、Esc 或提示条上的「取消选择」可以取消。指向牌先选目标，再结算。";
       return;
     }
     if (app.zoneSelect) {
-      title.textContent = "选择阵位";
-      text.textContent = "左翼 / 中阵 / 右翼最多各站 3 个随从，但全场最多 6 个。把牌点进或拖进高亮阵位。";
+      title.textContent = "第 2/6 步 · 选择阵位";
+      text.textContent = "左翼 / 中枢 / 右翼最多各站 3 个随从，全场最多 6 个。把牌点进或拖进高亮阵位；同阵位会触发连携和守备保护。";
       return;
     }
     const own = s.players[app.viewer];
+    const heroPower = E.getHeroPowerOptions(s, app.viewer);
+    const playedThisTurn = own.cardsPlayedThisTurn || 0;
     const attackers = E.allMinions(own).filter(m => m.attacksLeft > 0 && m.frozenTurns === 0 && m.attack > 0);
     const canAttack = attackers.some(m => {
       const o = E.getAttackOptions(s, app.viewer, m.uid);
       return o.ok && o.targets.length > 0;
     });
     if (canAttack) {
-      title.textContent = "第 2 步 · 攻击";
-      text.textContent = "把攻击力大于 0 的我方随从拖到敌方随从或领袖上；也可以先点随从，再点目标。";
+      title.textContent = "第 4/6 步 · 攻击";
+      text.textContent = "把攻击力大于 0 的我方随从拖到敌方随从或领袖上；也可以先点随从，再点目标。先遣随从本回合不能打脸；守备会保护同阵位。";
       return;
     }
     const playable = own.hand.filter(c => {
@@ -1233,11 +1235,16 @@
       return o.ok;
     });
     if (playable.length) {
-      title.textContent = "第 1 步 · 出牌";
-      text.textContent = "点击一张手牌，再点高亮阵位；也可以直接拖到阵位。绿色/金色高亮表示这个阵位可以放。";
+      title.textContent = playedThisTurn ? "第 5/6 步 · 领袖技能" : "第 1/6 步 · 看手牌";
+      text.textContent = playedThisTurn ? "点左下角领袖技能，确认行动力和目标；技能每回合只能用一次。也可以先继续出牌。" : "先看手牌的行动力、卡面效果和关键词标签：守备、先遣、预兆、连携、血偿都能点开说明。点击一张手牌，再点高亮阵位。";
       return;
     }
-    title.textContent = "第 3 步 · 结束回合";
+    if (heroPower.ok) {
+      title.textContent = "第 5/6 步 · 领袖技能";
+      text.textContent = "点左下角领袖技能，确认行动力和目标；技能每回合只能用一次。当前流脉：" + s.vein + "。";
+      return;
+    }
+    title.textContent = "第 6/6 步 · 结束回合";
     text.textContent = "现在没有可打出的牌。点右下角「结束回合」把回合交给对手，观察流脉自然 +1。";
   }
 
@@ -1882,7 +1889,7 @@
     let label = "";
     if (kw.indexOf("battlecry") >= 0) { key = "battlecry"; label = "登场"; }
     else if (kw.indexOf("deathrattle") >= 0) { key = "deathrattle"; label = "余响"; }
-    else if (kw.indexOf("taunt") >= 0) { key = "taunt"; label = "拦截"; }
+    else if (kw.indexOf("taunt") >= 0) { key = "taunt"; label = "守备"; }
     else if (kw.indexOf("charge") >= 0) { key = "charge"; label = "先遣"; }
     else if (def.passive) { key = "passive"; label = "被动"; }
     if (!key) return null;
@@ -2405,7 +2412,7 @@
 
   function appendKeywordText(node, text) {
     if (!text) return;
-    const re = /(登场|余响|拦截|先遣|冻结|隐匿|采掘|引脉|血祭|沉默|检索|格挡|连携|蚀毒|血偿|先遣|回潮|反噬|顺势|吞噬|阵位|对位|行动力|战术|阵型)/g;
+    const re = /(登场|余响|守备|先遣|冻结|隐匿|采掘|引脉|血祭|沉默|预兆|格挡|连携|蚀毒|血偿|先遣|回潮|封口|顺势|吞噬|阵位|对位|行动力|战术|阵型)/g;
     let last = 0;
     let m;
     while ((m = re.exec(text)) !== null) {
@@ -2424,48 +2431,43 @@
   const KEYWORD_HELP = {
     "登场": "从手牌打出时立即触发一次效果。",
     "余响": "该随从死亡时立即触发一次效果。",
-    "拦截": "敌方必须先攻击具有拦截的随从。",
-    "先遣": "登场当回合即可攻击。",
+    "守备": "保护同一阵位的其他友方随从：只要该阵位有守备，其他随从不能被攻击。守备随从本身可以被攻击。若攻击者同阵位有守备，敌方领袖也不能被攻击。",
+    "先遣": "登场当回合可以攻击，但本回合不能攻击敌方领袖。",
     "被动": "无需主动触发，满足条件时自动生效。",
     "冻结": "被冻结的角色失去其下一次攻击机会。",
     "沉默": "移除卡牌当前的强化，以及卡牌描述带来的效果。",
     "隐匿": "无法被敌方选为目标，攻击后解除。",
     "引脉": "当共享流脉达到标注阈值时触发；若有多个阈值，只结算其中最高的一个。",
-    "检索": "从三张随机卡牌中选择一张，置入手牌。",
+    "预兆": "从牌库顶 3 张中挑选 1 张置入手牌。",
     "采掘": "采掘 X：抽 X 张牌，并使共享流脉 +X。",
     "血祭": "以支付生命为代价打出或触发效果。",
     "吞噬": "消灭一个友方随从，并获得其攻击力与生命值。",
-    "格挡": "免疫受到的第一次伤害。",
-    "连携": "每回合可以攻击两次。",
+    "格挡": "受到的下一次伤害减少 2 点，然后移除格挡。",
+    "连携": "同阵位有另一个友方随从时，本回合第一次攻击额外 +1 攻击；不再获得额外攻击次数。",
     "蚀毒": "消灭任何受到其伤害的随从。",
-    "血偿": "造成伤害时，为你的领袖恢复等量生命。",
-    "先遣": "登场当回合可以攻击随从，但不能攻击领袖。",
+    "血偿": "造成伤害时，超过目标生命的溢出伤害转化为你的护甲。",
     "回潮": "第一次死亡后以 1 点生命返回战场一次。",
-    "反噬": "本牌使用后，下回合行动力减少。",
     "固定": "固定效果不随条件变化消失，当前和之后以任何方式进入该阵位的随从都会获得。",
     "逆流": "消耗指定数量的流脉来触发；流脉不足时消耗到 0 仍可触发，流脉为 0 时无效。",
-    "镇脉": "消耗指定数量的流脉，获得等量护甲（消耗 X 点就获得 X 点护甲）；流脉不足时只获得剩余流脉的护甲并把流脉清零。",
+    "镇脉": "消耗指定数量的流脉，获得等量护甲；流脉不足时只获得剩余流脉的护甲并把流脉清零。",
     "压脉": "消耗指定数量的流脉，对敌方领袖造成等量伤害；流脉不足时整张牌效果无效。",
     "悬赏": "被列入悬赏名单的敌方随从死亡时，触发效果。",
     "装备": "一个持续生效的增益；打出后占用一个装备槽，同名装备只能装备一件。"
   };
   const KEYWORD_ICONS = {
-    "登场": "battlecry", "余响": "deathrattle", "拦截": "taunt", "先遣": "charge",
+    "登场": "battlecry", "余响": "deathrattle", "守备": "taunt", "先遣": "charge",
     "被动": "passive", "冻结": "freeze", "沉默": "silence", "隐匿": "stealth",
-    "引脉": "vein", "检索": "discover", "采掘": "excavate", "血祭": "blood",
+    "引脉": "vein", "预兆": "discover", "采掘": "excavate", "血祭": "blood",
     "吞噬": "damage", "格挡": "armor", "连携": "charge", "蚀毒": "deathrattle",
-    "血偿": "heal", "先遣": "charge", "回潮": "passive", "反噬": "summon",
-    "固定": "passive", "逆流": "vein", "镇脉": "armor", "压脉": "damage",
-    "悬赏": "damage", "装备": "passive"
+    "血偿": "heal", "回潮": "passive", "固定": "passive", "逆流": "vein",
+    "镇脉": "armor", "压脉": "damage", "悬赏": "damage", "装备": "passive"
   };
-
   let keywordTipTimer = null;
 
   const TUTORIAL_KEYWORD_ORDER = [
-    "登场", "余响", "拦截", "先遣", "被动", "冻结", "沉默", "隐匿",
-    "引脉", "检索", "采掘", "血祭", "吞噬", "格挡", "连携", "蚀毒",
-    "血偿", "先遣", "回潮", "反噬", "固定", "逆流", "镇脉", "压脉",
-    "悬赏", "装备"
+    "格挡", "守备", "先遣", "连携", "血偿", "蚀毒", "隐匿", "回潮", "冻结", "沉默",
+    "登场", "余响", "引脉", "采掘", "血祭", "预兆", "吞噬",
+    "逆流", "镇脉", "压脉", "悬赏", "固定", "装备", "被动"
   ];
   const CARD_TAG_ALLOWLIST = new Set(TUTORIAL_KEYWORD_ORDER);
   const TUTORIAL_KEYWORD_ALIASES = {};
@@ -2560,12 +2562,10 @@
   }
 
   const KEYWORD_ALIASES = {
-    "战吼": "登场", "亡语": "余响", "嘲讽": "拦截", "冲锋": "先遣",
-    "潜行": "隐匿", "发现": "检索", "圣盾": "格挡", "风怒": "连携",
+    "战吼": "登场", "亡语": "余响", "嘲讽": "守备", "冲锋": "先遣",
+    "潜行": "隐匿", "发现": "预兆", "圣盾": "格挡", "风怒": "连携",
     "剧毒": "蚀毒", "吸血": "血偿", "突袭": "先遣", "复生": "回潮",
-    "过载": "反噬"
   };
-
   function keywordLabelFromTarget(target) {
     if (!target || !target.closest) return null;
     const node = target.closest(".kw, .preview-keyword, .keyword-tag");
@@ -2580,7 +2580,7 @@
     if (def.keywords) {
       if (def.keywords.indexOf("battlecry") >= 0) tags.push("✦ 登场");
       if (def.keywords.indexOf("deathrattle") >= 0) tags.push("☠ 余响");
-      if (def.keywords.indexOf("taunt") >= 0) tags.push("盾 拦截");
+      if (def.keywords.indexOf("taunt") >= 0) tags.push("盾 守备");
       if (def.keywords.indexOf("charge") >= 0) tags.push("⚔ 先遣");
       if (def.keywords.indexOf("divineShield") >= 0) tags.push("格挡");
       if (def.keywords.indexOf("windfury") >= 0) tags.push("连携");
@@ -2615,14 +2615,14 @@
   function boardKeywordLabels(def, m) {
     const labels = [];
     const add = (v) => { if (v && labels.indexOf(v) < 0) labels.push(v); };
-    const map = { battlecry: "登场", deathrattle: "余响", taunt: "拦截", charge: "先遣", rush: "先遣", divineShield: "格挡", windfury: "连携", poisonous: "蚀毒", lifesteal: "血偿", reborn: "回潮", stealth: "隐匿" };
+    const map = { battlecry: "登场", deathrattle: "余响", taunt: "守备", charge: "先遣", rush: "先遣", divineShield: "格挡", windfury: "连携", poisonous: "蚀毒", lifesteal: "血偿", reborn: "回潮", stealth: "隐匿" };
     for (const k of (def.keywords || [])) add(map[k]);
     if (def.passive) add("被动");
     if (def.bloodCost != null) add("血祭");
     if (m) {
       if (m.silenced) add("沉默");
       if (m.frozenTurns > 0) add("冻结");
-      if (m.taunt) add("拦截");
+      if (m.taunt) add("守备");
       if (m.divineShield) add("格挡");
       if (m.windfury) add("连携");
       if (m.poisonous) add("蚀毒");
@@ -2649,13 +2649,13 @@
       if (bt === "damageAllEnemies") tags.push("伤害");
       if (bt === "destroy") tags.push("消灭");
       if (bt === "summonTokenBuff") tags.push("召唤");
-      if (bt === "buffAllTaunt") tags.push("拦截");
+      if (bt === "buffAllTaunt") tags.push("守备");
       if (bt === "spellDraw" || bt === "drawSpell" || bt === "drawHandCondition") tags.push("抽牌");
       if (bt === "silenceVeinBuff") { tags.push("沉默"); tags.push("引脉"); }
-      if (bt === "buffTauntZone" || bt === "buffIfIronclad") tags.push("拦截");
+      if (bt === "buffTauntZone" || bt === "buffIfIronclad") tags.push("守备");
       if (bt === "healHero" || bt === "healVein") tags.push("恢复");
       if (bt === "healVein") tags.push("引脉");
-      if (bt === "spellDiscover") tags.push("检索");
+      if (bt === "spellDiscover") tags.push("预兆");
       if (bt === "armor" || bt === "armorPerTaunt") tags.push("护甲");
       if (bt === "veinOnly") tags.push("引脉");
       if (bt === "rampMana") tags.push("行动力");
@@ -2667,7 +2667,6 @@
       if (bt === "summonSelfCopy") tags.push("复制");
       if (bt === "damageAllEnemiesDraw") { tags.push("伤害"); tags.push("抽牌"); }
     }
-    if (def.overload) tags.push("反噬");
     if (def.spell && def.spell.type === "comboDamage") tags.push("顺势");
     if (def.deathrattle && def.deathrattle.type === "summon") tags.push("召唤");
     if (def.deathrattle && def.deathrattle.type === "damageAllEnemies") tags.push("伤害");
@@ -2675,7 +2674,7 @@
       if (m.silenced) tags.push("沉默");
       if (m.frozenTurns > 0) tags.push("冻结");
       if (m.stealth) tags.push("隐匿");
-      if (m.taunt) tags.push("拦截");
+      if (m.taunt) tags.push("守备");
       if (m.charge) tags.push("先遣");
     } else if (def.spell) {
       const st = def.spell.type;
@@ -2684,13 +2683,13 @@
       if (st === "damage") tags.push("伤害");
       if (["heal", "buffHeal"].indexOf(st) >= 0) tags.push("恢复");
       if (["draw", "drawVein", "bloodDraw", "healDraw", "freezeDraw"].indexOf(st) >= 0) tags.push("抽牌");
-      if (st === "discover") tags.push("检索");
+      if (st === "discover") tags.push("预兆");
       if ([ "summon", "summonMonster" ].indexOf(st) >= 0) tags.push("召唤");
       if (["armor"].indexOf(st) >= 0) tags.push("护甲");
       if (["healDraw"].indexOf(st) >= 0) tags.push("恢复");
       if (["channelVein"].indexOf(st) >= 0) tags.push("引脉");
       if (["freezeDraw"].indexOf(st) >= 0) tags.push("冻结");
-      if (["buffTaunt"].indexOf(st) >= 0) tags.push("拦截");
+      if (["buffTaunt"].indexOf(st) >= 0) tags.push("守备");
       if (["buffCharge"].indexOf(st) >= 0) tags.push("先遣");
       if (st === "gainMana") tags.push("行动力");
       if (st === "damageAllEnemiesDraw") { tags.push("伤害"); tags.push("抽牌"); }
@@ -2702,7 +2701,7 @@
       if (st === "damageAllPerSpell") tags.push("伤害");
       if (st === "healVein") { tags.push("恢复"); tags.push("引脉"); }
       if (st === "sacrificeSummon") { tags.push("血祭"); tags.push("召唤"); }
-      if (st === "buffAllTaunt") tags.push("拦截");
+      if (st === "buffAllTaunt") tags.push("守备");
       if (st === "armorAoe") { tags.push("护甲"); tags.push("伤害"); }
       if (st === "rampSpell") tags.push("行动力");
       if (st === "bloodSummon") { tags.push("血祭"); tags.push("召唤"); }
@@ -3207,7 +3206,7 @@
       const hidden = entry.player != null && entry.player !== app.viewer && privateTypes.indexOf(entry.type) >= 0;
       if (!hidden) return entry;
       const hiddenText = entry.type === "draw" ? "对手抽了一张牌。"
-        : entry.type === "discover" ? "对手检索了一张牌。"
+        : entry.type === "discover" ? "对手预兆了一张牌。"
         : entry.type === "mulligan" ? "对手完成了起手调度。"
         : "对手手牌已满，一张牌被烧掉。";
       return Object.assign({}, entry, { text: hiddenText, hidden: true });
@@ -3620,7 +3619,7 @@
       const ay = attackerRect.top + attackerRect.height / 2;
       setTimeout(() => showAttackLine(ax, ay, cx, cy), 100);
     }
-    if (targetMinion && targetMinion.taunt) setTimeout(() => showKeywordPop("拦截", cx, cy, ""), 190);
+    if (targetMinion && targetMinion.taunt) setTimeout(() => showKeywordPop("守备", cx, cy, ""), 190);
     if (targetMinion && targetMinion.divineShield) setTimeout(() => showKeywordPop("格挡", cx, cy, "shield"), 205);
     if (attacker.poisonous) setTimeout(() => showKeywordPop("蚀毒", cx, cy, "poison"), 220);
     if (attacker.lifesteal) setTimeout(() => showKeywordPop("血偿", cx, cy, "heal"), 220);
@@ -6416,11 +6415,6 @@ const tabs = $("deck-faction-tabs");
       const card = buildLibraryCard(d, { variant: "codex", faction: true });
       card.classList.add("codex-card");
       addCardTags(card, d, null, "lib-tags");
-      const star = el("button", "codex-star" + (app.codexFavorites && app.codexFavorites.has(d.id) ? " active" : ""), app.codexFavorites && app.codexFavorites.has(d.id) ? "★" : "☆");
-      star.title = "收藏 / 取消收藏";
-      star.onclick = (ev) => { ev.stopPropagation(); toggleCodexFavorite(d.id); };
-      card.appendChild(star);
-      if (!(app.codexSeen && app.codexSeen[d.id])) card.appendChild(el("span", "codex-new", "新"));
       card.onclick = () => openCodexCard(d, "返回图鉴", shown, index);
       grid.appendChild(card);
     });
@@ -6452,10 +6446,11 @@ const tabs = $("deck-faction-tabs");
         prev.onclick = () => openCodexCard(list[(index - 1 + list.length) % list.length], backLabel, list, (index - 1 + list.length) % list.length);
         const next = el("button", "btn btn-small btn-ghost", "下一张 ›");
         next.onclick = () => openCodexCard(list[(index + 1) % list.length], backLabel, list, (index + 1) % list.length);
-        const fav = el("button", "btn btn-small btn-ghost", app.codexFavorites && app.codexFavorites.has(d.id) ? "★ 已收藏" : "☆ 收藏");
-        fav.onclick = () => { toggleCodexFavorite(d.id); openCodexCard(d, backLabel, list, index); };
-        actions.appendChild(prev); actions.appendChild(next); actions.appendChild(fav);
+        actions.appendChild(prev); actions.appendChild(next);
       }
+      const fav = el("button", "btn btn-small btn-ghost", app.codexFavorites && app.codexFavorites.has(d.id) ? "★ 已收藏" : "☆ 收藏");
+      fav.onclick = () => { toggleCodexFavorite(d.id); openCodexCard(d, backLabel, list, index); };
+      actions.appendChild(fav);
       const close = el("button", "btn btn-primary", backLabel || "返回图鉴");
       close.onclick = () => closeModal(true);
       actions.appendChild(close);
@@ -6470,7 +6465,7 @@ const tabs = $("deck-faction-tabs");
       content.appendChild(el("p", null, "先看这份速查；完整规则、卡牌类型与关键词解析在「完整教程」里。"));
       const intro = el("div", "guide-sections");
       const sections = [
-        ["胜利条件", "先把对方领袖生命降到 0。随从可以攻击敌方随从或领袖；有拦截的随从必须先处理。"],
+        ["胜利条件", "先把对方领袖生命降到 0。随从可以攻击敌方随从或领袖；有守备的随从必须先处理。"],
         ["行动力与先后手", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张，并额外获得「采掘许可」（本回合 +2 点行动力）。"],
         ["阵位", "左翼 / 中枢 / 右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。阵位会影响部分卡牌的范围与固定效果。"],
         ["流脉", "双方共享 0→12，每次完整轮次（双方各行动一次）自然 +1。4 震荡、7 裂隙、10 魔物潮触发世界事件，12 回流清空。"],
@@ -6491,7 +6486,7 @@ const tabs = $("deck-faction-tabs");
         "2. 点击「开始推演」，选择阵营与预设牌组。",
         "3. 起手换牌：保留 1–3 行动力的牌，换掉 4 行动力以上的高消耗牌。",
         "4. 低费随从先铺场，再用战术解场或增益。",
-        "5. 点击攻击力大于 0 的随从发起攻击；有拦截先打守备。",
+        "5. 点击攻击力大于 0 的随从发起攻击；有守备先打守备。",
         "6. 流脉到 4 / 7 / 10 会触发世界事件，12 回流清空。",
         "7. 结束回合，交替行动，直到一方领袖生命归零。"
       ]) tutorialList.appendChild(el("span", null, step));
@@ -6517,11 +6512,11 @@ const tabs = $("deck-faction-tabs");
       content.appendChild(el("h3", null, "规则速查"));
       const box = el("div", "guide-sections");
       const sections = [
-        ["目标", "把对方领袖生命降到 0。随从可攻击敌方随从或领袖；有拦截的随从必须先处理。"],
+        ["目标", "把对方领袖生命降到 0。随从可攻击敌方随从或领袖；有守备的随从必须先处理。"],
         ["行动力", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张并获得「采掘许可」。"],
         ["阵位", "左翼 / 中枢 / 右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。同阵位可能触发协同，双方同列互为对位。"],
         ["流脉", "共享流脉 0→12。到达 4 震荡、7 裂隙、10 魔物潮时触发世界事件；12 回流清空。"],
-        ["关键词", "登场、余响、拦截、先遣、冻结、沉默、引脉、检索等关键词会在卡牌和标签上标明。"],
+        ["关键词", "登场、余响、守备、先遣、冻结、沉默、引脉、预兆等关键词会在卡牌和标签上标明。"],
         ["装备", "装备是一张牌，抽到并打出后持续生效；同类装备最多生效 2 件。"]
       ];
       for (const [title, desc] of sections) {

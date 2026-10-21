@@ -212,7 +212,7 @@
         id: "lab",
         title: "疯狂实验",
         tag: "抢先版",
-        desc: "自由组合流脉暴走、行动力沸腾、全员突进、跨阵营乱斗、实验卡牌与随机事件。只影响本局，不进稳定版。",
+        desc: "自由组合流脉暴走、行动力沸腾、全员先遣、跨阵营乱斗、实验卡牌与随机事件。只影响本局，不进稳定版。",
         status: "抢先版实验玩法",
         action: () => app.openLabPage("content")
       });
@@ -620,7 +620,7 @@
     { id: "exp_gold", name: "远征盘缠", desc: "每次远征开局金币 +5。", cost: 1 },
     { id: "arena_armor", name: "竞技场护甲", desc: "竞技场战斗开局护甲 +2。", cost: 1 },
     { id: "battler_gold", name: "战棋盘缠", desc: "战棋开局额外 +2 账。", cost: 2 },
-    { id: "battler_armor", name: "战棋护幕", desc: "战棋开局额外 +2 护甲。", cost: 1 },
+    { id: "battler_armor", name: "战棋护甲", desc: "战棋开局额外 +2 护甲。", cost: 1 },
     { id: "arcade_luck", name: "街机好运", desc: "账牌/三骰开局底账 +1。", cost: 1 }
   ];
   function renderMarket(box, data) {
@@ -646,13 +646,13 @@
   /* ===== expedition ===== */
   const BOSS_MODS = [
     { id: "warden", name: "守门人", desc: "首领开局获得 6 点护甲。", apply: (s) => { s.players[1].armor += 6; } },
-    { id: "twin", name: "双生守卫", desc: "首领开局召唤两个 2/2 拦截随从。", apply: (s) => { for (let i = 0; i < 2; i++) { const m = E.summonMinion(s, s.players[1], "shield_recruit", "center", null); if (m) { m.attack = 2; m.health = 2; m.maxHealth = 2; m.taunt = true; m.attacksLeft = 0; } } } },
+    { id: "twin", name: "双生守卫", desc: "首领开局召唤两个 2/2 守备随从。", apply: (s) => { for (let i = 0; i < 2; i++) { const m = E.summonMinion(s, s.players[1], "shield_recruit", "center", null); if (m) { m.attack = 2; m.health = 2; m.maxHealth = 2; m.taunt = true; m.attacksLeft = 0; } } } },
     { id: "tide", name: "潮涌", desc: "开局流脉 +5。", apply: (s) => { s.vein = Math.min(11, (s.vein || 0) + 5); } }
   ];
   const ELITE_MODS = [
     { id: "bulwark", name: "铁壁", desc: "敌方领袖开局获得 4 点护甲。", apply: (s) => { s.players[1].armor += 4; } },
     { id: "bloodmoon", name: "血月", desc: "敌方领袖生命上限 +5。", apply: (s) => { const e = s.players[1]; e.maxHp += 5; e.hp += 5; } },
-    { id: "overload", name: "过载", desc: "敌方开局行动力 +1。", apply: (s) => { const e = s.players[1]; e.maxMana = Math.min(10, (e.maxMana || 10) + 1); e.mana = Math.min(e.maxMana, (e.mana || 0) + 1); } },
+    { id: "overload", name: "行动力危机", desc: "敌方开局行动力 +1。", apply: (s) => { const e = s.players[1]; e.maxMana = Math.min(10, (e.maxMana || 10) + 1); e.mana = Math.min(e.maxMana, (e.mana || 0) + 1); } },
     { id: "rapid_vein", name: "湍流", desc: "开局流脉 +3。", apply: (s) => { s.vein = Math.min(11, (s.vein || 0) + 3); } }
   ];
 
@@ -1033,7 +1033,7 @@
     { id: "armor", name: "铁壁日", desc: "双方领袖开局获得 2 点护甲。", apply: (s) => { s.players[0].armor += 2; s.players[1].armor += 2; } },
     { id: "vein", name: "流脉湍急", desc: "开局流脉为 5。", apply: (s) => { s.vein = 5; } },
     { id: "blood", name: "血月", desc: "双方生命上限 -5。", apply: (s) => { for (const p of s.players) { p.maxHp = Math.max(10, p.maxHp - 5); p.hp = Math.min(p.hp, p.maxHp); } } },
-    { id: "mana", name: "过载日", desc: "双方开局行动力 +1。", apply: (s) => { for (const p of s.players) { p.maxMana = Math.min(10, (p.maxMana || 10) + 1); p.mana = Math.min(p.maxMana, (p.mana || 0) + 1); } } }
+    { id: "mana", name: "行动力危机", desc: "双方开局行动力 +1。", apply: (s) => { for (const p of s.players) { p.maxMana = Math.min(10, (p.maxMana || 10) + 1); p.mana = Math.min(p.maxMana, (p.mana || 0) + 1); } } }
   ];
   function dailyMod(date) {
     return DAILY_MODS[seedFrom("daily-mod:" + date) % DAILY_MODS.length];
@@ -1092,7 +1092,7 @@
   const PUZZLES = [
     { id: "last_hit", name: "最后一步", desc: "你的随从已经站在敌方领袖面前。本回合完成斩杀。", setup: (s) => setupPuzzle(s, [{ atk: 5, hp: 5 }], 5, false) },
     { id: "double_line", name: "双线齐发", desc: "两条阵线都准备好了。用两次攻击终结对手。", setup: (s) => setupPuzzle(s, [{ atk: 5, hp: 5 }, { atk: 5, hp: 5 }], 10, false) },
-    { id: "through_wall", name: "越过盾墙", desc: "对方有拦截。先用一次攻击拆盾，再补上最后一击。", setup: (s) => setupPuzzle(s, [{ atk: 7, hp: 7 }, { atk: 5, hp: 5 }], 5, true) },
+    { id: "through_wall", name: "越过盾墙", desc: "对方有守备。先用一次攻击拆盾，再补上最后一击。", setup: (s) => setupPuzzle(s, [{ atk: 7, hp: 7 }, { atk: 5, hp: 5 }], 5, true) },
     { id: "triple_line", name: "三线合围", desc: "三次攻击，正好覆盖敌方领袖的生命。", setup: (s) => setupPuzzle(s, [{ atk: 5, hp: 5 }, { atk: 5, hp: 5 }, { atk: 5, hp: 5 }], 15, false) },
     { id: "armor_break", name: "破甲", desc: "对手有 3 点护甲。算好两次攻击的溢出伤害。", setup: (s) => setupPuzzle(s, [{ atk: 5, hp: 5 }, { atk: 5, hp: 5 }], 7, false, 3) }
   ];

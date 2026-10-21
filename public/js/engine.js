@@ -397,7 +397,7 @@
     if (!pool.length) return null;
     const id = pool[randomInt(state, pool.length)];
     const added = addCardToHand(state, player, id, {});
-    if (added) log(state, "额外检索战术牌：" + card(id).name + "。", player, label || "discover");
+    if (added) log(state, "额外预兆战术牌：" + card(id).name + "。", player, label || "discover");
     return added;
   }
 
@@ -405,7 +405,7 @@
   function addRandomSpellFromDeck(state, player, label) {
     const spells = player.deck.filter(c => card(c.cardId).type === "spell");
     if (!spells.length) {
-      log(state, player.name + " 的牌库中没有战术牌，检索失败。", player, "discover");
+      log(state, player.name + " 的牌库中没有战术牌，预兆失败。", player, "discover");
       return null;
     }
     const pick = spells[randomInt(state, spells.length)];
@@ -415,7 +415,7 @@
       return null;
     }
     player.hand.push(pick);
-    log(state, (label || "阵亡检索") + "：" + player.name + " 将「" + card(pick.cardId).name + "」置入手牌。", player, "discover");
+    log(state, (label || "阵亡预兆") + "：" + player.name + " 将「" + card(pick.cardId).name + "」置入手牌。", player, "discover");
     return pick;
   }
 
@@ -783,9 +783,9 @@
           if (!ally.silenced && ally.passive && ally.passive.type === "deathDiscoverSpell") {
             if (state.current === p.index && !state.pendingChoice) {
               openDiscover(state, p, "spell", ally.cardId);
-              log(state, ally.name + " 记录阵亡：检索一张战术牌。", p, "discover");
+              log(state, ally.name + " 记录阵亡：预兆一张战术牌。", p, "discover");
             } else {
-              addRandomSpell(state, p, "阵亡检索");
+              addRandomSpell(state, p, "阵亡预兆");
             }
           }
         }
@@ -1190,7 +1190,7 @@
     if (def.type !== "debt") bumpDebtProgress(state, player, "cardsPlayed", 1);
     if (def.overload) {
       player.overload = (player.overload || 0) + def.overload;
-      log(state, player.name + " 反噬 " + def.overload + "：下回合行动力减少。", player, "overload");
+      log(state, player.name + " 过载 " + def.overload + "：下回合行动力减少。", player, "overload");
     }
     state.lastAction = { type: "play", player: playerIndex, cardId: def.id, cardName: def.name, cardType: def.type, zone: zone || null, seq: ((state.lastAction && state.lastAction.seq) || 0) + 1 };
     log(state, player.name + " 打出 " + def.name + "（" + cost + " 行动力）。", player, def.type === "spell" ? "spell" : "play", def.id);
@@ -1603,6 +1603,9 @@
         log(state, "登场：" + minion.name + " 吞噬了 " + eaten.name + "。", player, "battlecry");
         processDeaths(state);
       }
+    } else if (b.type === "discardDraw") {
+      discardRandomCards(state, player, b.discard || 1);
+      drawCard(state, player, b.draw || 2);
     } else if (b.type === "draw") {
       drawCard(state, player, b.amount || 1);
     } else if (b.type === "damageAllEnemiesDraw") {
@@ -1977,6 +1980,10 @@
     } else if (s.type === "drawCopyNextSpell") {
       player.copyNextSpell = (player.copyNextSpell || 0) + 1;
       drawCard(state, player, s.draw == null ? 1 : s.draw);
+    } else if (s.type === "loanDraw") {
+      drawCard(state, player, s.amount || 2);
+      player.overload = (player.overload || 0) + (s.penalty || 1);
+      log(state, "借贷：抽 " + (s.amount || 2) + " 张牌；下回合行动力 -" + (s.penalty || 1) + "。", player, "draw");
     } else if (s.type === "draw") {
       drawCard(state, player, s.amount || 1);
     } else if (s.type === "drawGainVein") {
@@ -2142,6 +2149,15 @@
     } else if (s.type === "freezeDraw") {
       if (target && !target.dead) freezeMinion(state, target);
       drawCard(state, player, s.draw || 1);
+    } else if (s.type === "damageFreeze") {
+      if (target && !target.dead) {
+        damageMinion(state, target, s.amount || 1, null, "寒霜辩论");
+        freezeMinion(state, target);
+      }
+    } else if (s.type === "damageAllFreeze") {
+      const enemies = aliveMinions(opponentOf(state, player));
+      for (const m of enemies) damageMinion(state, m, s.amount || 1, null, "奥术寒潮");
+      for (const m of enemies) if (!m.dead) freezeMinion(state, m);
     } else if (s.type === "freezeAll") {
       for (const m of aliveMinions(opponentOf(state, player)).filter(m => !m.stealth)) freezeMinion(state, m);
       log(state, "所有敌方随从被封印。", player, "freeze");
@@ -2521,18 +2537,18 @@
       if (options.length >= 3) break;
     }
     if (!options.length) {
-      log(state, player.name + " 没有可检索的卡牌。", player, "discover");
+      log(state, player.name + " 没有可预兆的卡牌。", player, "discover");
       return;
     }
     const choice = { type: "discover", player: player.index, options: options, source: sourceCardId, fromDeck: fromDeck };
     if (state.pendingChoice) {
       state.discoverQueue = state.discoverQueue || [];
       state.discoverQueue.push(choice);
-      log(state, player.name + " 触发额外检索，加入待选队列。", player, "discover");
+      log(state, player.name + " 触发额外预兆，加入待选队列。", player, "discover");
       return;
     }
     state.pendingChoice = choice;
-    log(state, player.name + " 触发检索，等待选择。", player, "discover");
+    log(state, player.name + " 触发预兆，等待选择。", player, "discover");
   }
 
   function advanceDiscover(state) {
@@ -2545,9 +2561,9 @@
   }
 
   function resolveDiscover(state, playerIndex, cardId) {
-    if (!state.pendingChoice || state.pendingChoice.type !== "discover") return { ok: false, reason: "没有待处理的检索" };
+    if (!state.pendingChoice || state.pendingChoice.type !== "discover") return { ok: false, reason: "没有待处理的预兆" };
     if (state.pendingChoice.player !== playerIndex) return { ok: false, reason: "不是你的选择" };
-    if (state.pendingChoice.options.indexOf(cardId) < 0) return { ok: false, reason: "不在检索选项中" };
+    if (state.pendingChoice.options.indexOf(cardId) < 0) return { ok: false, reason: "不在预兆选项中" };
     const player = state.players[playerIndex];
     if (state.pendingChoice.fromDeck) {
       let chosenId = cardId;
@@ -2557,17 +2573,17 @@
         if (fallback) { chosenId = fallback; idx = player.deck.findIndex(c => c.cardId === chosenId); }
       }
       if (idx < 0) {
-        log(state, "检索选项已被其他效果取走，跳过本次选择。", player, "discover");
+        log(state, "预兆选项已被其他效果取走，跳过本次选择。", player, "discover");
         advanceDiscover(state);
-        return { ok: true, reason: "检索选项已失效" };
+        return { ok: true, reason: "预兆选项已失效" };
       }
       const [deckCard] = player.deck.splice(idx, 1);
       const added = addCardToHand(state, player, chosenId, {});
       if (!added) {
         player.deck.splice(idx, 0, deckCard);
-        log(state, "手牌已满，检索牌留在牌库。", player, "discover");
+        log(state, "手牌已满，预兆牌留在牌库。", player, "discover");
         advanceDiscover(state);
-        return { ok: true, reason: "手牌已满，检索牌留在牌库" };
+        return { ok: true, reason: "手牌已满，预兆牌留在牌库" };
       }
     } else {
       addCardToHand(state, player, cardId, {});
@@ -2931,7 +2947,7 @@
     if (state.status !== "playing") return { ok: true };
     if (state.pendingChoice) {
       state.pendingEndTurn = playerIndex;
-      log(state, "复诵触发检索，先完成选择。", player, "discover");
+      log(state, "复诵触发预兆，先完成选择。", player, "discover");
       return { ok: true, pending: true };
     }
     finishEndTurn(state, playerIndex);
