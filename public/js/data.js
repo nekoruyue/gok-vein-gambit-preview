@@ -918,31 +918,31 @@
     /* ===== 遗物 / 阵位机制 ===== */
     vein_heart: {
       id: "vein_heart", name: "地脉之心", faction: "pus", type: "relic",
-      cost: 3, rarity: "epic", art: null, target: "none",
+      cost: 3, rarity: "legendary", art: null, target: "none",
       text: "遗物：每当流脉增加时，获得 1 点护甲。",
       flavor: "它跳动的节奏，和城下的地脉一模一样。"
     },
     spell_codex: {
       id: "spell_codex", name: "留存法典", faction: "academy", type: "relic",
-      cost: 3, rarity: "epic", art: null, target: "none",
+      cost: 3, rarity: "legendary", art: null, target: "none",
       text: "遗物：每个你的回合，第一张战术牌的行动力消耗 -1。",
       flavor: "法术释放之后，公式会留在书页上。"
     },
     blood_scythe: {
       id: "blood_scythe", name: "血潮镰", faction: "xizhao", type: "relic",
-      cost: 3, rarity: "epic", art: null, target: "none",
+      cost: 3, rarity: "legendary", art: null, target: "none",
       text: "遗物：友方随从死亡时，你的领袖恢复 2 点生命。",
       flavor: "每一道潮痕都是收割过的名字。"
     },
     iron_banner: {
       id: "iron_banner", name: "铁壁军旗", faction: "republic", type: "relic",
-      cost: 3, rarity: "epic", art: null, target: "none",
+      cost: 3, rarity: "legendary", art: null, target: "none",
       text: "遗物：你召唤的拦截随从获得 +0/+1。",
       flavor: "旗子插在哪里，哪里就是阵线。"
     },
     powder_engine: {
       id: "powder_engine", name: "火药引擎", faction: "empire", type: "relic",
-      cost: 4, rarity: "epic", art: null, target: "none",
+      cost: 4, rarity: "legendary", art: null, target: "none",
       text: "遗物：你的回合开始时若敌方领袖没有护甲，造成 1 点伤害。",
       flavor: "它不需要瞄准，只需要一直转。"
     },
@@ -1928,7 +1928,8 @@
 
   function maxCopies(def) {
     if (!def || def.token) return 0;
-    if (def.type === "relic") return 1;
+    if (def.copyLimit != null) return def.copyLimit;
+    if (def.type === "relic" || def.type === "equipment") return 1;
     if (def.type === "formation") return 2;
     return def.rarity === "legendary" ? 1 : 2;
   }
@@ -1944,7 +1945,7 @@
   function validateDeck(faction, list) {
     const errors = [];
     const arr = Array.isArray(list) ? list : [];
-    if (arr.length !== 31 && arr.length !== 32) errors.push("牌组必须是 30 张带牌 + 1 张遗物（共 31 张）");
+    if (arr.length !== 31 && arr.length !== 32) errors.push("牌组必须是 30 张带牌 + 2 张装备（兼容旧牌组 31 张）");
     const counts = {};
     let main = 0, formations = 0, relics = 0;
     for (const id of arr) {
@@ -1954,12 +1955,12 @@
       counts[id] = (counts[id] || 0) + 1;
       if (counts[id] > maxCopies(d)) errors.push(d.name + " 超出同名张数上限");
       if (d.type === "formation") formations++;
-      else if (d.type === "relic") relics++;
+      else if (d.type === "equipment" || d.type === "relic") relics++;
       else main++;
     }
     if (main + formations !== 30) errors.push("带牌必须是 30 张（含阵型），当前 " + (main + formations));
-    if (formations > 2) errors.push("阵型最多 2 张，当前 " + formations);
-    if (relics < 1 || relics > 2) errors.push("遗物必须是 1 张（兼容旧牌组最多 2 张），当前 " + relics);
+    if (formations > 8) errors.push("阵型最多 8 张，当前 " + formations);
+    if (relics < 1 || relics > 2) errors.push("装备必须是 1～2 张（旧牌组兼容 1 张），当前 " + relics);
     return { ok: errors.length === 0, errors: Array.from(new Set(errors)), counts: counts, main: main, formations: formations, relics: relics };
   }
 
@@ -1985,7 +1986,7 @@
   function autoBuildDeck(faction, strategy) {
     const strat = DECK_STRATEGIES[strategy] ? strategy : "midrange";
     const curve = DECK_STRATEGIES[strat].curve;
-    const pool = cardPool(faction).filter(id => CARDS[id].type !== "formation" && CARDS[id].type !== "relic");
+    const pool = cardPool(faction).filter(id => CARDS[id].type !== "formation" && CARDS[id].type !== "relic" && CARDS[id].type !== "equipment");
     const chosen = [];
     const counts = {};
     const take = (id) => {
@@ -2015,7 +2016,7 @@
       if (!added) break;
     }
     const special = DECK_SPECIALS[faction];
-    return chosen.slice(0, 28).concat([special.formation, special.formation, special.relic]);
+    return chosen.slice(0, 28).concat([special.formation, special.formation, special.relic, special.relic2].filter(Boolean));
   }
 
   const DECKS = {
@@ -3419,16 +3420,16 @@
       flavor: "第一刀不求致命，只求见血。"
     },
     gh_venom_apprentice: {
-      id: "gh_venom_apprentice", name: "淬毒学徒", faction: "greyharbor", type: "minion",
+      id: "gh_venom_apprentice", name: "毒行学徒", faction: "greyharbor", type: "minion",
       cost: 1, attack: 1, health: 1, rarity: "common", art: null, noGeneratedArt: true,
       keywords: ["poisonous"], target: "none", text: "蚀毒。",
-      flavor: "师父说，毒要抹在刀刃不反光的那一面。"
+      flavor: "毒要抹在刀刃不反光的那一面。"
     },
     gh_contract_squire: {
-      id: "gh_contract_squire", name: "契约侍从", faction: "greyharbor", type: "minion",
+      id: "gh_contract_squire", name: "契约行侍从", faction: "greyharbor", type: "minion",
       cost: 1, attack: 1, health: 1, rarity: "common", art: null, noGeneratedArt: true,
       keywords: ["divineShield"], target: "none", text: "护幕。",
-      flavor: "他递上的不是茶，是一份免责声明。"
+      flavor: "合同就是合同，签了就不能改。"
     },
     gh_bounty_notice: {
       id: "gh_bounty_notice", name: "悬赏告示", faction: "greyharbor", type: "spell",
@@ -3438,7 +3439,7 @@
       spell: { type: "markBounty" }
     },
     gh_silencer: {
-      id: "gh_silencer", name: "封口人", faction: "greyharbor", type: "minion",
+      id: "gh_silencer", name: "封口行员", faction: "greyharbor", type: "minion",
       cost: 2, attack: 2, health: 2, rarity: "common", art: null, noGeneratedArt: true,
       keywords: ["battlecry"], target: "enemy",
       text: "登场：沉默一个敌方随从。",
@@ -3458,11 +3459,11 @@
       flavor: "先射一箭，再考虑站在哪边。"
     },
     gh_bounty_hunter: {
-      id: "gh_bounty_hunter", name: "赏金猎人", faction: "greyharbor", type: "minion",
+      id: "gh_bounty_hunter", name: "悬赏行赏金客", faction: "greyharbor", type: "minion",
       cost: 2, attack: 2, health: 2, rarity: "rare", art: null, noGeneratedArt: true,
       keywords: ["battlecry"], target: "enemy",
       text: "登场：将一个敌方随从列入悬赏名单。",
-      flavor: "他不问对方是谁，只问名单上有没有。",
+      flavor: "先把名字写下来，再谈价钱。",
       battlecry: { type: "markBounty" }
     },
     gh_bodyguard_contract: {
@@ -3486,24 +3487,24 @@
       flavor: "挡下第一击，第二击交给毒。"
     },
     gh_silence_expert: {
-      id: "gh_silence_expert", name: "封口专家", faction: "greyharbor", type: "minion",
+      id: "gh_silence_expert", name: "封口行专家", faction: "greyharbor", type: "minion",
       cost: 3, attack: 3, health: 3, rarity: "rare", art: null, noGeneratedArt: true,
       keywords: ["battlecry"], target: "enemy",
       text: "登场：沉默一个敌方随从；若它是悬赏目标，抽 1 张牌。",
-      flavor: "封口费按字数收，不按人头。",
+      flavor: "整条街安静下来，生意就谈成了。",
       battlecry: { type: "silenceIfBountyDraw" }
     },
     gh_shield_mercenary: {
-      id: "gh_shield_mercenary", name: "护幕佣兵", faction: "greyharbor", type: "minion",
+      id: "gh_shield_mercenary", name: "护幕行佣兵", faction: "greyharbor", type: "minion",
       cost: 3, attack: 3, health: 4, rarity: "common", art: null, noGeneratedArt: true,
       keywords: ["divineShield"], target: "none", text: "护幕。",
-      flavor: "保命条款比战斗条款长三倍。"
+      flavor: "护幕行不卖命，卖活着离开。"
     },
     gh_ledger: {
-      id: "gh_ledger", name: "悬赏账簿", faction: "greyharbor", type: "spell",
+      id: "gh_ledger", name: "账房账簿", faction: "greyharbor", type: "spell",
       cost: 3, rarity: "rare", art: null, noGeneratedArt: true, target: "none",
       text: "抽 2 张牌；若你完成过悬赏，再抽 1 张。",
-      flavor: "每一笔都记着，包括没兑现的那笔。",
+      flavor: "这是宪法，也是账单。",
       spell: { type: "drawIfBountyClaimed", draw: 2, bonus: 1 }
     },
     gh_assassinate_contract: {
@@ -3514,17 +3515,17 @@
       spell: { type: "damageOrDestroyBounty", amount: 4 }
     },
     gh_black_market: {
-      id: "gh_black_market", name: "黑市交易", faction: "greyharbor", type: "spell",
+      id: "gh_black_market", name: "黑市街交易", faction: "greyharbor", type: "spell",
       cost: 3, rarity: "common", art: null, noGeneratedArt: true, target: "enemy",
       text: "抽 2 张牌；将一个敌方随从列入悬赏名单。",
-      flavor: "灰港没有买不到的东西，只有没谈拢的价。",
+      flavor: "黑市街是灰港的第三条国界。",
       spell: { type: "drawMark", draw: 2 }
     },
     gh_legend_assassin: {
-      id: "gh_legend_assassin", name: "传奇刺客", faction: "greyharbor", type: "minion",
+      id: "gh_legend_assassin", name: "契约行刺客", faction: "greyharbor", type: "minion",
       cost: 4, attack: 3, health: 3, rarity: "legendary", art: null, noGeneratedArt: true,
       keywords: ["rush", "poisonous"], target: "none", text: "袭扰。蚀毒。",
-      flavor: "灰港的传说只有一句：他从不留第二刀。"
+      flavor: "合同背面写着：替死一次，价另算。"
     },
     gh_silence_field: {
       id: "gh_silence_field", name: "沉默领域", faction: "greyharbor", type: "spell",
@@ -3534,10 +3535,10 @@
       spell: { type: "silenceAll" }
     },
     gh_shield_broker: {
-      id: "gh_shield_broker", name: "护幕掮客", faction: "greyharbor", type: "minion",
+      id: "gh_shield_broker", name: "护幕行掮客", faction: "greyharbor", type: "minion",
       cost: 4, attack: 4, health: 4, rarity: "epic", art: null, noGeneratedArt: true,
       keywords: ["divineShield"], target: "none", text: "护幕。",
-      flavor: "他卖的保险，赔付对象永远是他自己。"
+      flavor: "护身是灰港最贵的商品。"
     },
     gh_execution_contract: {
       id: "gh_execution_contract", name: "处刑契约", faction: "greyharbor", type: "spell",
@@ -3547,11 +3548,11 @@
       spell: { type: "destroyBounty", fallbackDraw: 1 }
     },
     gh_bounty_collector: {
-      id: "gh_bounty_collector", name: "赏金猎手", faction: "greyharbor", type: "minion",
+      id: "gh_bounty_collector", name: "悬赏行猎手", faction: "greyharbor", type: "minion",
       cost: 4, attack: 4, health: 4, rarity: "epic", art: null, noGeneratedArt: true,
       keywords: ["rush"], target: "none",
       text: "袭扰。被动：每完成一次悬赏，获得 +1/+1。",
-      flavor: "他记得每一个名字，也记得每一个价码。",
+      flavor: "名单上的字越少，价格越高。",
       passive: { type: "bountyClaimGrowth", attack: 1, health: 1 }
     },
     gh_scorpion: {
@@ -3561,19 +3562,19 @@
       flavor: "灰港的蝎子有两层壳，和一根尾巴。"
     },
     gh_captain: {
-      id: "gh_captain", name: "佣兵头目", faction: "greyharbor", type: "minion",
+      id: "gh_captain", name: "断线团头目", faction: "greyharbor", type: "minion",
       cost: 5, attack: 5, health: 5, rarity: "legendary", art: null, noGeneratedArt: true,
       keywords: ["battlecry"], target: "none",
       text: "登场：使所有友方随从获得袭扰。",
-      flavor: "他不管你去打谁，只问你几点回来交账。",
+      flavor: "断线团不守防线，只问几点回来交账。",
       battlecry: { type: "grantRushAll" }
     },
     gh_silence_master: {
-      id: "gh_silence_master", name: "封口大师", faction: "greyharbor", type: "minion",
+      id: "gh_silence_master", name: "封口行大师", faction: "greyharbor", type: "minion",
       cost: 5, attack: 5, health: 5, rarity: "epic", art: null, noGeneratedArt: true,
       keywords: ["battlecry"], target: "none",
       text: "登场：沉默所有敌方随从。",
-      flavor: "他说话的时候，整条街都不敢出声。",
+      flavor: "死人不需要名字。",
       battlecry: { type: "silenceAllEnemies" }
     },
     gh_bounty_verdict: {
@@ -3584,7 +3585,7 @@
       spell: { type: "bountyVerdict", damage: 5, fallbackDraw: 1 }
     },
     gh_company: {
-      id: "gh_company", name: "佣兵团长", faction: "greyharbor", type: "minion",
+      id: "gh_company", name: "断线团团长", faction: "greyharbor", type: "minion",
       cost: 6, attack: 6, health: 6, rarity: "epic", art: null, noGeneratedArt: true,
       keywords: ["battlecry"], target: "none",
       text: "登场：随机将两个敌方随从列入悬赏名单。",
@@ -3614,7 +3615,7 @@
     },
     gh_bounty_board: {
       id: "gh_bounty_board", name: "悬赏榜", faction: "greyharbor", type: "relic",
-      cost: 3, rarity: "epic", art: null, noGeneratedArt: true, target: "none",
+      cost: 3, rarity: "legendary", art: null, noGeneratedArt: true, target: "none",
       text: "遗物：每当你完成一次悬赏，额外抽 1 张牌。",
       flavor: "榜单每天换一版，只有最上面那行不变。"
     },
@@ -3630,7 +3631,7 @@
   {
     const list = DECKS.greyharbor || [];
     let removed = false;
-    DECKS.greyharbor = list.filter(id => {
+    DECKS.greyharbor = list.filter((id) => {
       if (!removed && CARDS[id] && CARDS[id].type === "relic" && id !== "gh_bounty_board") { removed = true; return false; }
       return true;
     });
@@ -5853,8 +5854,4142 @@
   }
 });
 
-  const newCardIdsForGenericArt = ["formation_bugler","formation_artificer","bulwark_lieutenant","ley_surveyor","field_medic","pulse_banner","frost_line_guard","frost_archivist","frost_page","white_frost_hall","page_scholar","double_column_note","blood_pact_collector","monster_overseer","pressure_warlock","blood_incense_divination","tide_scout","bloodroad_guide","reborn_rite","shield_instructor","echo_standard","reborn_shield_guard","recruiter","parliament_debate","wall_recruit","battlefield_bill","powder_apprentice","detonation_sapper","powder_foreman","ironflow_charge","powder_martyr","battlefield_salvage","quartermaster","bounty_clerk","bounty_accountant","execution_supervisor","venom_attendant","poison_mist_thrower","venom_blade","venom_sac_guard","blackmarket_bodyguard","silence_informant","commission_advance","greyharbor_broker","pulse_herbalist","reflux_physician","vein_needle","deepvein_guard","spring_watcher","formation_watcher","formation_officer","survey_apprentice","pulse_recorder","arcane_scribe","index_assistant","blood_corpse_collector","monster_command","phalanx_drill","forge_technician","armory_keeper","chaos_rift","mutant_egg","fate_gambler","forbidden_knowledge","time_loan","vein_surge"];;;
+  Object.assign(CARDS, {
+  "ksetra_instructor": {
+    "id": "ksetra_instructor",
+    "name": "学院部教官",
+    "faction": "pus",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：若你控制阵型，抽 1 张牌。",
+    "flavor": "她把课程表排成了阵线。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 3,
+    "battlecry": {
+      "type": "drawIfFormation",
+      "draw": 1
+    }
+  },
+  "coordination_dispatcher": {
+    "id": "coordination_dispatcher",
+    "name": "协调部调度员",
+    "faction": "pus",
+    "type": "minion",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "friendly",
+    "text": "登场：使一个友方随从获得 +0/+1。",
+    "flavor": "先确认窗口，再确认人。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 2,
+    "battlecry": {
+      "type": "buffAlly",
+      "attack": 0,
+      "health": 1
+    }
+  },
+  "security_sentry": {
+    "id": "security_sentry",
+    "name": "保卫部哨兵",
+    "faction": "pus",
+    "type": "minion",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "taunt"
+    ],
+    "target": "none",
+    "text": "拦截。",
+    "flavor": "他守的是一扇不写门牌的门。",
+    "noArtwork": true,
+    "attack": 1,
+    "health": 3
+  },
+  "research_sampler": {
+    "id": "research_sampler",
+    "name": "科研部采样员",
+    "faction": "pus",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：流脉 +1；引脉 3：获得 +1 攻击和拦截。",
+    "flavor": "样本要新鲜，结论可以晚一点。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 3,
+    "battlecry": {
+      "type": "veinBuff",
+      "amount": 1,
+      "vein": 3,
+      "attack": 1,
+      "health": 0
+    }
+  },
+  "medical_stretcher": {
+    "id": "medical_stretcher",
+    "name": "医疗部担架员",
+    "faction": "pus",
+    "type": "minion",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：恢复你的领袖 2 点生命。",
+    "flavor": "担架往哪边走，哪边就先安静。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 2,
+    "battlecry": {
+      "type": "healHero",
+      "amount": 2
+    }
+  },
+  "logistics_warden": {
+    "id": "logistics_warden",
+    "name": "后勤部仓管",
+    "faction": "pus",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：获得 2 点护甲。",
+    "flavor": "清单上少一件，前线上就少一条命。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 4,
+    "battlecry": {
+      "type": "armor",
+      "amount": 2
+    }
+  },
+  "floating_route": {
+    "id": "floating_route",
+    "name": "浮空航线",
+    "faction": "pus",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "抽 1 张牌。",
+    "flavor": "航线不在地图上，只在学院的预算里。",
+    "noArtwork": true,
+    "spell": {
+      "type": "draw",
+      "amount": 1
+    }
+  },
+  "council_gallery": {
+    "id": "council_gallery",
+    "name": "议事会旁听席",
+    "faction": "pus",
+    "type": "formation",
+    "cost": 4,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "该阵位友方随从获得 +0/+1。",
+    "flavor": "旁听席不投票，只记录谁先眨眼。",
+    "noArtwork": true,
+    "formation": {
+      "attack": 0,
+      "health": 1
+    }
+  },
+  "ksetra_beacon": {
+    "id": "ksetra_beacon",
+    "name": "凯斯特信标",
+    "faction": "pus",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "获得 2 点护甲；抽 1 张牌。",
+    "flavor": "信标亮起时，岛上的风向会先变。",
+    "noArtwork": true,
+    "spell": {
+      "type": "armorDraw",
+      "armor": 2,
+      "draw": 1
+    }
+  },
+  "coordinator_order": {
+    "id": "coordinator_order",
+    "name": "高级协调者令",
+    "faction": "pus",
+    "type": "spell",
+    "cost": 4,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "恢复你的领袖 3 点生命；抽 1 张牌。",
+    "flavor": "协调不是让所有人满意，是让所有人先别动。",
+    "noArtwork": true,
+    "spell": {
+      "type": "healHeroDraw",
+      "heal": 3,
+      "draw": 1
+    }
+  },
+  "quin_records": {
+    "id": "quin_records",
+    "name": "记录官奎因",
+    "faction": "academy",
+    "type": "minion",
+    "cost": 4,
+    "rarity": "legendary",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：抽 1 张牌。",
+    "flavor": "档案里最危险的不是秘密，是被写下来的秘密。",
+    "noArtwork": true,
+    "attack": 3,
+    "health": 4,
+    "battlecry": {
+      "type": "draw",
+      "amount": 1
+    }
+  },
+  "cassian_foreign": {
+    "id": "cassian_foreign",
+    "name": "外务官卡西安",
+    "faction": "academy",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：发现一张战术牌。",
+    "flavor": "他站在两座议会之间，替两边都不说话。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 4,
+    "battlecry": {
+      "type": "discover",
+      "pool": "spell"
+    }
+  },
+  "council_elder": {
+    "id": "council_elder",
+    "name": "议事会元老",
+    "faction": "academy",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "passive"
+    ],
+    "target": "none",
+    "text": "被动：每当你施放一张战术牌，抽 1 张牌。",
+    "flavor": "我们这一代的任务，是让世界不要更坏。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 3,
+    "passive": {
+      "type": "spellDrawOne"
+    }
+  },
+  "pure_theorist": {
+    "id": "pure_theorist",
+    "name": "纯理论派学者",
+    "faction": "academy",
+    "type": "minion",
+    "cost": 2,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：本回合你的下一张战术牌行动力消耗 -1。",
+    "flavor": "所有分类都可能是错的，包括这一句。",
+    "noArtwork": true,
+    "attack": 1,
+    "health": 3,
+    "battlecry": {
+      "type": "discountSpell",
+      "amount": 1
+    }
+  },
+  "gok_engineer": {
+    "id": "gok_engineer",
+    "name": "戈克工程派工程师",
+    "faction": "academy",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：获得 2 点护甲。",
+    "flavor": "把异常当误差，工程就能继续。",
+    "noArtwork": true,
+    "attack": 3,
+    "health": 3,
+    "battlecry": {
+      "type": "armor",
+      "amount": 2
+    }
+  },
+  "magic_lecturer": {
+    "id": "magic_lecturer",
+    "name": "魔法经验派讲席",
+    "faction": "academy",
+    "type": "minion",
+    "cost": 4,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "讲席。",
+    "flavor": "经验不会解释自己，只会重复自己。",
+    "noArtwork": true,
+    "attack": 3,
+    "health": 5
+  },
+  "archive_keeper": {
+    "id": "archive_keeper",
+    "name": "封存库管理员",
+    "faction": "academy",
+    "type": "minion",
+    "cost": 2,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "deathrattle"
+    ],
+    "target": "none",
+    "text": "余响：抽 1 张牌。",
+    "flavor": "封存不是忘记，是换一把锁。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 2,
+    "deathrattle": {
+      "type": "draw",
+      "amount": 1
+    }
+  },
+  "school_debate": {
+    "id": "school_debate",
+    "name": "学派辩论",
+    "faction": "academy",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "抽 1 张牌；若你本回合已施放过战术牌，再抽 1 张。",
+    "flavor": "三派吵到最后，只同意下次继续吵。",
+    "noArtwork": true,
+    "spell": {
+      "type": "drawIfSpellPlayed",
+      "draw": 1,
+      "bonus": 1
+    }
+  },
+  "floating_library": {
+    "id": "floating_library",
+    "name": "浮空图书馆",
+    "faction": "academy",
+    "type": "formation",
+    "cost": 5,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "该阵位友方随从获得 +0/+1。",
+    "flavor": "书架浮在云上，借书证压在石头下。",
+    "noArtwork": true,
+    "formation": {
+      "attack": 0,
+      "health": 1
+    }
+  },
+  "record_clerk": {
+    "id": "record_clerk",
+    "name": "记录员",
+    "faction": "academy",
+    "type": "minion",
+    "cost": 1,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：获得 1 点护甲。",
+    "flavor": "他记下每一笔，包括你不想被记的那笔。",
+    "noArtwork": true,
+    "attack": 1,
+    "health": 2,
+    "battlecry": {
+      "type": "armor",
+      "amount": 1
+    }
+  },
+  "blood_elder": {
+    "id": "blood_elder",
+    "name": "血族长老",
+    "faction": "xizhao",
+    "type": "minion",
+    "cost": 5,
+    "rarity": "legendary",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "血祭 2：获得 +2/+2。",
+    "flavor": "年轻人用刀，老人用名字。",
+    "noArtwork": true,
+    "attack": 4,
+    "health": 4,
+    "bloodCost": 2,
+    "battlecry": {
+      "type": "bloodBuff",
+      "attack": 2,
+      "health": 2
+    }
+  },
+  "tribal_shaman": {
+    "id": "tribal_shaman",
+    "name": "部落萨满",
+    "faction": "xizhao",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：召唤一个 1/1 洛斯汰魔物；若你控制其他魔物，获得 +1/+1。",
+    "flavor": "骨头响的时候，潮水会回答。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 4,
+    "battlecry": {
+      "type": "summonImpBuffSelf"
+    }
+  },
+  "broken_bone_warlord": {
+    "id": "broken_bone_warlord",
+    "name": "断骨战帅",
+    "faction": "xizhao",
+    "type": "minion",
+    "cost": 4,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "rush"
+    ],
+    "target": "none",
+    "text": "突进。",
+    "flavor": "他不管阵线，只管骨头断在哪。",
+    "noArtwork": true,
+    "attack": 4,
+    "health": 3
+  },
+  "losutai_awakened": {
+    "id": "losutai_awakened",
+    "name": "洛斯汰觉醒者",
+    "faction": "xizhao",
+    "type": "minion",
+    "cost": 4,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：召唤一个 1/1 洛斯汰魔物。",
+    "flavor": "它第一次听见自己的名字，是在血里。",
+    "noArtwork": true,
+    "attack": 3,
+    "health": 5,
+    "battlecry": {
+      "type": "summon",
+      "token": "losutai_imp"
+    }
+  },
+  "blood_debt": {
+    "id": "blood_debt",
+    "name": "血账",
+    "faction": "xizhao",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "friendly",
+    "text": "对一个友方随从造成 1 点伤害；抽 1 张牌。",
+    "flavor": "血账不记钱，只记谁还站着。",
+    "noArtwork": true,
+    "spell": {
+      "type": "friendlyDamageDraw",
+      "amount": 1,
+      "draw": 1
+    }
+  },
+  "blood_infiltrator": {
+    "id": "blood_infiltrator",
+    "name": "血族渗透者",
+    "faction": "xizhao",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "stealth"
+    ],
+    "target": "none",
+    "text": "隐匿。",
+    "flavor": "他从不在白天进门。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 3
+  },
+  "ancient_fortress_scion": {
+    "id": "ancient_fortress_scion",
+    "name": "古堡遗脉",
+    "faction": "xizhao",
+    "type": "minion",
+    "cost": 5,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "古堡的石头还在，只是没人记得门朝哪边。",
+    "noArtwork": true,
+    "attack": 5,
+    "health": 5
+  },
+  "monster_nest": {
+    "id": "monster_nest",
+    "name": "魔物巢穴",
+    "faction": "xizhao",
+    "type": "formation",
+    "cost": 4,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "该阵位友方随从获得 +1/+0。",
+    "flavor": "巢穴不挑食，只挑位置。",
+    "noArtwork": true,
+    "formation": {
+      "attack": 1,
+      "health": 0
+    }
+  },
+  "south_pole_tracker": {
+    "id": "south_pole_tracker",
+    "name": "南极追踪",
+    "faction": "xizhao",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "抽 1 张牌。",
+    "flavor": "雪会盖住脚印，但盖不住血。",
+    "noArtwork": true,
+    "spell": {
+      "type": "draw",
+      "amount": 1
+    }
+  },
+  "blood_feast": {
+    "id": "blood_feast",
+    "name": "血祭盛宴",
+    "faction": "xizhao",
+    "type": "spell",
+    "cost": 5,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "对所有敌方随从造成 2 点伤害。",
+    "flavor": "桌子摆好，客人自己会来。",
+    "noArtwork": true,
+    "spell": {
+      "type": "damageAllEnemies",
+      "amount": 2
+    }
+  },
+  "stein_speaker": {
+    "id": "stein_speaker",
+    "name": "施泰因议长",
+    "faction": "republic",
+    "type": "minion",
+    "cost": 5,
+    "rarity": "legendary",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：抽 1 张牌。",
+    "flavor": "秩序不是让所有人满意，是让所有人还能坐下。",
+    "noArtwork": true,
+    "attack": 4,
+    "health": 5,
+    "battlecry": {
+      "type": "draw",
+      "amount": 1
+    }
+  },
+  "williams_healer": {
+    "id": "williams_healer",
+    "name": "威廉莱斯治疗者",
+    "faction": "republic",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：恢复你的领袖 2 点生命。",
+    "flavor": "雪镇的医术，先救自己人，再救客人。",
+    "noArtwork": true,
+    "attack": 3,
+    "health": 3,
+    "battlecry": {
+      "type": "healHero",
+      "amount": 2
+    }
+  },
+  "rosen_borderlord": {
+    "id": "rosen_borderlord",
+    "name": "罗森边境领主",
+    "faction": "republic",
+    "type": "minion",
+    "cost": 4,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "taunt"
+    ],
+    "target": "none",
+    "text": "拦截。",
+    "flavor": "边境的地图每年都要重画。",
+    "noArtwork": true,
+    "attack": 4,
+    "health": 4
+  },
+  "eisenhut_newmoney": {
+    "id": "eisenhut_newmoney",
+    "name": "艾森胡特新钱",
+    "faction": "republic",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：抽 1 张牌。",
+    "flavor": "新钱最怕别人问第一桶金。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 2,
+    "battlecry": {
+      "type": "draw",
+      "amount": 1
+    }
+  },
+  "seven_cities_envoy": {
+    "id": "seven_cities_envoy",
+    "name": "七城邦代表",
+    "faction": "republic",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：获得 2 点护甲。",
+    "flavor": "七座城，七种礼貌。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 4,
+    "battlecry": {
+      "type": "armor",
+      "amount": 2
+    }
+  },
+  "temple_priest": {
+    "id": "temple_priest",
+    "name": "神殿祭司",
+    "faction": "republic",
+    "type": "minion",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：恢复你的领袖 2 点生命。",
+    "flavor": "神官先记账，再祷告。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 2,
+    "battlecry": {
+      "type": "healHero",
+      "amount": 2
+    }
+  },
+  "mist_harbor_treaty": {
+    "id": "mist_harbor_treaty",
+    "name": "雾港和约",
+    "faction": "republic",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "抽 1 张牌。",
+    "flavor": "和约签在雾里，墨水比雾还淡。",
+    "noArtwork": true,
+    "spell": {
+      "type": "draw",
+      "amount": 1
+    }
+  },
+  "conscription_levy": {
+    "id": "conscription_levy",
+    "name": "征兵摊派",
+    "faction": "republic",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "召唤两个 1/1 的共和国新兵。",
+    "flavor": "每个领区都同意，只要先征别人家的孩子。",
+    "noArtwork": true,
+    "spell": {
+      "type": "summonTwoTokens",
+      "token": "republic_recruit",
+      "count": 2
+    }
+  },
+  "border_legion": {
+    "id": "border_legion",
+    "name": "边境军团",
+    "faction": "republic",
+    "type": "minion",
+    "cost": 5,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "taunt"
+    ],
+    "target": "none",
+    "text": "拦截。",
+    "flavor": "他们不守国界，只守下一顿饭。",
+    "noArtwork": true,
+    "attack": 4,
+    "health": 5
+  },
+  "house_legacy": {
+    "id": "house_legacy",
+    "name": "家系传承",
+    "faction": "republic",
+    "type": "spell",
+    "cost": 4,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "friendly",
+    "text": "使一个友方随从获得回潮；抽 1 张牌。",
+    "flavor": "姓氏比血脉更会挑继承人。",
+    "noArtwork": true,
+    "spell": {
+      "type": "rebornDraw",
+      "draw": 1
+    }
+  },
+  "otto_hand": {
+    "id": "otto_hand",
+    "name": "皇帝之手",
+    "faction": "empire",
+    "type": "minion",
+    "cost": 4,
+    "rarity": "legendary",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：获得 2 点护甲。",
+    "flavor": "皇帝不伸手，伸手的是账。",
+    "noArtwork": true,
+    "attack": 4,
+    "health": 4,
+    "battlecry": {
+      "type": "armor",
+      "amount": 2
+    }
+  },
+  "eisenwald_marshal": {
+    "id": "eisenwald_marshal",
+    "name": "艾森瓦尔德元帅",
+    "faction": "empire",
+    "type": "minion",
+    "cost": 5,
+    "rarity": "legendary",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：获得 3 点护甲。",
+    "flavor": "彻底胜利在军部，平账在皇宫。",
+    "noArtwork": true,
+    "attack": 5,
+    "health": 5,
+    "battlecry": {
+      "type": "armor",
+      "amount": 3
+    }
+  },
+  "imperial_guard_officer": {
+    "id": "imperial_guard_officer",
+    "name": "禁卫军官",
+    "faction": "empire",
+    "type": "minion",
+    "cost": 4,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "taunt"
+    ],
+    "target": "none",
+    "text": "拦截。",
+    "flavor": "禁卫守的是门，门后面是账本。",
+    "noArtwork": true,
+    "attack": 3,
+    "health": 5
+  },
+  "lab_researcher": {
+    "id": "lab_researcher",
+    "name": "试验所研究员",
+    "faction": "empire",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：抽 1 张牌。",
+    "flavor": "数据不会喊疼，所以数据最干净。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 3,
+    "battlecry": {
+      "type": "draw",
+      "amount": 1
+    }
+  },
+  "forge_engineer": {
+    "id": "forge_engineer",
+    "name": "工造技师",
+    "faction": "empire",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：获得 2 点护甲。",
+    "flavor": "炉子不停，账就不会停。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 4,
+    "battlecry": {
+      "type": "armor",
+      "amount": 2
+    }
+  },
+  "audit_accountant": {
+    "id": "audit_accountant",
+    "name": "审计院账房",
+    "faction": "empire",
+    "type": "minion",
+    "cost": 2,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：若你有护甲，抽 1 张牌。",
+    "flavor": "他算的不是钱，是谁还活着。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 2,
+    "battlecry": {
+      "type": "drawIfArmor",
+      "draw": 1
+    }
+  },
+  "blackridge_mine": {
+    "id": "blackridge_mine",
+    "name": "黑脊矿脉",
+    "faction": "empire",
+    "type": "formation",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "该阵位友方随从获得 +1/+0。",
+    "flavor": "黑脊脉一响，帝国的算盘就响。",
+    "noArtwork": true,
+    "formation": {
+      "attack": 1,
+      "health": 0
+    }
+  },
+  "grain_convoy": {
+    "id": "grain_convoy",
+    "name": "粮线车队",
+    "faction": "empire",
+    "type": "minion",
+    "cost": 4,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：恢复你的领袖 2 点生命。",
+    "flavor": "粮线越长，帝国越睡不着。",
+    "noArtwork": true,
+    "attack": 3,
+    "health": 4,
+    "battlecry": {
+      "type": "healHero",
+      "amount": 2
+    }
+  },
+  "iron_order_wall": {
+    "id": "iron_order_wall",
+    "name": "铁序城防",
+    "faction": "empire",
+    "type": "minion",
+    "cost": 5,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "taunt"
+    ],
+    "target": "none",
+    "text": "拦截。",
+    "flavor": "城墙按矿脉走向铺，连裂缝都很整齐。",
+    "noArtwork": true,
+    "attack": 4,
+    "health": 6
+  },
+  "conscription_order": {
+    "id": "conscription_order",
+    "name": "征调令",
+    "faction": "empire",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "获得 2 点护甲；抽 1 张牌。",
+    "flavor": "征调不是请求，是格式。",
+    "noArtwork": true,
+    "spell": {
+      "type": "armorDraw",
+      "armor": 2,
+      "draw": 1
+    }
+  },
+  "seran": {
+    "id": "seran",
+    "name": "「账房」瑟兰",
+    "faction": "greyharbor",
+    "type": "minion",
+    "cost": 5,
+    "rarity": "legendary",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "enemy",
+    "text": "登场：将一个敌方随从列入悬赏名单；若它已经是悬赏目标，抽 1 张牌。",
+    "flavor": "她不写你什么时候死。她只写，你值多少。",
+    "noArtwork": true,
+    "attack": 4,
+    "health": 4,
+    "battlecry": {
+      "type": "markBountyDrawIfMarked",
+      "draw": 1
+    }
+  },
+  "vera": {
+    "id": "vera",
+    "name": "「替身」薇拉",
+    "faction": "greyharbor",
+    "type": "minion",
+    "cost": 4,
+    "rarity": "legendary",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "friendly",
+    "text": "登场：使一个友方随从获得 +2/+2。",
+    "flavor": "合同背面写着：替死一次，价另算。",
+    "noArtwork": true,
+    "attack": 3,
+    "health": 4,
+    "battlecry": {
+      "type": "buffAlly",
+      "attack": 2,
+      "health": 2
+    }
+  },
+  "xiu": {
+    "id": "xiu",
+    "name": "「哑巴」修",
+    "faction": "greyharbor",
+    "type": "minion",
+    "cost": 5,
+    "rarity": "legendary",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "enemy",
+    "text": "登场：沉默一个敌方随从。",
+    "flavor": "整条街突然安静下来，说明生意谈成了。",
+    "noArtwork": true,
+    "attack": 4,
+    "health": 4,
+    "battlecry": {
+      "type": "silence"
+    }
+  },
+  "kugreen": {
+    "id": "kugreen",
+    "name": "「苦绿」",
+    "faction": "greyharbor",
+    "type": "minion",
+    "cost": 4,
+    "rarity": "legendary",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "poisonous"
+    ],
+    "target": "none",
+    "text": "蚀毒。",
+    "flavor": "毒要抹在刀刃不反光的那一面。",
+    "noArtwork": true,
+    "attack": 3,
+    "health": 3
+  },
+  "karan": {
+    "id": "karan",
+    "name": "「断线」卡兰",
+    "faction": "greyharbor",
+    "type": "minion",
+    "cost": 6,
+    "rarity": "legendary",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：召唤两个 1/1 的灰港小刀手。",
+    "flavor": "他不管你去打谁，只问你几点回来交账。",
+    "noArtwork": true,
+    "attack": 6,
+    "health": 6,
+    "battlecry": {
+      "type": "summonCount",
+      "token": "gh_cutthroat",
+      "count": 2
+    }
+  },
+  "lamp_post": {
+    "id": "lamp_post",
+    "name": "灯柱界碑",
+    "faction": "greyharbor",
+    "type": "formation",
+    "cost": 2,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "该阵位友方随从获得袭扰。",
+    "flavor": "灯柱排到哪，灰港就管到哪。",
+    "noArtwork": true,
+    "formation": {
+      "rush": true
+    }
+  },
+  "ledger_constitution": {
+    "id": "ledger_constitution",
+    "name": "账本宪法",
+    "faction": "greyharbor",
+    "type": "spell",
+    "cost": 3,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "抽 2 张牌；若你完成过悬赏，再抽 1 张。",
+    "flavor": "这是宪法，也是账单。",
+    "noArtwork": true,
+    "spell": {
+      "type": "drawIfBountyClaimed",
+      "draw": 2,
+      "bonus": 1
+    }
+  },
+  "five_guild_council": {
+    "id": "five_guild_council",
+    "name": "五行行首议会",
+    "faction": "greyharbor",
+    "type": "minion",
+    "cost": 4,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：随机将两个敌方随从列入悬赏名单。",
+    "flavor": "五个人不坐一张桌子，只在账上互相认。",
+    "noArtwork": true,
+    "attack": 4,
+    "health": 5,
+    "battlecry": {
+      "type": "markRandomBounties",
+      "count": 2
+    }
+  },
+  "broken_line_merc": {
+    "id": "broken_line_merc",
+    "name": "断线团佣兵",
+    "faction": "greyharbor",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "rush"
+    ],
+    "target": "none",
+    "text": "袭扰。",
+    "flavor": "不设防线，只设伏击点。",
+    "noArtwork": true,
+    "attack": 4,
+    "health": 3
+  },
+  "toll_account": {
+    "id": "toll_account",
+    "name": "过路账",
+    "faction": "greyharbor",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "enemy",
+    "text": "将一个敌方随从列入悬赏名单；抽 1 张牌。",
+    "flavor": "谁控制灰港，谁就能对过路船收账。",
+    "noArtwork": true,
+    "spell": {
+      "type": "drawMark",
+      "draw": 1
+    }
+  },
+  "mist_harbor_city": {
+    "id": "mist_harbor_city",
+    "name": "雾港城",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：获得 2 点护甲。",
+    "flavor": "靠修锚起家的城，先学会修别人的船。",
+    "noArtwork": true,
+    "attack": 3,
+    "health": 4,
+    "battlecry": {
+      "type": "armor",
+      "amount": 2
+    }
+  },
+  "white_reef_lighthouse": {
+    "id": "white_reef_lighthouse",
+    "name": "白礁灯塔",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "taunt"
+    ],
+    "target": "none",
+    "text": "拦截。",
+    "flavor": "灯塔只负责亮，不负责解释雾。",
+    "noArtwork": true,
+    "attack": 1,
+    "health": 4
+  },
+  "anvil_town_smith": {
+    "id": "anvil_town_smith",
+    "name": "铁砧镇锻工",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：获得 1 点护甲。",
+    "flavor": "铁砧镇的锤子，一半替帝国干活。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 2,
+    "battlecry": {
+      "type": "armor",
+      "amount": 1
+    }
+  },
+  "northern_nomad": {
+    "id": "northern_nomad",
+    "name": "北境游牧民",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "rush"
+    ],
+    "target": "none",
+    "text": "突进。",
+    "flavor": "帝国年年征抚，他们年年往北。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 2
+  },
+  "losutai_refugee": {
+    "id": "losutai_refugee",
+    "name": "洛斯汰流民",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 1,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "流离。",
+    "flavor": "它没有阵营，只有下一处水源。",
+    "noArtwork": true,
+    "attack": 1,
+    "health": 2
+  },
+  "snow_capital_remnant": {
+    "id": "snow_capital_remnant",
+    "name": "雪都遗民",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：恢复你的领袖 2 点生命。",
+    "flavor": "他们不叫自己雪都人，只叫自己还活着的人。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 4,
+    "battlecry": {
+      "type": "healHero",
+      "amount": 2
+    }
+  },
+  "wandering_singer": {
+    "id": "wandering_singer",
+    "name": "行吟歌手",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：抽 1 张牌。",
+    "flavor": "今晚流脉改道，北港的灯又暗了三分。",
+    "noArtwork": true,
+    "attack": 1,
+    "health": 3,
+    "battlecry": {
+      "type": "draw",
+      "amount": 1
+    }
+  },
+  "gok_lamp": {
+    "id": "gok_lamp",
+    "name": "戈克暖灯",
+    "faction": "neutral",
+    "type": "spell",
+    "cost": 1,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "获得 2 点护甲。",
+    "flavor": "灯随流脉明灭，账单不随。",
+    "noArtwork": true,
+    "spell": {
+      "type": "armor",
+      "amount": 2
+    }
+  },
+  "sky_ship": {
+    "id": "sky_ship",
+    "name": "浮空舰",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 5,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "学院的航线，不在地图上。",
+    "noArtwork": true,
+    "attack": 4,
+    "health": 5
+  },
+  "card_shark": {
+    "id": "card_shark",
+    "name": "赌桌老手",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "他只输过一次，那次是故意输的。",
+    "noArtwork": true,
+    "attack": 3,
+    "health": 3
+  },
+  "free_merc": {
+    "id": "free_merc",
+    "name": "自由佣兵",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "谁付钱，谁就是今天的主义。",
+    "noArtwork": true,
+    "attack": 3,
+    "health": 3
+  },
+  "fog_navigator": {
+    "id": "fog_navigator",
+    "name": "雾港领航员",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 2,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：抽 1 张牌。",
+    "flavor": "雾薄的时候走航道，雾厚的时候走账道。",
+    "noArtwork": true,
+    "attack": 1,
+    "health": 3,
+    "battlecry": {
+      "type": "draw",
+      "amount": 1
+    }
+  },
+  "north_beast_tamer": {
+    "id": "north_beast_tamer",
+    "name": "北境驯兽人",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：召唤一个 1/1 的洛斯汰魔物。",
+    "flavor": "北境的兽，先认人，再认旗。",
+    "noArtwork": true,
+    "attack": 3,
+    "health": 3,
+    "battlecry": {
+      "type": "summon",
+      "token": "losutai_imp"
+    }
+  },
+  "small_state_envoy": {
+    "id": "small_state_envoy",
+    "name": "小国使节",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 4,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：获得 2 点护甲。",
+    "flavor": "小国的礼貌，是最后一道防线。",
+    "noArtwork": true,
+    "attack": 3,
+    "health": 4,
+    "battlecry": {
+      "type": "armor",
+      "amount": 2
+    }
+  },
+  "smuggler_ship": {
+    "id": "smuggler_ship",
+    "name": "走私船",
+    "faction": "neutral",
+    "type": "spell",
+    "cost": 3,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "抽 1 张牌。",
+    "flavor": "船舱里没有货，只有货的名字。",
+    "noArtwork": true,
+    "spell": {
+      "type": "draw",
+      "amount": 1
+    }
+  },
+  "white_reef_keeper": {
+    "id": "white_reef_keeper",
+    "name": "白礁守灯人",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "taunt"
+    ],
+    "target": "none",
+    "text": "拦截。",
+    "flavor": "他守灯，也守灯照不到的地方。",
+    "noArtwork": true,
+    "attack": 1,
+    "health": 4
+  },
+  "anvil_town_miner": {
+    "id": "anvil_town_miner",
+    "name": "铁砧镇矿工",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "矿灯一亮，影子就多一个。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 3
+  },
+  "fog_accountant": {
+    "id": "fog_accountant",
+    "name": "雾港会计",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：抽 1 张牌。",
+    "flavor": "雾港的账，最后由雾来对。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 3,
+    "battlecry": {
+      "type": "draw",
+      "amount": 1
+    }
+  },
+  "no_mans_land": {
+    "id": "no_mans_land",
+    "name": "无主之地",
+    "faction": "neutral",
+    "type": "formation",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "该阵位友方随从获得 +1/+0。",
+    "flavor": "没有旗，只有先到的人。",
+    "noArtwork": true,
+    "formation": {
+      "attack": 1,
+      "health": 0
+    }
+  },
+  "dusk_inn": {
+    "id": "dusk_inn",
+    "name": "黄昏旅店",
+    "faction": "neutral",
+    "type": "spell",
+    "cost": 3,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "恢复你的领袖 2 点生命；抽 1 张牌。",
+    "flavor": "住店可以赊账，听故事不行。",
+    "noArtwork": true,
+    "spell": {
+      "type": "healHeroDraw",
+      "heal": 2,
+      "draw": 1
+    }
+  },
+  "world_map": {
+    "id": "world_map",
+    "name": "世界地图",
+    "faction": "neutral",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [],
+    "target": "none",
+    "text": "抽 1 张牌。",
+    "flavor": "地图边缘写着：此处未测绘。",
+    "noArtwork": true,
+    "spell": {
+      "type": "draw",
+      "amount": 1
+    }
+  },
+  "gok_lampwright": {
+    "id": "gok_lampwright",
+    "name": "戈克暖灯匠",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：获得 1 点护甲。",
+    "flavor": "他修灯，也修灯下的沉默。",
+    "noArtwork": true,
+    "attack": 2,
+    "health": 2,
+    "battlecry": {
+      "type": "armor",
+      "amount": 1
+    }
+  }
+});
+
+  for (const id of ["ancient_fortress_scion","anvil_town_miner","anvil_town_smith","archive_keeper","audit_accountant","blackridge_mine","blood_debt","blood_elder","blood_feast","blood_infiltrator","border_legion","broken_bone_warlord","broken_line_merc","card_shark","cassian_foreign","conscription_levy","conscription_order","coordination_dispatcher","coordinator_order","council_elder","council_gallery","dusk_inn","eisenhut_newmoney","eisenwald_marshal","five_guild_council","floating_library","floating_route","fog_accountant","fog_navigator","forge_engineer","free_merc","gok_engineer","gok_lamp","gok_lampwright","grain_convoy","house_legacy","imperial_guard_officer","iron_order_wall","karan","ksetra_beacon","ksetra_instructor","kugreen","lab_researcher","lamp_post","ledger_constitution","logistics_warden","losutai_awakened","losutai_refugee","magic_lecturer","medical_stretcher","mist_harbor_city","mist_harbor_treaty","monster_nest","no_mans_land","north_beast_tamer","northern_nomad","otto_hand","pure_theorist","quin_records","record_clerk","research_sampler","rosen_borderlord","school_debate","security_sentry","seran","seven_cities_envoy","sky_ship","small_state_envoy","smuggler_ship","snow_capital_remnant","south_pole_tracker","stein_speaker","temple_priest","toll_account","tribal_shaman","vera","wandering_singer","white_reef_keeper","white_reef_lighthouse","williams_healer","world_map","xiu"]) if (CARDS[id]) CARDS[id].noArtwork = false;
+
+  const RARITY_OVERRIDES = {
+ "shextena": "legendary",
+ "verious": "legendary",
+ "timon": "legendary",
+ "aidric": "legendary",
+ "orlicas": "legendary",
+ "miyuki": "legendary",
+ "bulwark_lieutenant": "epic",
+ "formation_officer": "epic",
+ "vein_engineer": "epic",
+ "coordinator_order": "epic",
+ "formation_weaver": "epic",
+ "excavation_titan": "epic",
+ "vein_attendant": "epic",
+ "spring_watcher": "epic",
+ "vein_oracle": "epic",
+ "deepvein_guard": "epic",
+ "council_gallery": "rare",
+ "formation_bastion": "rare",
+ "formation_artificer": "rare",
+ "formation_watcher": "rare",
+ "ksetra_instructor": "rare",
+ "pulse_banner": "rare",
+ "pulse_recorder": "rare",
+ "reflux_physician": "rare",
+ "research_sampler": "rare",
+ "zone_keeper": "rare",
+ "formation_vein": "rare",
+ "formation_bugler": "rare",
+ "ksetra_beacon": "rare",
+ "vein_siphon": "rare",
+ "guard": "common",
+ "logistics_warden": "common",
+ "spring_medic": "common",
+ "coordination_dispatcher": "common",
+ "field_medic": "common",
+ "medical_stretcher": "common",
+ "pulse_herbalist": "common",
+ "vein_foreman": "common",
+ "coordination": "common",
+ "emergency": "common",
+ "floating_route": "common",
+ "resonance": "common",
+ "vein_echo": "common",
+ "courier": "common",
+ "ley_surveyor": "common",
+ "medic_apprentice": "common",
+ "survey_apprentice": "common",
+ "vein_needle": "common",
+ "vein_scout": "common",
+ "security_sentry": "common",
+ "karl_desmond": "legendary",
+ "justus": "legendary",
+ "cassian": "legendary",
+ "samuel": "legendary",
+ "nina": "legendary",
+ "quin_records": "legendary",
+ "spellstorm": "epic",
+ "arcane_theorist": "epic",
+ "frost_professor": "epic",
+ "echo_adept": "epic",
+ "floating_library": "epic",
+ "echo_observer": "epic",
+ "arcane_surge": "epic",
+ "spell_conductor": "epic",
+ "double_formula": "epic",
+ "frost_scribe": "epic",
+ "reflux_apprentice": "rare",
+ "arcane_conduit": "rare",
+ "formation_script": "rare",
+ "formula_fix": "rare",
+ "cassian_foreign": "rare",
+ "council_elder": "rare",
+ "frost_line_guard": "rare",
+ "frost_page": "rare",
+ "spell_echo": "rare",
+ "zone_archivist": "rare",
+ "white_frost_hall": "rare",
+ "combo_spark": "rare",
+ "arcane_scribe": "rare",
+ "archive_keeper": "rare",
+ "frost_archivist": "common",
+ "page_scholar": "common",
+ "pure_theorist": "common",
+ "armor_break": "common",
+ "borrow_vein": "common",
+ "mana_surge": "common",
+ "lecturer": "common",
+ "gok_engineer": "common",
+ "prohibition": "common",
+ "frost_seal": "common",
+ "insight": "common",
+ "school_debate": "common",
+ "index_assistant": "common",
+ "record_clerk": "common",
+ "spell_novice": "common",
+ "magic_lecturer": "common",
+ "archive_search": "common",
+ "debate": "common",
+ "double_column_note": "common",
+ "doorman": "common",
+ "tiega": "legendary",
+ "lanxi": "legendary",
+ "lize": "legendary",
+ "grayfeather": "legendary",
+ "lanzhou": "legendary",
+ "blood_elder": "legendary",
+ "molan": "epic",
+ "tide_colossus": "epic",
+ "losutai_matriarch": "epic",
+ "blood_executor": "epic",
+ "brood_matron": "epic",
+ "devourer": "epic",
+ "ancient_fortress_scion": "epic",
+ "blood_altar": "epic",
+ "blood_contract": "epic",
+ "broken_bone_warlord": "epic",
+ "reflux": "rare",
+ "pressure_warlock": "rare",
+ "blood_priestess": "rare",
+ "blood_feast": "rare",
+ "losutai_awakened": "rare",
+ "formation_tide": "rare",
+ "monster_nest": "rare",
+ "blood_pool": "rare",
+ "blood_corpse_collector": "rare",
+ "bloodroad_guide": "rare",
+ "monster_overseer": "rare",
+ "tribal_shaman": "rare",
+ "blood_acolyte": "rare",
+ "blood_pact_collector": "rare",
+ "blood_pact": "common",
+ "blood_path": "common",
+ "reborn_rite": "common",
+ "venom_fang": "common",
+ "monster_summon": "common",
+ "losutai_hunter": "common",
+ "blood_servant": "common",
+ "blood_wraith": "common",
+ "hunt_ritual": "common",
+ "monster_command": "common",
+ "blood_duelist": "common",
+ "tide_scout": "common",
+ "blood_debt": "common",
+ "blood_incense_divination": "common",
+ "blood_ritual": "common",
+ "shadow_raid": "common",
+ "south_pole_tracker": "common",
+ "tribal_warrior": "common",
+ "blood_infiltrator": "common",
+ "blood_imp": "common",
+ "konrad": "legendary",
+ "erhardt": "legendary",
+ "beatrix": "legendary",
+ "elena": "legendary",
+ "hans": "legendary",
+ "stein_speaker": "legendary",
+ "cedric": "epic",
+ "shield_marshal": "epic",
+ "bastion_captain": "epic",
+ "phalanx_executor": "epic",
+ "phalanx_warden": "epic",
+ "shield_sergeant": "epic",
+ "zone_banner": "epic",
+ "impeachment": "epic",
+ "iron_wall": "epic",
+ "rosen_borderlord": "epic",
+ "iron_phalanx": "rare",
+ "house_legacy": "rare",
+ "eisenhut_newmoney": "rare",
+ "shield_instructor": "rare",
+ "williams_healer": "rare",
+ "formation_wall": "rare",
+ "echo_standard": "rare",
+ "drill_sergeant": "rare",
+ "aegis_guard": "rare",
+ "anti_rush": "rare",
+ "battlefield_bill": "rare",
+ "combo_shield": "rare",
+ "conscription_levy": "rare",
+ "emergency_bill": "rare",
+ "reborn_sentry": "common",
+ "martial_law": "common",
+ "seven_cities_envoy": "common",
+ "shield_bearer": "common",
+ "line_spearman": "common",
+ "phalanx_drill": "common",
+ "recruiter": "common",
+ "republic_guard": "common",
+ "temple_priest": "common",
+ "border_legion": "common",
+ "levy": "common",
+ "mist_harbor_treaty": "common",
+ "wall_recruit": "common",
+ "fortify": "common",
+ "line_rotation": "common",
+ "parliament_debate": "common",
+ "volley": "common",
+ "reborn_shield_guard": "common",
+ "bulwark_sentry": "common",
+ "shield_recruit": "common",
+ "gunther": "legendary",
+ "klaus": "legendary",
+ "mia": "legendary",
+ "elsa": "legendary",
+ "karl_schwarz": "legendary",
+ "eisenwald_marshal": "legendary",
+ "walter": "epic",
+ "otto_hand": "epic",
+ "siege_captain": "epic",
+ "iron_artillery": "epic",
+ "armor_volley": "epic",
+ "zone_barrage": "epic",
+ "armor_mortar": "epic",
+ "powder_keg": "epic",
+ "siege_train": "epic",
+ "powder_marshal": "epic",
+ "wind_cannon": "rare",
+ "powder_foreman": "rare",
+ "powder_martyr": "rare",
+ "formation_cannon": "rare",
+ "detonation_sapper": "rare",
+ "lab_researcher": "rare",
+ "overload_gunner": "rare",
+ "blackridge_mine": "rare",
+ "audit_accountant": "rare",
+ "ironflow_charge": "rare",
+ "quarantine": "rare",
+ "war_tax": "rare",
+ "imperial_guard_officer": "rare",
+ "iron_mechanic": "rare",
+ "rush_lancer": "common",
+ "grain_convoy": "common",
+ "martial_court": "common",
+ "mobilize": "common",
+ "forge_engineer": "common",
+ "forge_technician": "common",
+ "quartermaster": "common",
+ "armor_recycle": "common",
+ "fortress": "common",
+ "armory_keeper": "common",
+ "empire_guard": "common",
+ "powder_apprentice": "common",
+ "zhenmai_artisan": "common",
+ "iron_order_wall": "common",
+ "armor_drive": "common",
+ "battlefield_salvage": "common",
+ "conscription_order": "common",
+ "barrage": "common",
+ "ironclad": "common",
+ "powder_boy": "common",
+ "seran": "legendary",
+ "vera": "legendary",
+ "xiu": "legendary",
+ "kugreen": "legendary",
+ "karan": "legendary",
+ "gh_bounty_king": "legendary",
+ "gh_captain": "epic",
+ "gh_legend_assassin": "epic",
+ "gh_company": "epic",
+ "gh_silence_master": "epic",
+ "execution_supervisor": "epic",
+ "five_guild_council": "epic",
+ "gh_bounty_collector": "epic",
+ "venom_sac_guard": "epic",
+ "gh_venom_behemoth": "epic",
+ "gh_bounty_verdict": "epic",
+ "gh_execution_contract": "rare",
+ "ledger_constitution": "rare",
+ "gh_scorpion": "rare",
+ "gh_shield_broker": "rare",
+ "bounty_accountant": "rare",
+ "gh_silence_expert": "rare",
+ "poison_mist_thrower": "rare",
+ "gh_formation": "rare",
+ "gh_assassinate_contract": "rare",
+ "gh_ledger": "rare",
+ "gh_silence_field": "rare",
+ "bounty_clerk": "rare",
+ "gh_bounty_hunter": "rare",
+ "silence_informant": "rare",
+ "lamp_post": "common",
+ "venom_blade": "common",
+ "gh_venom_shield": "common",
+ "greyharbor_broker": "common",
+ "gh_black_market": "common",
+ "gh_silencer": "common",
+ "gh_bodyguard_contract": "common",
+ "gh_quick_strike": "common",
+ "toll_account": "common",
+ "commission_advance": "common",
+ "gh_bounty_notice": "common",
+ "blackmarket_bodyguard": "common",
+ "broken_line_merc": "common",
+ "gh_shield_mercenary": "common",
+ "gh_poison_thrower": "common",
+ "gh_rush_archer": "common",
+ "gh_contract_squire": "common",
+ "gh_cutthroat": "common",
+ "gh_venom_apprentice": "common",
+ "venom_attendant": "common"
+};
+  for (const id of Object.keys(RARITY_OVERRIDES)) if (CARDS[id]) CARDS[id].rarity = RARITY_OVERRIDES[id];
+  const CORE_LEGENDARY_IDS = new Set(["shextena","verious","timon","aidric","orlicas","miyuki","karl_desmond","justus","cassian","samuel","nina","quin_records","tiega","lanxi","lize","grayfeather","lanzhou","blood_elder","konrad","erhardt","beatrix","elena","hans","stein_speaker","gunther","klaus","mia","elsa","karl_schwarz","eisenwald_marshal","seran","vera","xiu","kugreen","karan","gh_bounty_king","void_titan","vein_leviathan","obsidian_colossus","world_serpent","faceless_king","grave_titan","final_bell"]);
+  for (const c of Object.values(CARDS)) {
+    if (c.copyLimit == null) {
+      c.copyLimit = c.token ? 0 : c.type === "relic" || c.type === "equipment" ? 1 : c.type === "formation" ? 2 : CORE_LEGENDARY_IDS.has(c.id) ? 1 : 2;
+    }
+  }
+
+  const EQUIPMENT_KINDS = {
+    vein_heart: "trinket", formation_standard: "armor", spell_codex: "trinket", frost_prism: "trinket",
+    blood_scythe: "weapon", blood_censer: "trinket", iron_banner: "armor", republic_seal: "trinket",
+    powder_engine: "weapon", armor_forge: "armor", gh_bounty_board: "trinket", gh_venom_vial: "trinket",
+    wanderer_charm: "trinket"
+  };
+  for (const c of Object.values(CARDS)) {
+    if (c.type === "relic") {
+      c.type = "equipment";
+      c.equipmentKind = EQUIPMENT_KINDS[c.id] || "trinket";
+      c.copyLimit = 1;
+      c.text = String(c.text || "").replace(/^遗物：/, "装备：");
+    }
+  }
+
+  Object.assign(CARDS, {
+  "ksetra_beacon_item": {
+    "id": "ksetra_beacon_item",
+    "name": "凯斯特信标·便携式",
+    "faction": "pus",
+    "type": "equipment",
+    "equipmentKind": "trinket",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：抽 1 张牌。",
+    "flavor": "学院部把信标缩小到能塞进外套。",
+    "copyLimit": 1,
+    "equip": {
+      "draw": 1
+    }
+  },
+  "floating_anchor": {
+    "id": "floating_anchor",
+    "name": "浮空锚链",
+    "faction": "pus",
+    "type": "equipment",
+    "equipmentKind": "weapon",
+    "cost": 3,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：你的所有友方随从获得 +1 攻击。",
+    "flavor": "锚链落下时，浮空舰就不再飘了。",
+    "copyLimit": 1,
+    "equip": {
+      "buffAllAllies": {
+        "attack": 1
+      }
+    }
+  },
+  "tide_ward_bracer": {
+    "id": "tide_ward_bracer",
+    "name": "潮雾护腕",
+    "faction": "pus",
+    "type": "equipment",
+    "equipmentKind": "armor",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：获得 3 点护甲。",
+    "flavor": "潮雾渗不进五部的袖口。",
+    "copyLimit": 1,
+    "equip": {
+      "armor": 3
+    }
+  },
+  "five_department_badge": {
+    "id": "five_department_badge",
+    "name": "五部联席徽章",
+    "faction": "pus",
+    "type": "equipment",
+    "equipmentKind": "trinket",
+    "cost": 4,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：抽 1 张牌；恢复领袖 2 点生命。",
+    "flavor": "五个部门吵完，至少会共同签一个字。",
+    "copyLimit": 1,
+    "equip": {
+      "draw": 1,
+      "healHero": 2
+    }
+  },
+  "floating_ink_blade": {
+    "id": "floating_ink_blade",
+    "name": "浮空墨刃",
+    "faction": "academy",
+    "type": "equipment",
+    "equipmentKind": "weapon",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：你的所有友方随从获得 +1 攻击。",
+    "flavor": "墨迹未干，刃口已经先到。",
+    "copyLimit": 1,
+    "equip": {
+      "buffAllAllies": {
+        "attack": 1
+      }
+    }
+  },
+  "frostweave_cloak": {
+    "id": "frostweave_cloak",
+    "name": "霜纹披风",
+    "faction": "academy",
+    "type": "equipment",
+    "equipmentKind": "armor",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：获得 2 点护甲。",
+    "flavor": "披风上的霜纹会自己重排。",
+    "copyLimit": 1,
+    "equip": {
+      "armor": 2
+    }
+  },
+  "whitefrost_bell": {
+    "id": "whitefrost_bell",
+    "name": "白霜钟",
+    "faction": "academy",
+    "type": "equipment",
+    "equipmentKind": "armor",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：恢复领袖 3 点生命。",
+    "flavor": "钟声响起时，伤口会先安静。",
+    "copyLimit": 1,
+    "equip": {
+      "healHero": 3
+    }
+  },
+  "cataloging_lens": {
+    "id": "cataloging_lens",
+    "name": "编目镜",
+    "faction": "academy",
+    "type": "equipment",
+    "equipmentKind": "trinket",
+    "cost": 4,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：抽 2 张牌。",
+    "flavor": "看见的东西不一定存在，编入目录才算。",
+    "copyLimit": 1,
+    "equip": {
+      "draw": 2
+    }
+  },
+  "bone_fang_blade": {
+    "id": "bone_fang_blade",
+    "name": "骨牙长刀",
+    "faction": "xizhao",
+    "type": "equipment",
+    "equipmentKind": "weapon",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：你的所有友方随从获得 +1 攻击。",
+    "flavor": "刀柄上还留着上一任主人的牙印。",
+    "copyLimit": 1,
+    "equip": {
+      "buffAllAllies": {
+        "attack": 1
+      }
+    }
+  },
+  "beast_hide_armor": {
+    "id": "beast_hide_armor",
+    "name": "兽皮血甲",
+    "faction": "xizhao",
+    "type": "equipment",
+    "equipmentKind": "armor",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：获得 2 点护甲。",
+    "flavor": "活着剥下来的皮，最懂得怎么挡刀。",
+    "copyLimit": 1,
+    "equip": {
+      "armor": 2
+    }
+  },
+  "bloodbone_pauldron": {
+    "id": "bloodbone_pauldron",
+    "name": "血骨护肩",
+    "faction": "xizhao",
+    "type": "equipment",
+    "equipmentKind": "armor",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：获得 2 点护甲；友方随从获得 +0/+1。",
+    "flavor": "每一块骨都记得自己属于谁。",
+    "copyLimit": 1,
+    "equip": {
+      "armor": 2,
+      "buffAllAllies": {
+        "health": 1
+      }
+    }
+  },
+  "bloodmoon_bone_ring": {
+    "id": "bloodmoon_bone_ring",
+    "name": "血月骨环",
+    "faction": "xizhao",
+    "type": "equipment",
+    "equipmentKind": "trinket",
+    "cost": 4,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：恢复领袖 2 点生命；抽 1 张牌。",
+    "flavor": "血月下，连影子都要交税。",
+    "copyLimit": 1,
+    "equip": {
+      "healHero": 2,
+      "draw": 1
+    }
+  },
+  "house_longsword": {
+    "id": "house_longsword",
+    "name": "家徽长剑",
+    "faction": "republic",
+    "type": "equipment",
+    "equipmentKind": "weapon",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：你的所有友方随从获得 +1 攻击。",
+    "flavor": "剑身上刻着七道家徽，没有一道是新的。",
+    "copyLimit": 1,
+    "equip": {
+      "buffAllAllies": {
+        "attack": 1
+      }
+    }
+  },
+  "border_lance": {
+    "id": "border_lance",
+    "name": "边境骑枪",
+    "faction": "republic",
+    "type": "equipment",
+    "equipmentKind": "weapon",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：你的所有友方随从获得 +1 攻击。",
+    "flavor": "骑枪比边境线更长。",
+    "copyLimit": 1,
+    "equip": {
+      "buffAllAllies": {
+        "attack": 1
+      }
+    }
+  },
+  "bluegold_breastplate": {
+    "id": "bluegold_breastplate",
+    "name": "蓝金胸甲",
+    "faction": "republic",
+    "type": "equipment",
+    "equipmentKind": "armor",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：获得 2 点护甲。",
+    "flavor": "体面要穿在外面，甲要穿在里面。",
+    "copyLimit": 1,
+    "equip": {
+      "armor": 2
+    }
+  },
+  "seven_cities_crest": {
+    "id": "seven_cities_crest",
+    "name": "七城纹章",
+    "faction": "republic",
+    "type": "equipment",
+    "equipmentKind": "trinket",
+    "cost": 4,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：抽 2 张牌。",
+    "flavor": "七座城的纹章叠在一起，像一封太长的信。",
+    "copyLimit": 1,
+    "equip": {
+      "draw": 2
+    }
+  },
+  "iron_order_hammer": {
+    "id": "iron_order_hammer",
+    "name": "铁序战锤",
+    "faction": "empire",
+    "type": "equipment",
+    "equipmentKind": "weapon",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：你的所有友方随从获得 +1 攻击。",
+    "flavor": "锤头刻着编号，连愤怒都要归档。",
+    "copyLimit": 1,
+    "equip": {
+      "buffAllAllies": {
+        "attack": 1
+      }
+    }
+  },
+  "blackridge_heavy_armor": {
+    "id": "blackridge_heavy_armor",
+    "name": "黑脊重甲",
+    "faction": "empire",
+    "type": "equipment",
+    "equipmentKind": "armor",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：获得 2 点护甲。",
+    "flavor": "矿工说这甲比矿道还沉。",
+    "copyLimit": 1,
+    "equip": {
+      "armor": 2
+    }
+  },
+  "ministry_map": {
+    "id": "ministry_map",
+    "name": "军部地图",
+    "faction": "empire",
+    "type": "equipment",
+    "equipmentKind": "trinket",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：抽 1 张牌；获得 2 点护甲。",
+    "flavor": "地图上每个箭头都指向下一批粮。",
+    "copyLimit": 1,
+    "equip": {
+      "draw": 1,
+      "armor": 2
+    }
+  },
+  "furnace_heart": {
+    "id": "furnace_heart",
+    "name": "熔炉心",
+    "faction": "empire",
+    "type": "equipment",
+    "equipmentKind": "trinket",
+    "cost": 4,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：恢复领袖 2 点生命；友方随从获得 +1 攻击。",
+    "flavor": "炉心不熄，帝国就不承认冬天。",
+    "copyLimit": 1,
+    "equip": {
+      "healHero": 2,
+      "buffAllAllies": {
+        "attack": 1
+      }
+    }
+  },
+  "ledger_paperknife": {
+    "id": "ledger_paperknife",
+    "name": "账房裁纸刀",
+    "faction": "greyharbor",
+    "type": "equipment",
+    "equipmentKind": "weapon",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：抽 1 张牌。",
+    "flavor": "裁纸刀不杀人，只裁掉不该留的名字。",
+    "copyLimit": 1,
+    "equip": {
+      "draw": 1
+    }
+  },
+  "blackmarket_bracer": {
+    "id": "blackmarket_bracer",
+    "name": "黑市护臂",
+    "faction": "greyharbor",
+    "type": "equipment",
+    "equipmentKind": "armor",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：获得 2 点护甲。",
+    "flavor": "护臂内侧缝着三条暗袋。",
+    "copyLimit": 1,
+    "equip": {
+      "armor": 2
+    }
+  },
+  "brokenline_dagger": {
+    "id": "brokenline_dagger",
+    "name": "断线短刃",
+    "faction": "greyharbor",
+    "type": "equipment",
+    "equipmentKind": "weapon",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：你的所有友方随从获得 +1 攻击。",
+    "flavor": "断线团不设防线，只给每个人一把短刃。",
+    "copyLimit": 1,
+    "equip": {
+      "buffAllAllies": {
+        "attack": 1
+      }
+    }
+  },
+  "sealing_wax": {
+    "id": "sealing_wax",
+    "name": "封口蜡印",
+    "faction": "greyharbor",
+    "type": "equipment",
+    "equipmentKind": "trinket",
+    "cost": 4,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：对所有敌方随从造成 1 点伤害。",
+    "flavor": "蜡印落下，名字就不能再开口。",
+    "copyLimit": 1,
+    "equip": {
+      "damageAllEnemies": 1
+    }
+  },
+  "white_reef_lamp_oil": {
+    "id": "white_reef_lamp_oil",
+    "name": "白礁灯油",
+    "faction": "neutral",
+    "type": "equipment",
+    "equipmentKind": "trinket",
+    "cost": 1,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：恢复领袖 2 点生命。",
+    "flavor": "灯油只够亮一夜，但够船找到岸。",
+    "copyLimit": 1,
+    "equip": {
+      "healHero": 2
+    }
+  },
+  "fog_harbor_ticket": {
+    "id": "fog_harbor_ticket",
+    "name": "雾港船票",
+    "faction": "neutral",
+    "type": "equipment",
+    "equipmentKind": "trinket",
+    "cost": 1,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：抽 1 张牌。",
+    "flavor": "船票没有座位号，只有“上船再说”。",
+    "copyLimit": 1,
+    "equip": {
+      "draw": 1
+    }
+  },
+  "anvil_bracer": {
+    "id": "anvil_bracer",
+    "name": "铁砧护腕",
+    "faction": "neutral",
+    "type": "equipment",
+    "equipmentKind": "armor",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：获得 2 点护甲。",
+    "flavor": "铁砧镇的孩子先学会护腕，再学会锤子。",
+    "copyLimit": 1,
+    "equip": {
+      "armor": 2
+    }
+  },
+  "northern_bone_flute": {
+    "id": "northern_bone_flute",
+    "name": "北境骨笛",
+    "faction": "neutral",
+    "type": "equipment",
+    "equipmentKind": "trinket",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：你的所有友方随从获得 +0/+1。",
+    "flavor": "笛声一响，北境的兽会先停下。",
+    "copyLimit": 1,
+    "equip": {
+      "buffAllAllies": {
+        "health": 1
+      }
+    }
+  },
+  "gambler_dice": {
+    "id": "gambler_dice",
+    "name": "赌桌骰子",
+    "faction": "neutral",
+    "type": "equipment",
+    "equipmentKind": "trinket",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：抽 2 张牌。",
+    "flavor": "三点赌没有稳赢，只有先掷。",
+    "copyLimit": 1,
+    "equip": {
+      "draw": 2
+    }
+  },
+  "snow_capital_lamp": {
+    "id": "snow_capital_lamp",
+    "name": "雪都暖灯",
+    "faction": "neutral",
+    "type": "equipment",
+    "equipmentKind": "trinket",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：恢复领袖 3 点生命。",
+    "flavor": "灯芯里还剩一点雪都的温度。",
+    "copyLimit": 1,
+    "equip": {
+      "healHero": 3
+    }
+  },
+  "sky_ship_ticket": {
+    "id": "sky_ship_ticket",
+    "name": "浮空舰票",
+    "faction": "neutral",
+    "type": "equipment",
+    "equipmentKind": "trinket",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：抽 1 张牌；获得 2 点护甲。",
+    "flavor": "票根上印着一条不存在的航线。",
+    "copyLimit": 1,
+    "equip": {
+      "draw": 1,
+      "armor": 2
+    }
+  },
+  "world_map_item": {
+    "id": "world_map_item",
+    "name": "世界地图",
+    "faction": "neutral",
+    "type": "equipment",
+    "equipmentKind": "trinket",
+    "cost": 4,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：抽 2 张牌；恢复领袖 2 点生命。",
+    "flavor": "地图边缘写着：此处未测绘。",
+    "copyLimit": 1,
+    "equip": {
+      "draw": 2,
+      "healHero": 2
+    }
+  },
+  "no_mans_land_deed": {
+    "id": "no_mans_land_deed",
+    "name": "无主地契",
+    "faction": "neutral",
+    "type": "equipment",
+    "equipmentKind": "trinket",
+    "cost": 4,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：你的所有友方随从获得 +1/+1。",
+    "flavor": "没有旗，只有一张谁都撕不掉的纸。",
+    "copyLimit": 1,
+    "equip": {
+      "buffAllAllies": {
+        "attack": 1,
+        "health": 1
+      }
+    }
+  },
+  "dusk_inn_key": {
+    "id": "dusk_inn_key",
+    "name": "黄昏旅店钥匙",
+    "faction": "neutral",
+    "type": "equipment",
+    "equipmentKind": "trinket",
+    "cost": 6,
+    "rarity": "legendary",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：恢复领袖 5 点生命；抽 1 张牌。",
+    "flavor": "住店可以赊账，听故事不行。",
+    "copyLimit": 1,
+    "equip": {
+      "healHero": 5,
+      "draw": 1
+    }
+  },
+  "smuggler_anchor": {
+    "id": "smuggler_anchor",
+    "name": "走私船锚",
+    "faction": "neutral",
+    "type": "equipment",
+    "equipmentKind": "weapon",
+    "cost": 7,
+    "rarity": "legendary",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "装备：对所有敌方随从造成 2 点伤害。",
+    "flavor": "锚落下的地方，就是暗航路的终点。",
+    "copyLimit": 1,
+    "equip": {
+      "damageAllEnemies": 2
+    }
+  }
+});
+
+  
+  Object.assign(CARDS, {
+  "mistgate_warden": {
+    "id": "mistgate_warden",
+    "name": "雾港城门卫",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 1,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [
+      "taunt"
+    ],
+    "target": "none",
+    "text": "拦截。",
+    "flavor": "雾港的城门是一张收据。",
+    "copyLimit": 2,
+    "attack": 1,
+    "health": 2
+  },
+  "white_reef_runner": {
+    "id": "white_reef_runner",
+    "name": "白礁信使",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 1,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：获得 1 点护甲。",
+    "flavor": "灯塔亮起时，信使已经跑出半里。",
+    "copyLimit": 2,
+    "attack": 1,
+    "health": 1,
+    "battlecry": {
+      "type": "armor",
+      "amount": 1
+    }
+  },
+  "anvil_apprentice": {
+    "id": "anvil_apprentice",
+    "name": "铁砧学徒",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 2,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：获得 1 点护甲。",
+    "flavor": "学徒先学护手，再学落锤。",
+    "copyLimit": 2,
+    "attack": 2,
+    "health": 2,
+    "battlecry": {
+      "type": "armor",
+      "amount": 1
+    }
+  },
+  "north_hunter": {
+    "id": "north_hunter",
+    "name": "北境猎手",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 2,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [
+      "rush"
+    ],
+    "target": "none",
+    "text": "突进。",
+    "flavor": "北境不欢迎陌生人，只欢迎先动手的人。",
+    "copyLimit": 2,
+    "attack": 2,
+    "health": 2
+  },
+  "losutai_scavenger": {
+    "id": "losutai_scavenger",
+    "name": "洛斯汰拾荒者",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 1,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "流离。",
+    "flavor": "它把每一块亮的东西都当成潮。",
+    "copyLimit": 2,
+    "attack": 1,
+    "health": 2
+  },
+  "snow_exile": {
+    "id": "snow_exile",
+    "name": "雪都流亡者",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：恢复你的领袖 2 点生命。",
+    "flavor": "雪都烧掉之后，活下来的人学会了不回头。",
+    "copyLimit": 2,
+    "attack": 2,
+    "health": 4,
+    "battlecry": {
+      "type": "healHero",
+      "amount": 2
+    }
+  },
+  "dusk_innkeeper": {
+    "id": "dusk_innkeeper",
+    "name": "黄昏旅店帮工",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：抽 1 张牌。",
+    "flavor": "旅店不问你从哪来，只问你付不付得起。",
+    "copyLimit": 2,
+    "attack": 2,
+    "health": 3,
+    "battlecry": {
+      "type": "draw",
+      "amount": 1
+    }
+  },
+  "fog_dockhand": {
+    "id": "fog_dockhand",
+    "name": "雾港码头工",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 3,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "码头上的每一根绳，都系着一条命。",
+    "copyLimit": 2,
+    "attack": 3,
+    "health": 4
+  },
+  "mist_bargain": {
+    "id": "mist_bargain",
+    "name": "雾港议价",
+    "faction": "neutral",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "抽 1 张牌。",
+    "flavor": "先把价钱压到一半，再谈诚意。",
+    "copyLimit": 2,
+    "spell": {
+      "type": "draw",
+      "amount": 1
+    }
+  },
+  "reef_signal": {
+    "id": "reef_signal",
+    "name": "白礁灯语",
+    "faction": "neutral",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "获得 2 点护甲。",
+    "flavor": "一短一长，是“有船”；两短，是“别来”。",
+    "copyLimit": 2,
+    "spell": {
+      "type": "armor",
+      "amount": 2
+    }
+  },
+  "anvil_quench": {
+    "id": "anvil_quench",
+    "name": "铁砧淬火",
+    "faction": "neutral",
+    "type": "spell",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "获得 3 点护甲。",
+    "flavor": "淬火的水一响，铁就有了脾气。",
+    "copyLimit": 2,
+    "spell": {
+      "type": "armor",
+      "amount": 3
+    }
+  },
+  "north_trail": {
+    "id": "north_trail",
+    "name": "北境追踪",
+    "faction": "neutral",
+    "type": "spell",
+    "cost": 1,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "抽 1 张牌。",
+    "flavor": "雪会盖住脚印，但盖不住方向。",
+    "copyLimit": 2,
+    "spell": {
+      "type": "draw",
+      "amount": 1
+    }
+  },
+  "snow_lamp_rite": {
+    "id": "snow_lamp_rite",
+    "name": "雪都暖灯仪式",
+    "faction": "neutral",
+    "type": "spell",
+    "cost": 4,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "恢复你的领袖 3 点生命；抽 1 张牌。",
+    "flavor": "灯芯点着的时候，雪都还算存在。",
+    "copyLimit": 2,
+    "spell": {
+      "type": "healHeroDraw",
+      "heal": 3,
+      "draw": 1
+    }
+  },
+  "losutai_tide": {
+    "id": "losutai_tide",
+    "name": "洛斯汰潮汐",
+    "faction": "neutral",
+    "type": "spell",
+    "cost": 5,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "对所有敌方随从造成 1 点伤害。",
+    "flavor": "潮来了，谁都得让路。",
+    "copyLimit": 2,
+    "spell": {
+      "type": "damageAllEnemies",
+      "amount": 1
+    }
+  },
+  "dark_route": {
+    "id": "dark_route",
+    "name": "暗航路",
+    "faction": "neutral",
+    "type": "spell",
+    "cost": 3,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "抽 2 张牌。",
+    "flavor": "没有旗，没有船期，只有货。",
+    "copyLimit": 2,
+    "spell": {
+      "type": "draw",
+      "amount": 2
+    }
+  },
+  "world_edge": {
+    "id": "world_edge",
+    "name": "世界边缘",
+    "faction": "neutral",
+    "type": "spell",
+    "cost": 6,
+    "rarity": "legendary",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "对所有敌方随从造成 2 点伤害。",
+    "flavor": "地图到这里就断了，但世界没有。",
+    "copyLimit": 1,
+    "spell": {
+      "type": "damageAllEnemies",
+      "amount": 2
+    }
+  },
+  "last_ledger": {
+    "id": "last_ledger",
+    "name": "最后一笔账",
+    "faction": "neutral",
+    "type": "spell",
+    "cost": 7,
+    "rarity": "legendary",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "恢复你的领袖 5 点生命；抽 2 张牌。",
+    "flavor": "账本合上之前，所有人都是数字。",
+    "copyLimit": 1,
+    "spell": {
+      "type": "healHeroDraw",
+      "heal": 5,
+      "draw": 2
+    }
+  },
+  "mist_pier": {
+    "id": "mist_pier",
+    "name": "雾港栈桥",
+    "faction": "neutral",
+    "type": "formation",
+    "cost": 2,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "该阵位友方随从获得袭扰。",
+    "flavor": "栈桥一湿，谁都想先走。",
+    "copyLimit": 2,
+    "formation": {
+      "rush": true
+    }
+  },
+  "white_reef_light": {
+    "id": "white_reef_light",
+    "name": "白礁灯阵",
+    "faction": "neutral",
+    "type": "formation",
+    "cost": 2,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "该阵位友方随从获得拦截。",
+    "flavor": "灯照到的地方，船就不能硬闯。",
+    "copyLimit": 2,
+    "formation": {
+      "taunt": true
+    }
+  },
+  "anvil_forge_row": {
+    "id": "anvil_forge_row",
+    "name": "铁砧工坊",
+    "faction": "neutral",
+    "type": "formation",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "该阵位友方随从获得 +1 攻击。",
+    "flavor": "锤子一排开，铁就得排队。",
+    "copyLimit": 2,
+    "formation": {
+      "attack": 1,
+      "health": 0
+    }
+  },
+  "north_hunt_camp": {
+    "id": "north_hunt_camp",
+    "name": "北境猎场",
+    "faction": "neutral",
+    "type": "formation",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "该阵位友方随从获得 +1 攻击。",
+    "flavor": "猎场没有边界，只有风向。",
+    "copyLimit": 2,
+    "formation": {
+      "attack": 1,
+      "health": 0
+    }
+  },
+  "snow_warmhouse": {
+    "id": "snow_warmhouse",
+    "name": "雪都暖房",
+    "faction": "neutral",
+    "type": "formation",
+    "cost": 2,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "该阵位友方随从获得 +0/+1。",
+    "flavor": "屋里还有一盏没灭的灯。",
+    "copyLimit": 2,
+    "formation": {
+      "attack": 0,
+      "health": 1
+    }
+  },
+  "losutai_pool": {
+    "id": "losutai_pool",
+    "name": "洛斯汰潮池",
+    "faction": "neutral",
+    "type": "formation",
+    "cost": 4,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "该阵位友方随从获得 +0/+2。",
+    "flavor": "潮水退去，池底全是壳。",
+    "copyLimit": 2,
+    "formation": {
+      "attack": 0,
+      "health": 2
+    }
+  },
+  "smugglers_dock": {
+    "id": "smugglers_dock",
+    "name": "暗航码头",
+    "faction": "neutral",
+    "type": "formation",
+    "cost": 3,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "该阵位友方随从获得袭扰。",
+    "flavor": "船不等天亮。",
+    "copyLimit": 2,
+    "formation": {
+      "rush": true
+    }
+  },
+  "dusk_inn_yard": {
+    "id": "dusk_inn_yard",
+    "name": "黄昏旅店庭院",
+    "faction": "neutral",
+    "type": "formation",
+    "cost": 3,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "该阵位友方随从获得 +0/+1。",
+    "flavor": "院子里听得到所有房间的梦话。",
+    "copyLimit": 2,
+    "formation": {
+      "attack": 0,
+      "health": 1
+    }
+  },
+  "world_edge_camp": {
+    "id": "world_edge_camp",
+    "name": "世界边缘营地",
+    "faction": "neutral",
+    "type": "formation",
+    "cost": 5,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "该阵位友方随从获得 +1/+1。",
+    "flavor": "再往前就没有地图了。",
+    "copyLimit": 2,
+    "formation": {
+      "attack": 1,
+      "health": 1
+    }
+  },
+  "gok_lamp_row": {
+    "id": "gok_lamp_row",
+    "name": "戈克灯列",
+    "faction": "neutral",
+    "type": "formation",
+    "cost": 3,
+    "rarity": "epic",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "该阵位友方随从获得 +0/+1。",
+    "flavor": "灯一排开，夜路就短了一截。",
+    "copyLimit": 2,
+    "formation": {
+      "attack": 0,
+      "health": 1
+    }
+  },
+  "no_mans_camp": {
+    "id": "no_mans_camp",
+    "name": "无主营地",
+    "faction": "neutral",
+    "type": "formation",
+    "cost": 3,
+    "rarity": "legendary",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "该阵位友方随从获得 +1/+1。",
+    "flavor": "没有旗，谁先到谁就是主。",
+    "copyLimit": 2,
+    "formation": {
+      "attack": 1,
+      "health": 1
+    }
+  },
+  "grey_ledger_post": {
+    "id": "grey_ledger_post",
+    "name": "灰港账站",
+    "faction": "neutral",
+    "type": "formation",
+    "cost": 6,
+    "rarity": "legendary",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "该阵位友方随从获得 +1/+1。",
+    "flavor": "过路可以，过账不行。",
+    "copyLimit": 2,
+    "formation": {
+      "attack": 1,
+      "health": 1
+    }
+  },
+  "forgotten_gate": {
+    "id": "forgotten_gate",
+    "name": "遗忘之门",
+    "faction": "neutral",
+    "type": "formation",
+    "cost": 8,
+    "rarity": "legendary",
+    "art": null,
+    "noGeneratedArt": false,
+    "noArtwork": true,
+    "keywords": [],
+    "target": "none",
+    "text": "该阵位友方随从获得 +2/+2。",
+    "flavor": "门后面没有路，只有下一笔账。",
+    "copyLimit": 2,
+    "formation": {
+      "attack": 2,
+      "health": 2
+    }
+  }
+});
+
+  for (const id of ["old_ledger","vein_prism","mist_scout"]) if (CARDS[id]) CARDS[id].rarity = "rare";
+
+  const FORMATION_REWORK = {
+ "formation_watcher": {
+  "name": "旗阵守望",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "taunt": true
+  },
+  "text": "该阵位友方随从获得拦截。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "formation_officer": {
+  "name": "地脉阵线官",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 1,
+   "health": 0
+  },
+  "text": "该阵位友方随从获得 +1 攻击。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "formation_artificer": {
+  "name": "旗阵工坊",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 0,
+   "health": 1
+  },
+  "text": "该阵位友方随从获得 +0/+1。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "formation_weaver": {
+  "name": "阵线织网",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 0,
+   "health": 1
+  },
+  "text": "该阵位友方随从获得 +0/+1。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "formation_bugler": {
+  "name": "阵线号台",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 1,
+   "health": 0
+  },
+  "text": "该阵位友方随从获得 +1 攻击。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "archive_search": {
+  "name": "档案检索阵",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 0,
+   "health": 1
+  },
+  "text": "该阵位友方随从获得 +0/+1。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "prohibition": {
+  "name": "禁制令阵",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "rush": true
+  },
+  "text": "该阵位友方随从获得袭扰。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "school_debate": {
+  "name": "学派辩论席",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 1,
+   "health": 0
+  },
+  "text": "该阵位友方随从获得 +1 攻击。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "insight": {
+  "name": "洞察观测席",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 0,
+   "health": 1
+  },
+  "text": "该阵位友方随从获得 +0/+1。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "double_column_note": {
+  "name": "双栏批注席",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 0,
+   "health": 1
+  },
+  "text": "该阵位友方随从获得 +0/+1。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "monster_summon": {
+  "name": "魔物召唤阵",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 1,
+   "health": 0
+  },
+  "text": "该阵位友方随从获得 +1 攻击。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "blood_pool": {
+  "name": "血池献祭阵",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 0,
+   "health": 1
+  },
+  "text": "该阵位友方随从获得 +0/+1。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "monster_command": {
+  "name": "魔物号令阵",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "rush": true
+  },
+  "text": "该阵位友方随从获得袭扰。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "blood_altar": {
+  "name": "血祭祭坛阵",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 0,
+   "health": 1
+  },
+  "text": "该阵位友方随从获得 +0/+1。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "blood_contract": {
+  "name": "血偿契约坛",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 1,
+   "health": 0
+  },
+  "text": "该阵位友方随从获得 +1 攻击。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "blood_feast": {
+  "name": "血祭盛宴场",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 1,
+   "health": 0
+  },
+  "text": "该阵位友方随从获得 +1 攻击。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "parliament_debate": {
+  "name": "议会辩论席",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 0,
+   "health": 1
+  },
+  "text": "该阵位友方随从获得 +0/+1。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "fortify": {
+  "name": "筑防令阵",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "taunt": true
+  },
+  "text": "该阵位友方随从获得拦截。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "volley": {
+  "name": "排枪阵线",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 1,
+   "health": 0
+  },
+  "text": "该阵位友方随从获得 +1 攻击。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "martial_law": {
+  "name": "戒严阵线",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "taunt": true
+  },
+  "text": "该阵位友方随从获得拦截。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "emergency_bill": {
+  "name": "紧急法案席",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 0,
+   "health": 1
+  },
+  "text": "该阵位友方随从获得 +0/+1。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "battlefield_bill": {
+  "name": "战地法案席",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 1,
+   "health": 0
+  },
+  "text": "该阵位友方随从获得 +1 攻击。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "phalanx_warden": {
+  "name": "方阵守望阵",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 0,
+   "health": 1
+  },
+  "text": "该阵位友方随从获得 +0/+1。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "barrage": {
+  "name": "炮火覆盖阵",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 1,
+   "health": 0
+  },
+  "text": "该阵位友方随从获得 +1 攻击。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "battlefield_salvage": {
+  "name": "战地回收站",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 0,
+   "health": 1
+  },
+  "text": "该阵位友方随从获得 +0/+1。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "armor_drive": {
+  "name": "装甲动员线",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "taunt": true
+  },
+  "text": "该阵位友方随从获得拦截。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "armor_volley": {
+  "name": "装甲齐射阵",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 1,
+   "health": 0
+  },
+  "text": "该阵位友方随从获得 +1 攻击。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "zone_barrage": {
+  "name": "阵位齐射阵",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 1,
+   "health": 0
+  },
+  "text": "该阵位友方随从获得 +1 攻击。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "siege_train": {
+  "name": "攻城列车阵",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 1,
+   "health": 0
+  },
+  "text": "该阵位友方随从获得 +1 攻击。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "gh_bounty_notice": {
+  "name": "悬赏告示阵",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 1,
+   "health": 0
+  },
+  "text": "该阵位友方随从获得 +1 攻击。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "gh_black_market": {
+  "name": "黑市街阵",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 0,
+   "health": 1
+  },
+  "text": "该阵位友方随从获得 +0/+1。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "gh_silence_field": {
+  "name": "封口静默阵",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "taunt": true
+  },
+  "text": "该阵位友方随从获得拦截。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "gh_company": {
+  "name": "断线团本阵",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 1,
+   "health": 0
+  },
+  "text": "该阵位友方随从获得 +1 攻击。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "gh_venom_behemoth": {
+  "name": "毒潮兽阵",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "attack": 1,
+   "health": 0
+  },
+  "text": "该阵位友方随从获得 +1 攻击。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "gh_silence_master": {
+  "name": "封口行阵",
+  "type": "formation",
+  "target": "none",
+  "formation": {
+   "taunt": true
+  },
+  "text": "该阵位友方随从获得拦截。",
+  "keywords": [],
+  "battlecry": null,
+  "spell": null,
+  "deathrattle": null,
+  "passive": null,
+  "bloodCost": null,
+  "zoneBonus": null
+ },
+ "field_medic": {
+  "cost": 5
+ },
+ "spring_medic": {
+  "cost": 6
+ },
+ "pulse_banner": {
+  "cost": 7
+ },
+ "reflux_physician": {
+  "cost": 8
+ },
+ "pulse_recorder": {
+  "cost": 5
+ },
+ "spring_watcher": {
+  "cost": 6
+ },
+ "spell_novice": {
+  "cost": 5
+ },
+ "index_assistant": {
+  "cost": 6
+ },
+ "reflux_apprentice": {
+  "cost": 7
+ },
+ "frost_archivist": {
+  "cost": 8
+ },
+ "pure_theorist": {
+  "cost": 5
+ },
+ "archive_keeper": {
+  "cost": 6
+ },
+ "lecturer": {
+  "cost": 7
+ },
+ "spell_echo": {
+  "cost": 8
+ },
+ "blood_acolyte": {
+  "cost": 5
+ },
+ "blood_pact_collector": {
+  "cost": 6
+ },
+ "pressure_warlock": {
+  "cost": 7
+ },
+ "tide_scout": {
+  "cost": 8
+ },
+ "drill_sergeant": {
+  "cost": 5
+ },
+ "bulwark_sentry": {
+  "cost": 6
+ },
+ "line_spearman": {
+  "cost": 7
+ },
+ "empire_guard": {
+  "cost": 5
+ },
+ "zhenmai_artisan": {
+  "cost": 6
+ },
+ "powder_apprentice": {
+  "cost": 7
+ },
+ "armory_keeper": {
+  "cost": 8
+ },
+ "gh_silencer": {
+  "cost": 5
+ },
+ "gh_bounty_hunter": {
+  "cost": 6
+ },
+ "bounty_clerk": {
+  "cost": 7
+ },
+ "silence_informant": {
+  "cost": 8
+ }
+};
+  for (const [id, patch] of Object.entries(FORMATION_REWORK)) {
+    if (!CARDS[id]) continue;
+    if (patch.type === "formation") {
+      for (const key of ["attack","health","battlecry","spell","deathrattle","passive","bloodCost","zoneBonus","keywords","target"]) delete CARDS[id][key];
+    }
+    Object.assign(CARDS[id], patch);
+  }
+
+  if (CARDS.vein_attendant) CARDS.vein_attendant.cost = 5;
+
+  const HIGH_REWORK_IDS = ["field_medic","spring_medic","pulse_banner","reflux_physician","pulse_recorder","vein_attendant","spell_novice","index_assistant","reflux_apprentice","frost_archivist","pure_theorist","archive_keeper","lecturer","spell_echo","blood_acolyte","blood_pact_collector","pressure_warlock","tide_scout","drill_sergeant","bulwark_sentry","line_spearman","empire_guard","zhenmai_artisan","powder_apprentice","armory_keeper","gh_silencer","gh_bounty_hunter","bounty_clerk","silence_informant"];
+
+  for (const id of ["field_medic","spring_medic","pulse_banner","reflux_physician","pulse_recorder","vein_attendant","spell_novice","index_assistant","reflux_apprentice","frost_archivist","pure_theorist","archive_keeper","lecturer","spell_echo","blood_acolyte","blood_pact_collector","pressure_warlock","tide_scout","drill_sergeant","bulwark_sentry","line_spearman","empire_guard","zhenmai_artisan","powder_apprentice","armory_keeper","gh_silencer","gh_bounty_hunter","bounty_clerk","silence_informant"]) {
+    const c = CARDS[id];
+    if (!c || c.type !== "minion") continue;
+    const baseAtk = Math.max(c.attack || 1, Math.floor((c.cost || 5) / 2) + 1);
+    const baseHp = Math.max(c.health || 1, c.cost || 5);
+    c.attack = baseAtk; c.health = baseHp;
+  }
+  for (const [id, name, text, spell] of [["security_sentry","保卫部警戒","获得 2 点护甲。",{"type":"armor","amount":2}],["medical_stretcher","医疗部担架","恢复你的领袖 2 点生命。",{"type":"healHero","amount":2}]]) {
+    const c = CARDS[id];
+    if (!c) continue;
+    for (const key of ["attack","health","battlecry","keywords","deathrattle","passive","target"]) delete c[key];
+    Object.assign(c, { name, type: "spell", target: "none", spell, text, keywords: [] });
+  }
+
+  if (CARDS.spring_watcher) { CARDS.spring_watcher.attack = 4; CARDS.spring_watcher.health = 6; }
+  if (CARDS.frost_scribe && CARDS.frost_scribe.type !== "minion") {
+    for (const key of ["spell","target"]) delete CARDS.frost_scribe[key];
+    Object.assign(CARDS.frost_scribe, { type: "minion", attack: 2, health: 3, keywords: ["battlecry"], target: "enemy", battlecry: { type: "freeze" }, text: "登场：冻结一个敌方随从。" });
+  }
+
+  for (const id of ["anvil_apprentice","anvil_bracer","anvil_forge_row","anvil_quench","beast_hide_armor","blackmarket_bracer","blackridge_heavy_armor","bloodbone_pauldron","bloodmoon_bone_ring","bluegold_breastplate","bone_fang_blade","border_lance","brokenline_dagger","cataloging_lens","dark_route","dusk_inn_key","dusk_inn_yard","dusk_innkeeper","five_department_badge","floating_anchor","floating_ink_blade","fog_dockhand","fog_harbor_ticket","forgotten_gate","frostweave_cloak","furnace_heart","gambler_dice","gok_lamp_row","grey_ledger_post","house_longsword","iron_order_hammer","ksetra_beacon_item","last_ledger","ledger_paperknife","losutai_pool","losutai_scavenger","losutai_tide","ministry_map","mist_bargain","mist_pier","mistgate_warden","no_mans_camp","no_mans_land_deed","north_hunt_camp","north_hunter","north_trail","northern_bone_flute","reef_signal","sealing_wax","seven_cities_crest","sky_ship_ticket","smuggler_anchor","smugglers_dock","snow_capital_lamp","snow_exile","snow_lamp_rite","snow_warmhouse","tide_ward_bracer","white_reef_lamp_oil","white_reef_light","white_reef_runner","whitefrost_bell","world_edge","world_edge_camp","world_map_item"]) if (CARDS[id]) CARDS[id].noArtwork = false;
+
+  const newCardIdsForGenericArt = [];;;;;;;;
   for (const id of newCardIdsForGenericArt) if (CARDS[id]) CARDS[id].noArtwork = true;
+
+  for (const f of FACTION_IDS) {
+    const special = DECK_SPECIALS[f];
+    if (!special) continue;
+    const equipment = [special.relic, special.relic2].filter(Boolean);
+    const main = DECKS[f].filter(id => CARDS[id] && CARDS[id].type !== "equipment" && CARDS[id].type !== "relic");
+    DECKS[f] = main.slice(0, 30).concat(equipment.slice(0, 2));
+  }
+
+  for (const f of FACTION_IDS) {
+    const deck = DECKS[f] || [];
+    const equips = deck.filter(id => CARDS[id] && (CARDS[id].type === "equipment" || CARDS[id].type === "relic")).slice(0, 2);
+    const main = deck.filter(id => CARDS[id] && CARDS[id].type !== "equipment" && CARDS[id].type !== "relic");
+    const formations = main.filter(id => CARDS[id].type === "formation").slice(0, 2);
+    const rest = main.filter(id => CARDS[id].type !== "formation");
+    const pool = Object.keys(CARDS).filter(id => CARDS[id] && !CARDS[id].token && !CARDS[id].disabled && !CARDS[id].experimental && (CARDS[id].faction === f || CARDS[id].faction === "neutral") && CARDS[id].type !== "formation" && CARDS[id].type !== "equipment" && CARDS[id].type !== "relic").sort((a,b) => ((CARDS[b].attack||0)+(CARDS[b].health||0)*1.2+(CARDS[b].cost||0)*0.4) - ((CARDS[a].attack||0)+(CARDS[a].health||0)*1.2+(CARDS[a].cost||0)*0.4));
+    const counts = {}; for (const id of rest) counts[id] = (counts[id] || 0) + 1;
+    for (const id of pool) { if (rest.length >= 28) break; if ((counts[id]||0) >= maxCopies(CARDS[id])) continue; rest.push(id); counts[id] = (counts[id]||0)+1; }
+    DECKS[f] = rest.slice(0, 28).concat(formations, equips);
+  }
+
+  DECKS.greyharbor = ["gh_cutthroat","gh_cutthroat","gh_venom_apprentice","gh_venom_apprentice","gh_contract_squire","gh_silencer","gh_silencer","gh_poison_thrower","gh_poison_thrower","gh_rush_archer","gh_rush_archer","gh_bounty_hunter","gh_bounty_hunter","gh_quick_strike","gh_quick_strike","gh_venom_shield","gh_venom_shield","gh_silence_expert","gh_silence_expert","gh_shield_broker","gh_shield_broker","gh_bounty_collector","gh_bounty_collector","gh_ledger","gh_ledger","gh_scorpion","gh_scorpion","seran","vera","xiu","karan","gh_bounty_king"].concat(["gh_formation", "gh_formation", "gh_bounty_board", "gh_venom_vial"]);
+
+  DECKS.greyharbor = ["gh_cutthroat","gh_venom_apprentice","gh_venom_apprentice","gh_silencer","gh_silencer","gh_poison_thrower","gh_poison_thrower","gh_rush_archer","gh_rush_archer","gh_bounty_hunter","gh_bounty_hunter","gh_quick_strike","gh_quick_strike","gh_venom_shield","gh_venom_shield","gh_silence_expert","gh_silence_expert","gh_shield_broker","gh_shield_broker","gh_bounty_collector","gh_bounty_collector","gh_scorpion","gh_scorpion","seran","vera","xiu","karan","gh_bounty_king"].concat(["gh_formation", "gh_formation", "gh_bounty_board", "gh_venom_vial"]);
+
+  if (HEROES.otto) { HEROES.otto.hp = 28; HEROES.otto.power.cost = 4; }
+
+  const EMPIRE_NERF = { iron_order_wall: { attack: 4, health: 5 }, powder_marshal: { attack: 4, health: 5 }, eisenwald_marshal: { attack: 4, health: 5 }, walter: { attack: 5, health: 5 }, gunther: { attack: 4, health: 6 } };
+  for (const [id, patch] of Object.entries(EMPIRE_NERF)) if (CARDS[id]) Object.assign(CARDS[id], patch);
+
+  for (const id of ["powder_apprentice","powder_martyr","execution_supervisor","broken_bone_warlord","northern_nomad","north_hunter"]) {
+    if (CARDS[id] && CARDS[id].keywords && CARDS[id].keywords.indexOf("rush") >= 0) CARDS[id].text = String(CARDS[id].text || "").replace(/^突进。/, "袭扰。");
+  }
 
   return { FACTIONS, FACTION_IDS, nextFaction, HEROES, CARDS, DECKS, NEUTRAL_DECK, KEYWORDS, DECK_STRATEGIES, DECK_SPECIALS, DECK_TRIM, cardPool, validateDeck, autoBuildDeck, maxCopies };
 });

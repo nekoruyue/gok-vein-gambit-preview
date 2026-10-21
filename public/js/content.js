@@ -28,6 +28,17 @@
     try { localStorage.setItem(STORE, JSON.stringify(data)); } catch (e) {}
     try { global.dispatchEvent(new CustomEvent("gok-content-changed")); } catch (e) {}
   }
+  function grantDaily(key, amount) {
+    const data = load();
+    const today = fmtDate();
+    data.dailyModes = data.dailyModes || {};
+    if (data.dailyModes[key] === today) return 0;
+    data.dailyModes[key] = today;
+    data.marks = (data.marks || 0) + amount;
+    save(data);
+    return amount;
+  }
+
   function factionDeck(faction) {
     const custom = app.customDecks && app.customDecks[faction];
     const list = custom && D.validateDeck(faction, custom).ok ? custom : D.DECKS[faction];
@@ -93,7 +104,45 @@
       enter();
     }
   }
+  function setBattlerChrome() {
+    const head = document.querySelector('#screen-content .page-head');
+    if (head) {
+      const e = head.querySelector('.eyebrow'); if (e) e.textContent = '战棋 / 酒馆';
+      const h = head.querySelector('h1'); if (h) h.textContent = '战棋模式';
+    }
+    const back = document.getElementById('btn-content-back');
+    if (back) { back.textContent = '← 返回开始推演'; back.onclick = () => { if (global.GokUI) GokUI.showScreen('other'); }; }
+  }
+  function setLedgerChrome() {
+    const head = document.querySelector('#screen-content .page-head');
+    if (head) {
+      const e = head.querySelector('.eyebrow'); if (e) e.textContent = '街机 / 灰港账牌';
+      const h = head.querySelector('h1'); if (h) h.textContent = '街机模式';
+    }
+    const back = document.getElementById('btn-content-back');
+    if (back) { back.textContent = '← 返回开始推演'; back.onclick = () => { if (global.GokUI) GokUI.showScreen('other'); }; }
+  }
+  function setOtherChrome() {
+    const head = document.querySelector('#screen-content .page-head');
+    if (head) {
+      const e = head.querySelector('.eyebrow'); if (e) e.textContent = '街机 / 灰港账牌';
+      const h = head.querySelector('h1'); if (h) h.textContent = '街机模式';
+    }
+    const back = document.getElementById('btn-content-back');
+    if (back) { back.textContent = '← 返回其他模式'; back.onclick = () => { if (global.GokUI) GokUI.showScreen('other'); }; }
+  }
+  function resetContentChrome() {
+    const head = document.querySelector('#screen-content .page-head');
+    if (head) {
+      const e = head.querySelector('.eyebrow'); if (e) e.textContent = '娱乐 / 模式';
+      const h = head.querySelector('h1'); if (h) h.textContent = '娱乐模式';
+    }
+    const back = document.getElementById('btn-content-back');
+    if (back) { back.textContent = '← 返回档案处'; back.onclick = () => { if (global.GokUI) GokUI.showScreen('home'); }; }
+  }
+
   function renderHub() {
+    resetContentChrome();
     const box = root();
     if (!box) return;
     clear(box);
@@ -168,25 +217,411 @@
         action: () => app.openLabPage("content")
       });
     }
-    for (const mode of modes) {
-      const card = el("article", "mode-card mode-" + mode.id);
-      card.appendChild(el("span", "mode-tag", mode.tag));
-      card.appendChild(el("h3", null, mode.title));
-      card.appendChild(el("p", null, mode.desc));
-      card.appendChild(el("div", "mode-status", mode.status));
-      const btn = el("button", "btn btn-primary", "进入");
-      btn.onclick = mode.action;
-      card.appendChild(btn);
-      grid.appendChild(card);
+    const groups = [
+      { title: "远征与故事", ids: ["expedition", "story"] },
+      { title: "挑战与每日", ids: ["daily", "puzzle", "arena"] },
+      { title: "实验与镜像", ids: ["lab", "mirror"] }
+    ];
+    const used = new Set();
+    for (const group of groups) {
+      const list = group.ids.map(id => modes.find(m => m.id === id)).filter(Boolean);
+      if (!list.length) continue;
+      const section = el("section", "content-mode-group");
+      const heading = el("div", "content-mode-group-head");
+      heading.appendChild(el("span", "eyebrow", "档案线"))
+      heading.appendChild(el("h3", null, group.title));
+      section.appendChild(heading);
+      const grid = el("div", "mode-grid");
+      for (const mode of list) {
+        used.add(mode.id);
+        const card = el("article", "mode-card mode-" + mode.id);
+        card.appendChild(el("span", "mode-tag", mode.tag));
+        card.appendChild(el("h3", null, mode.title));
+        card.appendChild(el("p", null, mode.desc));
+        card.appendChild(el("div", "mode-status", mode.status));
+        const btn = el("button", "btn btn-primary", "进入");
+        btn.onclick = mode.action;
+        card.appendChild(btn);
+        grid.appendChild(card);
+      }
+      section.appendChild(grid);
+      box.appendChild(section);
     }
-    box.appendChild(grid);
+    const rest = modes.filter(m => !used.has(m.id));
+    if (rest.length) {
+      const section = el("section", "content-mode-group");
+      section.appendChild(el("h3", null, "其他档案"));
+      const grid = el("div", "mode-grid");
+      for (const mode of rest) {
+        const card = el("article", "mode-card mode-" + mode.id);
+        card.appendChild(el("span", "mode-tag", mode.tag));
+        card.appendChild(el("h3", null, mode.title));
+        card.appendChild(el("p", null, mode.desc));
+        card.appendChild(el("div", "mode-status", mode.status));
+        const btn = el("button", "btn btn-primary", "进入");
+        btn.onclick = mode.action; card.appendChild(btn); grid.appendChild(card);
+      }
+      section.appendChild(grid); box.appendChild(section);
+    }
     renderMarket(box, data);
   }
+  const LEDGER_SYMBOLS = ["灯", "账", "雾", "刀", "币", "血"];
+  let ledgerState = null;
+
+  function ledgerCard() {
+    return { symbol: LEDGER_SYMBOLS[Math.floor(Math.random() * LEDGER_SYMBOLS.length)], value: 1 + Math.floor(Math.random() * 6) };
+  }
+  function ledgerScore(hand) {
+    const counts = {};
+    for (const c of hand) counts[c.symbol] = (counts[c.symbol] || 0) + 1;
+    const best = Math.max(0, ...Object.values(counts));
+    const base = hand.reduce((n, c) => n + c.value, 0);
+    return base + (best >= 3 ? 8 : best >= 2 ? 3 : 0);
+  }
+  function ledgerDeal() {
+    ledgerState.player = [ledgerCard(), ledgerCard(), ledgerCard()];
+    ledgerState.dealer = [ledgerCard(), ledgerCard(), ledgerCard()];
+    ledgerState.phase = "deal";
+    ledgerState.revealed = false;
+    ledgerState.swapped = false;
+    ledgerState.swapping = false;
+    ledgerState.result = null;
+    ledgerState.round++;
+  }
+  function ledgerStart() {
+    const data = load();
+    const luck = (data.perks && data.perks.arcade_luck) ? 1 : 0;
+    ledgerState = {
+      bank: 5 + luck,
+      startBank: 5 + luck,
+      round: 0,
+      best: data.ledger && data.ledger.best || 5,
+      player: [],
+      dealer: [],
+      phase: "deal",
+      revealed: false,
+      swapped: false,
+      swapping: false,
+      result: null,
+      log: ["账房开盘：底账 5，押 1。"]
+    };
+    ledgerDeal();
+    renderLedger();
+  }
+  function renderLedger() {
+    const box = root();
+    if (!box) return;
+    if (!ledgerState) { ledgerStart(); return; }
+    clear(box);
+    const shell = el("div", "ledger-shell");
+    const head = el("div", "content-subhead");
+    setLedgerChrome();
+    const back = el("button", "btn btn-small btn-ghost", "← 返回街机");
+    back.onclick = () => { if (global.GokArcade) global.GokArcade.open(); else if (global.GokUI) GokUI.showScreen("other"); };
+    const title = el("div", null, "");
+    title.appendChild(el("div", "eyebrow", "GREYHARBOR / LEDGER"));
+    title.appendChild(el("h2", null, "账牌桌"));
+    head.appendChild(back); head.appendChild(title);
+    shell.appendChild(head);
+    const stats = el("div", "ledger-stats");
+    stats.appendChild(el("span", null, "账 " + ledgerState.bank));
+    stats.appendChild(el("span", null, "第 " + ledgerState.round + " / 5 手"));
+    stats.appendChild(el("span", null, "最佳 " + ledgerState.best));
+    shell.appendChild(stats);
+    const rule = el("p", "ledger-rule", "比点数；同符号一对 +3，三张同符号 +8。你可以在开牌前换一张。赢 +1，输 -1，平局不结账。");
+    shell.appendChild(rule);
+
+    const table = el("div", "ledger-table");
+    const playerRow = el("div", "ledger-hand");
+    playerRow.appendChild(el("div", "ledger-hand-label", "你 · " + ledgerScore(ledgerState.player)));
+    const playerCards = el("div", "ledger-cards");
+    ledgerState.player.forEach((card, i) => {
+      const node = el("button", "ledger-card" + (ledgerState.swapping ? " swappable" : ""));
+      node.type = "button";
+      node.appendChild(el("span", "ledger-symbol", card.symbol));
+      node.appendChild(el("b", null, String(card.value)));
+      if (ledgerState.swapping) node.onclick = () => {
+        ledgerState.player[i] = ledgerCard();
+        ledgerState.swapped = true;
+        ledgerState.swapping = false;
+        ledgerState.log.push("换了一张：" + ledgerState.player[i].symbol + " " + ledgerState.player[i].value + "。");
+        renderLedger();
+      };
+      playerCards.appendChild(node);
+    });
+    playerRow.appendChild(playerCards);
+    table.appendChild(playerRow);
+
+    const dealerRow = el("div", "ledger-hand dealer");
+    dealerRow.appendChild(el("div", "ledger-hand-label", "庄家" + (ledgerState.revealed ? " · " + ledgerScore(ledgerState.dealer) : "")));
+    const dealerCards = el("div", "ledger-cards");
+    ledgerState.dealer.forEach((card) => {
+      const node = el("div", "ledger-card" + (ledgerState.revealed ? "" : " back"));
+      node.appendChild(el("span", "ledger-symbol", ledgerState.revealed ? card.symbol : "？"));
+      node.appendChild(el("b", null, ledgerState.revealed ? String(card.value) : ""));
+      dealerCards.appendChild(node);
+    });
+    dealerRow.appendChild(dealerCards);
+    table.appendChild(dealerRow);
+    shell.appendChild(table);
+
+    if (ledgerState.result) {
+      const result = el("div", "ledger-result " + ledgerState.result.kind, ledgerState.result.text);
+      shell.appendChild(result);
+    }
+    const actions = el("div", "modal-actions");
+    if (ledgerState.phase === "deal") {
+      const swap = el("button", "btn btn-small btn-ghost", ledgerState.swapped ? "已换过" : "换一张");
+      swap.disabled = ledgerState.swapped;
+      swap.onclick = () => { ledgerState.swapping = true; renderLedger(); };
+      const open = el("button", "btn btn-primary", "开牌");
+      open.onclick = () => {
+        ledgerState.revealed = true;
+        ledgerState.phase = "reveal";
+        const p = ledgerScore(ledgerState.player);
+        const d = ledgerScore(ledgerState.dealer);
+        if (p > d) { ledgerState.bank += 1; ledgerState.result = { kind: "win", text: "你赢了这一手：账 +1（" + p + " : " + d + "）" }; }
+        else if (p < d) { ledgerState.bank -= 1; ledgerState.result = { kind: "lose", text: "这一手输了：账 -1（" + p + " : " + d + "）" }; }
+        else { ledgerState.result = { kind: "push", text: "平局：账不动（" + p + " : " + d + "）" }; }
+        ledgerState.log.push(ledgerState.result.text);
+        const data = load();
+        data.ledger = data.ledger || {};
+        data.ledger.best = Math.max(data.ledger.best || 5, ledgerState.bank);
+        save(data);
+        renderLedger();
+      };
+      actions.appendChild(swap); actions.appendChild(open);
+    } else if (ledgerState.phase === "reveal") {
+      if (ledgerState.round < 5 && ledgerState.bank > 0) {
+        const next = el("button", "btn btn-primary", "下一手");
+        next.onclick = () => { ledgerDeal(); renderLedger(); };
+        actions.appendChild(next);
+      } else {
+        const finish = el("button", "btn btn-primary", "结算离桌");
+        finish.onclick = () => {
+          const data = load();
+          data.ledger = data.ledger || {};
+          data.ledger.best = Math.max(data.ledger.best || 5, ledgerState.bank);
+          const gain = Math.max(0, ledgerState.bank - ledgerState.startBank);
+          if (gain) data.marks = (data.marks || 0) + gain;
+          const daily = grantDaily("arcade", 1);
+          if (daily) { data.marks = (data.marks || 0) + daily; ledgerState.reward = (ledgerState.reward || 0) + daily; }
+          data.ledger.last = { bank: ledgerState.bank, at: Date.now(), reward: gain };
+          save(data);
+          ledgerState.phase = "done";
+          ledgerState.result = { kind: ledgerState.bank > ledgerState.startBank ? "win" : "push", text: "离桌：账 " + ledgerState.bank + "，本局印记 +" + gain + "。" };
+          renderLedger();
+        };
+        actions.appendChild(finish);
+      }
+    } else {
+      const again = el("button", "btn btn-primary", "再开一桌");
+      again.onclick = () => { ledgerStart(); };
+      actions.appendChild(again);
+    }
+    shell.appendChild(actions);
+    const log = el("div", "ledger-log");
+    log.appendChild(el("div", "panel-label", "账本记录"));
+    for (const line of ledgerState.log.slice(-6)) log.appendChild(el("div", null, line));
+    shell.appendChild(log);
+    box.appendChild(shell);
+  }
+
+  let battlerState = null;
+  function battlerArt(def) {
+    if (!def) return "";
+    if (def.art) return "assets/portraits/" + def.art + ".webp";
+    if (def.noArtwork) return "";
+    return "assets/generated/" + encodeURIComponent(def.id) + ".webp";
+  }
+  function battlerPool() {
+    return Object.values(D.CARDS).filter(c => !c.token && !c.disabled && c.type === "minion");
+  }
+  function battlerRollShop(state, n) {
+    const pool = battlerPool().filter(c => (c.cost || 0) <= ((state.tier || 1) + 2));
+    const shop = [];
+    for (let i = 0; i < (n || 3); i++) shop.push(pool[Math.floor(Math.random() * pool.length)]);
+    state.shop = shop;
+  }
+  function battlerUnit(def) {
+    return { cardId: def.id, name: def.name, attack: def.attack || 1, health: def.health || 1, maxHealth: def.health || 1 };
+  }
+  function battlerGenEnemy(state) {
+    const pool = battlerPool();
+    const size = Math.min(6, Math.max(1, state.round));
+    state.enemy = [];
+    for (let i = 0; i < size; i++) {
+      const def = pool[Math.floor(Math.random() * pool.length)];
+      const u = battlerUnit(def);
+      if (state.round >= 5) { u.attack += 1; u.health += 1; u.maxHealth += 1; }
+      state.enemy.push(u);
+    }
+  }
+  function battlerStart() {
+    battlerState = { hp: 30, enemyHp: 30, round: 1, tier: 1, gold: 3, board: [], shop: [], enemy: [], phase: "shop", log: ["买人，布阵，开战。账会自己说话。"] };
+    battlerRollShop(battlerState, 3);
+    battlerGenEnemy(battlerState);
+    renderAutoBattler();
+  }
+  function battlerCardNode(def, onBuy) {
+    const card = el("div", "battler-card");
+    const art = battlerArt(def);
+    if (art) { const img = el("img", "battler-card-art"); img.src = art; img.alt = ""; card.appendChild(img); }
+    const name = el("strong", null, def.name);
+    card.appendChild(name);
+    card.appendChild(el("span", "battler-card-stats", (def.attack || 1) + " / " + (def.health || 1)));
+    if (onBuy) {
+      const buy = el("button", "btn btn-small btn-primary", "买入 · 3 账");
+      buy.onclick = onBuy;
+      card.appendChild(buy);
+    }
+    return card;
+  }
+  function battlerUnitNode(u) {
+    const node = el("div", "battler-unit");
+    node.appendChild(el("strong", null, u.name));
+    node.appendChild(el("span", null, u.attack + " / " + Math.max(0, u.health)));
+    return node;
+  }
+  function battlerCombat(state) {
+    const p = state.board.map(x => Object.assign({}, x));
+    const e = state.enemy.map(x => Object.assign({}, x));
+    const log = [];
+    let guard = 0;
+    while (p.length && e.length && guard++ < 60) {
+      const pa = p[0], ea = e[0];
+      ea.health -= pa.attack;
+      log.push(pa.name + " 击中 " + ea.name + "，造成 " + pa.attack + " 伤害。");
+      if (ea.health <= 0) { log.push(ea.name + " 倒下。"); e.shift(); }
+      if (!e.length) break;
+      pa.health -= ea.attack;
+      log.push(ea.name + " 反击 " + pa.name + "，造成 " + ea.attack + " 伤害。");
+      if (pa.health <= 0) { log.push(pa.name + " 倒下。"); p.shift(); }
+    }
+    let damage = 0;
+    if (p.length && !e.length) { damage = 3 + p.length; state.enemyHp -= damage; log.push("你赢下这一局，敌方领袖受到 " + damage + " 点伤害。"); }
+    else if (e.length && !p.length) { damage = 3 + e.length; state.hp -= damage; log.push("敌方赢下这一局，你的领袖受到 " + damage + " 点伤害。"); }
+    else log.push("双方打平，账不动。");
+    state.lastBattle = { player: p, enemy: e, log: log.slice(-8) };
+    state.log = state.log.concat(log.slice(-8));
+    state.phase = "result";
+    if (state.hp <= 0 || state.enemyHp <= 0) {
+      state.phase = "done";
+      if (state.enemyHp <= 0) {
+        const data = load(); data.marks = (data.marks || 0) + 3; save(data);
+        state.log.push("你赢了自走棋，档案印记 +3。");
+      }
+    }
+  }
+  function renderAutoBattler() {
+    const box = root();
+    if (!box) return;
+    if (!battlerState) { battlerStart(); return; }
+    const s = battlerState;
+    clear(box);
+    const shell = el("div", "battler-shell");
+    const head = el("div", "content-subhead");
+    setBattlerChrome();
+    const back = el("button", "btn btn-small btn-ghost", "← 返回开始推演");
+    back.onclick = () => { if (GokUI) GokUI.showScreen("other"); };
+    const title = el("div", null, "");
+    title.appendChild(el("div", "eyebrow", "AUTO BATTLE / 流脉自走棋"));
+    title.appendChild(el("h2", null, "流脉自走棋"));
+    head.appendChild(back); head.appendChild(title);
+    shell.appendChild(head);
+    const stats = el("div", "battler-stats");
+    stats.appendChild(el("span", null, "你 " + Math.max(0, s.hp) + " 生命"));
+    stats.appendChild(el("span", null, "账 " + s.gold));
+    stats.appendChild(el("span", null, "酒馆等级 " + s.tier));
+    stats.appendChild(el("span", null, "第 " + s.round + " 轮"));
+    stats.appendChild(el("span", null, "敌方 " + Math.max(0, s.enemyHp) + " 生命"));
+    shell.appendChild(stats);
+    const shop = el("div", "battler-shop");
+    shop.appendChild(el("div", "panel-label", "酒馆 · 3 账买一个"));
+    const shopRow = el("div", "battler-shop-row");
+    s.shop.forEach((def, i) => shopRow.appendChild(battlerCardNode(def, s.phase !== "shop" ? null : () => {
+      if (s.gold < 3 || s.board.length >= 6) { s.log.push(s.board.length >= 6 ? "阵位已满。" : "账不够。"); renderAutoBattler(); return; }
+      s.gold -= 3; s.board.push(battlerUnit(def)); s.shop.splice(i, 1); s.log.push("买入 " + def.name + "。"); renderAutoBattler();
+    })));
+    shop.appendChild(shopRow); shell.appendChild(shop);
+    const boards = el("div", "battler-boards");
+    for (const [label, units, cls] of [["你的阵位", s.board, "player"], ["敌方阵位", s.enemy, "enemy"]]) {
+      const side = el("div", "battler-side " + cls);
+      side.appendChild(el("div", "panel-label", label + " · " + units.length + "/6"));
+      const row = el("div", "battler-row");
+      if (!units.length) row.appendChild(el("span", "muted", "空阵位"));
+      if (cls === "player") {
+        units.forEach((u, idx) => {
+          const node = battlerUnitNode(u);
+          if (s.phase === "shop") {
+            const sell = el("button", "battler-sell", "卖 +2");
+            sell.onclick = () => { s.board.splice(idx, 1); s.gold += 2; s.log.push("卖出 " + u.name + "，账 +2。"); renderAutoBattler(); };
+            node.appendChild(sell);
+          }
+          row.appendChild(node);
+        });
+      } else {
+        for (const u of units) row.appendChild(battlerUnitNode(u));
+      }
+      side.appendChild(row); boards.appendChild(side);
+    }
+    shell.appendChild(boards);
+    const result = el("div", "battler-result");
+    if (s.lastBattle) for (const line of s.lastBattle.log) result.appendChild(el("div", null, line));
+    if (s.phase === "done") result.appendChild(el("strong", null, s.enemyHp <= 0 ? "账平了。你赢下自走棋。" : "这一桌，你输了。"));
+    shell.appendChild(result);
+    const actions = el("div", "modal-actions");
+    if (s.phase === "shop") {
+      const roll = el("button", "btn btn-small btn-ghost", "刷新 · 1 账");
+      roll.disabled = s.gold < 1;
+      roll.onclick = () => { if (s.gold < 1) return; s.gold--; battlerRollShop(s, 3); renderAutoBattler(); };
+      const tierCost = [4, 6, 8, 10][s.tier - 1];
+      const upgrade = el("button", "btn btn-small btn-ghost", s.tier >= 5 ? "酒馆满级" : "升级 · " + tierCost + " 账");
+      upgrade.disabled = s.tier >= 5 || s.gold < tierCost;
+      upgrade.onclick = () => { if (s.tier >= 5 || s.gold < tierCost) return; s.gold -= tierCost; s.tier++; battlerRollShop(s, 3); s.log.push("酒馆升至 " + s.tier + " 级。"); renderAutoBattler(); };
+      const fight = el("button", "btn btn-primary", "开战");
+      fight.disabled = !s.board.length;
+      fight.onclick = () => { if (!s.board.length) return; battlerCombat(s); renderAutoBattler(); };
+      actions.appendChild(roll); actions.appendChild(upgrade); actions.appendChild(fight);
+    } else if (s.phase === "result") {
+      const next = el("button", "btn btn-primary", "下一轮");
+      next.onclick = () => {
+        s.round++; s.gold = Math.min(10, 3 + s.round); s.lastBattle = null; s.phase = "shop";
+        battlerRollShop(s, 3); battlerGenEnemy(s); renderAutoBattler();
+      };
+      actions.appendChild(next);
+    } else {
+      const again = el("button", "btn btn-primary", "再开一桌");
+      again.onclick = () => battlerStart();
+      actions.appendChild(again);
+    }
+    shell.appendChild(actions);
+    const log = el("div", "battler-log");
+    log.appendChild(el("div", "panel-label", "战报"));
+    for (const line of s.log.slice(-6)) log.appendChild(el("div", null, line));
+    shell.appendChild(log);
+    box.appendChild(shell);
+  }
+  function openAutoBattler() {
+    if (global.GokBattler) { global.GokBattler.open(); return; }
+    if (global.GokUI) GokUI.showScreen("content");
+    battlerState = null;
+    renderAutoBattler();
+  }
+  function openLedger() {
+    if (global.GokUI) GokUI.showScreen("content");
+    ledgerState = null;
+    renderLedger();
+  }
+
   const MARKET = [
     { id: "exp_hp", name: "远征体魄", desc: "每次远征开局生命上限 +3。", cost: 2 },
     { id: "exp_armor", name: "远征护甲", desc: "每次远征开局护甲 +1。", cost: 1 },
     { id: "exp_gold", name: "远征盘缠", desc: "每次远征开局金币 +5。", cost: 1 },
-    { id: "arena_armor", name: "竞技场护甲", desc: "竞技场战斗开局护甲 +2。", cost: 1 }
+    { id: "arena_armor", name: "竞技场护甲", desc: "竞技场战斗开局护甲 +2。", cost: 1 },
+    { id: "battler_gold", name: "战棋盘缠", desc: "战棋开局额外 +2 账。", cost: 2 },
+    { id: "battler_armor", name: "战棋护幕", desc: "战棋开局额外 +2 护甲。", cost: 1 },
+    { id: "arcade_luck", name: "街机好运", desc: "账牌/三骰开局底账 +1。", cost: 1 }
   ];
   function renderMarket(box, data) {
     const panel = el("div", "mode-panel market-panel");
@@ -887,5 +1322,5 @@
     if (back) back.onclick = () => { if (global.GokUI) GokUI.showScreen("home"); };
   }
   init();
-  global.GokContent = { open: open, afterGame: afterGame, renderHub: renderHub, openDaily: openDaily, resume: resumeContent };
+  global.GokContent = { open: open, afterGame: afterGame, renderHub: renderHub, openDaily: openDaily, resume: resumeContent, openAutoBattler: openAutoBattler, openLedger: openLedger, grantDaily: grantDaily };
 })(typeof globalThis !== "undefined" ? globalThis : this);

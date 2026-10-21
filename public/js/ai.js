@@ -201,6 +201,10 @@
     }
     if (def.type === "minion") s += def.attack * 0.7 + def.health * 0.5;
     if (def.type === "relic") s += 10;
+    if (def.type === "equipment") s += 8;
+    if (def.type === "spell" && s < 1.8) s += 1.8;
+    if (def.faction === p.faction) s += 0.35;
+    if (def.keywords && (def.keywords.indexOf("rush") >= 0 || def.keywords.indexOf("charge") >= 0)) s += 1.2;
     if (def.excavate) s -= 1.5;
     if (def.bloodCost) s += 1;
     if (target && target.health <= 0) s -= 100;
@@ -330,6 +334,22 @@
     return { type: "discover", cardId: scored[0].id, score: 99 };
   }
 
+  function handThreat(state, me) {
+    const op = enemyOf(state, me);
+    let t = 0;
+    for (const c of op.hand) {
+      const d = D.CARDS[c.cardId];
+      if (!d) continue;
+      const b = d.spell || {};
+      if (b.type === "damage") t += (b.amount || 1) * 1.15;
+      else if (b.type === "damageAllEnemies" || b.type === "damageAllEnemiesDraw") t += 2.4;
+      else if (b.type === "damageAllEnemiesPerGameSpell" || b.type === "damageAllEnemyUnitsPerGameSpell") t += 2.8;
+      else if (b.type === "freeze" || b.type === "freezeAll") t += 1.1;
+      else if (b.type === "silence") t += 0.8;
+      else if (d.type === "minion" && (d.keywords || []).some(k => k === "rush" || k === "charge")) t += (d.attack || 1) * 0.7;
+    }
+    return t;
+  }
   function boardValue(player) {
     return ownMinions(player).reduce((sum, m) => sum + minionValue(m), 0);
   }
@@ -361,6 +381,10 @@
     if (me.hp + me.armor <= boardAttack(op)) score -= 30;
     if (op.hp <= 0) score += 5000;
     if (me.hp <= 0) score -= 5000;
+    if (state.aiDifficulty === "nightmare") {
+      const threat = handThreat(state, me);
+      score -= threat * ((me.hp + me.armor) < 16 ? 1.35 : 0.45);
+    }
     return score;
   }
 
@@ -470,6 +494,15 @@
     return 0;
   }
 
+  function findLethalAction(state, p) {
+    const actions = enumerateActions(state, p);
+    for (const action of actions.slice(0, 36)) {
+      const next = applyCandidate(state, action, p.index);
+      if (next && next.status === "gameover" && next.winner === p.index) return action;
+    }
+    return null;
+  }
+
   function searchBestAction(state, p, depth, limit) {
     let actions = enumerateActions(state, p);
     if (!actions.length) return null;
@@ -481,7 +514,7 @@
       if (!next) continue;
       if ((depth || 1) > 1 && next.status === "playing" && next.current === p.index) {
         const nextP = next.players[p.index];
-        const second = searchBestAction(next, nextP, 1, limit ? Math.max(4, Math.floor(limit / 2)) : 10);
+        const second = searchBestAction(next, nextP, Math.max(1, (depth || 1) - 1), limit ? Math.max(4, Math.floor(limit / 2)) : 10);
         if (second) {
           const afterSecond = applyCandidate(next, second.action, p.index);
           if (afterSecond) next = afterSecond;
@@ -503,8 +536,10 @@
     const p = state.players[playerIndex];
     if (!p || state.current !== playerIndex) return { type: "end" };
     if (state.aiDifficulty !== "easy") {
-      const depth = state.aiDifficulty === "normal" ? 1 : 2;
-      const limit = state.aiDifficulty === "nightmare" ? 24 : state.aiDifficulty === "hard" ? 14 : 0;
+      const lethalAction = findLethalAction(state, p);
+      if (lethalAction) return lethalAction;
+      const depth = state.aiDifficulty === "nightmare" ? 3 : state.aiDifficulty === "hard" ? 2 : 1;
+      const limit = state.aiDifficulty === "nightmare" ? 22 : state.aiDifficulty === "hard" ? 14 : 0;
       const baseline = evaluateState(state, p.index);
       const searched = searchBestAction(state, p, depth, limit);
       if (searched && searched.action && searched.score > baseline + 0.35) {

@@ -109,15 +109,41 @@
       lainArmorProc: false,
       veinHeartProc: false,
       relic: null,
+      equipments: [],
       formations: [],
       damageDealt: 0
     };
   }
 
+  function applyEquipEffect(state, player, equip) {
+    if (!equip) return;
+    if (equip.armor) { player.armor = (player.armor || 0) + equip.armor; log(state, player.name + " 获得 " + equip.armor + " 点护甲（装备）。", player, "armor"); }
+    if (equip.healHero) healHero(state, player, equip.healHero);
+    if (equip.maxHp) { player.maxHp += equip.maxHp; player.hp += equip.maxHp; }
+    if (equip.gainMana) player.mana += equip.gainMana;
+    if (equip.draw) drawCard(state, player, equip.draw);
+    if (equip.buffAllAllies) for (const m of aliveMinions(player)) buffMinion(state, m, equip.buffAllAllies.attack || 0, equip.buffAllAllies.health || 0, "装备", true);
+    if (equip.damageAllEnemies) {
+      for (const m of aliveMinions(opponentOf(state, player))) damageMinion(state, m, equip.damageAllEnemies, null, "装备");
+      processDeaths(state);
+    }
+    if (equip.summon) { const zone = openZones(player)[0]; if (zone) summonMinion(state, player, equip.summon, zone, null); }
+  }
+
+  function activeEquipment(player) {
+    if (!player) return [];
+    if (Array.isArray(player.equipments) && player.equipments.length) return player.equipments;
+    return player.relic ? [player.relic] : [];
+  }
+  function hasEquipment(player, id) {
+    return activeEquipment(player).indexOf(id) >= 0;
+  }
+
   function buildDeck(state, factionId, customList) {
     let ids = D.DECKS[factionId];
-    const mainOnly = Array.isArray(customList) && customList.length === 30 && customList.every(id => D.CARDS[id] && D.CARDS[id].type !== "relic");
-    const withRelic = Array.isArray(customList) && customList.length === 31 && customList.filter(id => D.CARDS[id] && D.CARDS[id].type === "relic").length === 1;
+    const isEquip = (id) => D.CARDS[id] && (D.CARDS[id].type === "equipment" || D.CARDS[id].type === "equipment");
+    const mainOnly = Array.isArray(customList) && customList.length === 30 && customList.every(id => D.CARDS[id] && !isEquip(id));
+    const withRelic = Array.isArray(customList) && customList.length === 31 && customList.filter(id => isEquip(id)).length === 1;
     if (mainOnly || withRelic) {
       ids = customList.slice();
     } else if (Array.isArray(customList) && D.validateDeck && D.validateDeck(factionId, customList).ok) {
@@ -179,12 +205,12 @@
       if (!m.keywords.includes("taunt")) m.keywords.push("taunt");
     }
     const ownerPlayer = owner && owner.heroId ? owner : state.players[owner];
-    if (ownerPlayer && ownerPlayer.relic === "iron_banner" && m.taunt && !m.silenced) {
+    if (ownerPlayer && hasEquipment(ownerPlayer, "iron_banner") && m.taunt && !m.silenced) {
       m.attack += 1;
       m.health += 1;
       m.maxHealth += 1;
     }
-    if (ownerPlayer && ownerPlayer.relic === "gh_venom_vial" && m.poisonous && !m.silenced) {
+    if (ownerPlayer && hasEquipment(ownerPlayer, "gh_venom_vial") && m.poisonous && !m.silenced) {
       m.attack += 1;
     }
     return m;
@@ -211,7 +237,7 @@
         out.attackVsFrozen += d.formation.attackVsFrozen || 0;
       }
     }
-    if (hasFormation && player.relic === "formation_standard") { out.attack += 1; }
+    if (hasFormation && hasEquipment(player, "formation_standard")) { out.attack += 1; }
     return out;
   }
 
@@ -696,15 +722,15 @@
             log(state, m.name + " 回潮。", p, "reborn");
           }
         }
-        if (p.relic === "blood_scythe") {
+        if (hasEquipment(p, "blood_scythe")) {
           healHero(state, p, 1);
           log(state, "血潮镰：恢复领袖 1 点生命。", p, "heal");
         }
-        if (p.relic === "republic_seal" && m.taunt) {
+        if (hasEquipment(p, "republic_seal") && m.taunt) {
           drawCard(state, p, 1);
           log(state, "议席印玺：拦截随从死亡，抽 1 张牌。", p, "draw");
         }
-        if (p.relic === "powder_engine") {
+        if (hasEquipment(p, "powder_engine")) {
           const enemy = opponentOf(state, p);
           const targets = aliveMinions(enemy);
           const pick = randomInt(state, targets.length + 1);
@@ -909,7 +935,7 @@
     if (tier.armor) { player.armor += tier.armor; log(state, player.name + " 获得 " + tier.armor + " 点护甲（引脉）。", player, "armor"); }
     if (tier.healHero) healHero(state, player, tier.healHero);
     if (tier.draw) drawCard(state, player, tier.draw);
-    if (player.relic === "vein_heart") {
+    if (hasEquipment(player, "vein_heart")) {
       healHero(state, player, 2);
       log(state, "地脉之心：引脉触发，恢复领袖 2 点生命。", player, "heal");
     }
@@ -942,6 +968,7 @@
     if (def.bloodCost != null && player.hp <= def.bloodCost) return { ok: false, reason: "生命不足，无法支付血祭", code: "bloodPay" };
     if (def.id === "armor_mortar" && (player.armor || 0) < 3) return { ok: false, reason: "需要至少 3 点护甲", code: "armor" };
     if (def.type === "minion" && boardCount(player) >= 6) return { ok: false, reason: "随从已满", code: "boardFull" };
+    if ((def.type === "equipment" || def.type === "equipment") && activeEquipment(player).length >= 2) return { ok: false, reason: "装备槽已满", code: "equipmentFull" };
     const targetType = getTargetType(state, def);
     const target = opts && opts.targetUid ? findMinion(state, opts.targetUid) : null;
     if (targetType) {
@@ -975,7 +1002,7 @@
         return { ok: false, reason: "请选择一个阵位", code: "zone", zones: def.type === "minion" ? openZones(player) : ZONES.slice() };
       }
       if (def.type === "minion" && !zoneHasSpace(player, zone)) return { ok: false, reason: "该阵位已满", code: "zoneFull" };
-      if (def.type === "formation" && (player.formations || []).length >= 2) return { ok: false, reason: "阵型槽已满", code: "formationFull" };
+      if (def.type === "formation" && (player.formations || []).length >= 8) return { ok: false, reason: "阵型槽已满", code: "formationFull" };
     }
     if (def.bloodCost != null) {
       player.hp -= def.bloodCost;
@@ -1034,7 +1061,7 @@
         if (enemies.length) freezeMinion(state, enemies[randomInt(state, enemies.length)]);
         freezeObserverDone = true;
       }
-      if (player.relic === "frost_prism") {
+      if (hasEquipment(player, "frost_prism")) {
         healHero(state, player, 1);
         log(state, "霜晶棱镜：恢复领袖 1 点生命。", player, "heal");
       }
@@ -1071,9 +1098,12 @@
         }
         endDeferredDeaths(state);
       }
-    } else if (def.type === "relic") {
+    } else if (def.type === "equipment" || def.type === "equipment") {
+      const equipments = player.equipments || (player.equipments = []);
+      if (equipments.length >= 2) return { ok: false, reason: "装备槽已满" };
       const hadRelic = player.relic;
-      player.relic = def.id;
+      if (equipments.indexOf(def.id) < 0) equipments.push(def.id);
+      player.relic = equipments[0] || def.id;
       const basePower = D.HEROES[player.heroId] && D.HEROES[player.heroId].power;
       if (def.id === "spell_codex") {
         player.hero.power = {
@@ -1086,13 +1116,14 @@
       } else if (basePower) {
         player.hero.power = Object.assign({}, basePower);
       }
+      applyEquipEffect(state, player, def.equip);
       if (def.id === "wanderer_charm") { player.maxHp += 5; }
       if (def.id === "formation_standard") { for (const zone of new Set((player.formations || []).map(f => f.zone))) applyFormationToZone(state, player, zone); }
       if (def.id === "gh_venom_vial" && hadRelic !== "gh_venom_vial") {
         for (const m of aliveMinions(player)) if (m.poisonous && !m.silenced) m.attack += 1;
         log(state, "淬毒瓶：所有蚀毒随从获得 +1 攻击。", player, "buff");
       }
-      log(state, player.name + " 装备遗物「" + def.name + "」。", player, "relic");
+      log(state, player.name + " 装备「" + def.name + "」。", player, "equipment");
     } else if (def.type === "formation") {
       player.formations = player.formations || [];
       player.formations.push({ cardId: def.id, zone: zone, turnsLeft: def.formation && def.formation.duration ? def.formation.duration : null });
@@ -2269,7 +2300,7 @@
       state.events.push({ structured: true, kind: "armor", player: owner.index, amount: 1 });
       log(state, "抽成：" + owner.name + " 获得 1 点护甲。", owner, "armor");
     }
-    if (owner.relic === "gh_bounty_board") {
+    if (hasEquipment(owner, "gh_bounty_board")) {
       drawCard(state, owner, 1);
       log(state, "悬赏榜：额外抽 1 张牌。", owner, "draw");
     }
@@ -2445,7 +2476,7 @@
     if (!oldDef) return [];
     return Object.keys(D.CARDS).filter(id => {
       const d = D.CARDS[id];
-      if (!d || d.token || d.disabled || d.cost !== oldDef.cost || id === oldDef.id || d.type === "relic") return false;
+      if (!d || d.token || d.disabled || d.cost !== oldDef.cost || id === oldDef.id || d.type === "equipment") return false;
       return d.faction === player.faction;
     });
   }
@@ -2577,7 +2608,7 @@
     player.nextTurnManaBonus = 0;
     player.overload = 0;
     if (player.heroId === "marta") player.spellCostReduction = 1;
-            if (player.relic === "armor_forge") { player.armor += 1; log(state, player.name + " 的帝国锻炉提供 1 点护甲。", player, "armor"); }
+            if (hasEquipment(player, "armor_forge")) { player.armor += 1; log(state, player.name + " 的帝国锻炉提供 1 点护甲。", player, "armor"); }
     for (const f of player.formations || []) {
       if (f.turnsLeft != null) f.turnsLeft -= 1;
     }
@@ -2596,7 +2627,7 @@
       m.ignoreTaunt = false;
       m.justPlayed = false;
     }
-    if (player.relic === "blood_censer") {
+    if (hasEquipment(player, "blood_censer")) {
       const targets = [];
       for (const p of state.players) for (const m of aliveMinions(p)) targets.push(m);
       if (targets.length) {
@@ -2861,16 +2892,11 @@
 
     state.players[0].name = config.p1Name || (config.p1AI ? D.FACTIONS[faction1].name + "推演体" : "玩家 1");
     state.players[1].name = config.p2Name || (config.p2AI ? D.FACTIONS[faction2].name + "推演体" : "玩家 2");
-    const firstRelic = (f) => (D.DECKS[f] || []).find(id => D.CARDS[id] && D.CARDS[id].type === "relic");
-    const deckWithRelic = (f) => {
-      const list = (D.DECKS[f] || []).filter(id => D.CARDS[id] && D.CARDS[id].type !== "relic");
-      const relic = firstRelic(f);
-      return relic ? list.concat([relic]) : list;
-    };
+    const deckWithRelic = (f) => (D.DECKS[f] || []).slice();
     state.players[0].deck = buildDeck(state, faction1, config.p1Deck || deckWithRelic(faction1));
     state.players[1].deck = buildDeck(state, faction2, config.p2Deck || deckWithRelic(faction2));
     for (const p of state.players) {
-      if (p.relic === "wanderer_charm") { p.maxHp += 5; }
+      if (hasEquipment(p, "wanderer_charm")) { p.maxHp += 5; }
     }
     // 随机先手：先手 3 张，后手 4 张 + 采掘许可
     const first = config.first == null ? (nextRandom(state) < 0.5 ? 0 : 1) : config.first;
