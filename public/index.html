@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>戈克世界：流脉牌局</title>
   <link rel="icon" href="favicon.ico">
-  <link rel="stylesheet" href="css/style.css?v=20261020e50">
-  <link rel="stylesheet" href="css/hs-layout.css?v=20261020e50">
-  <link rel="stylesheet" href="css/art-fixes.css?v=20261020e50">
-  <link rel="stylesheet" href="css/mobile.css?v=20261020e50">
-  <link rel="stylesheet" href="css/vfx.css?v=20261020e50">
+  <link rel="stylesheet" href="css/style.css?v=20261020e56">
+  <link rel="stylesheet" href="css/hs-layout.css?v=20261020e56">
+  <link rel="stylesheet" href="css/art-fixes.css?v=20261020e56">
+  <link rel="stylesheet" href="css/mobile.css?v=20261020e56">
+  <link rel="stylesheet" href="css/vfx.css?v=20261020e56">
 </head>
 <body data-screen="home">
   <div id="channel-badge" class="channel-badge" hidden></div>
@@ -45,13 +45,15 @@
           <h1>戈克世界<span>流脉牌局</span></h1>
           <div class="brand-en">戈克世界 · 流脉牌局</div>
           <p class="brand-copy">流脉会自然回流。采掘戈克会加速它。<br>当它涨到 4 / 7 / 10，世界会替你们结算。</p>
-          <div class="home-factions" aria-label="六个阵营">
+          <div class="home-factions" aria-label="八个阵营">
             <span data-faction-chip="pus"><i></i>普卫岛</span>
             <span data-faction-chip="academy"><i></i>学院</span>
             <span data-faction-chip="xizhao"><i></i>西昭</span>
             <span data-faction-chip="republic"><i></i>共和国</span>
             <span data-faction-chip="empire"><i></i>帝国</span>
             <span data-faction-chip="greyharbor"><i></i>灰港同盟</span>
+            <span data-faction-chip="losutai"><i></i>洛斯汰</span>
+            <span data-faction-chip="snow"><i></i>雪都</span>
           </div>
           <div class="home-start-wrap home-dual">
             <button id="home-classic" class="home-start-button mode-home-classic" type="button">
@@ -68,7 +70,7 @@
             </button>
           </div>
           <button id="btn-game-guide" class="home-guide"><span class="home-guide-icon">?</span><span class="home-guide-copy"><strong>规则与教程</strong><small>阵位 · 流脉 · 关键词 · 六步训练</small></span><span class="home-guide-arrow">→</span></button>
-          <div class="home-version">非正史档案推演 · 六阵营 · 400 张主卡 + 48 件装备</div>
+          <div class="home-version">非正史档案推演 · 八阵营 · 500 张主卡 + 60 件装备</div>
         </div>
         <aside class="home-legendary" id="home-legendary">
           <div class="home-legendary-art" id="home-legendary-art">
@@ -88,7 +90,7 @@
         </aside>
         <nav class="home-nav" aria-label="档案功能">
           <button id="btn-deck-home" class="home-nav-item"><span class="home-nav-no">01</span><strong>构筑牌组</strong><small>手动 / 自动构筑</small></button>
-          <button id="btn-codex" class="home-nav-item"><span class="home-nav-no">02</span><strong>图鉴</strong><small>472 张卡牌档案</small></button>
+          <button id="btn-codex" class="home-nav-item"><span class="home-nav-no">02</span><strong>图鉴</strong><small>584 张卡牌档案</small></button>
           <button id="btn-achievements" class="home-nav-item"><span class="home-nav-no">03</span><strong>成就</strong><small>档案记录与解锁</small></button>
           <button id="btn-rank-home" class="home-nav-item"><span class="home-nav-no">04</span><strong>排位</strong><small>段位 · 积分 · 战绩</small></button>
           <button id="btn-settings" class="home-nav-item"><span class="home-nav-no">05</span><strong>设置</strong><small>画面 · 音效 · 操作</small></button>
@@ -329,14 +331,14 @@
         <div class="tutorial-intro">
           <div class="eyebrow">欢迎来到档案室 · 实战手册</div>
           <h3>从规则到第一局。</h3>
-          <p>《戈克世界：流脉牌局》是一款双人对战卡牌游戏。在随从与领袖的基础玩法上，加入了阵位、流脉、遗物等新机制。下面按对局基础、卡牌类型、实战流程与关键词，把规则一次讲清。</p>
+          <p>《戈克世界：流脉牌局》是一款双人对战卡牌游戏。在随从与领袖的基础玩法上，加入了阵位、流脉、装备等新机制。下面按对局基础、卡牌类型、实战流程与关键词，把规则一次讲清。</p>
         </div>
         <div class="tutorial-route">
           <div class="tutorial-route-head"><span class="panel-label">TRAINING ROUTE / 六步训练</span><small>先选一课，再进入实战演练。</small></div>
           <div class="tutorial-route-grid">
             <button class="tutorial-route-step" data-tutorial-jump="tutorial-core"><b>01</b><strong>基础规则</strong><small>目标 · 行动力 · 抽牌</small></button>
             <button class="tutorial-route-step" data-tutorial-jump="tutorial-zones"><b>02</b><strong>阵位与攻击</strong><small>站位 · 互殴 · 拦截</small></button>
-            <button class="tutorial-route-step" data-tutorial-jump="tutorial-cards"><b>03</b><strong>卡牌与牌组</strong><small>四类卡 · 30+2</small></button>
+            <button class="tutorial-route-step" data-tutorial-jump="tutorial-cards"><b>03</b><strong>卡牌与牌组</strong><small>四类卡 · 30 张</small></button>
             <button class="tutorial-route-step" data-tutorial-jump="tutorial-flow"><b>04</b><strong>实战流程</strong><small>铺场 · 交换 · 斩杀</small></button>
             <button class="tutorial-route-step" data-tutorial-jump="tutorial-glossary"><b>05</b><strong>关键词</strong><small>26 个核心词条</small></button>
             <button class="tutorial-route-step tutorial-route-drill" data-tutorial-drill="1"><b>06</b><strong>进入演练</strong><small>带着目标打一局</small></button>
@@ -371,7 +373,7 @@
               </article>
               <article class="tutorial-card">
                 <h4>随从攻击</h4>
-                <p>当回合打出的随从不能立即攻击，需要等到下一回合；随从互殴时双方同时受到等于对方攻击力的伤害，生命归零离场。具有突进（突进）、袭扰（袭扰）等关键词的随从除外。</p>
+                <p>当回合打出的随从不能立即攻击，需要等到下一回合；随从互殴时双方同时受到等于对方攻击力的伤害，生命归零离场。具有先遣（先遣）、先遣（先遣）等关键词的随从除外。</p>
               </article>
               <article class="tutorial-card">
                 <h4>阵位</h4>
@@ -455,7 +457,7 @@
             </div>
             <div class="manual-callout">
               <strong>牌组结构</strong>
-              <p>30 张主牌（随从 + 战术 + 阵型）+ 2 件装备牌。领袖在开局单独选择，不占牌组，也不进入牌库。新手前期不用自己组卡，系统提供预设基础牌组。</p>
+              <p>30 张卡（随从 + 战术 + 阵型 + 装备自由混编）。领袖在开局单独选择，不占牌组，也不进入牌库。新手前期不用自己组卡，系统提供预设基础牌组。</p>
             </div>
           </section>
 
@@ -484,7 +486,7 @@
                 <p>优先低费随从铺场 → 用战术解场或增幅 → 随从攻击 → 使用领袖技能 → 结束回合。</p>
               </div>
             </div>
-            <p class="manual-note">双方交替行动，直到一方领袖生命归零。领袖本身不进行普通攻击，主要依靠技能、遗物与卡牌影响战局。</p>
+            <p class="manual-note">双方交替行动，直到一方领袖生命归零。领袖本身不进行普通攻击，主要依靠技能、装备与卡牌影响战局。</p>
           </section>
 
           <section class="manual-section" id="tutorial-practice">
@@ -506,7 +508,7 @@
               </article>
               <article class="tutorial-card">
                 <h4>后期</h4>
-                <p>集中资源爆发斩杀；同时留意流脉阈值和对手的拦截随从。</p>
+                <p>集中资源爆发斩杀；同时留意流脉阈值和对手的守备随从。</p>
               </article>
             </div>
           </section>
@@ -546,16 +548,16 @@
         <div class="tutorial-intro">
           <div class="eyebrow">戈克世界 · 流脉牌局</div>
           <h3>先把规则看清，再谈输赢。</h3>
-          <p>30 张主牌（随从 + 战术 + 阵型）+ 2 件装备牌；领袖在开局单独选择，不占牌组。把对方领袖的生命打到 0 即获胜。流脉是双方共享的风险条：它既是资源，也是倒计时。</p>
+          <p>30 张卡（随从 + 战术 + 阵型 + 装备自由混编）；领袖在开局单独选择，不占牌组。把对方领袖的生命打到 0 即获胜。流脉是双方共享的风险条：它既是资源，也是倒计时。</p>
         </div>
         <div class="tutorial-grid tutorial-grid-seven">
-          <article class="tutorial-card"><div class="tutorial-icon">01</div><h4>对局目标</h4><p>把对方领袖生命打到 0。随从可以攻击敌方随从或领袖；敌方有拦截随从时，必须先处理拦截。</p></article>
+          <article class="tutorial-card"><div class="tutorial-icon">01</div><h4>对局目标</h4><p>把对方领袖生命打到 0。随从可以攻击敌方随从或领袖；敌方有守备随从时，必须先处理守备。</p></article>
           <article class="tutorial-card"><div class="tutorial-icon">02</div><h4>回合流程</h4><p>回合开始：行动力 +1（上限 10）、抽 1 张牌。之后可以出牌、攻击、使用领袖技能，最后结束回合交给对手。</p></article>
           <article class="tutorial-card"><div class="tutorial-icon">03</div><h4>行动力</h4><p>第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张，并额外获得「采掘许可」（本回合 +2 点行动力）。</p></article>
           <article class="tutorial-card"><div class="tutorial-icon">04</div><h4>流脉</h4><p>双方共享 0→12，每次完整轮次（双方各行动一次）自然 +1。达到 4 震荡、7 裂隙、10 魔物潮时触发世界事件；12 回流清空。引脉是达到阈值后的额外效果；采掘会同时抽牌并加速流脉。</p></article>
           <article class="tutorial-card"><div class="tutorial-icon">05</div><h4>阵位与对位</h4><p>左翼 / 中枢 / 右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。同阵位会触发协同数值；双方同一列互为对位。</p></article>
-          <article class="tutorial-card"><div class="tutorial-icon">06</div><h4>卡牌与牌组</h4><p>随从站场，战术一次性结算，阵型挂在某个阵位持续生效，遗物装备在领袖身上。牌组为 30 张主牌（随从 + 战术 + 阵型）+ 2 件装备牌；领袖开局单独选择，不占牌组。</p></article>
-          <article class="tutorial-card"><div class="tutorial-icon">07</div><h4>关键词</h4><p>登场、余响、拦截、突进、冻结、沉默、引脉、检索、采掘、血祭、镇脉、压脉、悬赏等关键词会在卡牌标签上标明；把鼠标移到标签上可查看说明。</p></article>
+          <article class="tutorial-card"><div class="tutorial-icon">06</div><h4>卡牌与牌组</h4><p>随从站场，战术一次性结算，阵型挂在某个阵位持续生效，装备装备在领袖身上。牌组为 30 张卡（随从 + 战术 + 阵型 + 装备自由混编）；领袖开局单独选择，不占牌组。</p></article>
+          <article class="tutorial-card"><div class="tutorial-icon">07</div><h4>关键词</h4><p>登场、余响、拦截、先遣、冻结、沉默、引脉、检索、采掘、血祭、镇脉、压脉、悬赏等关键词会在卡牌标签上标明；把鼠标移到标签上可查看说明。</p></article>
           <article class="tutorial-card"><div class="tutorial-icon">08</div><h4>胜负与模式</h4><p>支持单人 AI、局域网与在线房间。领袖生命归零即败；双方同时归零为平局。对局中可认输，起手阶段可调度手牌。</p></article>
         </div>
         <div class="panel rules-keyword-panel">
@@ -611,6 +613,7 @@
             <button class="deck-filter" data-codex-filter="spell">战术</button>
             <button class="deck-filter" data-codex-filter="formation">阵型</button>
             <button class="deck-filter" data-codex-filter="equipment">装备</button>
+            <button class="deck-filter" data-codex-filter="debt">债务</button>
           </div>
         </div>
         <div id="codex-empty" class="codex-empty" hidden>没有匹配的卡牌。试试放宽筛选条件，或重置过滤。</div>
@@ -746,8 +749,8 @@
           </div>
           <div class="panel settings-panel settings-about-panel">
             <div class="panel-label">关于 / ABOUT</div>
-            <p class="settings-about">《戈克世界：流脉牌局》经典模式 2.0。六阵营、400 张主卡 + 48 件装备，支持起手调度、编成、单人 AI 与在线组队码房间。</p>
-            <p class="settings-about">当前构建：20261020e50</p>
+            <p class="settings-about">《戈克世界：流脉牌局》经典模式 2.0。八阵营、500 张主卡 + 60 件装备，支持起手调度、编成、单人 AI 与在线组队码房间。</p>
+            <p class="settings-about">当前构建：20261020e56</p>
             <button id="btn-settings-credits" class="btn btn-small btn-ghost">制作与素材说明</button>
           </div>
         </div>
@@ -796,6 +799,7 @@
               <button class="deck-filter" data-deck-filter="spell">战术</button>
               <button class="deck-filter" data-deck-filter="formation">阵型</button>
               <button class="deck-filter" data-deck-filter="equipment">装备</button>
+              <button class="deck-filter" data-deck-filter="debt">债务</button>
               <span class="deck-pool-count" id="deck-pool-count"></span>
             </div>
             <div class="deck-scope-row">
@@ -808,7 +812,7 @@
           <aside class="panel deck-side">
             <div class="deck-side-head">
               <div class="deck-count-stack">
-                <strong id="deck-count">32 / 32 张</strong>
+                <strong id="deck-count">30 / 30 张</strong>
                 <small id="deck-count-note">30 张带牌（含阵型，最多 2 张）+ 2 件装备</small>
               </div>
               <span id="deck-valid" class="deck-valid">未完成</span>
@@ -818,7 +822,7 @@
             <div id="deck-curve" class="deck-curve"></div>
             <div id="deck-type-stats" class="deck-type-stats"></div>
 
-            <div class="panel-label section-gap">策略自动构筑 <span class="deck-section-hint">一键替换为 30+2</span></div>
+            <div class="panel-label section-gap">策略自动构筑 <span class="deck-section-hint">一键替换为 30 张</span></div>
             <div class="auto-deck-help">30 张带牌 + 2 件装备，阵型最多 2 张。</div>
             <div class="auto-deck-buttons">
               <button class="auto-deck-btn" data-deck-strategy="aggro"><strong>快攻</strong><span>低费抢血</span><small>铺场 · 抢节奏</small></button>
@@ -869,7 +873,7 @@
                 <div class="faction-body">
                   <span class="faction-tag">西昭</span>
                   <strong>卡尔纳</strong>
-                  <small>血祭 / 突进 / 魔物 · 快攻</small>
+                  <small>血祭 / 先遣 / 魔物 · 快攻</small>
                   <span class="faction-stats">36 生命</span>
                 </div>
               </button>
@@ -909,12 +913,30 @@
                   <span class="faction-stats">30 生命</span>
                 </div>
               </button>
+              <button class="faction-card" data-faction="losutai">
+                <div class="faction-portrait" style="background-image:url('assets/portraits/balaena.webp?v=20261021art9')"></div>
+                <div class="faction-body">
+                  <span class="faction-tag">洛斯汰聚落</span>
+                  <strong>贝莱娜（Balaena）</strong>
+                  <small>召唤 / 余响 / 回潮 / 蚀毒 · 铺场</small>
+                  <span class="faction-stats">32 生命</span>
+                </div>
+              </button>
+              <button class="faction-card" data-faction="snow">
+                <div class="faction-portrait" style="background-image:url('assets/portraits/sernach.webp?v=20261021art9')"></div>
+                <div class="faction-body">
+                  <span class="faction-tag">雪都</span>
+                  <strong>熙尔娜·张</strong>
+                  <small>冻结 / 风系 / 冰墙 · 控制</small>
+                  <span class="faction-stats">30 生命</span>
+                </div>
+              </button>
             </div>
 
             <div class="panel-label section-gap">02 / 牌组</div>
             <div class="setup-deck-row">
               <div class="setup-deck-copy">
-                <strong id="setup-deck-name">预设牌组 · 30+2</strong>
+                <strong id="setup-deck-name">预设牌组 · 30 张</strong>
                 <span id="setup-deck-detail">官方预组</span>
               </div>
               <button id="btn-deck" class="btn btn-small btn-ghost">档案编成</button>
@@ -922,7 +944,7 @@
               <button id="btn-deck-random" class="btn btn-small btn-ghost">随机全池</button>
             </div>
             <div class="panel-label section-gap">03 / 推演参数</div>
-            <div class="setup-summary" id="setup-summary">普卫岛 vs 学院 · 30+2 · 先手随机</div>
+            <div class="setup-summary" id="setup-summary">普卫岛 vs 学院 · 30 张 · 先手随机</div>
             <div class="setup-ai-row"><span>AI 难度</span><button class="ai-diff-btn" data-ai-diff="normal">标准</button><button class="ai-diff-btn" data-ai-diff="easy">简单</button><button class="ai-diff-btn active" data-ai-diff="hard">困难</button><button class="ai-diff-btn" data-ai-diff="nightmare">噩梦</button></div>
             <div class="setup-ai-row setup-ai-faction-row"><span>AI 阵营</span><div id="setup-ai-factions" class="setup-ai-factions"></div></div>
             <div class="setup-series-row"><span>赛制</span><button id="btn-series-bo1" class="series-choice active">单局</button><button id="btn-series-bo3" class="series-choice">三局两胜</button></div>
@@ -1006,7 +1028,7 @@
                   <div class="faction-body">
                     <span class="faction-tag">西昭</span>
                     <strong>卡尔纳</strong>
-                    <small>血祭 / 突进 / 魔物</small>
+                    <small>血祭 / 先遣 / 魔物</small>
                   </div>
                 </button>
                 <button class="faction-card" data-lan-faction="academy">
@@ -1041,6 +1063,14 @@
                     <small>悬赏 / 沉默 / 毒袭</small>
                   </div>
                 </button>
+                <button class="faction-card" data-lan-faction="losutai">
+                  <div class="faction-portrait" style="background-image:url('assets/portraits/balaena.webp?v=20261021art9')"></div>
+                  <div class="faction-body"><span class="faction-tag">洛斯汰聚落</span><strong>贝莱娜（Balaena）</strong><small>召唤 / 余响 / 回潮 / 蚀毒</small></div>
+                </button>
+                <button class="faction-card" data-lan-faction="snow">
+                  <div class="faction-portrait" style="background-image:url('assets/portraits/sernach.webp?v=20261021art9')"></div>
+                  <div class="faction-body"><span class="faction-tag">雪都</span><strong>熙尔娜·张</strong><small>冻结 / 风系 / 冰墙</small></div>
+                </button>
               </div>
               <div class="rank-mode-box">
                 <div class="rank-mode-head"><span class="panel-label">对局模式</span><span id="lan-rank-label" class="rank-mini">青铜 · 0</span></div>
@@ -1050,7 +1080,7 @@
                 </div>
               </div>
               <div class="lan-guest-deck-row">
-                <div><span id="lan-host-deck-label">预设牌组 · 30+2</span><small>房主本局使用</small></div>
+                <div><span id="lan-host-deck-label">预设牌组 · 30 张</span><small>房主本局使用</small></div>
                 <select id="lan-host-deck-select" class="lan-deck-select"><option value="preset">预设牌组</option><option value="custom">自定义牌组</option></select>
                 <button id="btn-lan-host-deck" class="btn btn-small btn-ghost">编成牌组</button>
               </div>
@@ -1067,14 +1097,16 @@
               <div class="panel-label section-gap">你的阵营</div>
               <div id="lan-guest-faction" class="faction-choice">
                 <button class="faction-card active" data-guest-faction="pus"><div class="faction-portrait" style="background-image:url('assets/heroes/lain.webp')"></div><div class="faction-body"><span class="faction-tag">普卫岛</span><strong>莱恩·科斯特</strong><small>协同 / 恢复 / 阵位</small></div></button>
-                <button class="faction-card" data-guest-faction="xizhao"><div class="faction-portrait" style="background-image:url('assets/heroes/karna.webp')"></div><div class="faction-body"><span class="faction-tag">西昭</span><strong>卡尔纳</strong><small>血祭 / 突进 / 魔物</small></div></button>
+                <button class="faction-card" data-guest-faction="xizhao"><div class="faction-portrait" style="background-image:url('assets/heroes/karna.webp')"></div><div class="faction-body"><span class="faction-tag">西昭</span><strong>卡尔纳</strong><small>血祭 / 先遣 / 魔物</small></div></button>
                 <button class="faction-card" data-guest-faction="academy"><div class="faction-portrait" style="background-image:url('assets/heroes/marta.webp')"></div><div class="faction-body"><span class="faction-tag">学院</span><strong>玛尔塔·冯·艾森</strong><small>抽牌 / 冻结 / 检索</small></div></button>
                 <button class="faction-card" data-guest-faction="republic"><div class="faction-portrait" style="background-image:url('assets/heroes/wolfram.webp')"></div><div class="faction-body"><span class="faction-tag">共和国</span><strong>沃尔夫拉姆·冯·施泰因</strong><small>护甲 / 拦截 / 秩序</small></div></button>
                 <button class="faction-card" data-guest-faction="empire"><div class="faction-portrait" style="background-image:url('assets/heroes/otto_centered.webp')"></div><div class="faction-body"><span class="faction-tag">帝国</span><strong>奥托·汉瑟尔</strong><small>炮击 / 护甲 / 重装</small></div></button>
                 <button class="faction-card" data-guest-faction="greyharbor"><div class="faction-portrait" style="background-image:url('assets/heroes/monarch.webp')"></div><div class="faction-body"><span class="faction-tag">灰港同盟</span><strong>莫纳克</strong><small>悬赏 / 沉默 / 毒袭</small></div></button>
+                <button class="faction-card" data-guest-faction="losutai"><div class="faction-portrait" style="background-image:url('assets/portraits/balaena.webp?v=20261021art9')"></div><div class="faction-body"><span class="faction-tag">洛斯汰聚落</span><strong>贝莱娜（Balaena）</strong><small>召唤 / 余响 / 回潮 / 蚀毒</small></div></button>
+                <button class="faction-card" data-guest-faction="snow"><div class="faction-portrait" style="background-image:url('assets/portraits/sernach.webp?v=20261021art9')"></div><div class="faction-body"><span class="faction-tag">雪都</span><strong>熙尔娜·张</strong><small>冻结 / 风系 / 冰墙</small></div></button>
               </div>
               <div class="lan-guest-deck-row">
-                <div><span id="lan-guest-deck-label">预设牌组 · 30+2</span><small>加入后使用这套牌组</small></div>
+                <div><span id="lan-guest-deck-label">预设牌组 · 30 张</span><small>加入后使用这套牌组</small></div>
                 <select id="lan-guest-deck-select" class="lan-deck-select"><option value="preset">预设牌组</option><option value="custom">自定义牌组</option></select>
                 <button id="btn-lan-guest-deck" class="btn btn-small btn-ghost">编成牌组</button>
               </div>
@@ -1240,17 +1272,17 @@
   <div id="toast" class="toast"></div>
 
   <script>window.__GOK_CHANNEL_VALUE__ = "__GOK_CHANNEL__";</script>
-  <script src="js/channel.js?v=20261020e50"></script>
-  <script src="js/data.js?v=20261020e50"></script>
-  <script src="js/engine.js?v=20261020e50"></script>
-  <script src="js/ai.js?v=20261020e50"></script>
-  <script src="js/cinematic.js?v=20261020e50"></script>
-  <script src="js/vfx.js?v=20261020e50"></script>
-  <script src="js/ui.js?v=20261020e50"></script>
-  <script src="js/content.js?v=20261020e50"></script>
-  <script src="js/battler.js?v=20261020e50"></script>
-  <script src="js/arcade.js?v=20261020e50"></script>
-  <script src="js/main.js?v=20261020e50"></script>
+  <script src="js/channel.js?v=20261020e56"></script>
+  <script src="js/data.js?v=20261020e56"></script>
+  <script src="js/engine.js?v=20261020e56"></script>
+  <script src="js/ai.js?v=20261020e56"></script>
+  <script src="js/cinematic.js?v=20261020e56"></script>
+  <script src="js/vfx.js?v=20261020e56"></script>
+  <script src="js/ui.js?v=20261020e56"></script>
+  <script src="js/content.js?v=20261020e56"></script>
+  <script src="js/battler.js?v=20261020e56"></script>
+  <script src="js/arcade.js?v=20261020e56"></script>
+  <script src="js/main.js?v=20261020e56"></script>
 </body>
 </html>
 

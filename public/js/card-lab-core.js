@@ -167,6 +167,7 @@
       const opt = E.getPlayOptions(s, 0, uid);
       if (!opt.ok) return { ok: false, reason: opt.reason || "不可打出", opt };
       const opts = { payBlood: true };
+      if (card.type === "debt") opts.debtSide = card.faction === "xizhao" ? "enemy" : "self";
       let targetUid = null, targetUid2 = null;
       if (opt.targetType && opt.targets && opt.targets.length) targetUid = opt.targets[0];
       if (opt.target2Type && opt.target2Targets && opt.target2Targets.length) targetUid2 = opt.target2Targets[0];
@@ -225,6 +226,7 @@
         const o = E.getPlayOptions(s, 0, c.uid);
         if (!o.ok) return false;
         const opts = { payBlood: true };
+        if (card.type === "debt") opts.debtSide = card.faction === "xizhao" ? "enemy" : "self";
         if (o.targetType && o.targets && o.targets.length) opts.targetUid = o.targets[0];
         const r = E.playCard(s, 0, c.uid, opts);
         resolvePending(s);
@@ -333,6 +335,7 @@
           const o = E.getPlayOptions(s, 0, c.uid);
           if (!o.ok) return result(false, "无法先打出一张法术");
           const opts = { payBlood: true };
+          if (card.type === "debt") opts.debtSide = card.faction === "xizhao" ? "enemy" : "self";
           if (o.targetType && o.targets && o.targets.length) opts.targetUid = o.targets[0];
           E.playCard(s, 0, c.uid, opts);
           resolvePending(s);

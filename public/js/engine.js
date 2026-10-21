@@ -138,15 +138,20 @@
   function hasEquipment(player, id) {
     return activeEquipment(player).indexOf(id) >= 0;
   }
+  function equipmentAura(player, key) {
+    return activeEquipment(player).reduce((n, id) => n + ((D.CARDS[id] && D.CARDS[id].equipAura && D.CARDS[id].equipAura[key]) || 0), 0);
+  }
+  function applyEquipmentAuraToAllies(player) {
+    const atk = equipmentAura(player, "attack"), hp = equipmentAura(player, "health");
+    for (const m of aliveMinions(player)) {
+      if (atk) { m.attack += atk; m.baseAttack += atk; }
+      if (hp) { m.health += hp; m.maxHealth += hp; m.baseHealth += hp; }
+    }
+  }
 
   function buildDeck(state, factionId, customList) {
     let ids = D.DECKS[factionId];
-    const isEquip = (id) => D.CARDS[id] && (D.CARDS[id].type === "equipment" || D.CARDS[id].type === "equipment");
-    const mainOnly = Array.isArray(customList) && customList.length === 30 && customList.every(id => D.CARDS[id] && !isEquip(id));
-    const withRelic = Array.isArray(customList) && customList.length === 31 && customList.filter(id => isEquip(id)).length === 1;
-    if (mainOnly || withRelic) {
-      ids = customList.slice();
-    } else if (Array.isArray(customList) && D.validateDeck && D.validateDeck(factionId, customList).ok) {
+    if (Array.isArray(customList) && D.validateDeck && D.validateDeck(factionId, customList).ok) {
       ids = customList.slice();
     } else if (Array.isArray(customList)) {
       state.deckWarnings = state.deckWarnings || [];
@@ -188,7 +193,7 @@
       frozenTurns: 0,
       silenced: false,
       dead: false,
-      attacksLeft: (() => { const wf = (def.keywords || []).includes("windfury"); if (charge) return wf ? 2 : 1; if ((def.keywords || []).includes("rush")) return wf ? 2 : 1; return 0; })(),
+      attacksLeft: (() => { if (charge) return 1; if ((def.keywords || []).includes("rush")) return 1; return 0; })(),
       attacksUsedThisTurn: 0,
       hasAttacked: false,
       ignoreTaunt: false,
@@ -217,7 +222,7 @@
   }
 
   function formationBonus(player, zone) {
-    const out = { attack: 0, health: 0, taunt: false, rush: false, charge: false, lifesteal: false, stealth: false, deathrattleSummon: null, excludeDeathrattle: null, attackVsFrozen: 0 };
+    const out = { attack: 0, health: 0, taunt: false, rush: false, charge: false, lifesteal: false, stealth: false, poisonous: false, windfury: false, reborn: false, deathrattleSummon: null, excludeDeathrattle: null, attackVsFrozen: 0 };
     let hasFormation = false;
     for (const f of player.formations || []) {
       if (f.zone !== zone) continue;
@@ -232,6 +237,9 @@
         out.charge = out.charge || !!d.formation.charge;
         out.lifesteal = out.lifesteal || !!d.formation.lifesteal;
         out.stealth = out.stealth || !!d.formation.stealth;
+        out.poisonous = out.poisonous || !!d.formation.poisonous;
+        out.windfury = out.windfury || !!d.formation.windfury;
+        out.reborn = out.reborn || !!d.formation.reborn;
         out.deathrattleSummon = out.deathrattleSummon || d.formation.deathrattleSummon || null;
         out.excludeDeathrattle = out.excludeDeathrattle || d.formation.excludeDeathrattle || null;
         out.attackVsFrozen += d.formation.attackVsFrozen || 0;
@@ -250,16 +258,19 @@
     if (activeFormation(player, m.zone, "formation_vein")) m.formationVein = true;
   }
 
-  function applyFormationToZone(state, player, zone) {
-    const b = formationBonus(player, zone);
-    if (!b.attack && !b.health && !b.taunt && !b.rush && !b.charge && !b.lifesteal && !b.stealth && !b.deathrattleSummon && !activeFormation(player, zone, "formation_vein")) return;
+  function applyFormationToZone(state, player, zone, onlyFormation) {
+    const b = onlyFormation ? { attack: onlyFormation.attack || 0, health: onlyFormation.health || 0, taunt: !!onlyFormation.taunt, rush: !!onlyFormation.rush, charge: !!onlyFormation.charge, lifesteal: !!onlyFormation.lifesteal, stealth: !!onlyFormation.stealth, poisonous: !!onlyFormation.poisonous, windfury: !!onlyFormation.windfury, reborn: !!onlyFormation.reborn, deathrattleSummon: onlyFormation.deathrattleSummon || null, excludeDeathrattle: onlyFormation.excludeDeathrattle || null, attackVsFrozen: onlyFormation.attackVsFrozen || 0 } : formationBonus(player, zone);
+    if (!b.attack && !b.health && !b.taunt && !b.rush && !b.charge && !b.lifesteal && !b.stealth && !b.poisonous && !b.windfury && !b.reborn && !b.deathrattleSummon && !activeFormation(player, zone, "formation_vein")) return;
     for (const m of aliveMinions(player).filter(x => x.zone === zone)) {
       buffMinion(state, m, b.attack, b.health, "阵型", true);
       if (b.taunt) grantTaunt(state, m);
-      if (b.rush) { m.rush = true; if (!m.hasAttacked) m.attacksLeft = Math.max(m.attacksLeft, m.windfury ? 2 : 1); }
-      if (b.charge) { m.charge = true; if (!m.hasAttacked) m.attacksLeft = Math.max(m.attacksLeft, m.windfury ? 2 : 1); }
+      if (b.rush) { m.rush = true; if (!m.hasAttacked) m.attacksLeft = Math.max(m.attacksLeft, 1); }
+      if (b.charge) { m.charge = true; if (!m.hasAttacked) m.attacksLeft = Math.max(m.attacksLeft, 1); }
       if (b.lifesteal) { m.lifesteal = true; if (!m.keywords.includes("lifesteal")) m.keywords.push("lifesteal"); }
       if (b.stealth) { m.stealth = true; if (!m.keywords.includes("stealth")) m.keywords.push("stealth"); }
+      if (b.poisonous) { m.poisonous = true; if (!m.keywords.includes("poisonous")) m.keywords.push("poisonous"); }
+      if (b.windfury) { m.windfury = true; if (!m.keywords.includes("windfury")) m.keywords.push("windfury"); }
+      if (b.reborn) { m.reborn = true; if (!m.keywords.includes("reborn")) m.keywords.push("reborn"); }
       if (b.deathrattleSummon && b.excludeDeathrattle !== m.cardId) {
         addDeathrattleEffect(m, { type: "summon", token: b.deathrattleSummon, count: 1 });
         if (!m.keywords.includes("deathrattle")) m.keywords.push("deathrattle");
@@ -295,10 +306,13 @@
       m.maxHealth += fb.health;
     }
     if (fb.taunt) grantTaunt(state, m);
-    if (fb.rush) { m.rush = true; if (!m.hasAttacked) m.attacksLeft = Math.max(m.attacksLeft, m.windfury ? 2 : 1); }
-    if (fb.charge) { m.charge = true; if (!m.hasAttacked) m.attacksLeft = Math.max(m.attacksLeft, m.windfury ? 2 : 1); }
+    if (fb.rush) { m.rush = true; if (!m.hasAttacked) m.attacksLeft = Math.max(m.attacksLeft, 1); }
+    if (fb.charge) { m.charge = true; if (!m.hasAttacked) m.attacksLeft = Math.max(m.attacksLeft, 1); }
     if (fb.lifesteal) { m.lifesteal = true; if (!m.keywords.includes("lifesteal")) m.keywords.push("lifesteal"); }
     if (fb.stealth) { m.stealth = true; if (!m.keywords.includes("stealth")) m.keywords.push("stealth"); }
+    if (fb.poisonous) { m.poisonous = true; if (!m.keywords.includes("poisonous")) m.keywords.push("poisonous"); }
+    if (fb.windfury) { m.windfury = true; if (!m.keywords.includes("windfury")) m.keywords.push("windfury"); }
+    if (fb.reborn) { m.reborn = true; if (!m.keywords.includes("reborn")) m.keywords.push("reborn"); }
     if (fb.deathrattleSummon && fb.excludeDeathrattle !== m.cardId) {
       addDeathrattleEffect(m, { type: "summon", token: fb.deathrattleSummon, count: 1 });
       if (!m.keywords.includes("deathrattle")) m.keywords.push("deathrattle");
@@ -306,6 +320,7 @@
     log(state, player.name + " 召唤了 " + def.name + "（" + ZONE_NAMES[z] + "）。", player, "summon");
     state.events.push({ structured: true, kind: "summon", player: player.index, zone: z });
     state.stats.minionsSummoned++;
+    bumpDebtProgress(state, player, "summon", 1);
     if (cardId === "republic_recruit") player.recruitsSummonedThisTurn = (player.recruitsSummonedThisTurn || 0) + 1;
     if (m.taunt) {
       for (const ally of aliveMinions(player)) {
@@ -535,9 +550,10 @@
         add(m, imps * (m.passive.attack || 1), imps * (m.passive.health || 1));
       }
     }
-    for (const { m } of all) {
+    for (const { m, p } of all) {
       const b = bonus.get(m.uid);
-      setAuraStats(m, b ? b.attack : 0, b ? b.health : 0);
+      const ea = equipmentAura(p, "attack"), eh = equipmentAura(p, "health");
+      setAuraStats(m, (b ? b.attack : 0) + ea, (b ? b.health : 0) + eh);
     }
   }
 
@@ -546,15 +562,22 @@
     if (source && source.stealth) source.stealth = false;
     if (m.divineShield) {
       m.divineShield = false;
+      amount = Math.max(0, amount - 2);
+      if (amount <= 0) {
+        state.events.push({ structured: true, kind: "shield", targetUid: m.uid, player: ownerOf(state, m).index });
+        log(state, m.name + " 的格挡抵消了伤害。", ownerOf(state, m), "shield");
+        return 0;
+      }
       state.events.push({ structured: true, kind: "shield", targetUid: m.uid, player: ownerOf(state, m).index });
-      log(state, m.name + " 的护幕抵挡了 " + amount + " 点伤害。", ownerOf(state, m), "shield");
-      return 0;
+      log(state, m.name + " 的格挡减少 2 点伤害。", ownerOf(state, m), "shield");
     }
+    const beforeHealth = m.health;
     const actual = Math.min(amount, m.health);
+    const overkill = Math.max(0, amount - beforeHealth);
     state.events.push({ structured: true, kind: "damage", targetUid: m.uid, amount: actual, label: label || "", player: ownerOf(state, m).index, text: m.name + " 受到 " + actual + " 点伤害。" });
     m.health -= amount;
     log(state, m.name + " 受到 " + amount + " 点伤害" + (label ? "（" + label + "）" : "") + "。", ownerOf(state, m), "damage");
-    if (source && source.lifesteal && actual > 0) healHero(state, ownerOf(state, source), actual);
+    if (source && source.lifesteal && overkill > 0) { const owner = ownerOf(state, source); owner.armor += overkill; log(state, "血偿：" + owner.name + " 获得 " + overkill + " 点护甲。", owner, "armor"); }
     if (source && source.poisonous && !m.dead && actual > 0) {
       m.dead = true;
       state.events.push({ structured: true, kind: "poison", targetUid: m.uid, player: ownerOf(state, m).index });
@@ -596,7 +619,8 @@
       if (absorbed > 0) log(state, player.name + " 的护甲吸收了 " + absorbed + " 点伤害。", player, "armor");
     }
     player.hp -= left;
-    if (source && source.lifesteal && amount > 0) healHero(state, state.players[source.owner], amount);
+    bumpDebtProgress(state, player, "heroDamaged", amount);
+    if (source && source.lifesteal && amount > 0) { const owner = state.players[source.owner]; owner.armor += amount; log(state, "血偿：" + owner.name + " 获得 " + amount + " 点护甲。", owner, "armor"); }
     if (source && source.passive && source.passive.type === "damageToArmor" && !source.silenced && amount > 0) {
       const armorOwner = source.owner != null ? state.players[source.owner] : null;
       if (armorOwner) { armorOwner.armor += amount; log(state, source.name + " 造成伤害，获得 " + amount + " 点护甲。", armorOwner, "armor"); }
@@ -707,6 +731,11 @@
         if (m.rushDrawTurn != null && m.rushDrawTurn === state.turnNumber) drawCard(state, p, 1);
         if (m.bounty != null) claimBounty(state, state.players[m.bounty.owner], m);
         if (m.formationVein) { healHero(state, p, 1); log(state, "地脉阵线余响：恢复领袖 1 点生命。", p, "deathrattle"); }
+        if (m.passive && m.passive.type === "wardOnDeath" && m.taunt) {
+          p.armor = (p.armor || 0) + (m.passive.amount || 1);
+          log(state, "筑防：" + m.name + " 阵亡，获得 " + (m.passive.amount || 1) + " 点护甲。", p, "armor");
+        }
+
         if (m.deathrattles && m.deathrattles.length) {
           for (const d of m.deathrattles.slice()) triggerDeathrattle(state, p, m, d);
         } else if (m.deathrattle) {
@@ -728,7 +757,7 @@
         }
         if (hasEquipment(p, "republic_seal") && m.taunt) {
           drawCard(state, p, 1);
-          log(state, "议席印玺：拦截随从死亡，抽 1 张牌。", p, "draw");
+          log(state, "议席印玺：守备随从死亡，抽 1 张牌。", p, "draw");
         }
         if (hasEquipment(p, "powder_engine")) {
           const enemy = opponentOf(state, p);
@@ -791,7 +820,7 @@
       if (allies.length) {
         const target = allies[randomInt(state, allies.length)];
         grantTaunt(state, target);
-        log(state, "余响：" + m.name + " 使 " + target.name + " 获得拦截。", player, "deathrattle");
+        log(state, "余响：" + m.name + " 使 " + target.name + " 获得守备。", player, "deathrattle");
       }
     } else if (d.type === "damageRandomEnemy") {
       const dmg = d.amountFromAttack ? Math.min(d.max || 5, Math.max(0, m.attack || 0)) : (d.amount || 1);
@@ -824,7 +853,7 @@
       }
     } else if (d.type === "buffAllTaunt") {
       for (const ally of aliveMinions(player)) if (ally.taunt) buffMinion(state, ally, 0, d.health || 1, "余响", true);
-      log(state, "余响：" + m.name + " 使所有友方拦截随从获得 +0/+" + (d.health || 1) + "。", player, "deathrattle");
+      log(state, "余响：" + m.name + " 使所有友方守备随从获得 +0/+" + (d.health || 1) + "。", player, "deathrattle");
     } else if (d.type === "buffAllAllies") {
       for (const ally of aliveMinions(player)) buffMinion(state, ally, 0, d.health || 1, "余响", true);
       log(state, "余响：" + m.name + " 使所有友方随从获得 +0/+" + (d.health || 1) + "。", player, "deathrattle");
@@ -951,6 +980,129 @@
     log(state, "采掘 " + x + "：抽 " + x + " 张牌，流脉 +" + x + "。", player, "vein");
   }
 
+  function handDebt(player) {
+    return (player && player.hand || []).find(c => c && c.isDebt) || null;
+  }
+
+  function debtTaskLabel(type) {
+    return ({ cardsPlayed: "打出牌", summon: "召唤随从", attacks: "攻击", heroDamaged: "受到伤害" })[type] || type;
+  }
+
+  function bumpDebtProgress(state, player, kind, amount) {
+    if (!player) return;
+    for (const c of player.hand || []) {
+      if (!c || !c.isDebt || c.debtMode !== "self") continue;
+      c.debtProgress = c.debtProgress || {};
+      c.debtProgress[kind] = (c.debtProgress[kind] || 0) + (amount || 1);
+    }
+  }
+
+  function discardRandomCards(state, player, count) {
+    let left = count || 1;
+    while (left-- > 0) {
+      const candidates = player.hand.filter(c => !c.isDebt);
+      if (!candidates.length) return;
+      const pick = candidates[randomInt(state, candidates.length)];
+      player.hand = player.hand.filter(c => c.uid !== pick.uid);
+      player.discard.push(pick);
+      log(state, player.name + " 弃掉了「" + card(pick.cardId).name + "」。", player, "discard");
+    }
+  }
+
+  function applyDebtEffect(state, player, effect, label) {
+    if (!effect || !player) return;
+    if (effect.type === "damageHero") {
+      damageHero(state, player, effect.amount || 1, null, label || "债务");
+      processDeaths(state);
+    } else if (effect.type === "draw") {
+      drawCard(state, player, effect.amount || 1);
+    } else if (effect.type === "healHero") {
+      healHero(state, player, effect.amount || 1);
+    } else if (effect.type === "armor") {
+      player.armor += effect.amount || 1;
+      log(state, player.name + " 获得 " + (effect.amount || 1) + " 点护甲。", player, "armor");
+    } else if (effect.type === "discardRandom") {
+      discardRandomCards(state, player, effect.amount || 1);
+    } else if (effect.type === "blockHeroPower") {
+      player.heroPowerBlocked = true;
+      log(state, player.name + " 下回合不能使用领袖技能。", player, "debuff");
+    } else if (effect.type === "summon") {
+      const count = effect.count || 1;
+      for (let i = 0; i < count; i++) {
+        const z = openZones(player)[0];
+        if (!z) break;
+        summonMinion(state, player, effect.token || "losutai_imp", z, null);
+      }
+    }
+    checkGameOver(state);
+  }
+
+  function insertDebt(state, source, target, def, mode) {
+    if (!target || hasDebtOnHand(target)) return { ok: false, reason: "目标已有债务" };
+    if (target.hand.length >= 8) return { ok: false, reason: "目标手牌已满" };
+    const dueTurn = state.turnNumber + (mode === "self" ? 2 : 1);
+    const debtCard = {
+      uid: uid("c"),
+      cardId: def.id,
+      isDebt: true,
+      debtMode: mode,
+      debtSource: source.index,
+      debtDueTurn: dueTurn,
+      debtProgress: {}
+    };
+    target.hand.push(debtCard);
+    state.events.push({ structured: true, kind: "debt", player: target.index, source: source.index, cardId: def.id, mode: mode });
+    log(state, source.name + " 将「" + def.name + "」作为债务交给" + (target === source ? "自己" : "对手") + "。", target === source ? source : target, "debt");
+    return { ok: true, debt: debtCard };
+  }
+
+  function hasDebtOnHand(player) {
+    return !!(player && player.hand && player.hand.some(c => c && c.isDebt));
+  }
+
+  function resolveDebtForTurn(state, playerIndex) {
+    const holder = state.players[playerIndex];
+    if (!holder) return;
+    const debtCard = handDebt(holder);
+    if (!debtCard) return;
+    if (state.turnNumber < (debtCard.debtDueTurn || 0)) return;
+    const def = card(debtCard.cardId);
+    holder.hand = holder.hand.filter(c => c.uid !== debtCard.uid);
+    if (!def || !def.debt) return;
+    if (debtCard.debtMode === "enemy") {
+      const source = state.players[debtCard.debtSource];
+      log(state, "债务催收：「" + def.name + "」到期。", holder, "debt");
+      applyDebtEffect(state, holder, def.debt.enemy && def.debt.enemy.effect, "催收");
+      if (source && def.debt.enemy && def.debt.enemy.sourceReward) applyDebtEffect(state, source, def.debt.enemy.sourceReward, "追债");
+    } else {
+      const self = def.debt.self || {};
+      const task = self.task || {};
+      const got = (debtCard.debtProgress && debtCard.debtProgress[task.type]) || 0;
+      const done = got >= (task.amount || 0);
+      log(state, "债务考核：「" + def.name + "」" + (done ? "完成。" : "失败。") + "（" + debtTaskLabel(task.type) + " " + got + "/" + (task.amount || 0) + "）", holder, "debt");
+      applyDebtEffect(state, holder, done ? self.reward : self.penalty, done ? "债务奖励" : "债务惩罚");
+    }
+    if (state.status === "playing") checkGameOver(state);
+  }
+
+  function repayDebt(state, playerIndex, cardUid) {
+    if (state.status !== "playing") return { ok: false, reason: "对局已结束" };
+    if (state.current !== playerIndex) return { ok: false, reason: "还没轮到你" };
+    const player = state.players[playerIndex];
+    const debtCard = player && player.hand.find(c => c.uid === cardUid && c.isDebt);
+    if (!debtCard) return { ok: false, reason: "没有这张债务" };
+    const def = card(debtCard.cardId);
+    const repay = def.debt && def.debt.repay || { type: "mana", amount: 0 };
+    if (repay.type === "mana" && player.mana < (repay.amount || 0)) return { ok: false, reason: "行动力不足" };
+    if (repay.type === "hp" && player.hp <= (repay.amount || 0)) return { ok: false, reason: "生命不足" };
+    if (repay.type === "mana") player.mana -= repay.amount || 0;
+    if (repay.type === "hp") player.hp -= repay.amount || 0;
+    player.hand = player.hand.filter(c => c.uid !== debtCard.uid);
+    log(state, player.name + " 偿还债务「" + def.name + "」。", player, "debt");
+    checkGameOver(state);
+    return { ok: true };
+  }
+
   function playCard(state, playerIndex, cardUid, opts) {
     if (state.status !== "playing") return { ok: false, reason: "对局已结束" };
     if (state.mulliganPhase) return { ok: false, reason: "请先完成起手调度" };
@@ -959,6 +1111,7 @@
     if (!player || state.current !== playerIndex) return { ok: false, reason: "还没轮到你" };
     const handCard = player.hand.find(c => c.uid === cardUid);
     if (!handCard) return { ok: false, reason: "手牌中没有这张牌" };
+    if (handCard.isDebt) return { ok: false, reason: "这是债务，请先偿还或等待结算", code: "debt" };
     const def = card(handCard.cardId);
     opts = Object.assign({}, opts || {});
     if (def.bloodCost != null) opts.payBlood = true;
@@ -968,7 +1121,21 @@
     if (def.bloodCost != null && player.hp <= def.bloodCost) return { ok: false, reason: "生命不足，无法支付血祭", code: "bloodPay" };
     if (def.id === "armor_mortar" && (player.armor || 0) < 3) return { ok: false, reason: "需要至少 3 点护甲", code: "armor" };
     if (def.type === "minion" && boardCount(player) >= 6) return { ok: false, reason: "随从已满", code: "boardFull" };
-    if ((def.type === "equipment" || def.type === "equipment") && activeEquipment(player).length >= 2) return { ok: false, reason: "装备槽已满", code: "equipmentFull" };
+    if (def.type === "debt") {
+      let side = opts.debtSide;
+      if (!side && player.isAI) side = def.faction === "xizhao" ? "enemy" : "self";
+      if (side !== "self" && side !== "enemy") return { ok: false, reason: "请选择债务方向", code: "debtSide", card: def };
+      const target = side === "self" ? player : opponentOf(state, player);
+      if (hasDebtOnHand(target)) return { ok: false, reason: "目标已有债务", code: "debtFull" };
+      if (target.hand.length >= 8) return { ok: false, reason: "目标手牌已满", code: "handFull" };
+      if (!freeCast) player.mana -= cost;
+      player.hand = player.hand.filter(c => c.uid !== cardUid);
+      const insert = insertDebt(state, player, target, def, side);
+      if (!insert.ok) { if (!freeCast) player.mana += cost; player.hand.push(handCard); return insert; }
+      state.lastAction = { type: "play", player: playerIndex, cardId: def.id, cardName: def.name, cardType: def.type, seq: ((state.lastAction && state.lastAction.seq) || 0) + 1 };
+      log(state, player.name + " 打出债务「" + def.name + "」。", player, "debt");
+      return { ok: true, debt: true, side: side };
+    }
     const targetType = getTargetType(state, def);
     const target = opts && opts.targetUid ? findMinion(state, opts.targetUid) : null;
     if (targetType) {
@@ -1002,7 +1169,7 @@
         return { ok: false, reason: "请选择一个阵位", code: "zone", zones: def.type === "minion" ? openZones(player) : ZONES.slice() };
       }
       if (def.type === "minion" && !zoneHasSpace(player, zone)) return { ok: false, reason: "该阵位已满", code: "zoneFull" };
-      if (def.type === "formation" && (player.formations || []).length >= 8) return { ok: false, reason: "阵型槽已满", code: "formationFull" };
+
     }
     if (def.bloodCost != null) {
       player.hp -= def.bloodCost;
@@ -1020,6 +1187,7 @@
     if (def.type === "spell") player.discard.push({ uid: cardUid, cardId: def.id });
     player.cardsPlayed++;
     player.cardsPlayedThisTurn = (player.cardsPlayedThisTurn || 0) + 1;
+    if (def.type !== "debt") bumpDebtProgress(state, player, "cardsPlayed", 1);
     if (def.overload) {
       player.overload = (player.overload || 0) + def.overload;
       log(state, player.name + " 反噬 " + def.overload + "：下回合行动力减少。", player, "overload");
@@ -1065,6 +1233,8 @@
         healHero(state, player, 1);
         log(state, "霜晶棱镜：恢复领袖 1 点生命。", player, "heal");
       }
+      const spellDrawAura = equipmentAura(player, "spellDraw");
+      if (spellDrawAura) { drawCard(state, player, spellDrawAura); log(state, "装备：施放战术牌，抽 " + spellDrawAura + " 张牌。", player, "draw"); }
       if (!freeCast) player.lastSpell = { cardId: def.id, targetUid: opts && opts.targetUid, targetUid2: opts && opts.targetUid2, zone: opts && opts.zone, payBlood: !!(opts && opts.payBlood) };
     }
     if (def.type === "minion") {
@@ -1100,10 +1270,12 @@
       }
     } else if (def.type === "equipment" || def.type === "equipment") {
       const equipments = player.equipments || (player.equipments = []);
-      if (equipments.length >= 2) return { ok: false, reason: "装备槽已满" };
+      if (equipments.length >= 2) equipments.shift();
       const hadRelic = player.relic;
       if (equipments.indexOf(def.id) < 0) equipments.push(def.id);
       player.relic = equipments[0] || def.id;
+      if (def.equipAura && def.equipAura.maxHp) { player.maxHp += def.equipAura.maxHp; player.hp += def.equipAura.maxHp; }
+      recomputeAuras(state);
       const basePower = D.HEROES[player.heroId] && D.HEROES[player.heroId].power;
       if (def.id === "spell_codex") {
         player.hero.power = {
@@ -1113,12 +1285,12 @@
           target: "none",
           text: "随机使一张手牌中的战术牌行动力消耗 -1。"
         };
-      } else if (basePower) {
+      } else if (basePower && !hasEquipment(player, "spell_codex")) {
         player.hero.power = Object.assign({}, basePower);
       }
       applyEquipEffect(state, player, def.equip);
       if (def.id === "wanderer_charm") { player.maxHp += 5; }
-      if (def.id === "formation_standard") { for (const zone of new Set((player.formations || []).map(f => f.zone))) applyFormationToZone(state, player, zone); }
+      if (def.id === "formation_standard") { for (const zone of new Set((player.formations || []).map(f => f.zone))) { for (const m of aliveMinions(player).filter(x => x.zone === zone)) { m.attack += 1; m.baseAttack += 1; } } }
       if (def.id === "gh_venom_vial" && hadRelic !== "gh_venom_vial") {
         for (const m of aliveMinions(player)) if (m.poisonous && !m.silenced) m.attack += 1;
         log(state, "淬毒瓶：所有蚀毒随从获得 +1 攻击。", player, "buff");
@@ -1126,8 +1298,9 @@
       log(state, player.name + " 装备「" + def.name + "」。", player, "equipment");
     } else if (def.type === "formation") {
       player.formations = player.formations || [];
+      if (player.formations.length >= 3) player.formations.shift();
       player.formations.push({ cardId: def.id, zone: zone, turnsLeft: def.formation && def.formation.duration ? def.formation.duration : null });
-      applyFormationToZone(state, player, zone);
+      applyFormationToZone(state, player, zone, def.formation);
       if (def.formation && def.formation.summonOnPlay) {
         const targetZone = zoneHasSpace(player, zone) ? zone : openZones(player)[0];
         if (targetZone) summonMinion(state, player, def.formation.summonOnPlay, targetZone, null);
@@ -1484,7 +1657,7 @@
       if (state.vein >= (b.vein == null ? 7 : b.vein)) {
         buffMinion(state, minion, b.attack == null ? 2 : b.attack, b.health == null ? 2 : b.health, "登场", true);
         grantTaunt(state, minion);
-        log(state, "引脉触发：" + minion.name + " 获得 +" + (b.attack == null ? 2 : b.attack) + "/+" + (b.health == null ? 2 : b.health) + " 和拦截。", player, "vein");
+        log(state, "引脉触发：" + minion.name + " 获得 +" + (b.attack == null ? 2 : b.attack) + "/+" + (b.health == null ? 2 : b.health) + " 和守备。", player, "vein");
       }
     } else if (b.type === "summonSelfCopy") {
       const copy = summonMinion(state, player, def.id, openZones(player)[0], null);
@@ -1584,7 +1757,7 @@
       if (comboActive(player)) {
         const n = player.tauntMinionsPlayedThisTurn || 0;
         if (n > 0) buffMinion(state, minion, 0, n * (b.health || 1), "顺势", true);
-        log(state, "顺势：本回合已打出 " + n + " 个拦截随从，获得 +0/+" + (n * (b.health || 1)) + "。", player, "combo");
+        log(state, "顺势：本回合已打出 " + n + " 个守备随从，获得 +0/+" + (n * (b.health || 1)) + "。", player, "combo");
       }
     } else if (b.type === "mirrorSummon") {
       const enemy = opponentOf(state, player);
@@ -1639,7 +1812,7 @@
       log(state, "封口：所有敌方随从被沉默。", player, "silence");
     } else if (b.type === "grantRushAll") {
       for (const m of aliveMinions(player)) grantRush(state, m);
-      log(state, "佣兵头目：所有友方随从获得袭扰。", player, "rush");
+      log(state, "佣兵头目：所有友方随从获得先遣。", player, "rush");
     } else if (b.type === "markRandomBounties") {
       const enemies = aliveMinions(opponentOf(state, player)).filter(m => m.bounty == null);
       const shuffled = shuffle(state, enemies);
@@ -1696,7 +1869,7 @@
         buffMinion(state, target, b.attack || 1, 0, "血路", true);
         target.lifesteal = true;
         if (!target.keywords.includes("lifesteal")) target.keywords.push("lifesteal");
-        log(state, target.name + " 获得汲取。", player, "buff");
+        log(state, target.name + " 获得血偿。", player, "buff");
       }
     } else if (b.type === "drawIfCombo") {
       if (comboActive(player)) drawCard(state, player, b.draw || 1);
@@ -1748,7 +1921,7 @@
       if (target && !target.dead) {
         grantRush(state, target);
         target.rushDrawTurn = state.turnNumber;
-        log(state, target.name + " 获得突进；若本回合死亡，抽 1 张牌。", player, "rush");
+        log(state, target.name + " 获得先遣；若本回合死亡，抽 1 张牌。", player, "rush");
       }
     } else if (s.type === "armorDraw") {
       player.armor += s.armor || 2;
@@ -1829,7 +2002,7 @@
       if (s.vein != null && state.vein >= s.vein) summonMinion(state, player, "losutai_imp", openZones(player)[0], null);
     } else if (s.type === "buffStealth") {
       if (!target || target.dead) return;
-      buffMinion(state, target, s.attack || 0, 0, "暗影袭扰", true);
+      buffMinion(state, target, s.attack || 0, 0, "暗影先遣", true);
       target.stealth = true;
       if (!target.keywords.includes("stealth")) target.keywords.push("stealth");
       log(state, target.name + " 获得隐匿。", player, "stealth");
@@ -1838,7 +2011,7 @@
       buffMinion(state, target, s.attack || 0, 0, "血路", true);
       target.lifesteal = true;
       if (!target.keywords.includes("lifesteal")) target.keywords.push("lifesteal");
-      log(state, target.name + " 获得汲取。", player, "lifesteal");
+      log(state, target.name + " 获得血偿。", player, "lifesteal");
     } else if (s.type === "bloodGrant") {
       const cost = s.health || 3;
       if (player.hp <= cost) { log(state, "生命不足，血契没有生效。", player, "blood"); return; }
@@ -1850,14 +2023,14 @@
         target.stealth = true;
         if (!target.keywords.includes("lifesteal")) target.keywords.push("lifesteal");
         if (!target.keywords.includes("stealth")) target.keywords.push("stealth");
-        log(state, target.name + " 获得汲取和隐匿。", player, "buff");
+        log(state, target.name + " 获得血偿和隐匿。", player, "buff");
       }
     } else if (s.type === "buffCharge") {
       if (!target || target.dead) return;
       buffMinion(state, target, s.attack || 0, 0, "战术", true);
       target.charge = true;
-      if (!target.hasAttacked) target.attacksLeft = Math.max(target.attacksLeft, target.windfury ? 2 : 1);
-      log(state, target.name + " 获得突进。", player, "charge");
+      if (!target.hasAttacked) target.attacksLeft = Math.max(target.attacksLeft, 1);
+      log(state, target.name + " 获得先遣。", player, "charge");
     } else if (s.type === "gainMana") {
       player.mana = Math.min(10, player.mana + (s.amount || 1));
       log(state, player.name + " 获得 " + (s.amount || 1) + " 点行动力。", player, "mana");
@@ -1888,7 +2061,7 @@
       if (!target || target.dead) return;
       buffMinion(state, target, s.attack || 0, 0, "血路", true);
       target.ignoreTaunt = true;
-      log(state, target.name + " 本回合攻击时无视拦截。", player, "buff");
+      log(state, target.name + " 本回合攻击时无视守备。", player, "buff");
     } else if (s.type === "armorConditionalRush") {
       let armor = s.armor || 4;
       if (aliveMinions(opponentOf(state, player)).some(m => (m.keywords || []).includes("charge") || (m.keywords || []).includes("rush"))) armor += s.bonus || 2;
@@ -1964,6 +2137,8 @@
       if (target && !target.dead) target.dead = true;
     } else if (s.type === "damage") {
       if (target && !target.dead) damageMinion(state, target, s.amount || 1, null, "战术");
+    } else if (s.type === "freeze") {
+      if (target && !target.dead) { freezeMinion(state, target); log(state, "冻结：" + target.name + " 被冻结。", player, "freeze"); }
     } else if (s.type === "freezeDraw") {
       if (target && !target.dead) freezeMinion(state, target);
       drawCard(state, player, s.draw || 1);
@@ -2080,7 +2255,7 @@
       log(state, "下回合开始时获得 " + (s.amount || 3) + " 点行动力。", player, "mana");
     } else if (s.type === "tauntRebornAll") {
       for (const p of state.players) for (const m of aliveMinions(p)) { grantTaunt(state, m); grantReborn(state, m); }
-      log(state, "戒严：场上所有随从获得拦截与回潮。", player, "buff");
+      log(state, "戒严：场上所有随从获得守备与回潮。", player, "buff");
     } else if (s.type === "tauntRebornZone") {
       if (!target || target.dead) return;
       const zone = target.zone;
@@ -2091,7 +2266,7 @@
           grantReborn(state, m);
         }
       }
-      log(state, "戒严：" + ZONE_NAMES[zone] + "的所有随从获得拦截与回潮。", player, "buff");
+      log(state, "戒严：" + ZONE_NAMES[zone] + "的所有随从获得守备与回潮。", player, "buff");
     } else if (s.type === "damageAllMinions") {
       for (const p of state.players) for (const z of ZONES) for (const m of p.board[z].slice()) damageMinion(state, m, s.amount || 5, null, "火药桶");
       log(state, "对所有随从造成 " + (s.amount || 5) + " 点伤害。", player, "damage");
@@ -2101,8 +2276,8 @@
       if (!target.windfury) {
         target.windfury = true;
         if (!target.keywords.includes("windfury")) target.keywords.push("windfury");
-        target.attacksLeft = Math.max(target.attacksLeft, Math.max(0, 2 - (target.attacksUsedThisTurn || (target.hasAttacked ? 1 : 0))));
-        log(state, target.name + " 获得连动。", player, "buff");
+        target.attacksLeft = target.attacksLeft = Math.max(target.attacksLeft || 0, 1);
+        log(state, target.name + " 获得连携。", player, "buff");
       }
     } else if (s.type === "blockHeroPower") {
       const enemy = opponentOf(state, player);
@@ -2126,7 +2301,7 @@
       const h = combo ? (s.bonusHealth || 4) : (s.health || 2);
       buffMinion(state, target, 0, h, "顺势盾击", true);
       grantTaunt(state, target);
-      log(state, combo ? "顺势触发：获得 +0/+" + h + " 与拦截。" : "获得 +0/+" + h + " 与拦截。", player, "combo");
+      log(state, combo ? "顺势触发：获得 +0/+" + h + " 与守备。" : "获得 +0/+" + h + " 与守备。", player, "combo");
     } else if (s.type === "armorIfArmored") {
       const had = (player.armor || 0) > 0;
       const gain = (s.amount || 3) + (had ? (s.bonus || 2) : 0);
@@ -2242,7 +2417,7 @@
     m.taunt = true;
     if (!m.keywords.includes("taunt")) m.keywords.push("taunt");
     const owner = ownerOf(state, m);
-    log(state, m.name + " 获得拦截。", owner, "taunt");
+    log(state, m.name + " 获得守备。", owner, "taunt");
   }
 
   function comboActive(player) {
@@ -2324,22 +2499,27 @@
     if (!m || m.dead) return;
     m.divineShield = true;
     if (!m.keywords.includes("divineShield")) m.keywords.push("divineShield");
-    log(state, m.name + " 获得护幕。", ownerOf(state, m), "divineShield");
+    log(state, m.name + " 获得格挡。", ownerOf(state, m), "divineShield");
   }
 
   function grantRush(state, m) {
     if (!m || m.dead) return;
     m.rush = true;
     if (!m.keywords.includes("rush")) m.keywords.push("rush");
-    if (!m.hasAttacked) m.attacksLeft = Math.max(m.attacksLeft || 0, m.windfury ? 2 : 1);
-    log(state, m.name + " 获得袭扰。", ownerOf(state, m), "rush");
+    if (!m.hasAttacked) m.attacksLeft = Math.max(m.attacksLeft || 0, 1);
+    log(state, m.name + " 获得先遣。", ownerOf(state, m), "rush");
   }
 
   function openDiscover(state, player, pool, sourceCardId) {
     let options = [];
-    const fromDeck = false;
-    const all = discoverPool(player, pool);
-    options = shuffle(state, all).slice(0, 3);
+    const fromDeck = true;
+    const wanted = (c) => pool === "any" || (pool === "spell" && card(c.cardId).type === "spell") || (pool === "minion" && card(c.cardId).type === "minion");
+    const seen = new Set();
+    for (const c of player.deck) {
+      if (!wanted(c) || seen.has(c.cardId)) continue;
+      seen.add(c.cardId); options.push(c.cardId);
+      if (options.length >= 3) break;
+    }
     if (!options.length) {
       log(state, player.name + " 没有可检索的卡牌。", player, "discover");
       return;
@@ -2371,13 +2551,10 @@
     const player = state.players[playerIndex];
     if (state.pendingChoice.fromDeck) {
       let chosenId = cardId;
-      let idx = player.deck.findIndex(c => c.cardId === chosenId && card(c.cardId).type === "spell");
+      let idx = player.deck.findIndex(c => c.cardId === chosenId);
       if (idx < 0) {
-        const fallback = state.pendingChoice.options.find(id => player.deck.some(c => c.cardId === id && card(c.cardId).type === "spell"));
-        if (fallback) {
-          chosenId = fallback;
-          idx = player.deck.findIndex(c => c.cardId === chosenId && card(c.cardId).type === "spell");
-        }
+        const fallback = state.pendingChoice.options.find(id => player.deck.some(c => c.cardId === id));
+        if (fallback) { chosenId = fallback; idx = player.deck.findIndex(c => c.cardId === chosenId); }
       }
       if (idx < 0) {
         log(state, "检索选项已被其他效果取走，跳过本次选择。", player, "discover");
@@ -2404,17 +2581,20 @@
     const m = player ? allMinions(player).find(x => x.uid === attackerUid) : null;
     if (!m || m.dead || m.attacksLeft <= 0 || m.frozenTurns > 0 || m.attack <= 0) return { ok: false, targets: [] };
     const enemy = opponentOf(state, player);
-    const taunts = aliveMinions(enemy).filter(x => x.taunt && !x.stealth);
-    const canHitHero = !m.rush || m.charge;
+    const guards = aliveMinions(enemy).filter(x => x.taunt && !x.stealth);
+    const canHitHero = !m.rush && !m.charge;
     let targets = [];
     if (m.ignoreTaunt) {
       targets = aliveMinions(enemy).filter(x => !x.stealth).map(x => x.uid);
       if (canHitHero) targets.push("hero");
-    } else if (taunts.length) {
-      targets = taunts.map(x => x.uid);
     } else {
-      targets = aliveMinions(enemy).filter(x => !x.stealth).map(x => x.uid);
-      if (canHitHero) targets.push("hero");
+      targets = aliveMinions(enemy).filter(x => {
+        if (x.stealth) return false;
+        const laneGuards = guards.filter(g => g.zone === x.zone && g.uid !== x.uid);
+        return x.taunt || laneGuards.length === 0;
+      }).map(x => x.uid);
+      const heroGuarded = guards.some(g => g.zone === m.zone);
+      if (canHitHero && !heroGuarded) targets.push("hero");
     }
     return { ok: true, targets: targets };
   }
@@ -2433,11 +2613,12 @@
     const opts = getAttackOptions(state, playerIndex, attackerUid);
     const legalTarget = targetUid === "hero" ? opts.targets.indexOf("hero") >= 0 : opts.targets.indexOf(targetUid) >= 0;
     if (!opts.ok || !legalTarget) {
-      return { ok: false, reason: "不能攻击该目标（可能有拦截）", targets: opts.targets };
+      return { ok: false, reason: "不能攻击该目标（可能有守备）", targets: opts.targets };
     }
     const enemy = opponentOf(state, player);
     attacker.attacksLeft -= 1;
     attacker.attacksUsedThisTurn = (attacker.attacksUsedThisTurn || 0) + 1;
+    bumpDebtProgress(state, player, "attacks", 1);
     attacker.hasAttacked = true;
     attacker.stealth = false;
     if (targetUid === "hero") {
@@ -2461,6 +2642,7 @@
       return { ok: true };
     }
     let atk = attacker.attack;
+    if (attacker.windfury && !attacker.hasAttacked && aliveMinions(player).some(x => x.uid !== attacker.uid && x.zone === attacker.zone)) atk += 1;
     if (defender.frozenTurns > 0) atk += formationBonus(player, attacker.zone).attackVsFrozen || 0;
     if (defender.bounty != null && attacker.passive && attacker.passive.type === "attackBountyBonus" && !attacker.silenced) atk += attacker.passive.attack || 0;
     const def = defender.attack;
@@ -2485,7 +2667,7 @@
     const oldDef = card(handCard.cardId);
     const candidates = transformCandidates(player, handCard);
     if (!candidates.length) return false;
-    const nextId = candidates[Math.floor(Math.random() * candidates.length)];
+    const nextId = candidates[randomInt(state, candidates.length)];
     handCard.cardId = nextId;
     handCard.generated = true;
     log(state, player.name + " 将手牌中的「" + oldDef.name + "」改写为「" + D.CARDS[nextId].name + "」。", player, "handChange");
@@ -2515,7 +2697,7 @@
     if (player.hero.power && (player.hero.power.passive || player.hero.power.target === "passive")) {
       return { ok: false, reason: "这是被动技能，无需主动使用" };
     }
-    if (player.mana < 2) return { ok: false, reason: "行动力不足" };
+    if (player.mana < (player.hero.power.cost || 2)) return { ok: false, reason: "行动力不足" };
     if (player.heroId === "karna") {
       player.mana -= 2;
       player.heroPowerUsed = true;
@@ -2526,6 +2708,18 @@
       checkGameOver(state);
       return { ok: true };
     }
+    if (player.heroId === "balaena") {
+      if (player.mana < 2) return { ok: false, reason: "行动力不足" };
+      if (boardCount(player) >= 6) return { ok: false, reason: "随从已满" };
+      const zone = openZones(player)[0];
+      if (!zone) return { ok: false, reason: "随从已满" };
+      player.mana -= 2;
+      player.heroPowerUsed = true;
+      state.lastAction = { type: "heroPower", player: playerIndex, heroId: player.heroId, powerName: player.hero.power.name, targetUid: null, seq: ((state.lastAction && state.lastAction.seq) || 0) + 1 };
+      log(state, player.name + " 使用领袖技能「潮生」。", player, "heroPower");
+      summonMinion(state, player, "losutai_imp", zone, null);
+      return { ok: true };
+    }
     const handTarget = player.heroId === "wolfram";
     let targets = [];
     let targetIds = [];
@@ -2534,7 +2728,7 @@
       if (!targetIds.length) return { ok: false, reason: "没有可以改写的手牌" };
       if (!targetUid || targetIds.indexOf(targetUid) < 0) return { ok: false, reason: "请选择一张手牌", code: "target", targets: targetIds };
     } else {
-      const heroTargetType = player.heroId === "otto" ? "enemy" : "friendly";
+      const heroTargetType = (player.heroId === "otto" || player.heroId === "sernach") ? "enemy" : "friendly";
       targets = heroTargetType === "enemy"
         ? aliveMinions(opponentOf(state, player)).filter(m => !m.stealth)
         : aliveMinions(player);
@@ -2549,7 +2743,7 @@
     if (!target) return {
       ok: false,
       reason: handTarget ? "请选择一张手牌"
-        : (player.heroId === "otto" ? "请选择一个敌方随从或领袖" : "请选择一个友方随从"),
+        : (player.heroId === "otto" ? "请选择一个敌方随从或领袖" : (player.heroId === "sernach" ? "请选择一个敌方随从" : "请选择一个友方随从")),
       code: "target", targets: targetIds
     };
     if (handTarget && !transformCandidates(player, target).length) {
@@ -2569,6 +2763,10 @@
       if (target === "hero") damageHero(state, opponentOf(state, player), 1, null, "炮击");
       else damageMinion(state, target, 1, null, "炮击");
       processDeaths(state);
+    } else if (player.heroId === "sernach") {
+      const wasFrozen = target.frozenTurns > 0;
+      freezeMinion(state, target);
+      if (wasFrozen) drawCard(state, player, 1);
     }
     checkGameOver(state);
     return { ok: true };
@@ -2609,6 +2807,10 @@
     player.overload = 0;
     if (player.heroId === "marta") player.spellCostReduction = 1;
             if (hasEquipment(player, "armor_forge")) { player.armor += 1; log(state, player.name + " 的帝国锻炉提供 1 点护甲。", player, "armor"); }
+    const auraArmor = equipmentAura(player, "armorTurn"), auraHeal = equipmentAura(player, "healTurn"), auraDamage = equipmentAura(player, "turnDamage");
+    if (auraArmor) { player.armor += auraArmor; log(state, "装备：获得 " + auraArmor + " 点护甲。", player, "armor"); }
+    if (auraHeal) healHero(state, player, auraHeal);
+    if (auraDamage) { for (const m of aliveMinions(opponentOf(state, player))) damageMinion(state, m, auraDamage, null, "装备"); processDeaths(state); }
     for (const f of player.formations || []) {
       if (f.turnsLeft != null) f.turnsLeft -= 1;
     }
@@ -2621,7 +2823,7 @@
         log(state, m.name + " 的被动提供 " + armorGain + " 点护甲。", player, "armor");
       }
       if (m.passive && m.passive.type === "turnGrowth" && !m.silenced) buffMinion(state, m, m.passive.attack || 1, m.passive.health || 1, "生长", true);
-      m.attacksLeft = m.windfury ? 2 : 1;
+      m.attacksLeft = 1;
       m.attacksUsedThisTurn = 0;
       m.hasAttacked = false;
       m.ignoreTaunt = false;
@@ -2687,6 +2889,8 @@
     if (state.status !== "playing") return;
     const player = state.players[playerIndex];
     if (!player) return;
+    resolveDebtForTurn(state, playerIndex);
+    if (state.status !== "playing") return;
     if (player.veinDebt) {
       const debt = player.veinDebt;
       player.veinDebt = 0;
@@ -2747,6 +2951,11 @@
     const zones = def.type === "minion" ? openZones(player) : def.type === "formation" ? ZONES.slice() : [];
     const cost = getCardCost(state, player, c);
     const canMana = player.mana >= cost;
+    if (def.type === "debt") {
+      const selfFree = !hasDebtOnHand(player) && player.hand.length < 8;
+      const enemyFree = !hasDebtOnHand(opponentOf(state, player)) && opponentOf(state, player).hand.length < 8;
+      return { ok: canMana && (selfFree || enemyFree), cost: cost, targetType: null, targets: [], target2Targets: [], zones: [], canMana: canMana, canDebt: selfFree || enemyFree, selfDebt: selfFree, enemyDebt: enemyFree, bloodCost: 0, reason: !canMana ? "行动力不足" : !(selfFree || enemyFree) ? "债务已满或手牌已满" : null };
+    }
     const canArmor = def.id !== "armor_mortar" || (player.armor || 0) >= 3;
     const canBlood = def.bloodCost == null || player.hp > def.bloodCost;
     const canBoard = def.type === "minion" ? boardCount(player) < 6 : def.type === "formation" ? (player.formations || []).length < 2 : true;
@@ -2806,8 +3015,11 @@
         used: player.heroPowerUsed
       };
     }
+    if (player.heroId === "balaena") {
+      return { ok: !player.heroPowerUsed && player.mana >= 2 && boardCount(player) < 6, targets: [], targetType: "none", cost: 2, used: player.heroPowerUsed };
+    }
     const handTarget = player.heroId === "wolfram";
-    const targetType = handTarget ? "hand" : (player.heroId === "otto" ? "enemy" : "friendly");
+    const targetType = handTarget ? "hand" : ((player.heroId === "otto" || player.heroId === "sernach") ? "enemy" : "friendly");
     const targets = targetType === "enemy"
       ? aliveMinions(opponentOf(state, player)).filter(m => !m.stealth)
       : (targetType === "friendly" ? aliveMinions(player) : []);
@@ -2941,6 +3153,7 @@
   return {
     createGame: createGame,
     playCard: playCard,
+    repayDebt: repayDebt,
     attack: attack,
     useHeroPower: useHeroPower,
     endTurn: endTurn,

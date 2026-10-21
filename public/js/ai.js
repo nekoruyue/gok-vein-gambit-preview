@@ -33,7 +33,7 @@
   function lethalAvailable(state, p) {
     if (enemyTaunts(state, p).length) return false;
     const e = enemyOf(state, p);
-    const facePower = p.heroId === "otto" && !p.heroPowerUsed && p.mana >= 2 ? 1 : 0;
+    const facePower = p.heroId === "otto" && !p.heroPowerUsed && p.mana >= (p.hero.power.cost || 2) ? 1 : 0;
     return totalAttack(p) + facePower >= e.hp + e.armor;
   }
 
@@ -276,6 +276,14 @@
       if (p.hp <= 8) return null;
       return { type: "heroPower", targetUid: null, score: 3 };
     }
+    if (p.heroId === "balaena") {
+      return { type: "heroPower", targetUid: null, score: 3.8 };
+    }
+    if (p.heroId === "sernach") {
+      const enemies = enemyMinions(state, p).filter(m => !m.stealth);
+      const target = enemies.sort((a, b) => (b.frozenTurns > 0 ? 1 : 0) - (a.frozenTurns > 0 ? 1 : 0) || minionValue(b) - minionValue(a))[0];
+      return target ? { type: "heroPower", targetUid: target.uid, score: 3.5 } : null;
+    }
     if (!o.targets.length) return null;
     const allies = ownMinions(p);
     if (p.heroId === "otto") {
@@ -287,13 +295,12 @@
       return { type: "heroPower", targetUid: target.uid, score: 3.8 };
     }
     if (p.heroId === "lain") {
-      const target = allies.slice().sort((a, b) => (b.attack + b.health) - (a.attack + a.health))[0];
+      const target = allies.slice().sort((a, b) => {
+        const am = allies.filter(x => x.zone === a.zone).length > 1 ? 2 : 0;
+        const bm = allies.filter(x => x.zone === b.zone).length > 1 ? 2 : 0;
+        return (bm + b.attack + b.health) - (am + a.attack + a.health);
+      })[0];
       return target ? { type: "heroPower", targetUid: target.uid, score: 4 } : null;
-    }
-    if (p.heroId === "karna") {
-      if (p.hp <= 8) return null;
-      const target = allies.slice().sort((a, b) => a.health - b.health)[0];
-      return target ? { type: "heroPower", targetUid: target.uid, score: 3 } : null;
     }
     if (p.heroId === "marta") {
       const enemies = enemyMinions(state, p).filter(m => !m.stealth);
@@ -407,6 +414,8 @@
   function enumerateActions(state, p) {
     const actions = [];
     const seen = new Set();
+    const debt = (p.hand || []).find(c => c.isDebt);
+    if (debt) actions.push({ type: "repayDebt", cardUid: debt.uid });
     const push = (a) => {
       const key = JSON.stringify(a);
       if (seen.has(key)) return;
@@ -462,6 +471,7 @@
     const s = JSON.parse(JSON.stringify(state));
     let result;
     if (action.type === "play") result = E.playCard(s, playerIndex, action.cardUid, action.opts);
+    else if (action.type === "repayDebt") result = E.repayDebt(s, playerIndex, action.cardUid);
     else if (action.type === "attack") result = E.attack(s, playerIndex, action.attackerUid, action.targetUid);
     else if (action.type === "heroPower") result = E.useHeroPower(s, playerIndex, action.targetUid);
     else return null;
@@ -475,6 +485,7 @@
   }
 
   function actionPriority(state, p, action) {
+    if (action.type === "repayDebt") return 2.2;
     if (action.type === "play") {
       const card = p.hand.find(c => c.uid === action.cardUid);
       const def = card && D.CARDS[card.cardId];
@@ -569,6 +580,7 @@
     }
     let result;
     if (action.type === "play") result = E.playCard(state, playerIndex, action.cardUid, action.opts);
+    else if (action.type === "repayDebt") result = E.repayDebt(state, playerIndex, action.cardUid);
     else if (action.type === "attack") result = E.attack(state, playerIndex, action.attackerUid, action.targetUid);
     else if (action.type === "heroPower") result = E.useHeroPower(state, playerIndex, action.targetUid);
     else if (action.type === "discover") result = E.resolveDiscover(state, playerIndex, action.cardId);

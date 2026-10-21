@@ -6,7 +6,7 @@
   const D = global.GokData;
   const E = global.GokEngine;
   const AI = global.GokAI;
-  const ART_VERSION = "20261021art3";
+  const ART_VERSION = "20261021art9";
 
   // 经典模式：每个阵营首次开局播放一段对应 CG（可跳过）
   const CLASSIC_CG = {
@@ -101,7 +101,7 @@
     };
     art.appendChild(img);
   }
-  function heroImage(id) { const file = id === "otto" ? "otto_centered" : id; return "assets/heroes/" + file + ".webp"; }
+  function heroImage(id) { if (id === "balaena" || id === "sernach") return portraitImage(id); const file = id === "otto" ? "otto_centered" : id; return "assets/heroes/" + file + ".webp"; }
   function portraitImage(id) { return "assets/portraits/" + id + ".webp?v=" + ART_VERSION; }
   function heroSkillIcon(id) { return "assets/icons/skills/" + id + ".webp?v=" + ART_VERSION; }
   function escapeText(s) { return s == null ? "" : String(s); }
@@ -250,7 +250,9 @@
     xizhao: "bgm_faction_xizhao",
     republic: "bgm_faction_republic",
     empire: "bgm_faction_empire",
-    greyharbor: "bgm_faction_greyharbor"
+    greyharbor: "bgm_faction_greyharbor",
+    losutai: "bgm_faction_losutai",
+    snow: "bgm_faction_snow"
   };
   const SFX_FILES = {
     click: "click.wav", hover: "hover.wav", select: "select.wav", cancel: "cancel.wav",
@@ -286,11 +288,12 @@
       const saved = localStorage.getItem("gok_sound");
       app.audioOn = saved == null ? true : saved === "1";
       const savedVol = parseFloat(localStorage.getItem("gok_volume"));
-      app.audioVolume = isNaN(savedVol) ? 0.7 : Math.max(0, Math.min(1, savedVol));
+      app.audioVolume = isNaN(savedVol) ? 0.82 : Math.max(0, Math.min(1, savedVol));
       const savedBgmVol = parseFloat(localStorage.getItem("gok_bgm_volume"));
-      app.bgmVolume = isNaN(savedBgmVol) ? 0.22 : Math.max(0, Math.min(1, savedBgmVol));
+      app.bgmVolume = isNaN(savedBgmVol) ? 0.16 : Math.max(0, Math.min(1, savedBgmVol));
       const savedSfxVol = parseFloat(localStorage.getItem("gok_sfx_volume"));
-      app.sfxVolume = isNaN(savedSfxVol) ? 0.42 : Math.max(0, Math.min(1, savedSfxVol));
+      app.sfxVolume = isNaN(savedSfxVol) ? 0.68 : Math.max(0, Math.min(1, savedSfxVol));
+      if (app.sfxVolume > 0 && app.sfxVolume < 0.55) app.sfxVolume = 0.55;
       app.bgmOn = localStorage.getItem("gok_bgm") !== "0";
       app.sfxOn = localStorage.getItem("gok_sfx") !== "0";
       app.bgAnimOn = localStorage.getItem("gok_bg_anim") !== "0";
@@ -381,44 +384,34 @@
       if (!name) return;
       this.bgmName = name;
       if (!this.unlocked) return;
-      if (!app.audioOn || !app.bgmOn) return;
-      const targetVolume = () => Math.min(1, app.bgmVolume * app.audioVolume);
-      if (this.bgmEl.src && this.bgmEl.src.indexOf(name + ".ogg") >= 0) {
+      if (!app.audioOn || !app.bgmOn) { if (this.bgmEl) this.bgmEl.pause(); return; }
+      const src = "audio/" + name + ".ogg?v=" + ART_VERSION;
+      const target = Math.min(1, app.bgmVolume * app.audioVolume);
+      if (this.bgmEl && this.bgmEl.getAttribute("data-bgm") === name) {
+        this.bgmEl.volume = target;
         if (this.bgmEl.paused) this.bgmEl.play().catch(() => {});
         return;
       }
       if (this.bgmFadeTimer) { clearInterval(this.bgmFadeTimer); this.bgmFadeTimer = null; }
-      const oldEl = this.bgmEl;
-      const next = new Audio("audio/" + name + ".ogg?v=" + ART_VERSION);
+      if (this.bgmEl) {
+        try { this.bgmEl.pause(); this.bgmEl.removeAttribute("src"); this.bgmEl.load(); } catch (e) {}
+      }
+      const next = new Audio(src);
       next.loop = true;
       next.preservesPitch = true;
       next.mozPreservesPitch = true;
       next.webkitPreservesPitch = true;
       next.playbackRate = BGM_RATE;
-      next.volume = 0;
+      next.volume = target;
+      next.setAttribute("data-bgm", name);
       next.addEventListener("error", () => {
-        if (next.__bgmRetiring || next.__bgmFallback || name === "bgm_game") return;
-        next.__bgmFallback = true;
+        if (name === "bgm_game" || next.__fallback) return;
+        next.__fallback = true;
         this.bgm("bgm_game");
       }, { once: true });
       this.bgmEl = next;
-      this.bgmFade = { old: oldEl, next: next };
-      const start = typeof performance !== "undefined" ? performance.now() : Date.now();
-      const duration = 760;
-      const target = targetVolume();
+      this.bgmFade = null;
       next.play().catch(() => {});
-      this.bgmFadeTimer = setInterval(() => {
-        const now = typeof performance !== "undefined" ? performance.now() : Date.now();
-        const t = Math.max(0, Math.min(1, (now - start) / duration));
-        const ease = t * t * (3 - 2 * t);
-        next.volume = Math.min(1, target * ease);
-        if (oldEl && oldEl !== next) oldEl.volume = Math.min(1, target * (1 - ease));
-        if (t >= 1) {
-          clearInterval(this.bgmFadeTimer); this.bgmFadeTimer = null;
-          if (oldEl && oldEl !== next) { oldEl.__bgmRetiring = true; oldEl.onerror = null; oldEl.pause(); try { oldEl.removeAttribute("src"); oldEl.load(); } catch (e) {} }
-          this.bgmFade = null;
-        }
-      }, 32);
     },
     applyVolumes() {
       if (this.bgmEl && !this.bgmFade) this.bgmEl.volume = Math.min(1, app.bgmVolume * app.audioVolume);
@@ -460,7 +453,7 @@
     toggleBgm() {
       app.bgmOn = !app.bgmOn;
       localStorage.setItem("gok_bgm", app.bgmOn ? "1" : "0");
-      if (!app.bgmOn) { if (this.bgmEl) this.bgmEl.pause(); if (this.bgmFade && this.bgmFade.old) this.bgmFade.old.pause(); }
+      if (!app.bgmOn) { if (this.bgmEl) this.bgmEl.pause(); }
       else if (app.audioOn) this.bgm(this.bgmName || "bgm_title");
       updateSettingsUI();
     },
@@ -703,7 +696,7 @@
       addChoice("random", "随机");
       for (const id of opponents) addChoice(id, factionName(id));
     }
-    $("setup-summary").textContent = "单人 vs AI · " + factionName(app.faction) + " vs " + (app.aiOpponentChoice ? factionName(aiOther) : "随机对手（" + factionName(aiOther) + "）") + " · 30张带牌+2件装备（需抽到） · 先手随机";
+    $("setup-summary").textContent = "单人 vs AI · " + factionName(app.faction) + " vs " + (app.aiOpponentChoice ? factionName(aiOther) : "随机对手（" + factionName(aiOther) + "）") + " · 30 张卡（装备/阵型/随从自由混编） · 先手随机";
     const hero = D.HEROES[D.FACTIONS[app.faction].hero];
     const art = $("setup-hero-art");
     art.style.backgroundImage = "url('" + heroImage(hero.id) + "')";
@@ -1890,7 +1883,7 @@
     if (kw.indexOf("battlecry") >= 0) { key = "battlecry"; label = "登场"; }
     else if (kw.indexOf("deathrattle") >= 0) { key = "deathrattle"; label = "余响"; }
     else if (kw.indexOf("taunt") >= 0) { key = "taunt"; label = "拦截"; }
-    else if (kw.indexOf("charge") >= 0) { key = "charge"; label = "突进"; }
+    else if (kw.indexOf("charge") >= 0) { key = "charge"; label = "先遣"; }
     else if (def.passive) { key = "passive"; label = "被动"; }
     if (!key) return null;
     const badge = el("div", "skill-badge " + key);
@@ -2037,7 +2030,7 @@
   }
 
   function typeLine(def, m) {
-    return def.type === "spell" ? "战术" : (def.type === "equipment" || def.type === "relic") ? "装备" : def.type === "formation" ? "阵型" : def.type === "leader" ? "领袖" : "随从";
+    return def.type === "spell" ? "战术" : (def.type === "equipment" || def.type === "relic") ? "装备" : def.type === "formation" ? "阵型" : def.type === "debt" ? "债务" : def.type === "leader" ? "领袖" : "随从";
   }
 
   function renderVein(s) {
@@ -2270,7 +2263,7 @@
         chooseSound("freeze");
       } else if (ev.kind === "shield") {
         const pt = eventPoint(ev.targetUid);
-        showKeywordPop("护幕", pt.x, pt.y, "shield");
+        showKeywordPop("格挡", pt.x, pt.y, "shield");
         pulseStatus(ev.targetUid, "shield");
         chooseSound("shield");
       } else if (ev.kind === "poison") {
@@ -2345,7 +2338,7 @@
     const display = player.hand.slice();
     if (app.handSort === "cost") display.sort((a, b) => E.getCardCost(s, player, a) - E.getCardCost(s, player, b) || String(a.uid).localeCompare(String(b.uid)));
     if (app.handSort === "type") {
-      const order = { minion: 0, spell: 1, formation: 2, equipment: 3, relic: 4 };
+      const order = { minion: 0, spell: 1, formation: 2, equipment: 3, relic: 4, debt: 5 };
       display.sort((a, b) => (order[D.CARDS[a.cardId]?.type] ?? 9) - (order[D.CARDS[b.cardId]?.type] ?? 9));
     }
     const total = display.length;
@@ -2412,7 +2405,7 @@
 
   function appendKeywordText(node, text) {
     if (!text) return;
-    const re = /(登场|余响|拦截|突进|冻结|隐匿|采掘|引脉|血祭|沉默|检索|护幕|连动|蚀毒|汲取|袭扰|回潮|反噬|顺势|吞噬|阵位|对位|行动力|战术|阵型)/g;
+    const re = /(登场|余响|拦截|先遣|冻结|隐匿|采掘|引脉|血祭|沉默|检索|格挡|连携|蚀毒|血偿|先遣|回潮|反噬|顺势|吞噬|阵位|对位|行动力|战术|阵型)/g;
     let last = 0;
     let m;
     while ((m = re.exec(text)) !== null) {
@@ -2432,7 +2425,7 @@
     "登场": "从手牌打出时立即触发一次效果。",
     "余响": "该随从死亡时立即触发一次效果。",
     "拦截": "敌方必须先攻击具有拦截的随从。",
-    "突进": "登场当回合即可攻击。",
+    "先遣": "登场当回合即可攻击。",
     "被动": "无需主动触发，满足条件时自动生效。",
     "冻结": "被冻结的角色失去其下一次攻击机会。",
     "沉默": "移除卡牌当前的强化，以及卡牌描述带来的效果。",
@@ -2442,11 +2435,11 @@
     "采掘": "采掘 X：抽 X 张牌，并使共享流脉 +X。",
     "血祭": "以支付生命为代价打出或触发效果。",
     "吞噬": "消灭一个友方随从，并获得其攻击力与生命值。",
-    "护幕": "免疫受到的第一次伤害。",
-    "连动": "每回合可以攻击两次。",
+    "格挡": "免疫受到的第一次伤害。",
+    "连携": "每回合可以攻击两次。",
     "蚀毒": "消灭任何受到其伤害的随从。",
-    "汲取": "造成伤害时，为你的领袖恢复等量生命。",
-    "袭扰": "登场当回合可以攻击随从，但不能攻击领袖。",
+    "血偿": "造成伤害时，为你的领袖恢复等量生命。",
+    "先遣": "登场当回合可以攻击随从，但不能攻击领袖。",
     "回潮": "第一次死亡后以 1 点生命返回战场一次。",
     "反噬": "本牌使用后，下回合行动力减少。",
     "固定": "固定效果不随条件变化消失，当前和之后以任何方式进入该阵位的随从都会获得。",
@@ -2457,11 +2450,11 @@
     "装备": "一个持续生效的增益；打出后占用一个装备槽，同名装备只能装备一件。"
   };
   const KEYWORD_ICONS = {
-    "登场": "battlecry", "余响": "deathrattle", "拦截": "taunt", "突进": "charge",
+    "登场": "battlecry", "余响": "deathrattle", "拦截": "taunt", "先遣": "charge",
     "被动": "passive", "冻结": "freeze", "沉默": "silence", "隐匿": "stealth",
     "引脉": "vein", "检索": "discover", "采掘": "excavate", "血祭": "blood",
-    "吞噬": "damage", "护幕": "armor", "连动": "charge", "蚀毒": "deathrattle",
-    "汲取": "heal", "袭扰": "charge", "回潮": "passive", "反噬": "summon",
+    "吞噬": "damage", "格挡": "armor", "连携": "charge", "蚀毒": "deathrattle",
+    "血偿": "heal", "先遣": "charge", "回潮": "passive", "反噬": "summon",
     "固定": "passive", "逆流": "vein", "镇脉": "armor", "压脉": "damage",
     "悬赏": "damage", "装备": "passive"
   };
@@ -2469,9 +2462,9 @@
   let keywordTipTimer = null;
 
   const TUTORIAL_KEYWORD_ORDER = [
-    "登场", "余响", "拦截", "突进", "被动", "冻结", "沉默", "隐匿",
-    "引脉", "检索", "采掘", "血祭", "吞噬", "护幕", "连动", "蚀毒",
-    "汲取", "袭扰", "回潮", "反噬", "固定", "逆流", "镇脉", "压脉",
+    "登场", "余响", "拦截", "先遣", "被动", "冻结", "沉默", "隐匿",
+    "引脉", "检索", "采掘", "血祭", "吞噬", "格挡", "连携", "蚀毒",
+    "血偿", "先遣", "回潮", "反噬", "固定", "逆流", "镇脉", "压脉",
     "悬赏", "装备"
   ];
   const CARD_TAG_ALLOWLIST = new Set(TUTORIAL_KEYWORD_ORDER);
@@ -2567,9 +2560,9 @@
   }
 
   const KEYWORD_ALIASES = {
-    "战吼": "登场", "亡语": "余响", "嘲讽": "拦截", "冲锋": "突进",
-    "潜行": "隐匿", "发现": "检索", "圣盾": "护幕", "风怒": "连动",
-    "剧毒": "蚀毒", "吸血": "汲取", "突袭": "袭扰", "复生": "回潮",
+    "战吼": "登场", "亡语": "余响", "嘲讽": "拦截", "冲锋": "先遣",
+    "潜行": "隐匿", "发现": "检索", "圣盾": "格挡", "风怒": "连携",
+    "剧毒": "蚀毒", "吸血": "血偿", "突袭": "先遣", "复生": "回潮",
     "过载": "反噬"
   };
 
@@ -2588,12 +2581,12 @@
       if (def.keywords.indexOf("battlecry") >= 0) tags.push("✦ 登场");
       if (def.keywords.indexOf("deathrattle") >= 0) tags.push("☠ 余响");
       if (def.keywords.indexOf("taunt") >= 0) tags.push("盾 拦截");
-      if (def.keywords.indexOf("charge") >= 0) tags.push("⚔ 突进");
-      if (def.keywords.indexOf("divineShield") >= 0) tags.push("护幕");
-      if (def.keywords.indexOf("windfury") >= 0) tags.push("连动");
+      if (def.keywords.indexOf("charge") >= 0) tags.push("⚔ 先遣");
+      if (def.keywords.indexOf("divineShield") >= 0) tags.push("格挡");
+      if (def.keywords.indexOf("windfury") >= 0) tags.push("连携");
       if (def.keywords.indexOf("poisonous") >= 0) tags.push("蚀毒");
-      if (def.keywords.indexOf("lifesteal") >= 0) tags.push("汲取");
-      if (def.keywords.indexOf("rush") >= 0) tags.push("袭扰");
+      if (def.keywords.indexOf("lifesteal") >= 0) tags.push("血偿");
+      if (def.keywords.indexOf("rush") >= 0) tags.push("先遣");
       if (def.keywords.indexOf("stealth") >= 0) tags.push("隐匿");
       if (def.keywords.indexOf("reborn") >= 0) tags.push("回潮");
     }
@@ -2611,9 +2604,9 @@
     if (def.text && def.text.indexOf("镇脉") >= 0) tags.push("镇脉");
     if (def.text && def.text.indexOf("压脉") >= 0) tags.push("压脉");
     if (def.text && def.text.indexOf("沉默") >= 0 && tags.indexOf("沉默") < 0) tags.push("沉默");
-    if (def.text && def.text.indexOf("护幕") >= 0 && tags.indexOf("护幕") < 0) tags.push("护幕");
+    if (def.text && def.text.indexOf("格挡") >= 0 && tags.indexOf("格挡") < 0) tags.push("格挡");
     if (def.text && def.text.indexOf("蚀毒") >= 0 && tags.indexOf("蚀毒") < 0) tags.push("蚀毒");
-    if (def.text && def.text.indexOf("袭扰") >= 0 && tags.indexOf("袭扰") < 0) tags.push("袭扰");
+    if (def.text && def.text.indexOf("先遣") >= 0 && tags.indexOf("先遣") < 0) tags.push("先遣");
     if (def.text && (def.text.indexOf("悬赏") >= 0 || def.text.indexOf("名单") >= 0) && tags.indexOf("悬赏") < 0) tags.push("悬赏");
     if (def.type === "equipment" || def.type === "relic") tags.push("装备");
     return tags;
@@ -2622,7 +2615,7 @@
   function boardKeywordLabels(def, m) {
     const labels = [];
     const add = (v) => { if (v && labels.indexOf(v) < 0) labels.push(v); };
-    const map = { battlecry: "登场", deathrattle: "余响", taunt: "拦截", charge: "突进", rush: "袭扰", divineShield: "护幕", windfury: "连动", poisonous: "蚀毒", lifesteal: "汲取", reborn: "回潮", stealth: "隐匿" };
+    const map = { battlecry: "登场", deathrattle: "余响", taunt: "拦截", charge: "先遣", rush: "先遣", divineShield: "格挡", windfury: "连携", poisonous: "蚀毒", lifesteal: "血偿", reborn: "回潮", stealth: "隐匿" };
     for (const k of (def.keywords || [])) add(map[k]);
     if (def.passive) add("被动");
     if (def.bloodCost != null) add("血祭");
@@ -2630,13 +2623,13 @@
       if (m.silenced) add("沉默");
       if (m.frozenTurns > 0) add("冻结");
       if (m.taunt) add("拦截");
-      if (m.divineShield) add("护幕");
-      if (m.windfury) add("连动");
+      if (m.divineShield) add("格挡");
+      if (m.windfury) add("连携");
       if (m.poisonous) add("蚀毒");
-      if (m.lifesteal) add("汲取");
+      if (m.lifesteal) add("血偿");
       if (m.reborn) add("回潮");
-      if (m.rush) add("袭扰");
-      if (m.charge) add("突进");
+      if (m.rush) add("先遣");
+      if (m.charge) add("先遣");
       if (m.stealth) add("隐匿");
     }
     return labels.slice(0, 4);
@@ -2683,7 +2676,7 @@
       if (m.frozenTurns > 0) tags.push("冻结");
       if (m.stealth) tags.push("隐匿");
       if (m.taunt) tags.push("拦截");
-      if (m.charge) tags.push("突进");
+      if (m.charge) tags.push("先遣");
     } else if (def.spell) {
       const st = def.spell.type;
       if (st === "silence") tags.push("沉默");
@@ -2698,7 +2691,7 @@
       if (["channelVein"].indexOf(st) >= 0) tags.push("引脉");
       if (["freezeDraw"].indexOf(st) >= 0) tags.push("冻结");
       if (["buffTaunt"].indexOf(st) >= 0) tags.push("拦截");
-      if (["buffCharge"].indexOf(st) >= 0) tags.push("突进");
+      if (["buffCharge"].indexOf(st) >= 0) tags.push("先遣");
       if (st === "gainMana") tags.push("行动力");
       if (st === "damageAllEnemiesDraw") { tags.push("伤害"); tags.push("抽牌"); }
       if (st === "damageAll") tags.push("伤害");
@@ -2840,9 +2833,76 @@
     if (back === "game") renderGame();
   }
 
+  function debtRepayText(def) {
+    const r = def.debt && def.debt.repay || { type: "mana", amount: 0 };
+    return r.type === "hp" ? ("支付 " + (r.amount || 0) + " 生命") : ("支付 " + (r.amount || 0) + " 行动力");
+  }
+
+  function openDebtRepayModal(instance) {
+    const s = app.game;
+    const viewer = s && s.players[app.viewer];
+    const def = D.CARDS[instance.cardId];
+    if (!s || !viewer || !def || !def.debt) return;
+    openModal((content) => {
+      content.appendChild(el("div", "eyebrow", "债务"));
+      content.appendChild(el("h3", null, def.name));
+      content.appendChild(el("p", null, def.text || ""));
+      content.appendChild(el("p", "muted", "偿还：" + debtRepayText(def)));
+      const actions = el("div", "modal-actions");
+      const repay = el("button", "btn btn-primary", "偿还债务");
+      repay.onclick = () => {
+        const r = E.repayDebt(s, app.viewer, instance.uid);
+        if (!r.ok) { toast(r.reason || "无法偿还。"); return; }
+        closeModal(true);
+        renderGame();
+      };
+      const cancel = el("button", "btn btn-ghost", "先不还");
+      cancel.onclick = () => closeModal(true);
+      actions.appendChild(repay);
+      actions.appendChild(cancel);
+      content.appendChild(actions);
+    });
+  }
+
+  function openDebtSideModal(instance, def) {
+    const s = app.game;
+    if (!s) return;
+    const opt = E.getPlayOptions(s, app.viewer, instance.uid);
+    if (!opt.ok) { toast(opt.reason || "现在不能打出债务。"); return; }
+    openModal((content) => {
+      content.appendChild(el("div", "eyebrow", "债务 / 选择方向"));
+      content.appendChild(el("h3", null, def.name));
+      content.appendChild(el("p", null, def.text || ""));
+      content.appendChild(el("p", "muted", "每名玩家最多持有 1 张债务。"));
+      const actions = el("div", "modal-actions");
+      if (opt.enemyDebt) {
+        const enemy = el("button", "btn btn-primary", "给对手（手牌压力）");
+        enemy.onclick = () => { closeModal(true); commitPlay(instance.uid, null, null, null, { debtSide: "enemy" }); };
+        actions.appendChild(enemy);
+      }
+      if (opt.selfDebt) {
+        const self = el("button", "btn btn-ghost", "给自己（任务奖励）");
+        self.onclick = () => { closeModal(true); commitPlay(instance.uid, null, null, null, { debtSide: "self" }); };
+        actions.appendChild(self);
+      }
+      const cancel = el("button", "btn btn-small btn-ghost", "取消");
+      cancel.onclick = () => closeModal(true);
+      actions.appendChild(cancel);
+      content.appendChild(actions);
+    });
+  }
+
   function createHandCard(def, instance, player, cost, s) {
     const card = buildLibraryCard(def, { variant: "hand", faction: true, cost: cost });
     card.classList.add("hand-card", "type-" + def.type);
+    if (instance.isDebt) {
+      card.classList.add("debt-card");
+      const remaining = Math.max(0, (instance.debtDueTurn || s.turnNumber) - s.turnNumber);
+      const task = def.debt && def.debt.self && def.debt.self.task;
+      const progress = task ? " · 任务 " + ((instance.debtProgress && instance.debtProgress[task.type]) || 0) + "/" + task.amount : "";
+      const status = el("div", "debt-status", "债务 · " + (instance.debtMode === "enemy" ? "敌方" : "己方") + " · " + remaining + " 回合" + progress);
+      card.appendChild(status);
+    }
     card.dataset.faction = def.faction;
     card.dataset.cardId = def.id;
     card.dataset.type = def.type;
@@ -2853,14 +2913,14 @@
     if (app.mobileGoldCard === instance.uid) card.classList.add("mobile-gold");
     const powerTarget = !!(app.targetInfo && app.targetInfo.kind === "heroPower" && targetList().indexOf(instance.uid) >= 0);
     if (powerTarget) card.classList.add("targetable");
-    const playable = s.status === "playing" && !s.mulliganPhase && s.current === player.index && player.mana >= cost && !app.busy;
+    const playable = !instance.isDebt && s.status === "playing" && !s.mulliganPhase && s.current === player.index && player.mana >= cost && !app.busy;
     if (!playable) card.classList.add("disabled");
     attachMobilePreview(card, def, null, instance);
     card.onmouseenter = () => showPreview(def, null);
     card.onmouseleave = hidePreview;
     if (playable) {
-      card.draggable = !isPhoneLayout();
-      card.title = def.type === "spell" ? "点击选择目标施放，或直接拖到目标" : def.type === "equipment" ? "点击打出装备" : "点击出牌，或拖到阵位";
+      card.draggable = !isPhoneLayout() && def.type !== "debt" && !instance.isDebt;
+      card.title = def.type === "debt" ? "点击选择给对手/给自己" : def.type === "spell" ? "点击选择目标施放，或直接拖到目标" : def.type === "equipment" ? "点击打出装备" : "点击出牌，或拖到阵位";
       card.addEventListener("dragstart", (ev) => {
         if (!ev.dataTransfer) return;
         app.draggingUid = instance.uid;
@@ -2882,6 +2942,12 @@
     card.onclick = (ev) => {
       ev.stopPropagation();
       if (app.suppressClick && Date.now() - app.suppressClick < 300) return;
+      if (instance.isDebt) { openDebtRepayModal(instance); return; }
+      if (def.type === "debt") {
+        if (!playable) { toast(s.current !== player.index ? "还没轮到你。" : "现在不能打出这张债务。"); return; }
+        openDebtSideModal(instance, def);
+        return;
+      }
       if (powerTarget) { onTargetClick(instance.uid); return; }
       if (isPhoneLayout() && app.mobileClickArmed === instance.uid) {
         app.mobileClickArmed = null;
@@ -3278,7 +3344,7 @@
   }
 
   function playRevealType(def) {
-    return def.type === "spell" ? "战术" : (def.type === "equipment" || def.type === "relic") ? "装备" : def.type === "formation" ? "阵型" : "随从";
+    return def.type === "spell" ? "战术" : (def.type === "equipment" || def.type === "relic") ? "装备" : def.type === "formation" ? "阵型" : def.type === "debt" ? "债务" : "随从";
   }
 
   function showCardReveal(def, side) {
@@ -3555,9 +3621,9 @@
       setTimeout(() => showAttackLine(ax, ay, cx, cy), 100);
     }
     if (targetMinion && targetMinion.taunt) setTimeout(() => showKeywordPop("拦截", cx, cy, ""), 190);
-    if (targetMinion && targetMinion.divineShield) setTimeout(() => showKeywordPop("护幕", cx, cy, "shield"), 205);
+    if (targetMinion && targetMinion.divineShield) setTimeout(() => showKeywordPop("格挡", cx, cy, "shield"), 205);
     if (attacker.poisonous) setTimeout(() => showKeywordPop("蚀毒", cx, cy, "poison"), 220);
-    if (attacker.lifesteal) setTimeout(() => showKeywordPop("汲取", cx, cy, "heal"), 220);
+    if (attacker.lifesteal) setTimeout(() => showKeywordPop("血偿", cx, cy, "heal"), 220);
 
     // 命中帧才结算，伤害数字和引擎状态在同一拍出现；之后只播回收和余波。
     setTimeout(() => {
@@ -3768,7 +3834,8 @@
     commitPlay(cardUid, null, null);
   }
 
-  function commitPlay(cardUid, targetUid, zone, targetUid2) {
+  function commitPlay(cardUid, targetUid, zone, targetUid2, extraOpts) {
+    extraOpts = extraOpts || {};
     hidePreviewNow();
     hideSimpleCardPreview();
     app.mobileGoldCard = null;
@@ -3845,7 +3912,8 @@
         targetUid: targetUid || null,
         targetUid2: targetUid2 || null,
         zone: zone || null,
-        payBlood: true
+        payBlood: true,
+        debtSide: extraOpts.debtSide || null
       });
       app.payBloodChoice = null;
       app.pendingBloodCard = null;
@@ -3863,7 +3931,8 @@
       targetUid: targetUid || null,
       targetUid2: targetUid2 || null,
       zone: zone || null,
-      payBlood: true
+      payBlood: true,
+      debtSide: extraOpts.debtSide || null
     });
     app.payBloodChoice = null;
     app.pendingBloodCard = null;
@@ -4418,7 +4487,7 @@
     openModal((content) => {
       content.appendChild(el("div", "eyebrow", "制作名单 / 档案"));
       content.appendChild(el("h3", null, "制作与素材说明"));
-      const p1 = el("p", null, "《戈克世界：流脉牌局》经典模式 2.0。当前开放普卫岛、学院、西昭、共和国、帝国与灰港同盟六个阵营，支持起手调度、单人 AI 与局域网双人对战。");
+      const p1 = el("p", null, "《戈克世界：流脉牌局》经典模式 2.0。当前开放普卫岛、学院、西昭、洛斯汰聚落、共和国、帝国、灰港同盟与雪都八个阵营，支持起手调度、单人 AI 与局域网双人对战。");
       const p2 = el("p", null, "随从立绘与场景图来自《戈克世界》项目现有素材；音效与背景音乐来自《戈克纪元：流脉》项目。卡牌框架、规则引擎与界面由本作制作。");
       const p3 = el("p", null, "本作为非正史档案推演，卡牌效果不写入小说正史；未使用 NSFW 私设、参考图或带文字介绍卡。");
       content.appendChild(p1); content.appendChild(p2); content.appendChild(p3);
@@ -5116,31 +5185,22 @@
   function normalizeSavedDeck(faction, list) {
     if (!Array.isArray(list)) return null;
     list = migrateUnavailableCards(faction, list);
-    if (D.validateDeck(faction, list).ok) {
-      const clean = list.slice();
-      if (clean.length > 31) {
-        for (let i = clean.length - 1; i >= 0; i--) {
-          if (D.CARDS[clean[i]] && D.CARDS[clean[i]].type === "equipment") { clean.splice(i, 1); break; }
-        }
-      }
-      return clean.slice(0, 31);
+    const moved = list.some((id) => {
+      const d = D.CARDS[id];
+      return d && !d.token && d.disabled !== true && d.faction !== faction && d.faction !== "neutral";
+    });
+    if (moved) {
+      const built = D.autoBuildDeck(faction, "midrange");
+      if (D.validateDeck(faction, built).ok) return built.slice();
     }
+    if (D.validateDeck(faction, list).ok && list.length === 30) return list.slice(0, 30);
     const special = D.DECK_SPECIALS[faction] || {};
-    const relics = list.filter((id) => D.CARDS[id] && D.CARDS[id].type === "equipment");
-    const formations = list.filter((id) => D.CARDS[id] && D.CARDS[id].type === "formation");
+    const extra = [special.relic, special.relic2].filter((id) => id && list.indexOf(id) < 0);
     const main = list.filter((id) => D.CARDS[id] && D.CARDS[id].type !== "equipment" && D.CARDS[id].type !== "formation");
-    const extraRelic = [special.relic, special.relic2].find((id) => id && relics.indexOf(id) < 0);
-    const base = (list.length === 31 || list.length === 33)
-      ? main.slice(0, 28).concat(formations.slice(0, 2), relics.slice(0, 1))
-      : null;
-    if (base && extraRelic) {
-      const migrated = base.concat([extraRelic]);
-      if (D.validateDeck(faction, migrated).ok) return migrated;
-    }
-    if (list.length === 31 && extraRelic) {
-      const migrated = main.slice(0, 30).concat(relics.slice(0, 1), [extraRelic]);
-      if (D.validateDeck(faction, migrated).ok) return migrated;
-    }
+    const forms = list.filter((id) => D.CARDS[id] && D.CARDS[id].type === "formation");
+    const eqs = list.filter((id) => D.CARDS[id] && D.CARDS[id].type === "equipment");
+    const full = main.slice(0, 26).concat(forms.slice(0, 2), eqs.slice(0, 2), extra).slice(0, 30);
+    if (D.validateDeck(faction, full).ok) return full;
     return null;
   }
 
@@ -5163,6 +5223,7 @@
         if (migrated) app.customDecks[f] = migrated.slice();
         else if (Array.isArray(list) && list.length) app.legacyDecks[f] = list.slice();
       }
+      try { localStorage.setItem(DECK_STORAGE_KEY, JSON.stringify(app.customDecks)); } catch (e) {}
     } catch (e) {
       app.customDecks = {};
     }
@@ -5212,7 +5273,7 @@
     const custom = app.customDecks[app.faction];
     const valid = !!(custom && D.validateDeck(app.faction, custom).ok);
     if (!$("setup-deck-name")) return;
-    $("setup-deck-name").textContent = valid ? "自定义牌组 · 30+2" : "预设牌组 · 30+2";
+    $("setup-deck-name").textContent = valid ? "自定义牌组 · 30 张" : "预设牌组 · 30 张";
     const equipNames = deckRelicIds(app.faction).map(id => D.CARDS[id] && D.CARDS[id].name).filter(Boolean);
     $("setup-deck-detail").textContent = (valid ? "已保存在本机" : "官方预组") + " · 装备：" + (equipNames.length ? equipNames.join(" / ") : "未选择") + " · 需抽到后打出";
     $("btn-deck-preset").disabled = !valid;
@@ -5276,9 +5337,9 @@
     const relicCount = list.filter(id => D.CARDS[id].type === "equipment" || D.CARDS[id].type === "relic").length;
     const headerCount = $("deck-head-count");
     const fieldCount = mainCount + formationCount;
-    if (headerCount) headerCount.textContent = (fieldCount + Math.min(2, relicCount)) + " / 32";
+    if (headerCount) headerCount.textContent = list.length + " / 30";
     const totalEl = $("deck-count");
-    if (totalEl) totalEl.textContent = (fieldCount + Math.min(2, relicCount)) + " / 32 张";
+    if (totalEl) totalEl.textContent = list.length + " / 30 张";
     const noteEl = $("deck-count-note");
     if (noteEl) noteEl.textContent = "由 30 张带牌（含阵型，最多 8 张）+ 2 件装备组成";
 
@@ -5308,7 +5369,8 @@
     validEl.textContent = validation.ok ? "合法牌组" : "未完成";
     validEl.className = "deck-valid " + (validation.ok ? "ok" : "bad");
 
-    const tabs = $("deck-faction-tabs");
+        document.querySelectorAll('[data-deck-filter="debt"]').forEach((b) => { b.hidden = !["xizhao", "losutai"].includes(f); });
+const tabs = $("deck-faction-tabs");
     clear(tabs);
     for (const id of D.FACTION_IDS) {
       const b = el("button", "deck-faction-tab" + (id === f ? " active" : ""), D.FACTIONS[id].name);
@@ -5326,9 +5388,12 @@
     clear(msg);
     if (!validation.ok) {
       if (validation.errors.length) msg.textContent = validation.errors.slice(0, 2).join("；");
-      else msg.textContent = "需要 32 张：30 张带牌 + 2 件装备；阵型最多 8 张。";
+      else msg.textContent = "需要 30 张：装备/阵型/随从自由混编。";
+    } else if (validation.warnings && validation.warnings.length) {
+      msg.textContent = validation.warnings.join("；");
+      msg.classList.add("warn");
     } else {
-      msg.textContent = "32 张自由编成：30 张带牌 + 2 件装备，阵型最多 8 张。";
+      msg.textContent = "30 张自由编成：装备/阵型/随从自由混编。";
     }
 
     const curve = $("deck-curve");
@@ -5346,13 +5411,14 @@
     }
     const minions = list.filter(id => D.CARDS[id].type === "minion").length;
     const tactics = list.filter(id => D.CARDS[id].type === "spell").length;
+    const debts = list.filter(id => D.CARDS[id].type === "debt").length;
     const formations = list.filter(id => D.CARDS[id].type === "formation").length;
     const drawTotal = deckDrawCount(list);
-    $("deck-type-stats").textContent = "随从 " + minions + " · 战术 " + tactics + " · 阵型 " + formations + " · 传说 " + list.filter(id => D.CARDS[id].rarity === "legendary").length + " · 过牌 " + drawTotal;
+    $("deck-type-stats").textContent = "随从 " + minions + " · 战术 " + tactics + " · 阵型 " + formations + " · 债务 " + debts + " · 传说 " + list.filter(id => D.CARDS[id].rarity === "legendary").length + " · 过牌 " + drawTotal;
     msg.classList.toggle("warn", validation.ok && drawTotal > 10);
     msg.hidden = validation.ok && !(drawTotal > 10);
     if (validation.ok && drawTotal > 10) {
-      msg.textContent = "32 张自由编成 · 过牌偏多：" + drawTotal + " 张，建议控制在 6–10 张。";
+      msg.textContent = "30 张自由编成 · 过牌偏多：" + drawTotal + " 张，建议控制在 6–10 张。";
     }
 
     const selected = $("deck-selected");
@@ -5389,7 +5455,7 @@
       const def = D.CARDS[id];
       const count = counts[id] || 0;
       const max = D.maxCopies(def);
-      const typeFull = def.type === "formation" ? (formationCount >= 8 || fieldCount >= 30) : (def.type === "equipment" || def.type === "relic") ? relicCount >= 2 : fieldCount >= 30;
+      const typeFull = false;
       const card = buildLibraryCard(def, { variant: "mini", faction: false, count: count + "/" + max });
       card.classList.add("deck-mini", "rarity-" + (def.rarity || "common"));
       if (count >= max || typeFull) card.classList.add("full");
@@ -5412,7 +5478,7 @@
     }
     document.querySelectorAll(".auto-deck-btn").forEach((b) => b.classList.toggle("active", b.dataset.deckStrategy === app.lastAutoStrategy));
     const autoStatus = $("deck-auto-status");
-    if (autoStatus) autoStatus.textContent = app.lastAutoStrategy ? "当前策略：" + D.DECK_STRATEGIES[app.lastAutoStrategy].name + " · 可继续手动调整" : "选择一套策略，一键生成 32 张牌组。";
+    if (autoStatus) autoStatus.textContent = app.lastAutoStrategy ? "当前策略：" + D.DECK_STRATEGIES[app.lastAutoStrategy].name + " · 可继续手动调整" : "选择一套策略，一键生成 30 张牌组。";
   }
 
   function toggleDeckCard(id) {
@@ -5432,9 +5498,9 @@
     const relicCount = app.deckBuildList.filter(x => D.CARDS[x].type === "equipment").length;
     const fieldCount = mainCount + formationCount;
     if (def.type === "formation" && formationCount >= 8) { toast("阵位牌最多带 2 张。"); return; }
-    if ((def.type === "equipment" || def.type === "relic") && relicCount >= 2) { toast("装备最多带 2 件。"); return; }
-    if (def.type !== "equipment" && fieldCount >= 30) { toast("30 张带牌已满。"); return; }
-    if (app.deckBuildList.length >= 32) { toast("牌组已满（32 张）。"); return; }
+    
+    if (app.deckBuildList.length >= 30) { toast("牌组已满（30 张）。"); return; }
+    if (app.deckBuildList.length >= 30) { toast("牌组已满（30 张）。"); return; }
     if (count >= D.maxCopies(def)) { toast(def.name + " 已达同名张数上限。"); return; }
     app.deckBuildList.push(id);
     AudioBox.play("click");
@@ -5448,10 +5514,21 @@
     renderDeckBuilder();
   }
 
+  function confirmDeckWarnings(faction, list, actionLabel) {
+    const v = D.validateDeck(faction, list);
+    if (!v.ok) { toast(v.errors[0] || "牌组还不合法。"); return false; }
+    if (v.warnings && v.warnings.length) {
+      const text = "这份牌组有提醒：\n\n" + v.warnings.join("\n") + "\n\n" + (actionLabel || "继续");
+      if (!window.confirm(text)) return false;
+    }
+    return true;
+  }
+
   function saveCurrentDeck(showToast) {
     const f = app.deckBuildFaction;
     const v = D.validateDeck(f, app.deckBuildList);
     if (!v.ok) { toast(v.errors[0] || "牌组还不合法。"); return false; }
+    if (v.warnings && v.warnings.length && !confirmDeckWarnings(f, app.deckBuildList, "仍然保存？")) return false;
     app.customDecks[f] = app.deckBuildList.slice();
     app.deckSource = "custom";
     persistCustomDecks();
@@ -5556,7 +5633,7 @@
     { id: "tide_10", name: "魔物潮", desc: "在一局中触发流脉 10。", icon: "X" },
     { id: "summoner_10", name: "六阵位", desc: "单局召唤 10 个随从。", icon: "VI" },
     { id: "lan_win", name: "隔桌", desc: "赢得一局局域网对战。", icon: "LAN" },
-    { id: "deck_saved", name: "编成者", desc: "保存一套自定义 32 张牌组：30 张带牌 + 2 件装备。", icon: "30" },
+    { id: "deck_saved", name: "编成者", desc: "保存一套自定义 30 张牌组：30 张卡（装备/阵型自由混编）。", icon: "30" },
     { id: "tutorial", name: "第一课", desc: "进入新手演练。", icon: "01" },
     { id: "play_10", name: "档案常客", desc: "累计完成 10 局推演。", icon: "10" },
   ];
@@ -6318,7 +6395,7 @@
       if (app.codexSort === "cost") return a.cost - b.cost || a.name.localeCompare(b.name);
       if (app.codexSort === "name") return a.name.localeCompare(b.name, "zh-Hans-CN");
       if (app.codexSort === "type") {
-        const order = { minion: 0, spell: 1, formation: 2, relic: 3, equipment: 3 };
+        const order = { minion: 0, spell: 1, formation: 2, relic: 3, equipment: 3, debt: 4 };
         return (order[a.type] == null ? 9 : order[a.type]) - (order[b.type] == null ? 9 : order[b.type]) || a.cost - b.cost || a.name.localeCompare(b.name);
       }
       const fa = D.FACTION_IDS.indexOf(a.faction), fb = D.FACTION_IDS.indexOf(b.faction);
@@ -6414,7 +6491,7 @@
         "2. 点击「开始推演」，选择阵营与预设牌组。",
         "3. 起手换牌：保留 1–3 行动力的牌，换掉 4 行动力以上的高消耗牌。",
         "4. 低费随从先铺场，再用战术解场或增益。",
-        "5. 点击攻击力大于 0 的随从发起攻击；有拦截先打拦截。",
+        "5. 点击攻击力大于 0 的随从发起攻击；有拦截先打守备。",
         "6. 流脉到 4 / 7 / 10 会触发世界事件，12 回流清空。",
         "7. 结束回合，交替行动，直到一方领袖生命归零。"
       ]) tutorialList.appendChild(el("span", null, step));
@@ -6444,8 +6521,8 @@
         ["行动力", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张并获得「采掘许可」。"],
         ["阵位", "左翼 / 中枢 / 右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。同阵位可能触发协同，双方同列互为对位。"],
         ["流脉", "共享流脉 0→12。到达 4 震荡、7 裂隙、10 魔物潮时触发世界事件；12 回流清空。"],
-        ["关键词", "登场、余响、拦截、突进、冻结、沉默、引脉、检索等关键词会在卡牌和标签上标明。"],
-        ["遗物", "装备是一张牌，抽到并打出后才装备到领袖身上。"]
+        ["关键词", "登场、余响、拦截、先遣、冻结、沉默、引脉、检索等关键词会在卡牌和标签上标明。"],
+        ["装备", "装备是一张牌，抽到并打出后持续生效；同类装备最多生效 2 件。"]
       ];
       for (const [title, desc] of sections) {
         const sec = el("div", "guide-section");
@@ -6656,8 +6733,8 @@
   const LAB_MODS = [
     { id: "veinStorm", name: "流脉暴走", desc: "开局流脉直接 +6。世界会更早替你们结算。" },
     { id: "manaFlood", name: "行动力沸腾", desc: "双方开局最大行动力 +2，当前行动力也补满。" },
-    { id: "ironRush", name: "全员突进", desc: "双方之后召唤的所有随从获得突进。" },
-    { id: "crossFaction", name: "跨阵营乱斗", desc: "双方牌组从六阵营卡池随机混编，不再讲阵营纪律。" },
+    { id: "ironRush", name: "全员先遣", desc: "双方之后召唤的所有随从获得先遣。" },
+    { id: "crossFaction", name: "跨阵营乱斗", desc: "双方牌组从八阵营卡池随机混编，不再讲阵营纪律。" },
     { id: "experimentalCards", name: "实验卡牌", desc: "把当前 6 张实验牌混入乱斗牌组：混沌裂隙、变异之卵、命运赌徒、禁忌知识、时间借贷、流脉超载。" },
     { id: "chaosEvents", name: "随机事件", desc: "从第 3 回合开始，每隔 3 个回合触发一次随机实验事件。" }
   ];
@@ -7213,7 +7290,7 @@
   function updateGuestDeckLabel() {
     const valid = lanHasCustom(app.lanFaction);
     const label = $("lan-guest-deck-label");
-    if (label) label.textContent = (valid && app.lanGuestUseCustom ? "自定义牌组" : "预设牌组") + " · 30+2";
+    if (label) label.textContent = (valid && app.lanGuestUseCustom ? "自定义牌组" : "预设牌组") + " · 30 张";
     const select = $("lan-guest-deck-select");
     if (select) {
       select.value = app.lanGuestUseCustom && valid ? "custom" : "preset";
@@ -7225,7 +7302,7 @@
   function updateHostDeckLabel() {
     const valid = lanHasCustom(app.lanFaction);
     const label = $("lan-host-deck-label");
-    if (label) label.textContent = (valid && app.lanHostUseCustom ? "自定义牌组" : "预设牌组") + " · 30+2";
+    if (label) label.textContent = (valid && app.lanHostUseCustom ? "自定义牌组" : "预设牌组") + " · 30 张";
     const select = $("lan-host-deck-select");
     if (select) {
       select.value = app.lanHostUseCustom && valid ? "custom" : "preset";
@@ -7986,14 +8063,14 @@
     const deckRow = el("div", "match-deck-row");
     const deckCopy = el("div", "match-deck-copy");
     deckCopy.appendChild(el("strong", null, "牌组"));
-    deckCopy.appendChild(el("small", null, "30 张带牌 + 2 件装备"));
+    deckCopy.appendChild(el("small", null, "30 张卡（装备/阵型自由混编）"));
     const deckSelect = document.createElement("select");
     deckSelect.className = "match-deck-select";
-    deckSelect.innerHTML = '<option value="preset">预设牌组 · 30+2</option><option value="custom">自定义牌组 · 30+2</option>';
+    deckSelect.innerHTML = '<option value="preset">预设牌组 · 30 张</option><option value="custom">自定义牌组 · 30 张</option>';
     deckSelect.value = selectedDeck;
     const customOption = deckSelect.querySelector('option[value="custom"]');
     customOption.disabled = !lanHasCustom(selectedFaction);
-    customOption.textContent = lanHasCustom(selectedFaction) ? "自定义牌组 · 30+2" : "自定义牌组（尚未构筑）";
+    customOption.textContent = lanHasCustom(selectedFaction) ? "自定义牌组 · 30 张" : "自定义牌组（尚未构筑）";
     deckSelect.onchange = () => { selectedDeck = deckSelect.value === "custom" && lanHasCustom(selectedFaction) ? "custom" : "preset"; app.matchPageDeck = selectedDeck; renderMatchPage(); };
     deckRow.appendChild(deckCopy); deckRow.appendChild(deckSelect); setup.appendChild(deckRow);
     const start = el("button", "btn btn-primary btn-wide", ranked ? "开始排位匹配" : "开始休闲匹配");
@@ -8142,12 +8219,12 @@
       const deckRow = el("div", "match-deck-row");
       const deckCopy = el("div", "match-deck-copy");
       deckCopy.appendChild(el("strong", null, "牌组"));
-      deckCopy.appendChild(el("small", null, "30 张带牌 + 2 件装备"));
+      deckCopy.appendChild(el("small", null, "30 张卡（装备/阵型自由混编）"));
       const deckSelect = document.createElement("select");
       deckSelect.className = "match-deck-select";
       const presetOpt = document.createElement("option");
       presetOpt.value = "preset";
-      presetOpt.textContent = "预设牌组 · 30+2";
+      presetOpt.textContent = "预设牌组 · 30 张";
       const customOpt = document.createElement("option");
       customOpt.value = "custom";
       deckSelect.appendChild(presetOpt);
@@ -8177,7 +8254,7 @@
         const hero = D.HEROES[D.FACTIONS[selectedFaction].hero];
         document.querySelectorAll(".match-faction-card").forEach((b) => b.classList.toggle("active", b.dataset.faction === selectedFaction));
         customOpt.disabled = !hasCustom;
-        customOpt.textContent = hasCustom ? "自定义牌组 · 30+2" : "自定义牌组（尚未构筑）";
+        customOpt.textContent = hasCustom ? "自定义牌组 · 30 张" : "自定义牌组（尚未构筑）";
         if (selectedDeck === "custom" && !hasCustom) selectedDeck = "preset";
         deckSelect.value = selectedDeck;
         summary.textContent = "领袖：" + (hero ? hero.name : factionName(selectedFaction)) + " · " + factionName(selectedFaction) + " · " + (selectedDeck === "custom" && hasCustom ? "自定义牌组" : "预设牌组");
@@ -8806,6 +8883,8 @@
     if ($("btn-series-bo1")) $("btn-series-bo1").onclick = () => { app.seriesMode = "bo1"; document.querySelectorAll(".series-choice").forEach(b => b.classList.toggle("active", b.id === "btn-series-bo1")); AudioBox.play("click"); };
     if ($("btn-series-bo3")) $("btn-series-bo3").onclick = () => { app.seriesMode = "bo3"; document.querySelectorAll(".series-choice").forEach(b => b.classList.toggle("active", b.id === "btn-series-bo3")); AudioBox.play("click"); };
     $("btn-start-game").onclick = () => {
+      const deckForStart = getPlayDeck(app.faction);
+      if (!confirmDeckWarnings(app.faction, deckForStart, "仍然开始推演？")) return;
       const begin = () => runBootLoading("正在铺开牌桌", "载入牌组、阵位与流脉…", BOOT_ASSETS, () => startGame({ mode: "ai", faction: app.faction, aiDifficulty: app.aiDifficulty, series: app.seriesMode }));
       const cg = CLASSIC_CG[app.faction];
       if (global.GokCinema && cg) {
@@ -8822,7 +8901,7 @@
       b.onclick = () => { app.faction = b.dataset.faction; AudioBox.play("click"); setupState(); };
     });
     $("btn-deck").onclick = () => { AudioBox.play("ui_open"); openDeckBuilder(app.faction); };
-    if ($("btn-deck-random")) $("btn-deck-random").onclick = () => { const f = app.faction; const keys = Object.keys(D.DECK_STRATEGIES); const strategy = keys[Math.floor(Math.random() * keys.length)] || "midrange"; const built = D.autoBuildDeck(f, strategy); if (!D.validateDeck(f, built).ok) { toast("随机构筑失败，请重试。"); return; } app.customDecks[f] = built; persistCustomDecks(); updateSetupDeck(); toast("已按「" + D.DECK_STRATEGIES[strategy].name + "」从全卡池生成 32 张牌组。"); };
+    if ($("btn-deck-random")) $("btn-deck-random").onclick = () => { const f = app.faction; const keys = Object.keys(D.DECK_STRATEGIES); const strategy = keys[Math.floor(Math.random() * keys.length)] || "midrange"; const built = D.autoBuildDeck(f, strategy); if (!D.validateDeck(f, built).ok) { toast("随机构筑失败，请重试。"); return; } app.customDecks[f] = built; persistCustomDecks(); updateSetupDeck(); toast("已按「" + D.DECK_STRATEGIES[strategy].name + "」从全卡池生成 30 张牌组。"); };
     $("btn-deck-preset").onclick = () => usePresetDeck(app.faction);
     $("btn-deck-back").onclick = () => {
       AudioBox.play("cancel");

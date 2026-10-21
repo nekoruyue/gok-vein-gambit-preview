@@ -25,3 +25,6 @@ License: Creative Commons Zero (CC0) — https://creativecommons.org/publicdomai
 - `bgm_faction_greyharbor.ogg`
 
 均为本项目内程序化生成的原创器乐循环，不依赖外部素材；用于各阵营备战、经典对局与战棋模式。切换时使用 760ms 交叉淡入淡出。
+
+## e51 BGM
+- 2026-10-21: 旧 BGM 替换为本地生成的暗色环境循环（tools/make_bgm.py）。旧曲备份在 tests/audio-old。

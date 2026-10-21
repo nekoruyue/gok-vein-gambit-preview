@@ -947,7 +947,7 @@
       app.contentArenaFaction = D.FACTIONS[app.contentArenaFaction] ? app.contentArenaFaction : (D.FACTIONS[app.faction] ? app.faction : "pus");
       const panel = el("div", "mode-panel");
       panel.appendChild(el("h3", null, "选择轮抽阵营"));
-      panel.appendChild(el("p", null, "本轮的卡池、遗物和对手都会围绕这个阵营生成。"));
+      panel.appendChild(el("p", null, "本轮的卡池、装备和对手都会围绕这个阵营生成。"));
       panel.appendChild(renderContentFactionPicker(app.contentArenaFaction, (id) => {
         app.contentArenaFaction = id;
         renderArena();
