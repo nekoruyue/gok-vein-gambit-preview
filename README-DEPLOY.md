@@ -250,3 +250,17 @@ A：只能单机。在线房间必须有 Node 服务。
 
 
 
+
+## 2026-10-23 免费 Postgres 部署
+
+Render 免费实例不再需要持久化磁盘。配置：
+
+```text
+GOK_CHANNEL=preview
+NODE_VERSION=24
+DATABASE_URL=Neon 或 Supabase 的 Pooled Postgres 连接串
+```
+
+不设置 `GOK_DATA_DIR`，也不要挂盘。账号、会话和云存档都在 Postgres。
+
+免费 Neon/Supabase 计划通常不需要绑定银行卡，具体以服务商页面为准。

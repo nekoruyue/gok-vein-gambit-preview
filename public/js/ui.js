@@ -182,6 +182,11 @@
     animating: false,
     net: null,
     customDecks: {},
+    deckLibrary: {},
+    activeDeckId: {},
+    deckEditingId: null,
+    deckReadOnly: false,
+    deckDraftName: "",
     customCardArt: null,
     activeRelics: {},
     tutorial: false,
@@ -195,6 +200,12 @@
     codexLimit: 60,
     achievements: {},
     profile: null,
+    auth: { user: null },
+    authGate: false,
+    cloudSaveVersion: 0,
+    cloudSaveAt: 0,
+    cloudConflict: null,
+    profileTab: "personal",
     profileRecorded: false,
     mulliganOpen: false,
     mulliganSubmitted: false,
@@ -207,6 +218,7 @@
     deckBuildList: [],
     deckBuildFilter: "all",
     deckBuildRarity: "all",
+    deckBuildOwned: "all",
     deckPoolScope: "faction",
     deckDrafts: {},
     lanHostPage: false,
@@ -581,7 +593,13 @@
     else if (name === "codex" || name === "deck" || name === "achievements") AudioBox.bgm(ARCHIVE_BGM);
     else if (name === "home" || name === "mode" || name === "sim" || name === "tutorial" || name === "settings" || name === "rank" || name === "rules") AudioBox.bgm(MAIN_BGM);
     if (name !== "home") { closeStartMenu(); hideMobileWelcome(); }
-    if (name === "home") { updateHomeLegendary(); updateHomeAccount(); renderHomeDash(); startHomeQuoteRotation(); }
+    if (name !== "home") removeOnboardingCoach();
+    if (name === "home") { updateHomeLegendary(); updateHomeAccount(); updateHomeTaskWidget(); renderHomeDash(); startHomeQuoteRotation(); setTimeout(startOnboardingIfNeeded, 300); }
+    if (name === "profile") renderProfilePage();
+    if (name === "appearance") renderAppearancePage();
+    if (name === "login") renderLoginPage();
+    if (name === "tasks") renderTasksPage();
+    if (name === "levelup") renderLevelRewardPage();
     if (name === "rules") renderRulesKeywords();
     if (name === "other") renderOtherModes();
     applyVideoPrefs();
@@ -662,7 +680,27 @@
     "采掘会抽牌并增加共享流脉。",
     "引脉只在共享流脉达到标注数字时触发。",
     "牌库抽空会进入疲劳，过牌也要算代价。",
-    "结束回合前先确认行动力和可攻击随从。"
+    "结束回合前先确认行动力和可攻击随从。",
+    "一套牌组固定 30 张，装备最多 2 件，阵型最多 3 张。",
+    "自动构筑只是起点，建议再手动改 3–5 张。",
+    "未拥有的传说卡会显示灰色标记，仍然可以查看效果。",
+    "每个阵营可以保存多套不同流派的牌组。",
+    "给牌组起名字，准备阶段更容易找到它。",
+    "登录后档案可以跨设备同步。",
+    "访客也能玩，但换设备不会自动带走档案。",
+    "云存档冲突时会让你选择保留哪一份。",
+    "服务器位于新加坡，网络波动时优先检查加速器。",
+    "鼠标悬停卡牌可以查看完整关键词。",
+    "手机长按卡牌可以打开详情。",
+    "守备随从会挡住敌方对领袖的攻击。",
+    "连携需要同阵位有另一个友方随从。",
+    "流脉 4 / 7 / 10 / 12 会触发不同事件。",
+    "牌库抽空后进入疲劳，过牌也要付代价。",
+    "对局中不会自动跳转到教程页。",
+    "普卫岛相信秩序应该像潮汐一样可预测。",
+    "学院把流脉当作可以拆解的公式。",
+    "灰港同盟不问你从哪来，只问你付不付得起。",
+    "雪都的极光会记录每一个路过的名字。"
   ];
   let homeQuoteTimer = null;
   let homeQuoteIndex = 0;
@@ -674,6 +712,18 @@
     quote.textContent = text;
     quote.classList.add("swap");
   }
+  function applyFactionChipColors() {
+    const palette = { pus:"#63A79F", academy:"#6D8FC4", xizhao:"#B45B5B", republic:"#C7A24D", empire:"#A45C48", greyharbor:"#5F8390", losutai:"#709B68", snow:"#9EC7D9" };
+    document.querySelectorAll("[data-faction-chip]").forEach((chip) => {
+      const id = chip.dataset.factionChip;
+      const color = (D.FACTIONS[id] && D.FACTIONS[id].color) || palette[id] || "#f2c66d";
+      chip.style.setProperty("--faction-color", color);
+      chip.title = "查看 " + (D.FACTIONS[id] ? D.FACTIONS[id].name : id) + " 图鉴";
+      chip.style.cursor = "pointer";
+      chip.onclick = () => { app.codexFaction = id; AudioBox.play("ui_open"); openCodex(); };
+    });
+  }
+
   function startHomeQuoteRotation() {
     if (homeQuoteTimer) clearInterval(homeQuoteTimer);
     setHomeQuote(HOME_TIPS[homeQuoteIndex % HOME_TIPS.length]);
@@ -886,7 +936,7 @@
     bootTipTimer = setInterval(() => {
       index = (index + 1) % tips.length;
       show(tips[index]);
-    }, 850);
+    }, 3800);
   }
   function stopBootTips() {
     if (bootTipTimer) clearInterval(bootTipTimer);
@@ -1292,6 +1342,7 @@
 
   function confirmMulligan() {
     if (!app.game || !app.game.mulliganPhase || app.mulliganSubmitted) return;
+    markMainTask("mulligan");
     const uids = Array.from(app.mulliganSelected);
     app.mulliganSelected = new Set();
     app.mulliganOpen = false;
@@ -1435,7 +1486,6 @@
 
   function startTutorial() {
     unlockAchievement("tutorial");
-    markMainTask("tutorial");
     app.tutorialCoachCollapsed = false;
     app.tutorial = true;
     app.tutorialStep = 1;
@@ -1445,12 +1495,15 @@
   }
 
   function endTutorial() {
+    markMainTask("tutorial");
     app.tutorial = false;
     app.tutorialCoachCollapsed = false;
     const coach = $("tutorial-coach");
     if (coach) coach.hidden = true;
+    const onboarding = onboardingState();
+    if (!onboarding.completed) { onboarding.step = ONBOARDING_STEPS.length; onboarding.completed = true; persistAccount(); }
     leaveGame();
-    toast("教程已结束。");
+    toast("恭喜你过关教程。现在开始你的第一把推演吧。");
   }
 
   function fillManaBox(box, player, label) {
@@ -5868,9 +5921,11 @@
 
   /* ===== 档案编成 ===== */
   const DECK_STORAGE_KEY = "gok_custom_decks_v1";
+  const DECK_LIBRARY_KEY = "gok_deck_library_v1";
   const RELIC_STORAGE_KEY = "gok_active_relics_v1";
   const LEGACY_DECK_KEY = "gok_legacy_decks_v1";
   const ACCOUNT_KEY = "gok_account_v1";
+  const GUEST_KEY = "gok_guest_choice_v1";
   const ACCOUNT_NAMED_KEY = "gok_account_named_v1";
   const SAVE_BACKUP_KEY = "gok_save_backup_v1";
   let saveBackupTimer = null;
@@ -5904,25 +5959,38 @@
 
   /* ===== account progression: tasks, levels, legendary collection ===== */
   const LEVEL_MAX = 30;
-  const FEATURE_LEVELS = { hard: 2, lab: 3, other: 4, nightmare: 5, customize: 8, deckname: 10 };
-  const FEATURE_LABELS = { hard: "困难 AI", lab: "疯狂实验", other: "其他模式", nightmare: "噩梦 AI", customize: "档案个性化", deckname: "牌组名片" };
+  const FEATURE_LEVELS = { hard: 2, lab: 3, other: 4, nightmare: 5, deckedit: 5, multideck: 7, customize: 8 };
+  const FEATURE_LABELS = { hard: "困难 AI", lab: "疯狂实验", other: "其他模式", nightmare: "噩梦 AI", deckedit: "组卡与命名", multideck: "多套牌组", customize: "档案个性化" };
   function featureLabel(key) { return FEATURE_LABELS[key] || key; }
   const DAILY_TASKS = [
-    { id: "play", name: "完成 1 场对局", key: "play", target: 1, xp: 20 },
-    { id: "win", name: "赢得 1 场对局", key: "win", target: 1, xp: 30 },
-    { id: "cards", name: "打出 8 张牌", key: "cards", target: 8, xp: 20 }
+    { id: "play", name: "完成 1 场对局", key: "play", target: 1, xp: 50 },
+    { id: "win", name: "赢得 1 场对局", key: "win", target: 1, xp: 60 },
+    { id: "cards", name: "打出 8 张牌", key: "cards", target: 8, xp: 40 }
   ];
   const WEEKLY_TASKS = [
-    { id: "wins", name: "赢得 3 场对局", key: "wins", target: 3, xp: 80 },
-    { id: "factions", name: "使用 3 个不同阵营", key: "factions", target: 3, xp: 60 },
-    { id: "games", name: "完成 5 场对局", key: "games", target: 5, xp: 60 }
+    { id: "wins", name: "赢得 3 场对局", key: "wins", target: 3, xp: 160 },
+    { id: "factions", name: "使用 3 个不同阵营", key: "factions", target: 3, xp: 120 },
+    { id: "games", name: "完成 5 场对局", key: "games", target: 5, xp: 150 }
   ];
   const MAIN_TASKS = [
-    { id: "tutorial", name: "完成新手教程", xp: 50 },
-    { id: "first_game", name: "完成第一场对局", xp: 30 },
-    { id: "first_win", name: "赢得第一场对局", xp: 50 },
-    { id: "deck_saved", name: "保存第一套自定义牌组", xp: 30 }
+    { id: "tutorial", chapter: 1, name: "完成新手教程", xp: 100 },
+    { id: "codex_open", chapter: 1, name: "打开一次卡牌图鉴", xp: 50 },
+    { id: "first_game", chapter: 1, name: "完成第一场推演", xp: 100 },
+    { id: "first_win", chapter: 1, name: "赢得第一场胜利", xp: 120 },
+    { id: "mulligan", chapter: 2, name: "完成一次起手调度", xp: 80 },
+    { id: "vein4", chapter: 2, name: "触发一次流脉 4", xp: 100 },
+    { id: "deck_saved", chapter: 3, name: "保存并命名第一套自定义牌组", xp: 150 },
+    { id: "custom_deck_play", chapter: 3, name: "用自定义牌组完成一局", xp: 150 }
   ];
+  const MAIN_CHAPTERS = {
+    1: { name: "初入档案", desc: "学会走完一场完整推演" },
+    2: { name: "流脉与阵位", desc: "理解站位、守备与流脉" },
+    3: { name: "自己组一套", desc: "30 张、品级、曲线与命名" },
+    4: { name: "在线档案", desc: "账号、休闲与排位" }
+  };
+  function mainTaskUnlocked(task) {
+    return !task.level || ensureAccount().progress.level >= task.level;
+  }
 
   function levelNeed(level) {
     if (level >= LEVEL_MAX) return Infinity;
@@ -5982,6 +6050,7 @@
     if (!Array.isArray(account.legendaryOwned)) {
       account.legendaryOwned = p.legacy ? allLegendaryIds() : [];
     }
+    if (!Array.isArray(p.pendingRewards)) p.pendingRewards = [];
     if (!p.tasks || typeof p.tasks !== "object") p.tasks = {};
     const dk = localDateKey(), wk = localWeekKey();
     if (!p.tasks.daily || p.tasks.daily.key !== dk) p.tasks.daily = { key: dk, play: 0, win: 0, cards: 0, claimed: [], bonus: false };
@@ -6047,39 +6116,179 @@
 
   function showLevelUp(level, cards) {
     const list = (cards || []).filter(Boolean);
-    setTimeout(() => {
-      closeModal(true);
-      openModal((content) => {
-        content.appendChild(el("div", "eyebrow", "档案等级提升"));
-        content.appendChild(el("h3", null, "等级 " + level + " · 新的档案权限"));
-        const p = ensureAccount().progress;
-        const next = level >= LEVEL_MAX ? null : level + 1;
-        const unlock = Object.entries(FEATURE_LEVELS).filter(([, lv]) => lv === level).map(([key]) => featureLabel(key));
-        if (unlock.length) content.appendChild(el("p", null, "解锁：" + unlock.join("、")));
-        if (list.length) {
-          content.appendChild(el("p", null, "获得传说卡："));
-          for (const c of list) {
-            const row = el("div", "task-level-card");
-            const art = el("img");
-            art.src = cardArtUrl(c);
-            art.alt = c.name;
-            row.appendChild(art);
-            const copy = el("div");
-            copy.appendChild(el("strong", null, c.name));
-            copy.appendChild(el("span", null, c.faction === "neutral" ? "中立传说" : D.FACTIONS[c.faction].name + " · 传说"));
-            row.appendChild(copy);
-            content.appendChild(row);
-          }
-        } else {
-          content.appendChild(el("p", "muted", "已达到档案满级。"));
-        }
-        const bx = el("div", "modal-actions");
-        const b = el("button", "btn btn-primary", "收下");
-        b.onclick = () => { closeModal(true); renderTasksIfOpen(); };
-        bx.appendChild(b);
-        content.appendChild(bx);
-      });
-    }, 180);
+    AudioBox.play("victory");
+    toast("档案等级提升 · Lv." + level + "。到任务页选择阵营，领取 2 张传说。");
+    if (typeof renderTasksIfOpen === "function") renderTasksIfOpen();
+  }
+
+  function updateHomeTaskWidget() {
+    const node = $("home-task-next");
+    if (!node) return;
+    try {
+      syncTaskPeriods();
+      const pending = (ensureAccount().progress && ensureAccount().progress.pendingRewards) || [];
+      const next = MAIN_TASKS.find(t => !taskClaimed("main", t));
+      node.textContent = pending.length ? "升级奖励：选择阵营领取 " + pending.length * 2 + " 张传说" : (next ? "下一步：" + next.name : "主线任务已完成，继续推演吧");
+    } catch (e) {}
+  }
+
+  const ONBOARDING_STEPS = [
+    { target: "#btn-home-tasks", title: "先看任务", text: "按这里查看任务。主线任务会告诉你下一步做什么。" },
+    { target: "#btn-deck-home", title: "查看卡组", text: "按这里查看构筑的卡组。1–4 级先用预组，5 级开始教你手动组卡。" },
+    { target: "#btn-settings", title: "调整设置", text: "按这里调整设置。音量、画面和手牌操作都在这里。" },
+    { target: "#btn-game-guide", title: "进行教程", text: "按这里进行教程。先学目标、行动力、阵位和流脉。" },
+    { target: "#home-classic", title: "开始第一把", text: "从开始推演进入第一把。教程完成后，这里就是你的下一站。" }
+  ];
+
+  function onboardingState() {
+    const account = ensureAccount();
+    if (!account.progress) account.progress = {};
+    if (!account.progress.onboarding) account.progress.onboarding = { version: 1, step: 0, completed: false, skipped: false };
+    return account.progress.onboarding;
+  }
+
+  function startOnboardingIfNeeded() {
+    try { if (navigator.webdriver && localStorage.getItem("gok_force_onboarding") !== "1") return; } catch (e) {}
+    const account = ensureAccount();
+    const p = account.progress || {};
+    const state = onboardingState();
+    if (p.level !== 1 || state.completed || state.skipped) { removeOnboardingCoach(); return; }
+    if (app.screen !== "home") return;
+    renderOnboardingCoach();
+  }
+
+  function removeOnboardingCoach() {
+    document.querySelectorAll(".onboarding-coach,.onboarding-highlight").forEach(x => x.classList.remove("onboarding-coach", "onboarding-highlight"));
+    const coach = $("onboarding-coach"); if (coach) coach.remove();
+    document.querySelectorAll(".onboarding-target").forEach(x => { if (x._onboardingAdvance) { x.removeEventListener("click", x._onboardingAdvance); delete x._onboardingAdvance; } x.classList.remove("onboarding-target"); });
+  }
+
+  function renderOnboardingCoach() {
+    removeOnboardingCoach();
+    const state = onboardingState();
+    const step = ONBOARDING_STEPS[Math.min(state.step, ONBOARDING_STEPS.length - 1)];
+    const target = document.querySelector(step.target);
+    if (target) { target.classList.add("onboarding-target"); target.scrollIntoView({ block: "center", behavior: "smooth" }); }
+    const coach = el("div", "onboarding-coach"); coach.id = "onboarding-coach";
+    const head = el("div", "onboarding-coach-head");
+    head.appendChild(el("span", "onboarding-kicker", "新手引导 " + (state.step + 1) + " / " + ONBOARDING_STEPS.length));
+    const skip = el("button", "onboarding-skip", "暂时跳过"); skip.type = "button";
+    skip.onclick = () => { state.skipped = true; persistAccount(); removeOnboardingCoach(); toast("可以随时在规则与教程里重看新手引导。"); };
+    head.appendChild(skip); coach.appendChild(head);
+    coach.appendChild(el("strong", null, step.title));
+    coach.appendChild(el("p", null, step.text));
+    const actions = el("div", "onboarding-actions");
+    const advance = () => {
+      if (state.completed || state.skipped) return;
+      state.step += 1;
+      if (state.step >= ONBOARDING_STEPS.length) {
+        state.completed = true; persistAccount(); removeOnboardingCoach();
+        toast("恭喜你完成新手引导。现在开始你的第一把推演吧。");
+      } else {
+        persistAccount();
+        if (app.screen === "home") renderOnboardingCoach(); else removeOnboardingCoach();
+      }
+    };
+    const next = el("button", "btn btn-small btn-primary", state.step >= ONBOARDING_STEPS.length - 1 ? "完成引导" : "下一步");
+    next.onclick = advance;
+    if (target) {
+      if (target._onboardingAdvance) target.removeEventListener("click", target._onboardingAdvance);
+      target._onboardingAdvance = () => setTimeout(advance, 220);
+      target.addEventListener("click", target._onboardingAdvance, { once: true });
+    }
+    actions.appendChild(next);
+    coach.appendChild(actions);
+    document.body.appendChild(coach);
+  }
+
+  function openLevelRewardPage() {
+    app.levelRewardChoice = null;
+    AudioBox.play("ui_open");
+    showScreen("levelup");
+  }
+
+  function levelRewardFactionCards(faction) {
+    const owned = ownedLegendarySet();
+    return allLegendaryIds().filter(id => D.CARDS[id] && D.CARDS[id].faction === faction && !owned.has(id)).slice(0, 2);
+  }
+
+  function renderLevelRewardPage() {
+    const root = $("levelup-page-root");
+    if (!root) return;
+    clear(root);
+    const account = ensureAccount();
+    const pending = account.progress.pendingRewards || [];
+    if (!pending.length) {
+      const box = el("div", "levelup-section");
+      box.appendChild(el("div", "eyebrow", "COLLECTION / ARCHIVE"));
+      box.appendChild(el("h3", null, "暂时没有待领取的等级奖励"));
+      box.appendChild(el("p", "muted", "完成对局、任务或教程升级后，这里会出现传说收藏奖励。"));
+      const b = el("button", "btn btn-primary", "返回推演记录"); b.onclick = () => showScreen("tasks");
+      box.appendChild(b); root.appendChild(box); return;
+    }
+    const reward = pending[0];
+    const owned = ownedLegendarySet();
+    const total = allLegendaryIds().length;
+    const hero = el("div", "levelup-hero");
+    const copy = el("div");
+    copy.appendChild(el("div", "eyebrow", "LEVEL REWARD / Lv." + reward.level));
+    copy.appendChild(el("h3", null, "选择你要收藏的阵营"));
+    copy.appendChild(el("p", null, "从该阵营已解锁传说中抽取 2 张。选择后卡牌会收入档案，不会重复。"));
+    hero.appendChild(copy);
+    hero.appendChild(el("span", "levelup-collection", "收藏进度 " + owned.size + " / " + total));
+    root.appendChild(hero);
+    if (!app.levelRewardChoice) {
+      const section = el("div", "levelup-section");
+      section.appendChild(el("div", "panel-label", "选择阵营"));
+      const grid = el("div", "levelup-factions");
+      for (const faction of D.FACTION_IDS) {
+        const fact = D.FACTIONS[faction];
+        const cards = levelRewardFactionCards(faction);
+        const b = el("button", "levelup-faction"); b.type = "button";
+        b.style.setProperty("--faction-color", fact.color || "#f2c66d");
+        const img = el("img"); img.src = fact.emblem; img.alt = ""; b.appendChild(img);
+        const txt = el("span"); txt.appendChild(el("strong", null, fact.name)); txt.appendChild(el("small", null, cards.length ? "可抽取 " + cards.length + " 张未拥有" : "已收集完")); b.appendChild(txt);
+        b.disabled = !cards.length;
+        b.onclick = () => { app.levelRewardChoice = { faction, cards }; renderLevelRewardPage(); };
+        grid.appendChild(b);
+      }
+      section.appendChild(grid); root.appendChild(section);
+      return;
+    }
+    const choice = app.levelRewardChoice;
+    const section = el("div", "levelup-section");
+    section.appendChild(el("div", "panel-label", D.FACTIONS[choice.faction].name + " · 抽取结果"));
+    const reveal = el("div", "levelup-reveal");
+    for (const id of choice.cards) {
+      const card = D.CARDS[id];
+      const wrap = el("div", "reward-card");
+      const inner = el("div", "reward-card-inner");
+      const back = el("div", "reward-back", "GK");
+      const face = el("div", "reward-face");
+      const img = el("img"); img.src = cardArtUrl(card); img.alt = card.name; face.appendChild(img);
+      face.appendChild(el("strong", null, card.name));
+      face.appendChild(el("small", null, "传说 · " + D.FACTIONS[card.faction].name));
+      face.appendChild(el("span", "reward-rarity", "收藏候选 · 点击收入档案"));
+      inner.appendChild(back); inner.appendChild(face); wrap.appendChild(inner); reveal.appendChild(wrap);
+      setTimeout(() => wrap.classList.add("revealed"), 150);
+    }
+    section.appendChild(reveal);
+    root.appendChild(section);
+    const actions = el("div", "levelup-reveal-actions");
+    const reselect = el("button", "btn btn-small btn-ghost", "换一个阵营"); reselect.onclick = () => { app.levelRewardChoice = null; renderLevelRewardPage(); };
+    const claim = el("button", "btn btn-primary", "收入档案");
+    claim.onclick = () => {
+      const nextOwned = new Set(account.legendaryOwned || []);
+      for (const id of choice.cards) nextOwned.add(id);
+      account.legendaryOwned = [...nextOwned];
+      account.progress.pendingRewards.shift();
+      app.levelRewardChoice = null;
+      persistAccount(); updateHomeAccount(); updateHomeTaskWidget();
+      AudioBox.play("coin");
+      toast("传说卡已收入档案 · " + choice.cards.length + " 张");
+      if (account.progress.pendingRewards.length) renderLevelRewardPage(); else showScreen("tasks");
+    };
+    actions.appendChild(reselect); actions.appendChild(claim); root.appendChild(actions);
   }
 
   function addExperience(amount) {
@@ -6094,15 +6303,15 @@
       p.xp -= levelNeed(p.level);
       p.level += 1;
       lastLevel = p.level;
-      for (let rewardIndex = 0; rewardIndex < 2; rewardIndex++) {
-        const card = grantLegendaryReward(p.level);
-        if (card) gained.push(card);
-      }
+      p.pendingRewards.push({ level: p.level, rolls: 2, createdAt: Date.now() });
     }
     if (p.level >= LEVEL_MAX) p.xp = 0;
     persistAccount();
     if (typeof updateHomeAccount === "function") updateHomeAccount();
-    if (p.level > lastLevel || gained.length) showLevelUp(p.level, gained);
+    if (typeof updateHomeTaskWidget === "function") updateHomeTaskWidget();
+    if (lastLevel < 5 && p.level >= 5) setTimeout(() => toast("新教程：组卡入门。到任务页看看如何组出第一套牌。"), 700);
+    if (lastLevel < 7 && p.level >= 7) setTimeout(() => toast("多套牌组已解锁。每个阵营可以保存不同流派。"), 900);
+    if (p.level > lastLevel) showLevelUp(p.level, []);
   }
 
   function recordGameProgress(state, win) {
@@ -6120,8 +6329,15 @@
     if (faction && w.factions.indexOf(faction) < 0) w.factions.push(faction);
     main.done.first_game = true;
     if (win) main.done.first_win = true;
+    if (state && state.stats && state.stats.thresholds && (state.stats.thresholds[4] || 0) > 0) main.done.vein4 = true;
+    if (main.done.deck_saved) main.done.custom_deck_play = true;
+    const firstWin = win && !main.done._firstWinXp;
+    if (firstWin) main.done._firstWinXp = true;
     persistAccount();
+    addExperience(win ? 30 : 15);
+    if (firstWin) addExperience(120);
     if (typeof updateHomeAccount === "function") updateHomeAccount();
+    if (typeof updateHomeTaskWidget === "function") updateHomeTaskWidget();
   }
 
   function claimTask(period, id) {
@@ -6140,6 +6356,7 @@
     persistAccount();
     addExperience(xp);
     if (typeof renderTasksIfOpen === "function") renderTasksIfOpen();
+    if (typeof updateHomeTaskWidget === "function") updateHomeTaskWidget();
     if (period === "daily" && t.bonus) toast("每日任务全清 · 额外 +30 XP");
   }
 
@@ -6186,25 +6403,111 @@
     return null;
   }
 
-  let tasksModalOpen = false;
   function renderTasksIfOpen() {
-    if (!tasksModalOpen) return;
-    openTasks(true);
+    if (app.screen === "tasks") renderTasksPage();
   }
 
   function openTasks(keep) {
-    tasksModalOpen = false;
     if (!keep) AudioBox.play("ui_open");
-    closeModal(true);
-    openModal((content) => {
-      tasksModalOpen = true;
-      tasksModalNode(content);
-      const actions = el("div", "modal-actions");
-      const close = el("button", "btn btn-primary", "关闭");
-      close.onclick = () => { tasksModalOpen = false; closeModal(true); };
-      actions.appendChild(close);
-      content.appendChild(actions);
-    }, { wide: true });
+    showScreen("tasks");
+  }
+
+  function renderTasksPage() {
+    const root = $("tasks-page-root");
+    if (!root) return;
+    clear(root);
+    const account = ensureAccount();
+    syncTaskPeriods();
+    const p = account.progress;
+    const need = levelNeed(p.level);
+    const chip = $("tasks-level-chip"); if (chip) chip.textContent = p.level >= LEVEL_MAX ? "Lv.30 MAX" : "Lv." + p.level;
+    const pendingRewards = (p.pendingRewards || []);
+    if (pendingRewards.length) {
+      const reward = el("div", "levelup-hero");
+      const rc = el("div"); rc.appendChild(el("div", "eyebrow", "LEVEL REWARD")); rc.appendChild(el("h3", null, "有 " + pendingRewards.length + " 次传说收藏待领取")); rc.appendChild(el("p", null, "选择阵营后抽取 2 张该阵营未拥有的传说卡。")); reward.appendChild(rc);
+      const go = el("button", "btn btn-primary", "选择阵营"); go.onclick = () => openLevelRewardPage(); reward.appendChild(go); root.appendChild(reward);
+    }
+    const top = el("div", "tasks-top");
+    const head = el("div", "tasks-top-head");
+    head.appendChild(el("strong", null, p.level >= LEVEL_MAX ? "档案满级" : "Lv." + p.level + " · 档案经验"));
+    head.appendChild(el("small", null, p.level >= LEVEL_MAX ? "全部档案权限已开放" : "距离下一级还差 " + Math.max(0, need - p.xp) + " XP"));
+    top.appendChild(head);
+    const bar = el("div", "tasks-xp-bar"); const fill = el("i"); fill.style.width = (p.level >= LEVEL_MAX ? 100 : Math.min(100, p.xp / need * 100)) + "%"; bar.appendChild(fill); top.appendChild(bar);
+    top.appendChild(el("p", "fine-print", p.level >= LEVEL_MAX ? "当前经验 " + p.xp + " · 满级" : "经验 " + p.xp + " / " + need + " · 主线任务经验更多"));
+    root.appendChild(top);
+    const tabs = el("div", "tasks-tabs");
+    const tabDefs = [["main", "主线"], ["daily", "每日"], ["weekly", "每周"], ["tutorial", "教程"]];
+    app.taskTab = app.taskTab || "main";
+    for (const [key, label] of tabDefs) { const b = el("button", "tasks-tab" + (app.taskTab === key ? " active" : ""), label); b.onclick = () => { app.taskTab = key; renderTasksPage(); }; tabs.appendChild(b); }
+    root.appendChild(tabs);
+    if (app.taskTab === "tutorial") { renderTaskTutorialTab(root); return; }
+    const defs = app.taskTab === "daily" ? DAILY_TASKS : app.taskTab === "weekly" ? WEEKLY_TASKS : MAIN_TASKS;
+    if (app.taskTab === "main") {
+      const chapters = [1,2,3];
+      for (const ch of chapters) {
+        const list = MAIN_TASKS.filter(t => (t.chapter || 1) === ch).map(t => Object.assign({ level: ch === 3 ? 5 : 1 }, t));
+        if (!list.length) continue;
+        const box = el("div", "task-chapter");
+        const chHead = el("div", "task-chapter-head");
+        chHead.appendChild(el("strong", null, "第" + ["一","二","三"][ch-1] + "章 · " + MAIN_CHAPTERS[ch].name));
+        chHead.appendChild(el("small", null, MAIN_CHAPTERS[ch].desc));
+        box.appendChild(chHead);
+        for (const task of list) {
+          const locked = ch === 3 && p.level < 5;
+          const done = taskComplete("main", task) && !locked; const claimed = taskClaimed("main", task); const prog = taskProgress("main", task);
+          const row = el("div", "task-row" + (done ? " done" : "") + (done && !claimed ? " claim" : ""));
+          row.appendChild(el("span", "task-mark", claimed ? "✓" : done ? "!" : locked ? "锁" : "·"));
+          const copy = el("div"); copy.appendChild(el("strong", null, task.name)); copy.appendChild(el("small", null, locked ? "Lv.5 开放" : done ? "已完成，可领取" : "进度 " + prog + " / " + (task.target || 1))); row.appendChild(copy);
+          row.appendChild(el("span", "task-xp", "+" + (task.xp || 0) + " XP"));
+          const btn = el("button", "btn btn-small " + (done && !claimed ? "btn-primary" : "btn-ghost"), claimed ? "已领取" : locked ? "未开放" : done ? "领取" : "进行中"); btn.disabled = claimed || !done || locked; btn.onclick = () => claimTask("main", task.id); row.appendChild(btn);
+          box.appendChild(row);
+        }
+        const foot = el("div", "task-chapter-foot"); foot.appendChild(el("span", null, ch === 3 ? "完成组卡章节后开放命名牌组" : "完成本章任务可获得大量经验")); foot.appendChild(el("span", null, "章节经验 " + list.reduce((a,b)=>a+(b.xp||0),0) + " XP")); box.appendChild(foot);
+        root.appendChild(box);
+      }
+    } else {
+      const box = el("div", "task-chapter");
+      const label = app.taskTab === "daily" ? "每日任务 · " + p.tasks.daily.key : "每周任务 · " + p.tasks.weekly.key;
+      box.appendChild(el("div", "task-chapter-head")).appendChild(el("strong", null, label));
+      for (const task of defs) {
+        const done = taskComplete(app.taskTab, task); const claimed = taskClaimed(app.taskTab, task); const prog = taskProgress(app.taskTab, task);
+        const row = el("div", "task-row" + (done ? " done" : "") + (done && !claimed ? " claim" : ""));
+        row.appendChild(el("span", "task-mark", claimed ? "✓" : done ? "!" : "·"));
+        const copy = el("div"); copy.appendChild(el("strong", null, task.name)); copy.appendChild(el("small", null, done ? "已完成，可领取" : "进度 " + prog + " / " + (task.target || 1))); row.appendChild(copy);
+        row.appendChild(el("span", "task-xp", "+" + (task.xp || 0) + " XP"));
+        const btn = el("button", "btn btn-small " + (done && !claimed ? "btn-primary" : "btn-ghost"), claimed ? "已领取" : done ? "领取" : "进行中"); btn.disabled = claimed || !done; btn.onclick = () => claimTask(app.taskTab, task.id); row.appendChild(btn);
+        box.appendChild(row);
+      }
+      root.appendChild(box);
+    }
+  }
+
+  function renderTaskTutorialTab(root) {
+    const lessons = [
+      ["Lv1", "主页导航", "认识任务、卡组、设置与教程"],
+      ["Lv2", "阵位与守备", "保护同阵位友方，理解交换"],
+      ["Lv3", "流脉阈值", "4 / 7 / 10 / 12 的全场事件"],
+      ["Lv4", "装备与阵型", "2 件装备，3 张阵型"],
+      ["Lv5", "组卡入门", "30 张、品级、曲线、命名"],
+      ["Lv7", "多牌组", "为每个阵营保存不同流派"],
+      ["Lv8", "档案外观", "头像、称号、卡背"],
+      ["Lv10", "在线排位", "登录账号后参加排位"],
+      ["Lv12", "自建房间", "设置生命、回合与先手"]
+    ];
+    const level = ensureAccount().progress.level;
+    const box = el("div", "task-chapter");
+    box.appendChild(el("div", "task-chapter-head")).appendChild(el("strong", null, "教程库"));
+    for (const [need, name, desc] of lessons) {
+      const lv = Number(String(need).replace(/[^0-9]/g, ""));
+      const unlocked = level >= lv;
+      const row = el("div", "task-row" + (unlocked ? " done" : ""));
+      row.appendChild(el("span", "task-mark", unlocked ? "✓" : "锁"));
+      const copy = el("div"); copy.appendChild(el("strong", null, name)); copy.appendChild(el("small", null, unlocked ? desc : "Lv." + lv + " 开放")); row.appendChild(copy);
+      const b = el("button", "btn btn-small btn-ghost", unlocked ? (lv === 5 ? "开始组卡课堂" : "可查看") : "未开放");
+      b.disabled = !unlocked; b.onclick = () => { if (lv === 5) { openDeckBuilder(); } else { openGameGuide(); } };
+      row.appendChild(b); box.appendChild(row);
+    }
+    root.appendChild(box);
   }
 
   function levelUnlocked(key) {
@@ -6213,16 +6516,7 @@
 
   function showLockedFeature(key, label) {
     const need = FEATURE_LEVELS[key] || 1;
-    openModal((content) => {
-      content.appendChild(el("div", "eyebrow", "档案权限"));
-      content.appendChild(el("h3", null, label + " 尚未解锁"));
-      content.appendChild(el("p", "muted", "达到 Lv." + need + " 后开放。当前档案等级 Lv." + ensureAccount().progress.level + "。"));
-      const actions = el("div", "modal-actions");
-      const close = el("button", "btn btn-primary", "知道了");
-      close.onclick = () => closeModal(true);
-      actions.appendChild(close);
-      content.appendChild(actions);
-    });
+    toast(label + " 将在 Lv." + need + " 开放。当前 Lv." + ensureAccount().progress.level + "。");
   }
 
   function collectSaveBundle() {
@@ -6231,6 +6525,8 @@
       savedAt: Date.now(),
       account: app.account || null,
       customDecks: app.customDecks || {},
+      deckLibrary: app.deckLibrary || {},
+      activeDeckId: app.activeDeckId || {},
       customCardArt: loadCustomCardArt(),
       rawCustomDecks: app.rawCustomDecks || null,
       legacyDecks: app.legacyDecks || {},
@@ -6251,7 +6547,60 @@
 
   function scheduleSaveBackup() {
     if (saveBackupTimer) return;
-    saveBackupTimer = setTimeout(() => { saveBackupTimer = null; snapshotSave("auto"); }, 800);
+    saveBackupTimer = setTimeout(() => { saveBackupTimer = null; snapshotSave("auto"); syncCloudSave(); }, 900);
+  }
+
+  async function syncCloudSave(force) {
+    if (!(app.auth && app.auth.user)) return;
+    try {
+      const baseVersion = (force && app.cloudConflict && app.cloudConflict.save && app.cloudConflict.save.version) || app.cloudSaveVersion || 0;
+      const res = await fetch("/api/account/save", {
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ save: collectSaveBundle(), baseVersion })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 409) {
+        app.cloudConflict = data.current || true;
+        toast("云端存档有冲突，请到个人资料 → 存档同步处理。");
+        return;
+      }
+      if (!res.ok) throw new Error(data.error || "云端同步失败");
+      app.cloudSaveVersion = Number(data.version) || app.cloudSaveVersion;
+      app.cloudSaveAt = Number(data.updatedAt) || Date.now();
+      app.cloudConflict = null;
+    } catch (e) {
+      if (force) toast("云端同步失败：" + (e.message || e));
+    }
+  }
+
+  function maybeShowAuthGate() {
+    if (app.authGate || (app.auth && app.auth.user)) return;
+    if (app.screen !== "home") return;
+    try { if (localStorage.getItem(GUEST_KEY) === "1") return; } catch (e) {}
+    const account = ensureAccount();
+    const hasProgress = !!(localStorage.getItem(ACCOUNT_NAMED_KEY) || Object.keys(app.customDecks || {}).length || (account.progress && account.progress.level > 1));
+    if (hasProgress) return;
+    app.authGate = true;
+    app.loginMode = "login";
+    showScreen("login");
+  }
+
+  async function restoreAuthSession() {
+    try {
+      const res = await fetch("/api/auth/me", { credentials: "same-origin" });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data.user) return;
+      app.auth = { user: data.user };
+      if (data.save) {
+        app.cloudSaveVersion = Number(data.save.version) || 0;
+        app.cloudSaveAt = Number(data.save.updatedAt) || 0;
+        const localHas = !!(localStorage.getItem(ACCOUNT_NAMED_KEY) || Object.keys(app.customDecks || {}).length);
+        if (!localHas && data.save.save) { applySaveBundle(data.save.save); toast("已恢复云端档案。"); }
+        else app.cloudConflict = data.save;
+      }
+      updateHomeAccount();
+    } catch (e) {}
   }
 
   function encodeSaveCode(bundle) {
@@ -6272,6 +6621,9 @@
     app.account = account;
     try { localStorage.setItem(ACCOUNT_KEY, JSON.stringify(account)); if (account.name && account.name !== "档案员") localStorage.setItem(ACCOUNT_NAMED_KEY, "1"); } catch (e) {}
     app.customDecks = bundle.customDecks && typeof bundle.customDecks === "object" ? bundle.customDecks : {};
+    app.deckLibrary = bundle.deckLibrary && typeof bundle.deckLibrary === "object" ? bundle.deckLibrary : {};
+    app.activeDeckId = bundle.activeDeckId && typeof bundle.activeDeckId === "object" ? bundle.activeDeckId : {};
+    try { localStorage.setItem(DECK_LIBRARY_KEY, JSON.stringify(app.deckLibrary)); localStorage.setItem("gok_active_deck_v1", JSON.stringify(app.activeDeckId)); } catch (e) {}
     app.customCardArt = bundle.customCardArt && typeof bundle.customCardArt === "object" ? bundle.customCardArt : {};
     persistCustomCardArt();
     app.rawCustomDecks = bundle.rawCustomDecks || null;
@@ -6285,6 +6637,7 @@
     try { localStorage.setItem(ACHIEVEMENT_KEY, JSON.stringify(app.achievements)); } catch (e) {}
     try { localStorage.setItem(PROFILE_KEY, JSON.stringify(app.profile)); } catch (e) {}
     try { if (bundle.content) localStorage.setItem("gok_content_v1", JSON.stringify(bundle.content)); } catch (e) {}
+    try { migrateDeckLibrary(); } catch (e) {}
     snapshotSave("after-import");
   }
 
@@ -6355,6 +6708,54 @@
     } catch (e) {
       app.customDecks = {};
     }
+    try {
+      const libRaw = localStorage.getItem(DECK_LIBRARY_KEY);
+      if (libRaw) app.deckLibrary = JSON.parse(libRaw) || {};
+      const activeRaw = localStorage.getItem("gok_active_deck_v1");
+      if (activeRaw) app.activeDeckId = JSON.parse(activeRaw) || {};
+    } catch (e) { app.deckLibrary = {}; app.activeDeckId = {}; }
+    migrateDeckLibrary();
+  }
+
+  function deckLibraryFor(faction) {
+    app.deckLibrary = app.deckLibrary || {};
+    if (!Array.isArray(app.deckLibrary[faction])) app.deckLibrary[faction] = [];
+    return app.deckLibrary[faction];
+  }
+
+  function newDeckId() {
+    return "deck_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
+  }
+
+  function activeDeckFor(faction) {
+    const lib = deckLibraryFor(faction);
+    const id = app.activeDeckId && app.activeDeckId[faction];
+    return lib.find(d => d.id === id) || lib[0] || null;
+  }
+
+  function persistDeckLibrary() {
+    try { localStorage.setItem(DECK_LIBRARY_KEY, JSON.stringify(app.deckLibrary || {})); } catch (e) {}
+    try { localStorage.setItem("gok_active_deck_v1", JSON.stringify(app.activeDeckId || {})); } catch (e) {}
+    persistCustomDecks();
+  }
+
+  function syncActiveDeckCards(faction) {
+    const active = activeDeckFor(faction);
+    if (active && active.cards) app.customDecks[faction] = active.cards.slice();
+  }
+
+  function migrateDeckLibrary() {
+    app.deckLibrary = app.deckLibrary || {};
+    app.activeDeckId = app.activeDeckId || {};
+    for (const f of D.FACTION_IDS) {
+      const lib = deckLibraryFor(f);
+      if (!lib.length && Array.isArray(app.customDecks[f]) && D.validateDeck(f, app.customDecks[f]).ok) {
+        const deck = { id: newDeckId(), name: "自定义牌组 1", tags: [], cards: app.customDecks[f].slice(), updatedAt: Date.now() };
+        lib.push(deck); app.activeDeckId[f] = deck.id;
+      }
+      if (lib.length && !lib.some(d => d.id === app.activeDeckId[f])) app.activeDeckId[f] = lib[0].id;
+      if (lib.length) syncActiveDeckCards(f);
+    }
   }
 
   function persistCustomDecks() {
@@ -6413,9 +6814,24 @@
 
   function updateSetupDeck() {
     const custom = app.customDecks[app.faction];
+    const active = activeDeckFor(app.faction);
     const valid = !!(custom && D.validateDeck(app.faction, custom).ok);
+    const sel = $("setup-deck-select");
+    if (sel) {
+      const lib = deckLibraryFor(app.faction);
+      clear(sel);
+      const preset = document.createElement("option"); preset.value = "preset"; preset.textContent = "官方预组 · 30 张"; sel.appendChild(preset);
+      for (const d of lib) { const o = document.createElement("option"); o.value = d.id; o.textContent = d.name + " · " + d.cards.length + " 张"; sel.appendChild(o); }
+      sel.value = valid && active ? active.id : "preset";
+      sel.onchange = () => {
+        if (sel.value === "preset") { delete app.customDecks[app.faction]; persistDeckLibrary(); updateSetupDeck(); toast("已切换为预设牌组。"); return; }
+        const d = lib.find(x => x.id === sel.value);
+        if (!d) return;
+        app.activeDeckId[app.faction] = d.id; app.customDecks[app.faction] = d.cards.slice(); persistDeckLibrary(); updateSetupDeck(); toast("已选择「" + d.name + "」。");
+      };
+    }
     if (!$("setup-deck-name")) return;
-    $("setup-deck-name").textContent = valid ? "自定义牌组 · 30 张" : "预设牌组 · 30 张";
+    $("setup-deck-name").textContent = valid ? ((active && active.name) || "自定义牌组") + " · 30 张" : "预设牌组 · 30 张";
     const equipNames = deckRelicIds(app.faction).map(id => D.CARDS[id] && D.CARDS[id].name).filter(Boolean);
     $("setup-deck-detail").textContent = (valid ? "已保存在本机" : "官方预组") + " · 装备：" + (equipNames.length ? equipNames.join(" / ") : "未选择") + " · 需抽到后打出";
     $("btn-deck-preset").disabled = !valid;
@@ -6433,12 +6849,17 @@
     app.deckBuildFaction = faction;
     app.deckReturn = origin || "setup";
     app.deckDrafts = {};
-    const saved = app.customDecks[faction];
+    const active = activeDeckFor(faction);
+    const saved = active ? active.cards : app.customDecks[faction];
     app.deckBuildList = (saved && D.validateDeck(faction, saved).ok ? saved : D.DECKS[faction]).slice();
+    app.deckEditingId = active ? active.id : null;
+    app.deckDraftName = active ? active.name : "";
+    app.deckReadOnly = !active;
     app.deckSource = saved && D.validateDeck(faction, saved).ok ? "custom" : "preset";
     app.lastAutoStrategy = null;
     app.deckBuildFilter = "all";
     app.deckBuildRarity = "all";
+    app.deckBuildOwned = "all";
     app.deckBackArmed = false;
     showScreen("deck");
     renderDeckBuilder();
@@ -6469,7 +6890,54 @@
     return out;
   }
 
+  function renderDeckLibraryBar() {
+    const f = app.deckBuildFaction;
+    const lib = deckLibraryFor(f);
+    const select = $("deck-library-select");
+    const input = $("deck-name-input");
+    if (!select || !input) return;
+    clear(select);
+    const preset = document.createElement("option"); preset.value = ""; preset.textContent = "预设牌组 / 草稿"; select.appendChild(preset);
+    for (const d of lib) {
+      const o = document.createElement("option"); o.value = d.id; o.textContent = d.name + " · " + d.cards.length + " 张"; select.appendChild(o);
+    }
+    select.value = app.deckEditingId || "";
+    const readonly = !!app.deckReadOnly;
+    const bar = $("deck-library-bar");
+    if (bar) bar.classList.toggle("readonly", readonly);
+    const readonlyNote = $("deck-readonly-note"); if (readonlyNote) readonlyNote.hidden = !readonly;
+    select.onchange = () => {
+      const id = select.value;
+      if (!id) { app.deckEditingId = null; app.deckBuildList = D.DECKS[f].slice(); app.deckSource = "preset"; app.deckDraftName = ""; app.deckReadOnly = true; renderDeckBuilder(); return; }
+      const d = lib.find(x => x.id === id);
+      if (!d) return;
+      app.deckEditingId = d.id; app.deckBuildList = d.cards.slice(); app.deckDraftName = d.name; app.deckSource = "custom"; app.deckReadOnly = false; app.activeDeckId[f] = d.id; app.customDecks[f] = d.cards.slice(); persistDeckLibrary(); renderDeckBuilder();
+    };
+    input.value = app.deckDraftName || "";
+    input.disabled = readonly; input.oninput = () => { app.deckDraftName = input.value; };
+    const copyPreset = $("btn-deck-copy-preset");
+    if (copyPreset) {
+      copyPreset.disabled = !levelUnlocked("deckedit");
+      copyPreset.onclick = () => {
+        if (!levelUnlocked("deckedit")) { toast("Lv.5 后可复制预设为自定义牌组。"); return; }
+        const built = D.autoBuildDeck(f, "midrange", Array.from(ownedLegendarySet()));
+        if (!D.validateDeck(f, built).ok) { toast("复制失败，请稍后再试。"); return; }
+        const deck = { id: newDeckId(), name: (D.FACTIONS[f] ? D.FACTIONS[f].name : "自定义") + " · 自定义", tags: ["中速"], cards: built.slice(), updatedAt: Date.now() };
+        lib.push(deck); app.activeDeckId[f] = deck.id; app.deckEditingId = deck.id; app.customDecks[f] = built.slice(); app.deckBuildList = built.slice(); app.deckDraftName = deck.name; app.deckReadOnly = false; persistDeckLibrary(); renderDeckBuilder(); toast("已复制为可编辑的自定义牌组。");
+      };
+    }
+    const multiple = levelUnlocked("multideck");
+    const add = $("btn-deck-new"), dup = $("btn-deck-duplicate"), del = $("btn-deck-delete");
+    if (add) { add.disabled = readonly || (!multiple && lib.length > 0); add.title = multiple ? "" : "Lv.7 开放多套牌组"; add.onclick = () => { if (!multiple && lib.length) { toast("Lv.7 开放多套牌组。"); return; } app.deckEditingId = null; app.deckDraftName = "新牌组"; app.deckBuildList = D.DECKS[f].slice(); app.deckSource = "draft"; renderDeckBuilder(); }; }
+    if (dup) { dup.disabled = readonly || !multiple || !app.deckEditingId; dup.onclick = () => { if (!multiple) { toast("Lv.7 开放多套牌组。"); return; } const d = lib.find(x => x.id === app.deckEditingId); if (!d) return; const copy = { id: newDeckId(), name: d.name + " 副本", tags: (d.tags || []).slice(), cards: d.cards.slice(), updatedAt: Date.now() }; lib.push(copy); app.activeDeckId[f] = copy.id; app.deckEditingId = copy.id; app.customDecks[f] = copy.cards.slice(); persistDeckLibrary(); app.deckBuildList = copy.cards.slice(); app.deckDraftName = copy.name; renderDeckBuilder(); toast("已复制牌组。"); }; }
+    if (del) { del.disabled = readonly || !app.deckEditingId; del.onclick = () => { if (!app.deckEditingId) return; const i = lib.findIndex(x => x.id === app.deckEditingId); if (i < 0) return; lib.splice(i, 1); delete app.customDecks[f]; app.deckEditingId = lib[0] ? lib[0].id : null; app.deckDraftName = lib[0] ? lib[0].name : ""; app.deckBuildList = lib[0] ? lib[0].cards.slice() : D.DECKS[f].slice(); app.activeDeckId[f] = lib[0] ? lib[0].id : null; persistDeckLibrary(); renderDeckBuilder(); toast("牌组已删除。"); }; }
+    const note = el("span", "deck-library-locked", readonly ? "官方预设只读" : (multiple ? "可保存多套牌组" : "Lv.7 开放多套牌组"));
+    const old = bar && bar.querySelector(".deck-library-locked"); if (old) old.remove();
+    if (bar) bar.appendChild(note);
+  }
+
   function renderDeckBuilder() {
+    renderDeckLibraryBar();
     hidePreviewNow();
     const f = app.deckBuildFaction;
     const list = app.deckBuildList;
@@ -6520,7 +6988,10 @@ const tabs = $("deck-faction-tabs");
       b.onclick = () => {
         app.deckDrafts[f] = list.slice();
         app.deckBuildFaction = id;
-        const saved = app.customDecks[id];
+        const active = activeDeckFor(id);
+        const saved = active ? active.cards : app.customDecks[id];
+        app.deckEditingId = active ? active.id : null;
+        app.deckDraftName = active ? active.name : "";
         app.deckBuildList = (app.deckDrafts[id] || (saved && D.validateDeck(id, saved).ok ? saved : D.DECKS[id])).slice();
         renderDeckBuilder();
       };
@@ -6601,8 +7072,10 @@ const tabs = $("deck-faction-tabs");
     if (scope === "neutral") poolSource = Object.keys(D.CARDS).filter(id => D.CARDS[id].faction === "neutral" && canPickCard(id));
     else poolSource = Object.keys(D.CARDS).filter(id => D.CARDS[id].faction === f && canPickCard(id) && !D.CARDS[id].experimental);
     const rarityFilter = app.deckBuildRarity || "all";
+    const ownedFilter = app.deckBuildOwned || "all";
+    document.querySelectorAll("[data-deck-owned]").forEach((b) => b.classList.toggle("active", b.dataset.deckOwned === ownedFilter));
     document.querySelectorAll("[data-deck-rarity]").forEach((b) => b.classList.toggle("active", b.dataset.deckRarity === rarityFilter));
-    const pool = poolSource.filter(id => (filter === "all" || D.CARDS[id].type === filter) && (rarityFilter === "all" || D.CARDS[id].rarity === rarityFilter))
+    const pool = poolSource.filter(id => (filter === "all" || D.CARDS[id].type === filter) && (rarityFilter === "all" || D.CARDS[id].rarity === rarityFilter) && (ownedFilter === "all" || (ownedFilter === "unowned" ? isUnownedLegendaryCard(id) : !isUnownedLegendaryCard(id))))
       .sort((a, b) => D.CARDS[a].cost - D.CARDS[b].cost || D.CARDS[a].name.localeCompare(D.CARDS[b].name));
     $("deck-pool-count").textContent = "卡池 " + pool.length + " 张";
     for (const id of pool) {
@@ -6622,21 +7095,26 @@ const tabs = $("deck-faction-tabs");
       poolBox.appendChild(card);
     }
 
-    $("btn-deck-save").disabled = !validation.ok;
-    $("btn-deck-use").disabled = !validation.ok;
+    $("btn-deck-save").disabled = app.deckReadOnly || !validation.ok;
+    if ($("btn-deck-reset")) $("btn-deck-reset").disabled = !!app.deckReadOnly;
+    document.querySelectorAll(".auto-deck-btn").forEach((b) => { b.disabled = !!app.deckReadOnly; });
+    document.querySelectorAll("#deck-selected .deck-line-remove").forEach((b) => { b.disabled = !!app.deckReadOnly; });
+    $("btn-deck-use").disabled = app.deckReadOnly || !validation.ok;
     const topUse = $("btn-deck-top-use");
-    if (topUse) topUse.disabled = !validation.ok;
+    if (topUse) { topUse.disabled = app.deckReadOnly || !validation.ok; topUse.textContent = app.deckReadOnly ? "只读预览" : "保存并使用"; }
+    if ($("btn-deck-clear")) $("btn-deck-clear").disabled = !!app.deckReadOnly;
     const source = $("deck-source-label");
     if (source) {
-      source.textContent = app.deckSource === "custom" ? "已载入自定义牌组 · 可继续编辑" : app.deckSource === "draft" ? "自动构筑草稿 · 尚未保存" : "预设牌组 · 可编辑";
+      source.textContent = app.deckReadOnly ? "官方预设 · 只读" : (app.deckSource === "custom" ? "已载入自定义牌组 · 可继续编辑" : app.deckSource === "draft" ? "自动构筑草稿 · 尚未保存" : "预设牌组 · 可编辑");
       source.classList.toggle("custom", app.deckSource === "custom" || app.deckSource === "draft");
     }
     document.querySelectorAll(".auto-deck-btn").forEach((b) => b.classList.toggle("active", b.dataset.deckStrategy === app.lastAutoStrategy));
     const autoStatus = $("deck-auto-status");
-    if (autoStatus) autoStatus.textContent = app.lastAutoStrategy ? "当前策略：" + D.DECK_STRATEGIES[app.lastAutoStrategy].name + " · 可继续手动调整" : "选择一套策略，一键生成 30 张牌组。";
+    if (autoStatus) autoStatus.textContent = app.deckReadOnly ? "官方预设只读；复制为自定义牌组后才能自动构筑。" : (app.lastAutoStrategy ? "当前策略：" + D.DECK_STRATEGIES[app.lastAutoStrategy].name + " · 可继续手动调整" : "选择一套策略，一键生成 30 张牌组。");
   }
 
   function toggleDeckCard(id) {
+    if (app.deckReadOnly) { toast("官方预设只读。请先在 Lv.5 后复制为自定义牌组。"); return; }
     const def = D.CARDS[id];
     if (!def) return;
     const count = app.deckBuildList.filter(x => x === id).length;
@@ -6646,6 +7124,7 @@ const tabs = $("deck-faction-tabs");
   }
 
   function addDeckCard(id) {
+    if (app.deckReadOnly) { toast("官方预设只读。请先复制为自定义牌组。"); return; }
     const def = D.CARDS[id];
     const count = app.deckBuildList.filter(x => x === id).length;
     const mainCount = app.deckBuildList.filter(x => D.CARDS[x].type !== "formation" && D.CARDS[x].type !== "equipment").length;
@@ -6670,6 +7149,7 @@ const tabs = $("deck-faction-tabs");
   }
 
   function removeDeckCard(id) {
+    if (app.deckReadOnly) return;
     const i = app.deckBuildList.lastIndexOf(id);
     if (i >= 0) app.deckBuildList.splice(i, 1);
     AudioBox.play("click");
@@ -6688,6 +7168,9 @@ const tabs = $("deck-faction-tabs");
 
   function saveCurrentDeck(showToast) {
     const f = app.deckBuildFaction;
+    if (app.deckReadOnly) { if (showToast) toast("官方预设只读，不能保存。请先复制为自定义牌组。"); return false; }
+    if (!levelUnlocked("deckedit")) { toast("Lv.5 解锁自定义组卡与牌组命名。先完成主线任务升级。"); return false; }
+    const name = String(app.deckDraftName || "").trim().slice(0, 18) || (app.deckEditingId ? "未命名牌组" : "自定义牌组 " + (deckLibraryFor(f).length + 1));
     const v = D.validateDeck(f, app.deckBuildList);
     if (!v.ok) { toast(v.errors[0] || "牌组还不合法。"); return false; }
     if (v.warnings && v.warnings.length && !confirmDeckWarnings(f, app.deckBuildList, "仍然保存？")) return false;
@@ -6696,9 +7179,13 @@ const tabs = $("deck-faction-tabs");
       toast("尚未拥有传说：" + Array.from(new Set(missing.map(id => D.CARDS[id].name))).slice(0, 3).join("、") + "。官方预组可作为模板试玩。");
       return false;
     }
-    app.customDecks[f] = app.deckBuildList.slice();
+    const lib = deckLibraryFor(f);
+    let deck = app.deckEditingId ? lib.find(d => d.id === app.deckEditingId) : null;
+    if (!deck) { deck = { id: newDeckId(), name, tags: [], cards: [], updatedAt: Date.now() }; lib.push(deck); }
+    deck.name = name; deck.cards = app.deckBuildList.slice(); deck.updatedAt = Date.now();
+    app.deckEditingId = deck.id; app.activeDeckId[f] = deck.id; app.customDecks[f] = deck.cards.slice();
     app.deckSource = "custom";
-    persistCustomDecks();
+    persistDeckLibrary();
     unlockAchievement("deck_saved");
     markMainTask("deck_saved");
     if (showToast) toast("牌组已保存到本机。");
@@ -6706,6 +7193,7 @@ const tabs = $("deck-faction-tabs");
   }
 
   function autoBuildCurrentDeck(strategy) {
+    if (app.deckReadOnly) { toast("官方预设只读。请先复制为自定义牌组。"); return; }
     const f = app.deckBuildFaction;
     const built = D.autoBuildDeck(f, strategy, Array.from(ownedLegendarySet()));
     app.deckBuildList = built;
@@ -7027,11 +7515,13 @@ const tabs = $("deck-faction-tabs");
     });
   }
 
-  function renderProfileCustomization(content) {
+  function renderProfileCustomization(content, pageMode) {
     clear(content);
-    content.appendChild(el("div", "eyebrow", "ARCHIVE / IDENTITY"));
-    content.appendChild(el("h3", null, "档案外观"));
-    content.appendChild(el("p", null, "头像、头像框、昵称色、称号底板、徽章、签名、卡背、牌桌和牌套都会保存在本机，并显示在主页或对局中。"));
+    if (!pageMode) {
+      content.appendChild(el("div", "eyebrow", "ARCHIVE / IDENTITY"));
+      content.appendChild(el("h3", null, "档案外观"));
+      content.appendChild(el("p", null, "头像、头像框、昵称色、称号底板、徽章、签名、卡背、牌桌和牌套都会保存在本机，并显示在主页或对局中。"));
+    }
     const account = ensureAccount();
     const avatarSection = el("div", "profile-custom-section");
     avatarSection.appendChild(el("h4", null, "头像"));
@@ -7194,17 +7684,316 @@ const tabs = $("deck-faction-tabs");
     const artCodexBtn = el("button", "btn btn-small btn-ghost", "打开图鉴替换卡面");
     artCodexBtn.onclick = () => { closeModal(true); openCodex(); };
     artSection.appendChild(artCodexBtn); content.appendChild(artSection);
-    const actions = el("div", "modal-actions");
-    const accountBtn = el("button", "btn btn-small btn-ghost", "返回账号与存档");
-    accountBtn.onclick = () => { closeModal(true); openAccountModal(); };
-    const close = el("button", "btn btn-primary", "完成");
-    close.onclick = () => closeModal(true);
-    actions.appendChild(accountBtn); actions.appendChild(close); content.appendChild(actions);
+    const actions = el("div", "appearance-actions");
+    if (pageMode) {
+      const backProfile = el("button", "btn btn-small btn-ghost", "返回个人资料");
+      backProfile.onclick = () => openProfilePage("personal");
+      const done = el("button", "btn btn-primary", "完成");
+      done.onclick = () => { updateHomeAccount(); showScreen("home"); };
+      actions.appendChild(backProfile); actions.appendChild(done);
+    } else {
+      const accountBtn = el("button", "btn btn-small btn-ghost", "返回个人资料");
+      accountBtn.onclick = () => { closeModal(true); openProfilePage("personal"); };
+      const close = el("button", "btn btn-primary", "完成");
+      close.onclick = () => closeModal(true);
+      actions.appendChild(accountBtn); actions.appendChild(close);
+    }
+    content.appendChild(actions);
+    const cat = app.appearanceCat || "all";
+    const sections = [...content.querySelectorAll(".profile-custom-section")];
+    const visible = { avatarFrame: [0,2], title: [1,3,4,5,6], cardBack: [7,9], cardFrame: [8] }[cat];
+    if (visible) sections.forEach((sec, i) => { sec.hidden = visible.indexOf(i) < 0; });
+  }
+
+  function openProfilePage(tab) {
+    app.profileTab = tab || app.profileTab || "personal";
+    AudioBox.play("ui_open");
+    showScreen("profile");
+  }
+
+  function profileTabButton(key, label) {
+    const b = el("button", "profile-tab" + ((app.profileTab || "personal") === key ? " active" : ""), label);
+    b.type = "button";
+    b.onclick = () => { app.profileTab = key; renderProfilePage(); };
+    return b;
+  }
+
+  function renderProfilePage() {
+    const root = $("profile-page-root");
+    if (!root) return;
+    clear(root);
+    const account = ensureAccount();
+    const pr = account.progress || { level: 1, xp: 0 };
+    const rank = rankSummary();
+    const hero = el("div", "profile-hero");
+    const avatar = el("div", "home-account-avatar");
+    const av = PROFILE_AVATARS.find(x => x.id === account.avatar) || PROFILE_AVATARS[0];
+    if (account.avatar === "custom" && account.customAvatar) { const img = el("img"); img.src = account.customAvatar; img.alt = "自传头像"; avatar.appendChild(img); }
+    else if (av.emblem) { const img = el("img"); img.src = av.emblem; img.alt = av.name; avatar.appendChild(img); }
+    else avatar.textContent = av.glyph || "GK";
+    avatar.dataset.frame = account.avatarFrame || "none";
+    avatar.style.cursor = "pointer";
+    avatar.onclick = () => openAppearancePage();
+    hero.appendChild(avatar);
+    const copy = el("div", "profile-hero-copy");
+    copy.appendChild(el("h3", null, account.name || "档案员"));
+    copy.appendChild(el("p", null, profileTitleName(account.title) + " · Lv." + pr.level + " · " + (rank.tier || "青铜")));
+    const meta = el("div", "profile-hero-meta");
+    meta.appendChild(el("span", null, app.auth && app.auth.user ? "已登录 · " + app.auth.user.username : "本地访客"));
+    meta.appendChild(el("span", null, "档案局数 " + ((app.profile && app.profile.games) || 0)));
+    meta.appendChild(el("span", null, "牌组 " + Object.keys(app.customDecks || {}).length));
+    copy.appendChild(meta);
+    const heroActions = el("div", "profile-actions");
+    const appearance = el("button", "btn btn-small btn-ghost", "档案外观");
+    appearance.onclick = () => openAppearancePage();
+    heroActions.appendChild(appearance);
+    const loginBtn = el("button", "btn btn-small btn-primary", app.auth && app.auth.user ? "账号管理" : "登录 / 注册");
+    loginBtn.onclick = () => { app.profileTab = "security"; renderProfilePage(); };
+    heroActions.appendChild(loginBtn);
+    copy.appendChild(heroActions);
+    hero.appendChild(copy);
+    root.appendChild(hero);
+    const tabs = el("div", "profile-tabs");
+    tabs.appendChild(profileTabButton("personal", "个人资料"));
+    tabs.appendChild(profileTabButton("security", "账号与安全"));
+    tabs.appendChild(profileTabButton("save", "存档同步"));
+    tabs.appendChild(profileTabButton("stats", "对局统计"));
+    root.appendChild(tabs);
+    const panel = el("div", "profile-panel");
+    root.appendChild(panel);
+    if ((app.profileTab || "personal") === "personal") renderProfilePersonal(panel, account);
+    else if (app.profileTab === "security") renderProfileSecurity(panel, account);
+    else if (app.profileTab === "save") renderProfileSave(panel, account);
+    else renderProfileStats(panel);
+  }
+
+  function renderProfilePersonal(panel, account) {
+    const head = el("div", "profile-subhead");
+    head.appendChild(el("strong", null, "档案信息"));
+    head.appendChild(el("small", null, "这些内容会显示在主页和排位页"));
+    panel.appendChild(head);
+    const grid = el("div", "profile-field-grid");
+    const nameField = el("div", "profile-field");
+    nameField.appendChild(el("label", null, "昵称"));
+    const nameInput = el("input"); nameInput.maxLength = 16; nameInput.value = account.name || ""; nameInput.placeholder = "档案员";
+    nameField.appendChild(nameInput); grid.appendChild(nameField);
+    const sigField = el("div", "profile-field");
+    sigField.appendChild(el("label", null, "个性签名"));
+    const sigInput = el("input"); sigInput.maxLength = 40; sigInput.value = account.signature || ""; sigInput.placeholder = "例如：只在流脉涨潮时出牌。";
+    sigField.appendChild(sigInput); grid.appendChild(sigField);
+    panel.appendChild(grid);
+    const actions = el("div", "profile-actions");
+    const save = el("button", "btn btn-primary", "保存个人资料");
+    save.onclick = () => {
+      const name = String(nameInput.value || "").trim().slice(0, 16) || "档案员";
+      account.name = name; account.signature = String(sigInput.value || "").trim().slice(0, 40);
+      try { localStorage.setItem(ACCOUNT_KEY, JSON.stringify(account)); localStorage.setItem(ACCOUNT_NAMED_KEY, "1"); } catch (e) {}
+      snapshotSave("profile-edit"); updateHomeAccount(); renderProfilePage(); toast("个人资料已保存。");
+    };
+    actions.appendChild(save);
+    panel.appendChild(actions);
+    const note = el("p", "profile-custom-hint", "头像、头像框、称号、卡背和牌桌主题在「档案外观」里修改。");
+    panel.appendChild(note);
+  }
+
+  function renderProfileSecurity(panel, account) {
+    const head = el("div", "profile-subhead");
+    head.appendChild(el("strong", null, "账号与安全"));
+    head.appendChild(el("small", null, app.auth && app.auth.user ? "已登录账号" : "本地访客"));
+    panel.appendChild(head);
+    const status = el("div", "profile-status");
+    const one = el("div"); one.appendChild(el("strong", null, app.auth && app.auth.user ? app.auth.user.username : "未登录")); one.appendChild(el("small", null, app.auth && app.auth.user ? "云端存档与排位已开启" : "登录后可跨设备同步并参加排位")); status.appendChild(one);
+    const two = el("div"); two.appendChild(el("strong", null, "本地档案")); two.appendChild(el("small", null, "始终可用，不会因为登录失败丢失")); status.appendChild(two);
+    panel.appendChild(status);
+    if (!(app.auth && app.auth.user)) {
+      panel.appendChild(el("p", "profile-custom-hint", "游客可以继续单人、房间和休闲；排位需要登录。"));
+      const actions = el("div", "profile-actions");
+      const login = el("button", "btn btn-primary", "登录账号"); login.onclick = () => openLoginPage("login"); actions.appendChild(login);
+      const reg = el("button", "btn btn-ghost", "注册新账号"); reg.onclick = () => openLoginPage("register"); actions.appendChild(reg);
+      panel.appendChild(actions);
+      return;
+    }
+    const actions = el("div", "profile-actions");
+    const logout = el("button", "btn btn-small btn-ghost", "退出登录");
+    logout.onclick = async () => { try { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); } catch (e) {} app.auth = { user: null }; renderProfilePage(); updateHomeAccount(); toast("已退出账号，本地档案仍保留。"); };
+    actions.appendChild(logout);
+    const pwd = el("button", "btn btn-small btn-ghost", "修改密码"); pwd.onclick = () => openLoginPage("password"); actions.appendChild(pwd);
+    panel.appendChild(actions);
+  }
+
+  function renderProfileSave(panel, account) {
+    const head = el("div", "profile-subhead");
+    head.appendChild(el("strong", null, "存档同步"));
+    head.appendChild(el("small", null, "本地优先 · 登录后同步"));
+    panel.appendChild(head);
+    const status = el("div", "profile-status");
+    const local = el("div"); local.appendChild(el("strong", null, "本地档案")); local.appendChild(el("small", null, "最近保存于本机")); status.appendChild(local);
+    const cloud = el("div"); cloud.appendChild(el("strong", null, app.auth && app.auth.user ? "云端已登录" : "云端未连接")); cloud.appendChild(el("small", null, app.auth && app.auth.user ? "保存时自动同步" : "登录后开启云端同步")); status.appendChild(cloud);
+    panel.appendChild(status);
+    const actions = el("div", "profile-actions");
+    const exp = el("button", "btn btn-small btn-ghost", "导出存档文件"); exp.onclick = downloadSaveFile; actions.appendChild(exp);
+    if (!(app.auth && app.auth.user)) { const login = el("button", "btn btn-small btn-primary", "登录并同步"); login.onclick = () => openLoginPage("login"); actions.appendChild(login); }
+    if (app.auth && app.auth.user) {
+      if (app.cloudConflict) {
+        const warn = el("p", "account-warn", "发现云端存档与本地不一致。先选择保留哪一份，不会自动覆盖。");
+        panel.appendChild(warn);
+      }
+      const upload = el("button", "btn btn-small btn-primary", app.cloudConflict ? "保留本地并覆盖云端" : "立即上传本地档案");
+      upload.onclick = async () => { await syncCloudSave(true); renderProfilePage(); };
+      actions.appendChild(upload);
+      const pull = el("button", "btn btn-small btn-ghost", "从云端恢复");
+      pull.onclick = async () => {
+        try {
+          const res = await fetch("/api/account/save", { credentials: "same-origin" });
+          const data = await res.json();
+          if (!data.save || !data.save.save) { toast("云端还没有可恢复的档案。"); return; }
+          applySaveBundle(data.save.save); app.cloudSaveVersion = data.save.version || 0; toast("已从云端恢复档案。"); renderProfilePage();
+        } catch (e) { toast("恢复失败：" + (e.message || e)); }
+      };
+      actions.appendChild(pull);
+    }
+    panel.appendChild(actions);
+    panel.appendChild(el("p", "profile-custom-hint", "云存档冲突时会先让你选择保留哪一份，不会静默覆盖本地。 "));
+  }
+
+  function renderProfileStats(panel) {
+    const p = app.profile || {};
+    const head = el("div", "profile-subhead"); head.appendChild(el("strong", null, "对局统计")); head.appendChild(el("small", null, "全部模式")); panel.appendChild(head);
+    const grid = el("div", "profile-field-grid");
+    const stats = [["总对局", p.games || 0], ["胜场", p.wins || 0], ["负场", p.losses || 0], ["胜率", (p.games ? Math.round((p.wins || 0) / p.games * 100) : 0) + "%"]];
+    for (const [k, v] of stats) { const d = el("div", "profile-status"); const x = el("div"); x.appendChild(el("strong", null, String(v))); x.appendChild(el("small", null, k)); d.appendChild(x); grid.appendChild(d); }
+    panel.appendChild(grid);
+  }
+
+  function openLoginPage(mode) {
+    app.loginMode = mode || "login";
+    AudioBox.play("ui_open");
+    showScreen("login");
+  }
+
+  async function authJson(path, body) {
+    const res = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify(body || {})
+    });
+    let data = {};
+    try { data = await res.json(); } catch (e) {}
+    if (!res.ok || data.ok === false) throw new Error(data.error || ("请求失败 " + res.status));
+    return data;
+  }
+
+  function renderLoginPage() {
+    const root = $("login-page-root");
+    const backBtn = $("btn-login-back"); if (backBtn) backBtn.hidden = !!app.authGate;
+    if (!root) return;
+    clear(root);
+    const mode = app.loginMode || "login";
+    const wrap = el("div", "login-wrap");
+    wrap.appendChild(el("div", "eyebrow", "ARCHIVE / ACCOUNT"));
+    wrap.appendChild(el("h3", null, mode === "register" ? "注册档案账号" : mode === "password" ? "修改密码" : "登录档案"));
+    wrap.appendChild(el("p", null, mode === "register" ? "用户名和密码只用于登录，不会显示给其他玩家。" : mode === "password" ? "修改密码需要先登录。修改后其他设备需要重新登录。" : "登录后可以跨设备同步档案，并解锁在线排位。"));
+    if (mode !== "password") {
+      const tabs = el("div", "login-tabs");
+      for (const [key, label] of [["login", "登录"], ["register", "注册"]]) {
+        const b = el("button", "login-tab" + (mode === key ? " active" : ""), label);
+        b.type = "button"; b.onclick = () => { app.loginMode = key; renderLoginPage(); };
+        tabs.appendChild(b);
+      }
+      wrap.appendChild(tabs);
+    }
+    const fields = el("div", "login-fields");
+    const input = (label, type, name, ph) => {
+      const l = el("label", null, label);
+      const i = document.createElement("input"); i.type = type || "text"; i.name = name; i.placeholder = ph || ""; i.autocomplete = name === "password" ? "current-password" : "username";
+      l.appendChild(i); fields.appendChild(l); return i;
+    };
+    const user = mode === "password" ? null : input("用户名", "text", "username", "3–20 位字母 / 数字 / 下划线");
+    const nick = mode === "register" ? input("昵称", "text", "displayName", "游戏内显示名，可中文") : null;
+    const pass = input("密码", "password", "password", "至少 8 位");
+    const pass2 = mode === "register" ? input("确认密码", "password", "password2", "再输入一次") : null;
+    wrap.appendChild(fields);
+    const err = el("div", "login-error"); wrap.appendChild(err);
+    const actions = el("div", "profile-actions");
+    const submit = el("button", "btn btn-primary", mode === "register" ? "创建账号" : mode === "password" ? "修改密码" : "登录");
+    submit.onclick = async () => {
+      err.textContent = "";
+      submit.disabled = true;
+      try {
+        if (mode === "register") {
+          if (pass.value !== pass2.value) throw new Error("两次输入的密码不一致。");
+          const data = await authJson("/api/auth/register", { username: user.value.trim(), password: pass.value, displayName: nick.value.trim() });
+          app.auth = { user: data.user };
+          if (data.save) applySaveBundle(data.save);
+          await syncCloudSave(true);
+          toast("账号已创建，本地档案已合并。");
+        } else if (mode === "password") {
+          const data = await authJson("/api/account/change-password", { password: pass.value });
+          app.auth = { user: data.user || app.auth.user };
+          toast("密码已修改。");
+        } else {
+          const data = await authJson("/api/auth/login", { username: user.value.trim(), password: pass.value });
+          app.auth = { user: data.user };
+          if (data.save) applySaveBundle(data.save);
+          toast("登录成功。");
+        }
+        updateHomeAccount();
+        if (app.authGate) { app.authGate = false; showScreen("home"); setTimeout(startOnboardingIfNeeded, 300); }
+        else openProfilePage("security");
+      } catch (e) {
+        err.textContent = e.message || String(e);
+      } finally { submit.disabled = false; }
+    };
+    actions.appendChild(submit);
+    const guest = el("button", "btn btn-small btn-ghost", app.authGate ? "游客登录（不保存云端）" : "以访客身份继续");
+    guest.onclick = () => { app.authGate = false; try { localStorage.setItem(GUEST_KEY, "1"); } catch (e) {} showScreen("home"); };
+    actions.appendChild(guest);
+    wrap.appendChild(actions);
+    wrap.appendChild(el("div", "login-note", "服务器位于新加坡。若登录缓慢，请检查网络或使用网络加速器。"));
+    root.appendChild(wrap);
   }
 
   function openProfileCustomization() {
+    openAppearancePage();
+  }
+
+  function openAppearancePage() {
     snapshotSave("open-cosmetics");
-    openModal((content) => { content.classList.add("profile-custom-modal"); renderProfileCustomization(content); });
+    showScreen("appearance");
+  }
+
+  function renderAppearancePage() {
+    const root = $("appearance-page-root");
+    if (!root) return;
+    clear(root);
+    const account = ensureAccount();
+    const layout = el("div", "appearance-layout");
+    const side = el("div", "appearance-side");
+    const cats = [["all", "全部外观"], ["avatarFrame", "头像 / 头像框"], ["title", "称号 / 名字色"], ["cardBack", "卡背 / 牌桌"], ["cardFrame", "卡牌牌套"]];
+    for (const [key, label] of cats) {
+      const b = el("button", "appearance-cat" + ((app.appearanceCat || "all") === key ? " active" : ""), label);
+      b.type = "button";
+      b.onclick = () => { app.appearanceCat = key; openAppearancePage(); };
+      side.appendChild(b);
+    }
+    layout.appendChild(side);
+    const right = el("div", "appearance-main");
+    const preview = el("div", "appearance-preview");
+    const avatar = el("div", "home-account-avatar");
+    const av = PROFILE_AVATARS.find(x => x.id === account.avatar) || PROFILE_AVATARS[0];
+    if (account.avatar === "custom" && account.customAvatar) { const img = el("img"); img.src = account.customAvatar; img.alt = "自传头像"; avatar.appendChild(img); }
+    else if (av.emblem) { const img = el("img"); img.src = av.emblem; img.alt = av.name; avatar.appendChild(img); }
+    else avatar.textContent = av.glyph || "GK";
+    avatar.dataset.frame = account.avatarFrame || "none";
+    preview.appendChild(avatar);
+    const pv = el("div"); pv.appendChild(el("h3", null, account.name || "档案员")); pv.appendChild(el("p", null, profileTitleName(account.title) + " · " + (account.signature || "还没有签名"))); preview.appendChild(pv);
+    right.appendChild(preview);
+    const content = el("div", "appearance-content");
+    right.appendChild(content);
+    layout.appendChild(right);
+    root.appendChild(layout);
+    renderProfileCustomization(content, true);
   }
 
   function openAccountModal() {
@@ -7337,6 +8126,7 @@ const tabs = $("deck-faction-tabs");
   }
 
   function maybePromptArchiveName() {
+    return; // 首次建档改为主页新手引导，不再弹窗。
     // 无头自动化测试不弹首次建档框；需要验证首次流程时设置 gok_force_first_run=1。
     try { if (navigator.webdriver && localStorage.getItem("gok_force_first_run") !== "1") return; } catch (e) {}
     let named = false;
@@ -7415,7 +8205,11 @@ const tabs = $("deck-faction-tabs");
     const account = ensureAccount();
     const nameEl = $("home-account-name");
     const metaEl = $("home-account-meta");
+    const levelEl = $("home-account-level");
+    const statusEl = $("home-account-status");
     if (nameEl) nameEl.textContent = account.name || "档案员";
+    if (levelEl) levelEl.textContent = "Lv." + ((account.progress && account.progress.level) || 1);
+    if (statusEl) statusEl.textContent = app.auth && app.auth.user ? "已登录 · " + app.auth.user.username : "本地访客";
     const titleEl = $("home-account-title");
     if (titleEl) titleEl.textContent = profileTitleName(account.title);
     const avatarEl = $("home-account-avatar");
@@ -7636,6 +8430,7 @@ const tabs = $("deck-faction-tabs");
   }
 
   function openCodex() {
+    markMainTask("codex_open");
     showScreen("codex");
     renderCodex();
   }
@@ -9669,7 +10464,8 @@ const tabs = $("deck-faction-tabs");
     const root = $("match-page-root");
     if (!root) return;
     clear(root);
-    let ranked = app.matchPageRanked !== false;
+    const loggedIn = !!(app.auth && app.auth.user);
+    let ranked = loggedIn ? app.matchPageRanked !== false : false;
     let selectedFaction = (app.matchPageFaction && D.FACTIONS[app.matchPageFaction]) ? app.matchPageFaction : (app.faction && D.FACTIONS[app.faction] ? app.faction : "pus");
     let selectedDeck = app.matchPageDeck === "custom" && lanHasCustom(selectedFaction) ? "custom" : (lanHasCustom(selectedFaction) && app.matchDeckMode === "custom" ? "custom" : "preset");
     const rank = rankSummary();
@@ -9683,7 +10479,9 @@ const tabs = $("deck-faction-tabs");
     const rankedTab = el("button", "match-mode-tab", "排位");
     casual.type = rankedTab.type = "button";
     casual.onclick = () => { app.matchPageRanked = false; ranked = false; renderMatchPage(); };
-    rankedTab.onclick = () => { app.matchPageRanked = true; ranked = true; renderMatchPage(); };
+    rankedTab.onclick = () => { if (!loggedIn) { toast("排位需要先登录账号。"); openLoginPage("login"); return; } app.matchPageRanked = true; ranked = true; renderMatchPage(); };
+    rankedTab.classList.toggle("locked", !loggedIn);
+    rankedTab.title = loggedIn ? "" : "登录后解锁排位";
     modeTabs.appendChild(casual); modeTabs.appendChild(rankedTab);
     setup.appendChild(modeTabs);
     setup.appendChild(el("div", "match-setup-label", "选择阵营 / 领袖"));
@@ -9728,12 +10526,16 @@ const tabs = $("deck-faction-tabs");
     deckCopy.appendChild(el("small", null, "30 张卡（装备/阵型自由混编）"));
     const deckSelect = document.createElement("select");
     deckSelect.className = "match-deck-select";
-    deckSelect.innerHTML = '<option value="preset">预设牌组 · 30 张</option><option value="custom">自定义牌组 · 30 张</option>';
-    deckSelect.value = selectedDeck;
-    const customOption = deckSelect.querySelector('option[value="custom"]');
-    customOption.disabled = !lanHasCustom(selectedFaction);
-    customOption.textContent = lanHasCustom(selectedFaction) ? "自定义牌组 · 30 张" : "自定义牌组（尚未构筑）";
-    deckSelect.onchange = () => { selectedDeck = deckSelect.value === "custom" && lanHasCustom(selectedFaction) ? "custom" : "preset"; app.matchPageDeck = selectedDeck; renderMatchPage(); };
+    const lib = deckLibraryFor(selectedFaction);
+    deckSelect.innerHTML = '<option value="preset">官方预组 · 30 张</option>';
+    for (const d of lib) { const o = document.createElement("option"); o.value = d.id; o.textContent = d.name + " · " + d.cards.length + " 张"; deckSelect.appendChild(o); }
+    const activeId = activeDeckFor(selectedFaction) ? activeDeckFor(selectedFaction).id : "preset";
+    deckSelect.value = selectedDeck === "custom" ? activeId : "preset";
+    deckSelect.onchange = () => {
+      if (deckSelect.value === "preset") { selectedDeck = "preset"; app.matchPageDeck = "preset"; }
+      else { const d = lib.find(x => x.id === deckSelect.value); if (d) { app.activeDeckId[selectedFaction] = d.id; app.customDecks[selectedFaction] = d.cards.slice(); selectedDeck = "custom"; app.matchPageDeck = "custom"; persistDeckLibrary(); } }
+      renderMatchPage();
+    };
     deckRow.appendChild(deckCopy); deckRow.appendChild(deckSelect); setup.appendChild(deckRow);
     const selectedDeckList = getSelectedPlayDeck(selectedFaction, selectedDeck);
     const deckPreview = el("div", "match-deck-preview");
@@ -9744,20 +10546,38 @@ const tabs = $("deck-faction-tabs");
     setup.appendChild(deckPreview);
 
     const start = el("button", "btn btn-primary btn-wide", ranked ? "开始排位匹配" : "开始休闲匹配");
-    start.onclick = () => { app.faction = selectedFaction; app.matchPageFaction = selectedFaction; app.matchDeckMode = selectedDeck; app.matchPageDeck = selectedDeck; beginMatchPage(selectedFaction, selectedDeck, ranked); };
+    start.onclick = () => { if (ranked && !loggedIn) { toast("排位需要先登录账号。"); openLoginPage("login"); return; } app.faction = selectedFaction; app.matchPageFaction = selectedFaction; app.matchDeckMode = selectedDeck; app.matchPageDeck = selectedDeck; beginMatchPage(selectedFaction, selectedDeck, ranked); };
     const actions = el("div", "match-page-actions"); actions.appendChild(start); setup.appendChild(actions);
     grid.appendChild(setup);
     const side = el("div", "match-rank-mini");
-    side.style.display = ranked ? "" : "none";
+    side.style.display = (ranked || !loggedIn) ? "" : "none";
     side.appendChild(el("div", "panel-label", "RANK / 段位"));
     const emblem = el("div", "rank-emblem", (rank.tier || "青").slice(0, 1));
     side.appendChild(emblem);
     side.appendChild(el("h3", null, rank.tier || "青铜"));
     side.appendChild(el("p", "rank-points", String(rank.points) + " 分 · " + rank.wins + " 胜 " + rank.losses + " 负"));
-    side.appendChild(el("p", "muted", "休闲模式不计算段位；排位会影响段位分。"));
-    const rankBtn = el("button", "btn btn-small btn-ghost", "查看排位档案");
-    rankBtn.onclick = () => openRank("match");
-    side.appendChild(rankBtn);
+    if (!loggedIn) {
+      side.appendChild(el("p", "muted", "游客可以打休闲；登录后解锁排位。"));
+      const login = el("button", "btn btn-small btn-primary", "登录解锁排位");
+      login.onclick = () => openLoginPage("login");
+      side.appendChild(login);
+    } else {
+      const progress = el("div", "rank-progress");
+      const info = rankInfo(rank.points || 0); const fill = el("i"); fill.style.width = (info.progress || 0) + "%"; progress.appendChild(fill); side.appendChild(progress);
+      side.appendChild(el("p", "muted", "最近排位"));
+      const hist = ((app.profile && app.profile.history) || []).filter(h => h.ranked).slice(0, 3);
+      if (!hist.length) side.appendChild(el("p", "muted", "还没有排位记录。"));
+      for (const h of hist) {
+        const row = el("div", "rank-history-row");
+        row.appendChild(el("span", null, h.result === "win" ? "胜" : h.result === "loss" ? "负" : "平"));
+        row.appendChild(el("span", null, factionName(h.faction) + " vs " + factionName(h.opponent)));
+        row.appendChild(el("small", null, (h.round || 0) + " 回合"));
+        side.appendChild(row);
+      }
+      const all = el("button", "btn btn-small btn-ghost", "全部战绩");
+      all.onclick = () => { showScreen("achievements"); renderAchievements(); };
+      side.appendChild(all);
+    }
     grid.appendChild(side);
     root.appendChild(grid);
     if (ranked) rankedTab.classList.add("active"); else casual.classList.add("active");
@@ -9962,14 +10782,16 @@ const tabs = $("deck-faction-tabs");
       } catch (e) {}
     }, { once: true });
     const hint = el("p", "matchmaking-hint", "阵营：" + factionName(faction) + " · " + (deckMode === "custom" ? "自定义牌组" : "预设牌组") + " · 当前 " + rankText(rankPoints) + " · 正在按段位寻找对手。");
-    openModal((content) => {
-      content.classList.add("matchmaking-modal");
-      content.appendChild(el("div", "eyebrow", "ONLINE MATCH / RANKED"));
-      content.appendChild(el("h3", null, "在线匹配"));
-      content.appendChild(status);
-      content.appendChild(timer);
-      content.appendChild(hint);
-      const actions = el("div", "modal-actions");
+    showScreen("matchmaking");
+    const pageRoot = $("matchmaking-page-root");
+    if (pageRoot) {
+      clear(pageRoot);
+      pageRoot.appendChild(el("div", "eyebrow", "ONLINE MATCH / RANKED"));
+      pageRoot.appendChild(el("h3", null, "正在寻找对手"));
+      pageRoot.appendChild(status);
+      pageRoot.appendChild(timer);
+      pageRoot.appendChild(hint);
+      const actions = el("div", "profile-actions");
       const cancel = el("button", "btn btn-small btn-ghost", "取消匹配");
       cancel.onclick = () => {
         if (finished) return;
@@ -9977,10 +10799,10 @@ const tabs = $("deck-faction-tabs");
         clearTimeout(pollTimer);
         clearInterval(tickTimer);
         if (ticket) fetch("/api/match/cancel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ticket }) }).catch(() => {});
-        closeModal(true);
+        showScreen("match"); renderMatchPage();
       };
       actions.appendChild(cancel);
-      content.appendChild(actions);
+      pageRoot.appendChild(actions);
       setTimeout(() => {
         if (finished) return;
         if (!lanServerAvailable()) {
@@ -10003,10 +10825,10 @@ const tabs = $("deck-faction-tabs");
           setTimeout(() => { if (!finished) fallbackAi(); }, 1200);
         });
       }, 120);
-    });
+    }
     tickTimer = setInterval(() => {
       if (finished) return;
-      if (!app.modalOpen) {
+      if (app.screen !== "matchmaking") {
         finished = true;
         clearTimeout(pollTimer);
         clearInterval(tickTimer);
@@ -10052,8 +10874,7 @@ const tabs = $("deck-faction-tabs");
       timer.textContent = "匹配成功";
       AudioBox.play("ui_open");
       setTimeout(() => {
-        if (!app.modalOpen) return;
-        closeModal(true);
+        if (app.screen !== "matchmaking") return;
         const difficulty = aiDifficultyForRank(rankPoints);
         const opponent = D.nextFaction(faction);
         startGame({
@@ -10347,9 +11168,13 @@ const tabs = $("deck-faction-tabs");
     app.profile = loadProfile();
     ensureAccount();
     snapshotSave("startup");
+    applyFactionChipColors();
     updateHomeProfile();
     updateHomeAccount();
+    updateHomeTaskWidget();
+    restoreAuthSession().then(() => setTimeout(maybeShowAuthGate, 1500));
     setTimeout(maybePromptArchiveName, 1200);
+    setTimeout(startOnboardingIfNeeded, 1400);
     updateHomeLegendary();
     const openArcadeFromHome = () => {
       if (!global.GokContent) return;
@@ -10389,7 +11214,13 @@ const tabs = $("deck-faction-tabs");
     $("btn-solo").onclick = () => { closeStartMenu(); AudioBox.play("ui_open"); showScreen("setup"); setupState(); };
     $("btn-deck-home").onclick = () => { AudioBox.play("ui_open"); openDeckBuilder(app.faction || "pus", "home"); };
     if ($("btn-content-home")) $("btn-content-home").onclick = () => { AudioBox.play("ui_open"); if (global.GokContent) global.GokContent.open(); };
-    if ($("btn-home-account")) $("btn-home-account").onclick = () => { AudioBox.play("ui_open"); openAccountModal(); afterAccountUI(); };
+    if ($("btn-home-profile")) $("btn-home-profile").onclick = () => openProfilePage("personal");
+    if ($("btn-profile-back")) $("btn-profile-back").onclick = () => showScreen("home");
+    if ($("btn-appearance-back")) $("btn-appearance-back").onclick = () => openProfilePage("personal");
+    if ($("btn-login-back")) $("btn-login-back").onclick = () => { if (app.authGate) { toast("请选择登录、注册或游客登录。"); return; } openProfilePage("security"); };
+    if ($("btn-tasks-back")) $("btn-tasks-back").onclick = () => showScreen("home");
+    if ($("btn-levelup-back")) $("btn-levelup-back").onclick = () => showScreen("tasks");
+    if ($("btn-matchmaking-back")) $("btn-matchmaking-back").onclick = () => { showScreen("match"); renderMatchPage(); };
     window.addEventListener("gok-content-changed", () => scheduleSaveBackup());
     const updateOrientationLock = () => {
       const lock = $("orientation-lock");
@@ -10550,7 +11381,7 @@ const tabs = $("deck-faction-tabs");
     if ($("btn-settings-reset-prefs")) $("btn-settings-reset-prefs").onclick = resetVisualAudioPrefs;
     $("btn-settings-fullscreen").onclick = () => toggleFullscreen();
     document.addEventListener("fullscreenchange", updateSettingsUI);
-    if ($("btn-settings-account")) $("btn-settings-account").onclick = () => { AudioBox.play("ui_open"); openAccountModal(); };
+    if ($("btn-settings-account")) $("btn-settings-account").onclick = () => { AudioBox.play("ui_open"); openProfilePage("security"); };
     $("btn-settings-clear-achievements").onclick = () => { app.achievements = {}; persistAchievements(); toast("成就记录已重置。"); };
     $("btn-settings-clear-profile").onclick = () => { app.profile = loadProfile(); app.profile = { games: 0, wins: 0, losses: 0, draws: 0, byFaction: {}, history: [], maxRound: 0 }; persistProfile(); updateHomeProfile(); toast("档案统计已重置。"); };
     $("btn-settings-credits").onclick = () => showCredits();
@@ -10593,7 +11424,7 @@ const tabs = $("deck-faction-tabs");
     if ($("btn-credits")) $("btn-credits").onclick = () => showCredits();
     if ($("btn-rules")) $("btn-rules").onclick = () => { AudioBox.play("ui_open"); openKeywordGlossary(); };
     if ($("btn-rank")) $("btn-rank").onclick = () => openRank("home");
-    if ($("btn-customize-home")) $("btn-customize-home").onclick = () => { if (!levelUnlocked("customize")) { showLockedFeature("customize", "档案个性化"); return; } AudioBox.play("ui_open"); openProfileCustomization(); };
+    if ($("btn-customize-home")) $("btn-customize-home").onclick = () => { if (!levelUnlocked("customize")) { showLockedFeature("customize", "档案个性化"); return; } AudioBox.play("ui_open"); openAppearancePage(); };
     if ($("home-account-cardback")) { $("home-account-cardback").style.cursor = "pointer"; $("home-account-cardback").title = "当前卡背 · 点击打开自定义"; $("home-account-cardback").onclick = () => { AudioBox.play("ui_open"); openProfileCustomization(); }; }
     if ($("btn-rank-multi")) $("btn-rank-multi").onclick = () => { closeStartMenu(); AudioBox.play("ui_open"); openRank("mode"); };
     if ($("btn-rank-mode")) $("btn-rank-mode").onclick = () => { AudioBox.play("ui_open"); openRank("mode"); };
@@ -10715,10 +11546,10 @@ const tabs = $("deck-faction-tabs");
       app.faction = app.deckBuildFaction; const to = app.deckReturn || "setup"; showScreen(to); if (to === "setup") setupState(); else if (to === "lan") initLanScreen(); toast("已取消编成，未保存改动。");
     };
     $("btn-deck-save").onclick = () => { if (saveCurrentDeck(true)) { app.deckSource = "custom"; renderDeckBuilder(); } };
-    $("btn-deck-clear").onclick = () => { app.deckBuildList = []; app.deckSource = "draft"; app.lastAutoStrategy = null; renderDeckBuilder(); toast("已清空当前牌组，可重新选择。"); };
+    $("btn-deck-clear").onclick = () => { if (app.deckReadOnly) { toast("官方预设只读。"); return; } app.deckBuildList = []; app.deckSource = "draft"; app.lastAutoStrategy = null; renderDeckBuilder(); toast("已清空当前牌组，可重新选择。"); };
     $("btn-deck-reset").onclick = () => { app.deckBuildList = D.DECKS[app.deckBuildFaction].slice(); app.lastAutoStrategy = null; app.deckSource = "preset"; renderDeckBuilder(); toast("已恢复预设牌组。"); };
-    $("btn-deck-use").onclick = () => { if (!saveCurrentDeck(false)) return; app.faction = app.deckBuildFaction; const to = app.deckReturn || "setup"; showScreen(to); if (to === "setup") setupState(); else if (to === "lan") initLanScreen(); toast("已应用自定义牌组。"); };
-    $("btn-deck-top-use").onclick = () => { if (!saveCurrentDeck(false)) return; app.faction = app.deckBuildFaction; const to = app.deckReturn || "setup"; showScreen(to); if (to === "setup") setupState(); else if (to === "lan") initLanScreen(); toast("已应用自定义牌组。"); };
+    $("btn-deck-use").onclick = () => { if (app.deckReadOnly) { toast("官方预设可直接在准备页使用，不能编辑。"); return; } if (!saveCurrentDeck(false)) return; app.faction = app.deckBuildFaction; const to = app.deckReturn || "setup"; showScreen(to); if (to === "setup") setupState(); else if (to === "lan") initLanScreen(); toast("已应用自定义牌组。"); };
+    $("btn-deck-top-use").onclick = () => { if (app.deckReadOnly) { toast("官方预设可直接在准备页使用，不能编辑。"); return; } if (!saveCurrentDeck(false)) return; app.faction = app.deckBuildFaction; const to = app.deckReturn || "setup"; showScreen(to); if (to === "setup") setupState(); else if (to === "lan") initLanScreen(); toast("已应用自定义牌组。"); };
     document.querySelectorAll("[data-deck-filter]").forEach((b) => {
       b.classList.toggle("active", b.dataset.deckFilter === (app.deckBuildFilter || "all"));
       b.onclick = () => { app.deckBuildFilter = b.dataset.deckFilter; document.querySelectorAll("[data-deck-filter]").forEach((x) => x.classList.toggle("active", x === b)); renderDeckBuilder(); };
@@ -10727,10 +11558,14 @@ const tabs = $("deck-faction-tabs");
       b.classList.toggle("active", b.dataset.deckRarity === (app.deckBuildRarity || "all"));
       b.onclick = () => { app.deckBuildRarity = b.dataset.deckRarity; document.querySelectorAll("[data-deck-rarity]").forEach((x) => x.classList.toggle("active", x === b)); renderDeckBuilder(); };
     });
+    document.querySelectorAll("[data-deck-owned]").forEach((b) => {
+      b.onclick = () => { app.deckBuildOwned = b.dataset.deckOwned; document.querySelectorAll("[data-deck-owned]").forEach((x) => x.classList.toggle("active", x === b)); renderDeckBuilder(); };
+    });
     document.querySelectorAll(".deck-scope").forEach((b) => {
       b.onclick = () => { app.deckPoolScope = b.dataset.deckScope; document.querySelectorAll(".deck-scope").forEach((x) => x.classList.toggle("active", x === b)); renderDeckBuilder(); };
     });
     document.querySelectorAll(".auto-deck-btn").forEach((b) => {
+      b.disabled = !!app.deckReadOnly;
       b.onclick = () => autoBuildCurrentDeck(b.dataset.deckStrategy);
     });
     document.querySelectorAll(".sim-run").forEach((b) => {

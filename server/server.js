@@ -7,6 +7,7 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const { URL } = require("url");
+const { createAuth } = process.env.DATABASE_URL ? require("./auth_pg") : require("./auth");
 
 const PORT = Number(process.env.PORT || 4173);
 const PUBLIC = path.join(__dirname, "..", "public");
@@ -124,7 +125,7 @@ function readBody(req) {
     let data = "";
     req.on("data", (chunk) => {
       data += chunk;
-      if (data.length > 2_000_000) { reject(new Error("body too large")); req.destroy(); }
+      if (data.length > 8_000_000) { reject(new Error("body too large")); req.destroy(); }
     });
     req.on("end", () => resolve(data));
     req.on("error", reject);
@@ -132,6 +133,12 @@ function readBody(req) {
 }
 
 
+
+const auth = createAuth({
+  json,
+  readBody,
+  dataDir: process.env.GOK_DATA_DIR || path.join(__dirname, "data")
+});
 
 function serveStatic(req, res, pathname) {
   let rel = decodeURIComponent(pathname);
@@ -169,6 +176,7 @@ const server = http.createServer(async (req, res) => {
       json(res, 200, { ok: true, service: "gok-vein-gambit", channel: CHANNEL, time: Date.now(), rooms: rooms.size });
       return;
     }
+    if (await auth.handle(req, res, u)) return;
     if (p === "/api/room/create" && req.method === "POST") {
       const code = createRoomCode();
       if (!code) { json(res, 500, { ok: false, error: "无法创建房间" }); return; }
@@ -179,6 +187,7 @@ const server = http.createServer(async (req, res) => {
       const raw = await readBody(req);
       let body = {};
       try { body = JSON.parse(raw); } catch (e) { body = {}; }
+      if (body.ranked && !(await auth.sessionUser(req))) { json(res, 401, { ok: false, error: "排位需要先登录账号。" }); return; }
       const rrMode = roomFromRequest(u, false);
       if (!rrMode) { json(res, 404, { ok: false, error: "房间不存在" }); return; }
       rrMode.room.ranked = !!body.ranked;
@@ -195,6 +204,8 @@ const server = http.createServer(async (req, res) => {
       let matchBody = {};
       try { matchBody = JSON.parse(rawMatch); } catch (e) { matchBody = {}; }
       const matchRanked = !!matchBody.ranked;
+      const matchUser = await auth.sessionUser(req);
+      if (matchRanked && !matchUser) { json(res, 401, { ok: false, error: "排位需要先登录账号。" }); return; }
       const matchName = typeof matchBody.name === "string" ? matchBody.name.slice(0, 24) : null;
       const matchRank = Math.max(0, Math.min(5000, Number(matchBody.rank) || 0));
       const now = Date.now();

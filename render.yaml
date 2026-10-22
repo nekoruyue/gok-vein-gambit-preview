@@ -14,4 +14,6 @@ services:
       - key: TRIAL_KEEPALIVE
         value: "1"
       - key: NODE_VERSION
-        value: "20"
+        value: "24"
+      - key: DATABASE_URL
+        sync: false
