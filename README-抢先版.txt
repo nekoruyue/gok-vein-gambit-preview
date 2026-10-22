@@ -1,14 +1,31 @@
-# 抢先版 / Preview
+# 抢先版 / Preview — 在线部署
 
 构建：20261022e58
 通道：PREVIEW / 抢先版
 
-桌面包：`戈克世界-抢先版-桌面版-e58.zip`
+部署根目录就是本目录：
+
+```text
+public/
+server/
+package.json
+render.yaml
+.gitignore
+```
+
+Render：
+
+```text
+Build Command: npm install
+Start Command: node server/server.js
+Environment: GOK_CHANNEL=preview
+NODE_VERSION=20
+```
+
+本目录不需要 `server/node.exe`；桌面版目录才需要。
+
 在线包：`戈克世界-抢先版-在线部署-e58.zip`
+桌面包：`戈克世界-抢先版-桌面版-e58.zip`
 
-- 桌面版使用独立端口 4174，和稳定版 4173 隔离。
-- 启动失败时可双击 `启动游戏.bat`。
-- 稳定版不要从这里复制实验内容。
-
-数值表：`戈克世界-抢先版-数值表-2026-10-22.xlsx`
-平衡报告：`戈克世界-抢先版-平衡测试-2026-10-22.md`
+上线地址：
+https://gok-vein-gambit-preview.onrender.com

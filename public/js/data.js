@@ -14335,6 +14335,105 @@
   if (CARDS.stabilize) CARDS.stabilize.reflux = 2;
   if (CARDS.return_tide) CARDS.return_tide.reflux = 2;
 
+  // 2026-10-22 新中立传说：星川日照与九种节肢伙伴。
+  Object.assign(CARDS, {
+    xingchuan_sun: {
+      id: "xingchuan_sun", name: "星川日照", faction: "neutral", type: "minion",
+      cost: 7, attack: 4, health: 4, rarity: "legendary", keywords: ["battlecry"],
+      target: "none", battlecry: { type: "summonArthropodSwarm" }, easterEgg: true,
+      text: "彩蛋卡。登场：在自身阵位用随机节肢伙伴填满空位；同阵位有节肢伙伴时，获得隐匿与 +1/+1。每当一个节肢伙伴死亡，获得 +1/+1。",
+      flavor: "她走过的地方，虫群会把道路填满。"
+    },
+    xingchuan_dungbeetle: {
+      id: "xingchuan_dungbeetle", name: "蜣螂", faction: "neutral", type: "minion", token: true, noArtwork: true,
+      cost: 0, attack: 0, health: 6, rarity: "common", keywords: ["taunt"], target: "none", silenceAttacker: true,
+      text: "守备。被敌方随从攻击时，沉默该攻击者。"
+    },
+    xingchuan_cockroach: {
+      id: "xingchuan_cockroach", name: "蟑螂", faction: "neutral", type: "minion", token: true, noArtwork: true,
+      cost: 0, attack: 2, health: 2, rarity: "common", keywords: ["windfury", "stealth"], target: "none",
+      passive: { type: "endTurnGrowth", attack: 1 },
+      text: "连携。隐匿。每个回合结束时获得 +1 攻击力。"
+    },
+    xingchuan_centipede: {
+      id: "xingchuan_centipede", name: "蜈蚣", faction: "neutral", type: "minion", token: true, noArtwork: true,
+      cost: 0, attack: 2, health: 2, rarity: "common", keywords: ["poisonous", "rush"], target: "none",
+      text: "蚀毒。先遣。"
+    },
+    xingchuan_orbweaver: {
+      id: "xingchuan_orbweaver", name: "圆蛛", faction: "neutral", type: "minion", token: true, noArtwork: true,
+      cost: 0, attack: 3, health: 3, rarity: "common", keywords: ["battlecry"], target: "none",
+      battlecry: { type: "freezeRandom" }, text: "登场：冻结一个敌方随从。"
+    },
+    xingchuan_tigerbeetle: {
+      id: "xingchuan_tigerbeetle", name: "虎甲", faction: "neutral", type: "minion", token: true, noArtwork: true,
+      cost: 0, attack: 6, health: 1, rarity: "common", keywords: ["charge"], target: "none", bloodCost: 3,
+      text: "血祭 3。先遣。"
+    },
+    xingchuan_molecricket: {
+      id: "xingchuan_molecricket", name: "蝼蛄", faction: "neutral", type: "minion", token: true, noArtwork: true,
+      cost: 0, attack: 3, health: 3, rarity: "common", keywords: [], target: "none", excavate: 2,
+      text: "采掘 2。"
+    },
+    xingchuan_mosquito: {
+      id: "xingchuan_mosquito", name: "蚊子", faction: "neutral", type: "minion", token: true, noArtwork: true,
+      cost: 0, attack: 3, health: 1, rarity: "common", keywords: ["lifesteal"], target: "none",
+      text: "血偿。"
+    },
+    xingchuan_bee: {
+      id: "xingchuan_bee", name: "蜜蜂", faction: "neutral", type: "minion", token: true, noArtwork: true,
+      cost: 0, attack: 2, health: 2, rarity: "common", keywords: ["battlecry"], target: "none",
+      battlecry: { type: "healHeroOrAlly", amount: 4 },
+      text: "登场：恢复你的领袖或一个友方随从 4 点生命。"
+    },
+    xingchuan_cockroach_guard: {
+      id: "xingchuan_cockroach_guard", name: "蟑螂·护", faction: "neutral", type: "minion", token: true, noArtwork: true,
+      cost: 0, attack: 0, health: 2, rarity: "common", keywords: ["divineShield", "reborn", "taunt"], target: "none",
+      text: "格挡。回潮。守备。"
+    }
+  });
+
+  Object.assign(CARDS, {
+    kisaragi_cat: {
+      id: "kisaragi_cat", name: "如月猫", faction: "neutral", type: "minion",
+      cost: 4, attack: 3, health: 3, rarity: "legendary",
+      keywords: ["divineShield", "taunt", "rush", "windfury", "poisonous", "stealth", "reborn"],
+      target: "none", easterEgg: true,
+      text: "彩蛋卡。格挡。守备。先遣。连携。蚀毒。隐匿。回潮。",
+      flavor: "她只是路过，顺手把规则书撕了一页。"
+    }
+  });
+
+  Object.assign(CARDS, {
+    xiuyue_iceflower: {
+      id: "xiuyue_iceflower", name: "修玥冰花", faction: "neutral", type: "minion",
+      cost: 2, attack: 3, health: 3, rarity: "legendary", keywords: ["battlecry"],
+      target: "none", battlecry: { type: "freezeRandom" }, easterEgg: true,
+      text: "彩蛋卡。登场：随机冻结一个敌方随从。",
+      flavor: "花开的时候，敌人会安静一秒。"
+    }
+  });
+
+  Object.assign(CARDS, {
+    jasmine_bai: {
+      id: "jasmine_bai", name: "茉莉白", faction: "neutral", type: "minion",
+      cost: 1, attack: 1, health: 2, rarity: "legendary", keywords: ["battlecry"],
+      target: "none", battlecry: { type: "summon", token: "republic_recruit" }, easterEgg: true,
+      text: "彩蛋卡。登场：召唤一个1/1的共和国新兵。",
+      flavor: "她只是来递一把剑。"
+    }
+  });
+
+  Object.assign(CARDS, {
+    dugu_mai: {
+      id: "dugu_mai", name: "独孤迈", faction: "neutral", type: "minion",
+      cost: 5, attack: 5, health: 4, rarity: "legendary", keywords: ["battlecry"],
+      target: "none", battlecry: { type: "nextTurnManaDraw", amount: 3, draw: 2 }, easterEgg: true,
+      text: "彩蛋卡。登场：下回合回合开始时获得 3 点行动力，抽 2 张牌。",
+      flavor: "他提前把下回合的运气预支了。"
+    }
+  });
+
   return { FACTIONS, FACTION_IDS, nextFaction, HEROES, CARDS, DECKS, NEUTRAL_DECK, KEYWORDS, DECK_STRATEGIES, DECK_SPECIALS, DECK_TRIM, cardPool, validateDeck, autoBuildDeck, maxCopies };
 });
 

@@ -100,6 +100,7 @@
       healBlockTurn: false,
       freeSpellTurn: false,
       nextSpellReduction: 0,
+      nextTurnDraw: 0,
       minionsPlayedThisTurn: 0,
       tauntMinionsPlayedThisTurn: 0,
       recruitsSummonedThisTurn: 0,
@@ -204,6 +205,7 @@
       deathrattles: def.deathrattle ? [def.deathrattle] : [],
       bounty: null,
       token: !!def.token,
+      silenceAttacker: !!def.silenceAttacker,
       formationVein: false
     };
     if (opts && opts.taunt) {
@@ -741,6 +743,10 @@
         if (m.rushDrawTurn != null && m.rushDrawTurn === state.turnNumber) drawCard(state, p, 1);
         if (m.bounty != null) claimBounty(state, state.players[m.bounty.owner], m);
         if (m.formationVein) { healHero(state, p, 1); log(state, "地脉阵线余响：恢复领袖 1 点生命。", p, "deathrattle"); }
+        if (m.isArthropodCompanion && m.arthropodLordUid) {
+          const lord = aliveMinions(p).find(x => x.uid === m.arthropodLordUid && !x.dead);
+          if (lord) buffMinion(state, lord, 1, 1, "节肢伙伴", true);
+        }
         if (m.passive && m.passive.type === "wardOnDeath" && m.taunt) {
           p.armor = (p.armor || 0) + (m.passive.amount || 1);
           log(state, "筑防：" + m.name + " 阵亡，获得 " + (m.passive.amount || 1) + " 点护甲。", p, "armor");
@@ -1451,9 +1457,66 @@
     if (bonus.taunt) grantTaunt(state, minion);
   }
 
+  const ARTHROPOD_POOL = [
+    "xingchuan_dungbeetle", "xingchuan_cockroach", "xingchuan_centipede",
+    "xingchuan_orbweaver", "xingchuan_tigerbeetle", "xingchuan_molecricket",
+    "xingchuan_mosquito", "xingchuan_bee", "xingchuan_cockroach_guard"
+  ];
+
+  function summonArthropodSwarm(state, player, lord) {
+    if (!lord || lord.dead || !lord.zone) return;
+    const picks = shuffle(state, ARTHROPOD_POOL.slice());
+    let count = 0;
+    while (count < 2 && zoneHasSpace(player, lord.zone) && picks.length) {
+      const id = picks.shift();
+      const token = summonMinion(state, player, id, lord.zone, null);
+      if (!token) continue;
+      token.isArthropodCompanion = true;
+      token.arthropodLordUid = lord.uid;
+      const tokenDef = card(id);
+      if (tokenDef && tokenDef.battlecry) resolveBattlecry(state, player, tokenDef, token, null, {});
+      if (tokenDef && tokenDef.excavate) excavate(state, player, tokenDef.excavate);
+      count++;
+    }
+    if (!count) return;
+    lord.stealth = true;
+    if (!lord.keywords.includes("stealth")) lord.keywords.push("stealth");
+    buffMinion(state, lord, 1, 1, "节肢伙伴", true);
+    log(state, "节肢伙伴在" + ZONE_NAMES[lord.zone] + "聚集，" + lord.name + " 获得隐匿与 +1/+1。", player, "battlecry");
+  }
+
   function resolveBattlecry(state, player, def, minion, target, opts) {
     const b = def.battlecry;
     if (!b) return;
+    if (b.type === "nextTurnManaDraw") {
+      player.nextTurnManaBonus = (player.nextTurnManaBonus || 0) + (b.amount || 3);
+      player.nextTurnDraw = (player.nextTurnDraw || 0) + (b.draw || 2);
+      log(state, "独孤迈预支下回合：获得 " + (b.amount || 3) + " 点行动力并抽 " + (b.draw || 2) + " 张牌。", player, "buff");
+      return;
+    }
+    if (b.type === "summonArthropodSwarm") {
+      summonArthropodSwarm(state, player, minion);
+      return;
+    }
+    if (b.type === "freezeRandom") {
+      const enemies = aliveMinions(opponentOf(state, player));
+      if (enemies.length) {
+        const victim = enemies[randomInt(state, enemies.length)];
+        freezeMinion(state, victim);
+        log(state, "圆蛛冻结了 " + victim.name + "。", player, "freeze");
+      }
+      return;
+    }
+    if (b.type === "healHeroOrAlly") {
+      const allies = aliveMinions(player).filter(m => m.health < m.maxHealth);
+      if (allies.length) {
+        allies.sort((a, b) => (a.health / a.maxHealth) - (b.health / b.maxHealth));
+        healMinion(state, allies[0], b.amount || 4);
+      } else {
+        healHero(state, player, b.amount || 4);
+      }
+      return;
+    }
     if (b.type === "healDraw") {
       if (!target || target.dead) return;
       const wasDamaged = target.health < target.maxHealth;
@@ -2730,12 +2793,17 @@
       log(state, attacker.name + " 攻击 " + enemy.name + " 的领袖。", player, "attack");
       damageHero(state, enemy, attacker.attack, attacker, "随从攻击");
       processDeaths(state);
+      if (attacker.windfury && !attacker.windfuryExtraUsed && !attacker.dead) { attacker.windfuryExtraUsed = true; attacker.attacksLeft = Math.max(attacker.attacksLeft, 1); }
       return { ok: true };
     }
     const defender = findMinion(state, targetUid);
     if (!defender || defender.dead) return { ok: false, reason: "目标已不在场" };
     state.lastAction = { type: "attack", player: playerIndex, attackerUid, targetUid, seq: ((state.lastAction && state.lastAction.seq) || 0) + 1 };
     log(state, attacker.name + " 攻击 " + defender.name + "。", player, "attack");
+    if (defender.silenceAttacker && !defender.silenced) {
+      silenceMinion(state, attacker);
+      log(state, defender.name + " 沉默攻击自己的 " + attacker.name + "。", enemy, "silence");
+    }
     const frostHunter = aliveMinions(player).some(x => x.passive && x.passive.type === "attackDestroyFrozen" && !x.silenced);
     if (frostHunter && defender.frozenTurns > 0) {
       defender.dead = true;
@@ -2753,6 +2821,7 @@
     damageMinion(state, defender, atk, attacker, "战斗");
     damageMinion(state, attacker, def, defender, "反击");
     processDeaths(state);
+    if (attacker.windfury && !attacker.windfuryExtraUsed && !attacker.dead) { attacker.windfuryExtraUsed = true; attacker.attacksLeft = Math.max(attacker.attacksLeft, 1); }
     checkGameOver(state);
     return { ok: true };
   }
@@ -2928,6 +2997,7 @@
       }
       if (m.passive && m.passive.type === "turnGrowth" && !m.silenced) buffMinion(state, m, m.passive.attack || 1, m.passive.health || 1, "生长", true);
       m.attacksLeft = 1;
+      m.windfuryExtraUsed = false;
       m.attacksUsedThisTurn = 0;
       m.hasAttacked = false;
       m.ignoreTaunt = false;
@@ -2947,6 +3017,11 @@
     }
     log(state, "—— " + player.name + " 的回合开始（第 " + state.round + " 轮，行动力 " + player.mana + "/" + player.maxMana + "）——", player, "turn");
     drawCard(state, player, 1);
+    if (player.nextTurnDraw) {
+      const extraDraw = player.nextTurnDraw;
+      player.nextTurnDraw = 0;
+      drawCard(state, player, extraDraw);
+    }
     if (Array.isArray(state.experimental) && state.experimental.indexOf("chaosEvents") >= 0 && state.turnNumber > 2 && state.turnNumber % 3 === 0 && state.status === "playing") {
       const roll = randomInt(state, 4);
       if (roll === 0) { addVein(state, 2, "混沌事件"); log(state, "混沌事件：流脉 +2。", player, "vein"); }
@@ -2993,6 +3068,11 @@
     if (state.status !== "playing") return;
     const player = state.players[playerIndex];
     if (!player) return;
+    for (const m of aliveMinions(player)) {
+      if (m.passive && m.passive.type === "endTurnGrowth" && !m.silenced) {
+        buffMinion(state, m, m.passive.attack || 1, m.passive.health || 0, "节肢生长", true);
+      }
+    }
     resolveDebtForTurn(state, playerIndex);
     if (state.status !== "playing") return;
     if (player.veinDebt) {
