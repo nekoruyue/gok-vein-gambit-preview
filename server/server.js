@@ -196,9 +196,18 @@ const server = http.createServer(async (req, res) => {
       try { matchBody = JSON.parse(rawMatch); } catch (e) { matchBody = {}; }
       const matchRanked = !!matchBody.ranked;
       const matchName = typeof matchBody.name === "string" ? matchBody.name.slice(0, 24) : null;
+      const matchRank = Math.max(0, Math.min(5000, Number(matchBody.rank) || 0));
       const now = Date.now();
       let waitingTicket = null;
-      for (const [ticket, entry] of matchQueue) { if (!!entry.ranked === matchRanked) { waitingTicket = ticket; break; } }
+      let bestRankDiff = Infinity;
+      for (const [ticket, entry] of matchQueue) {
+        if (!!entry.ranked !== matchRanked) continue;
+        if (!matchRanked) { waitingTicket = ticket; break; }
+        const waited = now - (entry.at || now);
+        const range = waited >= 12000 ? 5000 : 300 + Math.floor(waited / 3000) * 250;
+        const diff = Math.abs((Number(entry.rank) || 0) - matchRank);
+        if (diff <= range && diff < bestRankDiff) { waitingTicket = ticket; bestRankDiff = diff; }
+      }
       const ticket = newMatchTicket();
       if (waitingTicket) {
         const waiting = matchQueue.get(waitingTicket);
@@ -215,7 +224,7 @@ const server = http.createServer(async (req, res) => {
         json(res, 200, { ok: true, matched: true, ticket, room: code, role: "guest", ranked: matchRanked, names: room.names });
         return;
       }
-      matchQueue.set(ticket, { at: now, seen: now, ranked: matchRanked, name: matchName });
+      matchQueue.set(ticket, { at: now, seen: now, ranked: matchRanked, name: matchName, rank: matchRank });
       json(res, 200, { ok: true, waiting: true, ticket, waitMs: 0, ranked: matchRanked });
       return;
     }

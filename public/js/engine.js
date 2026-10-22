@@ -920,6 +920,10 @@
       state.winner = 0;
       log(state, a.name + " 获胜。", a, "gameover");
       state.stats.result = "p1";
+    } else if (state.maxRounds && state.round >= state.maxRounds) {
+      state.status = "gameover";
+      if (a.hp === b.hp) { state.winner = null; state.stats.result = "draw"; log(state, "达到最大回合，双方生命相同，平局。", null, "gameover"); }
+      else { state.winner = a.hp > b.hp ? 0 : 1; state.stats.result = state.winner === 0 ? "p1" : "p2"; log(state, "达到最大回合，生命较高的一方获胜。", state.players[state.winner], "gameover"); }
     }
   }
 
@@ -1512,8 +1516,10 @@
       if (allies.length) {
         allies.sort((a, b) => (a.health / a.maxHealth) - (b.health / b.maxHealth));
         healMinion(state, allies[0], b.amount || 4);
-      } else {
+      } else if (player.hp < player.maxHp) {
         healHero(state, player, b.amount || 4);
+      } else {
+        log(state, "蜜蜂登场，但没有受伤的友方目标。", player, "battlecry");
       }
       return;
     }
@@ -1797,10 +1803,41 @@
         state.events.push({ structured: true, kind: "destroy", targetUid: targetMinion.uid, player: opponentOf(state, player).index });
       }
       log(state, "登场：" + minion.name + " 消灭了所有敌方随从。", player, "battlecry");
+    } else if (b.type === "bountyKingTerminal") {
+      const enemy = opponentOf(state, player);
+      const marked = aliveMinions(enemy).filter(m => m.bounty && m.bounty.owner === player.index);
+      if (marked.length) {
+        for (const m of marked) {
+          m.dead = true;
+          state.events.push({ structured: true, kind: "destroy", targetUid: m.uid, player: enemy.index });
+        }
+        const damage = (b.damage || 4) * marked.length;
+        damageHero(state, enemy, damage, minion, "赏金王");
+        log(state, "赏金王清场：消灭 " + marked.length + " 个悬赏目标，对敌方领袖造成 " + damage + " 点伤害。", player, "bounty");
+      } else {
+        damageHero(state, enemy, b.face || 8, minion, "赏金王");
+        log(state, "赏金王：没有悬赏目标，直接对敌方领袖造成 " + (b.face || 8) + " 点伤害。", player, "bounty");
+      }
+    } else if (b.type === "destroyOtherTaunts") {
+      const taunts = [];
+      for (const side of state.players) for (const z of ZONES) for (const targetMinion of side.board[z].slice()) {
+        if (!targetMinion.dead && targetMinion.uid !== minion.uid && targetMinion.taunt) taunts.push(targetMinion);
+      }
+      for (const targetMinion of taunts) {
+        targetMinion.dead = true;
+        state.events.push({ structured: true, kind: "destroy", targetUid: targetMinion.uid, player: ownerOf(state, targetMinion).index });
+      }
+      log(state, "登场：" + minion.name + " 消灭了场上其他 " + taunts.length + " 个守备随从。", player, "battlecry");
+    } else if (b.type === "armorSelfBuff") {
+      const armor = Math.max(0, player.armor || 0);
+      buffMinion(state, minion, armor, armor, "晚安下线", true);
+      log(state, "登场：" + minion.name + " 根据 " + armor + " 点护甲获得 +" + armor + "/+" + armor + "。", player, "battlecry");
     } else if (b.type === "veinSelfBuff") {
       if (state.vein >= (b.vein == null ? 4 : b.vein)) {
-        buffMinion(state, minion, b.attack || 0, 0, "引脉", true);
-        log(state, "引脉触发：" + minion.name + " 获得 +" + (b.attack || 0) + " 攻击。", player, "vein");
+        const attack = b.attack || 0;
+        const health = b.health || 0;
+        buffMinion(state, minion, attack, health, "引脉", true);
+        log(state, "引脉触发：" + minion.name + " 获得 +" + attack + "/+" + health + "。", player, "vein");
       }
     } else if (b.type === "veinBuff") {
       addVein(state, b.amount == null ? 2 : b.amount, b.draw ? "采掘" : "登场");
@@ -2337,6 +2374,22 @@
       const enemies = aliveMinions(opponentOf(state, player)).slice();
       for (const m of enemies) returnMinionToHand(state, m);
       log(state, "时间回流：所有敌方随从被移回手牌。", player, "bounce");
+    } else if (s.type === "returnAllMinions") {
+      const all = [];
+      for (const side of state.players) all.push(...aliveMinions(side));
+      for (const m of all) returnMinionToHand(state, m);
+      log(state, "希望的消逝：场上所有随从被移回手牌。", player, "bounce");
+    } else if (s.type === "destroyLowAttackAll") {
+      const cap = s.amount == null ? 3 : s.amount;
+      const targets = [];
+      for (const side of state.players) {
+        for (const m of aliveMinions(side)) if (m.attack <= cap) targets.push(m);
+      }
+      for (const m of targets) {
+        m.dead = true;
+        state.events.push({ structured: true, kind: "destroy", targetUid: m.uid, player: ownerOf(state, m).index });
+      }
+      log(state, "muyumu：消灭了场上所有攻击力 " + cap + " 或以下的随从。", player, "spell");
     } else if (s.type === "summonTwoTokens") {
       const count = s.count || 2;
       for (let i = 0; i < count; i++) summonMinion(state, player, s.token, openZones(player)[0], null);
@@ -2748,7 +2801,7 @@
     if (!m || m.dead || m.attacksLeft <= 0 || m.frozenTurns > 0 || m.attack <= 0) return { ok: false, targets: [] };
     const enemy = opponentOf(state, player);
     const guards = aliveMinions(enemy).filter(x => x.taunt && !x.stealth);
-    const canHitHero = !m.rush && !m.charge;
+    const canHitHero = m.charge || !m.rush;
     let targets = [];
     if (m.ignoreTaunt) {
       targets = aliveMinions(enemy).filter(x => !x.stealth).map(x => x.uid);
@@ -2847,6 +2900,27 @@
     return true;
   }
 
+  function transformHandCostPlusOne(state, player) {
+    let changed = 0;
+    for (const handCard of player.hand) {
+      const oldDef = card(handCard.cardId);
+      if (!oldDef) continue;
+      const targetCost = Math.min(10, (oldDef.cost || 0) + 1);
+      const pool = Object.keys(D.CARDS).filter(id => {
+        const d = D.CARDS[id];
+        return d && !d.token && !d.disabled && !d.experimental && !d.easterEgg && d.cost === targetCost && (d.faction === oldDef.faction || d.faction === "neutral");
+      });
+      if (!pool.length) continue;
+      const nextId = pool[randomInt(state, pool.length)];
+      handCard.cardId = nextId;
+      handCard.generated = true;
+      delete handCard.discount;
+      changed++;
+      log(state, player.name + " 将手牌中的「" + oldDef.name + "」整编为「" + D.CARDS[nextId].name + "」。", player, "handChange");
+    }
+    return changed;
+  }
+
   function useHeroPower(state, playerIndex, targetUid) {
     if (state.status !== "playing") return { ok: false, reason: "对局已结束" };
     if (state.mulliganPhase) return { ok: false, reason: "请先完成起手调度" };
@@ -2876,7 +2950,7 @@
       player.heroPowerUsed = true;
       state.lastAction = { type: "heroPower", player: playerIndex, heroId: player.heroId, powerName: player.hero.power.name, targetUid: null, seq: ((state.lastAction && state.lastAction.seq) || 0) + 1 };
       log(state, player.name + " 使用领袖技能「血祭」。", player, "heroPower");
-      damageHero(state, player, 1, null, "血祭");
+      damageHero(state, player, 2, null, "血祭");
       drawCard(state, player, 1);
       checkGameOver(state);
       return { ok: true };
@@ -2891,6 +2965,16 @@
       state.lastAction = { type: "heroPower", player: playerIndex, heroId: player.heroId, powerName: player.hero.power.name, targetUid: null, seq: ((state.lastAction && state.lastAction.seq) || 0) + 1 };
       log(state, player.name + " 使用领袖技能「潮生」。", player, "heroPower");
       summonMinion(state, player, "losutai_imp", zone, null);
+      return { ok: true };
+    }
+    if (player.heroId === "wolfram") {
+      if (!player.hand.length) return { ok: false, reason: "没有可以整编的手牌" };
+      player.mana -= (player.hero.power.cost || 2);
+      player.heroPowerUsed = true;
+      state.lastAction = { type: "heroPower", player: playerIndex, heroId: player.heroId, powerName: player.hero.power.name, targetUid: null, seq: ((state.lastAction && state.lastAction.seq) || 0) + 1 };
+      log(state, player.name + " 使用领袖技能「整编」。", player, "heroPower");
+      transformHandCostPlusOne(state, player);
+      checkGameOver(state);
       return { ok: true };
     }
     const handTarget = player.heroId === "wolfram";
@@ -3213,6 +3297,9 @@
     }
     if (player.heroId === "balaena") {
       return { ok: !player.heroPowerUsed && player.mana >= 2 && boardCount(player) < 6, targets: [], targetType: "none", cost: 2, used: player.heroPowerUsed };
+    }
+    if (player.heroId === "wolfram") {
+      return { ok: !player.heroPowerUsed && player.mana >= (player.hero.power.cost || 2) && player.hand.length > 0, targets: [], targetType: "none", cost: player.hero.power.cost || 2, used: player.heroPowerUsed };
     }
     const handTarget = player.heroId === "wolfram";
     const targetType = handTarget ? "hand" : ((player.heroId === "otto" || player.heroId === "sernach") ? "enemy" : "friendly");

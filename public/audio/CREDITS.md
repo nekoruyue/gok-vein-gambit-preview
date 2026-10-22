@@ -43,3 +43,37 @@ License: Creative Commons Zero (CC0) — https://creativecommons.org/publicdomai
 - 新增 bgm_arcade.ogg、bgm_entertainment.ogg
 - 八阵营 BGM 已全部替换为不同版本
 - BGM_ASSET_VERSION 提升到 20261022amb3
+
+## 2026-10-22 豆包六首阵营 BGM（第二批）
+账号：小猫月月。通过豆包「音乐生成」实际生成并下载，转 OGG 后替换以下阵营曲：
+- 学院《秘卷浮光》
+- 西昭《血祭余响》
+- 共和国《铁律回响》
+- 帝国《铁潮压境》
+- 灰港同盟《雾夜暗潮》
+- 普卫岛沿用首曲《秘雪暗鸣》
+
+对局只使用阵营专属曲；设置中的「通用音乐」已移除。
+主页与街机模式改用《戈克纪元》主主题 `bgm_title.ogg`，街机不再使用独立曲。
+源文件保留在 `tests/doubao-academy2.m4a`、`doubao-xizhao.m4a`、`doubao-republic.m4a`、`doubao-empire.m4a`、`doubao-greyharbor.m4a`。
+旧文件备份在 `public/audio/backup-pre-doubao3/`。
+
+## 2026-10-22 BGM 最终取舍
+豆包第二批六首阵营曲试听后，仅保留灰港同盟《雾夜暗潮》作为所有对局的战斗 BGM。
+学院、西昭、共和国、帝国恢复 `backup-pre-doubao3` 原曲；主菜单与街机恢复使用原版主主题 `bgm_title.ogg`。
+设置页不再提供音乐模式切换，固定为主菜单原版主题 + 灰港战斗曲。
+
+## 2026-10-22 使用《戈克纪元》原始 BGM
+从 `C:\Users\ASUS\Desktop\戈克纪元\assets\bgm` 取用两首原始曲：
+- `bgm_title.ogg` → `public/audio/bgm_gok_title.ogg`（主菜单、街机、非对局页面）
+- `bgm_game.ogg` → `public/audio/bgm_gok_game.ogg`（所有对局/备战）
+
+灰港《雾夜暗潮》文件保留，但不再作为默认对局曲。
+缓存版本提升到 `20261022amb8`。
+
+## 2026-10-22 BGM 场景分配（最终）
+- 主菜单 / 模式入口 / 设置 / 排位：`bgm_gok_title.ogg`（戈克纪元主菜单曲）
+- 推演准备 / 在线匹配准备 / 房间准备：`bgm_faction_greyharbor.ogg`（灰港《雾夜暗潮》）
+- 战斗对局：`bgm_gok_game.ogg`（戈克纪元战斗曲）
+- 卡牌图鉴 / 构筑卡组 / 推演记录：`bgm_title.ogg`（原有主页音乐）
+- 街机模式复用戈克纪元主菜单曲

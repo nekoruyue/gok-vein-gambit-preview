@@ -1926,12 +1926,33 @@
     control: { name: "控制", desc: "解场、冻结、恢复与抽牌，拖到流脉与高费回合。", curve: { 1: 4, 2: 6, 3: 6, 4: 6, 5: 5, 6: 3 } }
   };
 
+  const DECK_RARITY_LIMITS = Object.freeze({ legendary: 2, epic: 6, rare: 10 });
+
   function maxCopies(def) {
     if (!def || def.token) return 0;
     if (def.copyLimit != null) return def.copyLimit;
     if (def.type === "relic" || def.type === "equipment") return 1;
     if (def.type === "formation") return 2;
     return def.rarity === "legendary" ? 1 : 2;
+  }
+
+  function deckRarityCounts(list) {
+    const out = { common: 0, rare: 0, epic: 0, legendary: 0 };
+    for (const id of (list || [])) {
+      const d = CARDS[id];
+      if (!d) continue;
+      if (out[d.rarity] != null) out[d.rarity] += 1;
+    }
+    return out;
+  }
+
+  function isExactPreset(faction, list) {
+    if (typeof DECKS === "undefined" || !DECKS[faction]) return false;
+    const a = (list || []).slice().sort();
+    const b = DECKS[faction].slice().sort();
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+    return true;
   }
 
   function cardPool(faction) {
@@ -1958,12 +1979,18 @@
       else if (d.type === "equipment" || d.type === "relic") relics++;
       else main++;
     }
+    const rarity = deckRarityCounts(arr);
+    for (const key of ["legendary", "epic", "rare"]) {
+      if (rarity[key] > DECK_RARITY_LIMITS[key]) {
+        errors.push(({ legendary: "传说", epic: "史诗", rare: "稀有" })[key] + "卡最多 " + DECK_RARITY_LIMITS[key] + " 张，当前 " + rarity[key] + " 张");
+      }
+    }
     const warnings = [];
     if (relics > 2) warnings.push("装备带了 " + relics + " 件：开局只生效前 2 件，后续装备会覆盖");
     if (formations > 3) warnings.push("阵型带了 " + formations + " 张：场上最多 3 张，后续阵型会覆盖");
     if (relics === 0) warnings.push("未携带装备：本局没有装备可用");
     if (formations === 0) warnings.push("未携带阵型：本局没有阵型可用");
-    return { ok: errors.length === 0, errors: Array.from(new Set(errors)), warnings: Array.from(new Set(warnings)), counts: counts, main: main, formations: formations, relics: relics };
+    return { ok: errors.length === 0, errors: Array.from(new Set(errors)), warnings: Array.from(new Set(warnings)), counts: counts, rarity: rarity, rarityLimits: DECK_RARITY_LIMITS, presetExempt: false, main: main, formations: formations, relics: relics };
   }
 
   function scoreForAuto(def, strategy) {
@@ -1985,16 +2012,23 @@
     return s;
   }
 
-  function autoBuildDeck(faction, strategy) {
+  function autoBuildDeck(faction, strategy, allowedLegendary) {
     const strat = DECK_STRATEGIES[strategy] ? strategy : "midrange";
     const curve = DECK_STRATEGIES[strat].curve;
-    const pool = cardPool(faction).filter(id => CARDS[id].type !== "formation" && CARDS[id].type !== "relic" && CARDS[id].type !== "equipment");
-    const chosen = [];
+    const allowedLegends = allowedLegendary ? new Set(allowedLegendary) : null;
+    const pool = cardPool(faction).filter(id => !CARDS[id].easterEgg && CARDS[id].type !== "formation" && CARDS[id].type !== "relic" && CARDS[id].type !== "equipment" && (!allowedLegends || CARDS[id].rarity !== "legendary" || allowedLegends.has(id)));
+    const special = DECK_SPECIALS[faction];
+    const specials = [special.formation, special.formation, special.relic, special.relic2].filter(Boolean);
+    const chosen = specials.slice();
     const counts = {};
+    for (const id of chosen) counts[id] = (counts[id] || 0) + 1;
+    const rarity = deckRarityCounts(chosen);
     const take = (id) => {
       const d = CARDS[id];
       if (!d || counts[id] >= maxCopies(d)) return false;
+      if (DECK_RARITY_LIMITS[d.rarity] != null && rarity[d.rarity] >= DECK_RARITY_LIMITS[d.rarity]) return false;
       counts[id] = (counts[id] || 0) + 1;
+      if (rarity[d.rarity] != null) rarity[d.rarity] += 1;
       chosen.push(id);
       return true;
     };
@@ -2004,21 +2038,21 @@
       const cards = pool.filter((id) => CARDS[id].cost === cost).sort((a, b) => scoreForAuto(CARDS[b], strat) - scoreForAuto(CARDS[a], strat) || a.localeCompare(b));
       let need = target;
       for (const id of cards) {
-        while (need > 0 && take(id)) need--;
-        if (need <= 0) break;
+        while (need > 0 && chosen.length < 30 && take(id)) need--;
+        if (need <= 0 || chosen.length >= 30) break;
       }
+      if (chosen.length >= 30) break;
     }
     const rest = pool.slice().sort((a, b) => scoreForAuto(CARDS[b], strat) - scoreForAuto(CARDS[a], strat) || a.localeCompare(b));
-    while (chosen.length < 26) {
+    while (chosen.length < 30) {
       let added = false;
       for (const id of rest) {
-        if (chosen.length >= 28) break;
+        if (chosen.length >= 30) break;
         if (take(id)) added = true;
       }
       if (!added) break;
     }
-    const special = DECK_SPECIALS[faction];
-    return chosen.slice(0, 26).concat([special.formation, special.formation, special.relic, special.relic2].filter(Boolean));
+    return chosen;
   }
 
   const DECKS = {
@@ -9925,6 +9959,7 @@
 };
   for (const [id, patch] of Object.entries(FORMATION_REWORK)) {
     if (!CARDS[id]) continue;
+    if (id === "barrage" || id === "siege_train") continue;
     if (patch.type === "formation") {
       for (const key of ["attack","health","battlecry","spell","deathrattle","passive","bloodCost","zoneBonus","keywords","target"]) delete CARDS[id][key];
     }
@@ -12727,7 +12762,7 @@
   }
 
   const FORMATION_FINAL = {"formation_weaver":{"formation":{"attack":1,"health":1},"text":"该阵位友方随从获得 +1/+1。"},"formation_bastion":{"formation":{"taunt":true},"text":"该阵位友方随从获得守备。"},"formation_bugler":{"formation":{"attack":1},"text":"该阵位友方随从获得 +1 攻击。"},"formation_artificer":{"formation":{"taunt":true,"health":1},"text":"该阵位友方随从获得 +0/+1 和守备。"},"formation_watcher":{"formation":{"lifesteal":true},"text":"该阵位友方随从获得血偿。"},"formation_officer":{"formation":{"rush":true},"text":"该阵位友方随从获得先遣。"},"council_gallery":{"formation":{"health":2},"text":"该阵位友方随从获得 +0/+2。"},"archive_search":{"formation":{"health":2},"text":"该阵位友方随从获得 +0/+2。"},"insight":{"formation":{"attack":1},"text":"该阵位友方随从获得 +1 攻击。"},"prohibition":{"formation":{"rush":true},"text":"该阵位友方随从获得先遣。"},"formation_script":{"formation":{"stealth":true},"text":"该阵位友方随从获得隐匿。"},"double_column_note":{"formation":{"attack":1,"health":1},"text":"该阵位友方随从获得 +1/+1。"},"school_debate":{"formation":{"attack":2},"text":"该阵位友方随从获得 +2 攻击。"},"floating_library":{"formation":{"taunt":true},"text":"该阵位友方随从获得守备。"},"formation_tide":{"formation":{"lifesteal":true},"text":"该阵位友方随从获得血偿。"},"blood_contract":{"formation":{"attack":1,"health":1},"text":"该阵位友方随从获得 +1/+1。"},"blood_feast":{"formation":{"attack":2},"text":"该阵位友方随从获得 +2 攻击。"},"xh_castle_pact":{"formation":{"taunt":true,"health":1},"text":"该阵位友方随从获得 +0/+1 和守备。"},"xh_blood_moon_altar":{"formation":{"stealth":true},"text":"该阵位友方随从获得隐匿。"},"fortify":{"formation":{"taunt":true},"text":"该阵位友方随从获得守备。"},"volley":{"formation":{"attack":1},"text":"该阵位友方随从获得 +1 攻击。"},"martial_law":{"formation":{"taunt":true,"health":1},"text":"该阵位友方随从获得 +0/+1 和守备。"},"formation_wall":{"formation":{"taunt":true,"attack":1},"text":"该阵位友方随从获得 +1 攻击和守备。"},"phalanx_warden":{"formation":{"attack":1,"health":1},"text":"该阵位友方随从获得 +1/+1。"},"emergency_bill":{"formation":{"health":1},"text":"该阵位友方随从获得 +0/+1。"},"parliament_debate":{"formation":{"health":2},"text":"该阵位友方随从获得 +0/+2。"},"battlefield_bill":{"formation":{"rush":true},"text":"该阵位友方随从获得先遣。"},"barrage":{"formation":{"attack":1},"text":"该阵位友方随从获得 +1 攻击。"},"siege_train":{"formation":{"attack":2},"text":"该阵位友方随从获得 +2 攻击。"},"zone_barrage":{"formation":{"attack":1,"health":1},"text":"该阵位友方随从获得 +1/+1。"},"armor_volley":{"formation":{"taunt":true,"health":1},"text":"该阵位友方随从获得 +0/+1 和守备。"},"armor_drive":{"formation":{"taunt":true},"text":"该阵位友方随从获得守备。"},"battlefield_salvage":{"formation":{"health":1},"text":"该阵位友方随从获得 +0/+1。"},"blackridge_mine":{"formation":{"health":2},"text":"该阵位友方随从获得 +0/+2。"},"gh_bounty_notice":{"formation":{"attack":1},"text":"该阵位友方随从获得 +1 攻击。"},"gh_black_market":{"formation":{"health":1},"text":"该阵位友方随从获得 +0/+1。"},"gh_silence_field":{"formation":{"taunt":true},"text":"该阵位友方随从获得守备。"},"gh_silence_master":{"formation":{"attack":1,"health":1},"text":"该阵位友方随从获得 +1/+1。"},"gh_company":{"formation":{"rush":true},"text":"该阵位友方随从获得先遣。"},"gh_venom_behemoth":{"formation":{"attack":2},"text":"该阵位友方随从获得 +2 攻击。"},"gh_formation":{"formation":{"lifesteal":true},"text":"该阵位友方随从获得血偿。"},"lamp_post":{"formation":{"stealth":true},"text":"该阵位友方随从获得隐匿。"},"monster_summon":{"formation":{"attack":1,"health":1},"text":"该阵位友方随从获得 +1/+1。"},"blood_altar":{"formation":{"health":1},"text":"该阵位友方随从获得 +0/+1。"},"blood_pool":{"formation":{"lifesteal":true},"text":"该阵位友方随从获得血偿。"},"monster_command":{"formation":{"rush":true},"text":"该阵位友方随从获得先遣。"},"monster_nest":{"formation":{"deathrattleSummon":"losutai_imp"},"text":"该阵位友方随从获得余响：召唤一个 1/1 洛斯汰魔物。"},"lt_tide_pool":{"formation":{"health":2},"text":"该阵位友方随从获得 +0/+2。"},"lt_venom_nest":{"formation":{"attack":1},"text":"该阵位友方随从获得 +1 攻击。"},"lt_hatchery":{"formation":{"attack":1,"health":1},"text":"该阵位友方随从获得 +1/+1。"},"white_frost_hall":{"formation":{"attackVsFrozen":1},"text":"该阵位友方随从攻击已冻结随从时 +1 攻击。"},"snow_icewall_formation":{"formation":{"taunt":true},"text":"该阵位友方随从获得守备。"},"snow_windwall":{"formation":{"taunt":true,"health":1},"text":"该阵位友方随从获得 +0/+1 和守备。"},"snow_tundra_hunt":{"formation":{"attack":1},"text":"该阵位友方随从获得 +1 攻击。"},"snow_time_array":{"formation":{"health":1},"text":"该阵位友方随从获得 +0/+1。"},"snow_frozen_court":{"formation":{"attack":1,"health":1},"text":"该阵位友方随从获得 +1/+1。"},"snow_wind_altar":{"formation":{"attack":2},"text":"该阵位友方随从获得 +2 攻击。"},"snow_throne":{"formation":{"taunt":true,"attack":1},"text":"该阵位友方随从获得 +1 攻击和守备。"},"snow_last_tundra":{"formation":{"attack":2,"health":2},"text":"该阵位友方随从获得 +2/+2。"},"wayfarer_camp":{"formation":{"health":1,"taunt":true},"text":"该阵位友方随从获得 +0/+1 和守备。"},"no_mans_land":{"formation":{"attack":1},"text":"该阵位友方随从获得 +1 攻击。"},"mist_pier":{"formation":{"rush":true},"text":"该阵位友方随从获得先遣。"},"white_reef_light":{"formation":{"taunt":true},"text":"该阵位友方随从获得守备。"},"anvil_forge_row":{"formation":{"attack":1,"health":1},"text":"该阵位友方随从获得 +1/+1。"},"north_hunt_camp":{"formation":{"attack":2},"text":"该阵位友方随从获得 +2 攻击。"},"snow_warmhouse":{"formation":{"health":2},"text":"该阵位友方随从获得 +0/+2。"},"losutai_pool":{"formation":{"health":2},"text":"该阵位友方随从获得 +0/+2。"},"smugglers_dock":{"formation":{"attack":1,"rush":true},"text":"该阵位友方随从获得 +1 攻击和先遣。"},"dusk_inn_yard":{"formation":{"health":1},"text":"该阵位友方随从获得 +0/+1。"},"world_edge_camp":{"formation":{"attack":1,"health":1},"text":"该阵位友方随从获得 +1/+1。"},"gok_lamp_row":{"formation":{"health":1},"text":"该阵位友方随从获得 +0/+1。"},"no_mans_camp":{"formation":{"attack":1,"taunt":true},"text":"该阵位友方随从获得 +1 攻击和守备。"},"grey_ledger_post":{"formation":{"lifesteal":true},"text":"该阵位友方随从获得血偿。"},"forgotten_gate":{"formation":{"attack":2,"health":2},"text":"该阵位友方随从获得 +2/+2。"}};
-  for (const [id, val] of Object.entries(FORMATION_FINAL)) if (CARDS[id]) Object.assign(CARDS[id], val);
+  for (const [id, val] of Object.entries(FORMATION_FINAL)) if (CARDS[id] && id !== "barrage" && id !== "siege_train") Object.assign(CARDS[id], val);
 
   const FORMATION_KEYWORDS = {"monster_summon":{"formation":{"poisonous":true},"text":"该阵位友方随从获得蚀毒。"},"lt_hatchery":{"formation":{"reborn":true},"text":"该阵位友方随从获得回潮。"},"snow_tundra_hunt":{"formation":{"windfury":true},"text":"该阵位友方随从获得连携。"},"snow_wind_altar":{"formation":{"windfury":true},"text":"该阵位友方随从获得连携。"}};
   for (const [id, val] of Object.entries(FORMATION_KEYWORDS)) if (CARDS[id]) Object.assign(CARDS[id], val);
@@ -13573,7 +13608,7 @@
   if (CARDS.williams_healer) delete CARDS.williams_healer.passive;
 
   // v6 Greyharbor: Rogue / combo / bounty / stealth.
-  (function redesignGrey() {
+  if (false) (function redesignGrey() {
     const all = Object.values(CARDS).filter(c => c.faction === "greyharbor" && !c.token && !c.disabled && !c.experimental);
     const clear = (c) => { for (const k of ["keywords","battlecry","passive","deathrattle","formation","spell","target","attack","health","maxHealth","text"]) delete c[k]; };
     const minions = all.filter(c => c.type === "minion").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
@@ -13627,7 +13662,7 @@
   if (CARDS.vera) { delete CARDS.vera.deathrattle; delete CARDS.vera.battlecry; delete CARDS.vera.passive; }
 
   // v6 Empire: Warrior / armor / weapons / armor-to-damage.
-  (function redesignEmpire() {
+  if (false) (function redesignEmpire() {
     const all = Object.values(CARDS).filter(c => c.faction === "empire" && !c.token && !c.disabled && !c.experimental);
     const clear = (c) => { for (const k of ["keywords","battlecry","passive","deathrattle","formation","spell","target","attack","health","maxHealth","text"]) delete c[k]; };
     const minions = all.filter(c => c.type === "minion").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
@@ -14434,6 +14469,178 @@
     }
   });
 
-  return { FACTIONS, FACTION_IDS, nextFaction, HEROES, CARDS, DECKS, NEUTRAL_DECK, KEYWORDS, DECK_STRATEGIES, DECK_SPECIALS, DECK_TRIM, cardPool, validateDeck, autoBuildDeck, maxCopies };
+  // 2026-10-22 第二批彩蛋卡。
+  Object.assign(CARDS, {
+    break_attachment: {
+      id: "break_attachment", name: "断舍离", faction: "neutral", type: "minion",
+      cost: 7, attack: 6, health: 6, rarity: "legendary", keywords: ["battlecry"],
+      target: "none", battlecry: { type: "veinSelfBuff", vein: 3, attack: 1, health: 1 }, easterEgg: true,
+      text: "彩蛋卡。登场：引脉 3：获得 +1/+1。",
+      flavor: "该断的关系，和不该留的牌，都要断。"
+    },
+    goodnight_logout: {
+      id: "goodnight_logout", name: "晚安下线", faction: "neutral", type: "minion",
+      cost: 3, attack: 1, health: 4, rarity: "legendary", keywords: ["taunt", "battlecry"],
+      target: "none", battlecry: { type: "armorSelfBuff" }, easterEgg: true,
+      text: "彩蛋卡。守备。登场：领袖每有 1 点护甲，获得 +1/+1。",
+      flavor: "睡前最后一眼，是护甲还在。"
+    },
+    muyumu: {
+      id: "muyumu", name: "muyumu", faction: "neutral", type: "spell",
+      cost: 5, rarity: "legendary", target: "none", spell: { type: "destroyLowAttackAll", amount: 3 }, easterEgg: true,
+      text: "彩蛋卡。消灭场上所有攻击力 3 或以下的随从。",
+      flavor: "木鱼一响，小随从全部超度。"
+    },
+    hope_fades: {
+      id: "hope_fades", name: "希望的消逝", faction: "neutral", type: "spell",
+      cost: 3, rarity: "legendary", target: "none", spell: { type: "returnAllMinions" }, easterEgg: true,
+      text: "彩蛋卡。将场上所有随从移回手牌。",
+      flavor: "希望没有消失，只是回到了手里。"
+    },
+    zhouha_wangjimi: {
+      id: "zhouha_wangjimi", name: "周哈王姬米", faction: "neutral", type: "minion",
+      cost: 2, attack: 2, health: 2, rarity: "legendary", keywords: ["taunt", "battlecry"],
+      target: "none", battlecry: { type: "destroyOtherTaunts" }, easterEgg: true,
+      text: "彩蛋卡。守备。登场：消灭场上除自己以外的所有其他守备单位。",
+      flavor: "王姬米说，守备太多也是一种不守备。"
+    }
+  });
+
+  // 雪狐哨兵余响只能召唤一次；召唤物不能再带同名余响，避免无限递归。
+  Object.assign(CARDS, {
+    snow_fox_sentry_echo: {
+      id: "snow_fox_sentry_echo", name: "雪狐哨兵", faction: "snow", type: "minion",
+      token: true, cost: 0, attack: 1, health: 3, rarity: "common", keywords: [], target: "none",
+      text: "雪狐哨兵的残影。"
+    }
+  });
+  if (CARDS.snow_fox_sentry) CARDS.snow_fox_sentry.deathrattle = { type: "summon", token: "snow_fox_sentry_echo" };
+  if (CARDS.snow_fox_guard) CARDS.snow_fox_guard.deathrattle = { type: "summon", token: "snow_fox_sentry_echo" };
+
+  // 亡语恢复生命必须写清数值；只修文案，不改任何回复量。
+  for (const c of Object.values(CARDS)) {
+    if (!c.deathrattle || c.deathrattle.type !== "healHero" || !c.text) continue;
+    const amount = c.deathrattle.amount || 1;
+    c.text = c.text.replace(/余响：[^。]*?恢复[^。]*?。/u, "余响：恢复你的领袖 " + amount + " 点生命。");
+  }
+
+  // ===== 2026-10-22 用户指定：英雄/学院/衍生物费用 =====
+  Object.assign(HEROES.marta, { hp: 30 });
+  Object.assign(HEROES.karna, { hp: 34 });
+  Object.assign(HEROES.wolfram, { hp: 28 });
+  Object.assign(HEROES.otto, { hp: 28 });
+  Object.assign(HEROES.karna.power, { text: "主动：对自己造成 2 点伤害，抽 1 张牌。" });
+  Object.assign(HEROES.wolfram.power, {
+    name: "整编", cost: 2, target: "none",
+    text: "主动：将手牌中所有牌变为行动力消耗 +1 的同阵营牌，最高 10 费。"
+  });
+  if (CARDS.venom_attendant) CARDS.venom_attendant.text = "登场：若你本回合已经使用过其他牌，抽 1 张牌。 余响：获得 7 点护甲。";
+  // 学院补一张稳定的三费抽二法术。
+  Object.assign(CARDS.ac_arcane_flood, {
+    cost: 3, target: "none", spell: { type: "draw", amount: 2 }, text: "抽 2 张牌。"
+  });
+  // 衍生物不再是 0 费白嫖：费用按身材计算，便于回手后重新打出。
+  for (const c of Object.values(CARDS)) {
+    if (!c.token) continue;
+    c.cost = Math.max(1, c.attack || 0, c.health || 0);
+  }
+
+  // 官方预组同样遵守 2/6/10 品级上限：保留前两张传说与全部装备/阵型，其余高品级用普通卡补足。
+  (function rebuildPresetDecksWithinRarityCaps() {
+    const caps = DECK_RARITY_LIMITS;
+    const rank = { legendary: 3, epic: 2, rare: 1, common: 0 };
+    for (const faction of FACTION_IDS) {
+      if (!DECKS[faction]) continue;
+      const source = DECKS[faction].slice(0, 30);
+      const protectedCard = (id) => {
+        const d = CARDS[id];
+        return !!(d && (d.type === "formation" || d.type === "equipment" || d.type === "relic"));
+      };
+      const kept = [];
+      const rarityCounts = { common: 0, rare: 0, epic: 0, legendary: 0 };
+      for (const id of source) {
+        const d = CARDS[id];
+        if (!d) continue;
+        if (protectedCard(id)) {
+          kept.push(id);
+          if (rarityCounts[d.rarity] != null) rarityCounts[d.rarity] += 1;
+        }
+      }
+      for (const id of source) {
+        if (protectedCard(id)) continue;
+        const d = CARDS[id];
+        if (!d) continue;
+        const cap = caps[d.rarity];
+        if (cap == null || rarityCounts[d.rarity] < cap) {
+          kept.push(id);
+          if (rarityCounts[d.rarity] != null) rarityCounts[d.rarity] += 1;
+        }
+      }
+      const counts = {};
+      for (const id of kept) counts[id] = (counts[id] || 0) + 1;
+      const commonPool = Object.keys(CARDS).filter(id => {
+        const d = CARDS[id];
+        return d && !d.token && !d.disabled && !d.experimental && !d.easterEgg && d.rarity === "common" && d.type !== "formation" && d.type !== "equipment" && d.type !== "relic" && (d.faction === faction || d.faction === "neutral");
+      }).sort((a, b) => (CARDS[a].cost || 0) - (CARDS[b].cost || 0) || a.localeCompare(b));
+      let ci = 0;
+      while (kept.length < 30) {
+        let added = false;
+        for (let pass = 0; pass < commonPool.length && kept.length < 30; pass++) {
+          const id = commonPool[ci % commonPool.length];
+          ci++;
+          if ((counts[id] || 0) >= maxCopies(CARDS[id])) continue;
+          kept.push(id);
+          counts[id] = (counts[id] || 0) + 1;
+          added = true;
+        }
+        if (!added) break;
+      }
+      DECKS[faction] = kept.slice(0, 30);
+    }
+  })();
+
+  // ===== 2026-10-22 第三批用户改动 =====
+  // 灰港新卡。
+  Object.assign(CARDS, {
+    gh_medic: {
+      id: "gh_medic", name: "灰港医师", faction: "greyharbor", type: "minion",
+      cost: 5, attack: 3, health: 3, rarity: "epic", keywords: ["battlecry"],
+      target: "none", battlecry: { type: "healHero", amount: 8 },
+      text: "登场：恢复你的领袖 8 点生命。",
+      flavor: "在灰港，救命的账单通常比命还贵。"
+    }
+  });
+  // 赏金王：去掉被动，改成即时的清场/斩杀终端。
+  if (CARDS.gh_bounty_king) {
+    Object.assign(CARDS.gh_bounty_king, {
+      keywords: ["battlecry"], target: "none", passive: null,
+      battlecry: { type: "bountyKingTerminal", damage: 4, face: 8 },
+      text: "登场：消灭所有悬赏名单上的敌方随从；每消灭一个，对敌方领袖造成 4 点伤害。若没有悬赏目标，对敌方领袖造成 8 点伤害。"
+    });
+  }
+  // 帝国冲锋大面积删除，并削弱被删冲锋的随从；克劳斯保留冲锋。
+  const empireChargeRemoved = ["powder_boy", "ironclad", "iron_mechanic", "overload_gunner", "powder_marshal", "karl_schwarz", "iron_artillery"];
+  for (const id of empireChargeRemoved) {
+    const c = CARDS[id];
+    if (!c) continue;
+    c.keywords = (c.keywords || []).filter(k => k !== "charge");
+    c.text = (c.text || "").replace(/先遣。\s*/g, "").trim();
+    if (!c.text) c.text = "普通随从。";
+    c.attack = Math.max(1, (c.attack || 1) - 1);
+  }
+  // 先遣（rush）不能攻击领袖；作为补偿，所有带 rush 的随从 +1/+1。
+  for (const c of Object.values(CARDS)) {
+    if (c.type !== "minion" || !(c.keywords || []).includes("rush")) continue;
+    c.attack = (c.attack || 0) + 1;
+    c.health = (c.health || 0) + 1;
+    if (c.maxHealth != null) c.maxHealth += 1;
+  }
+  // 衍生物费用最后重算，确保先遣增强后的身材也计入。
+  for (const c of Object.values(CARDS)) {
+    if (!c.token) continue;
+    c.cost = Math.max(1, c.attack || 0, c.health || 0);
+  }
+
+  return { FACTIONS, FACTION_IDS, nextFaction, HEROES, CARDS, DECKS, NEUTRAL_DECK, KEYWORDS, DECK_STRATEGIES, DECK_SPECIALS, DECK_TRIM, DECK_RARITY_LIMITS, cardPool, deckRarityCounts, isExactPreset, validateDeck, autoBuildDeck, maxCopies };
 });
 

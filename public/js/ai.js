@@ -322,8 +322,7 @@
       return { type: "heroPower", targetUid: target.uid, score: 3.7 };
     }
     if (p.heroId === "wolfram") {
-      const card = p.hand.filter(c => o.targets.indexOf(c.uid) >= 0).sort((a, b) => (D.CARDS[a.cardId].cost || 0) - (D.CARDS[b.cardId].cost || 0))[0];
-      return card ? { type: "heroPower", targetUid: card.uid, score: 2.4 } : null;
+      return p.hand.length ? { type: "heroPower", targetUid: null, score: 2.4 } : null;
     }
     return null;
   }
