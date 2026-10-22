@@ -13139,6 +13139,1202 @@
   if (CARDS.time_loan) { CARDS.time_loan.cost = 1; CARDS.time_loan.spell = { type: "loanDraw", amount: 2, penalty: 1 }; CARDS.time_loan.text = "抽 2 张牌；下回合开始时行动力 -1。"; }
   if (CARDS.wandering_merchant) { CARDS.wandering_merchant.battlecry = { type: "discardDraw", discard: 1, draw: 2 }; CARDS.wandering_merchant.text = "登场：随机弃 1 张牌，抽 2 张牌。"; }
 
+  // v6 第一轮：八阵营核心牌 + 每阵营一张加行动力/抽卡
+  const V6_CORE = {
+    // core pass
+    karl_schwarz: { cost: 6, attack: 5, health: 6, target: "enemy", battlecry: { type: "armorDamage" }, text: "登场：对一个敌方随从造成等同于你护甲的伤害。核心：护甲战。" },
+    gunther: { cost: 6, attack: 5, health: 7, battlecry: { type: "armor", amount: 6 }, text: "连携。登场：获得 6 点护甲。核心：护甲战。" },
+    nina: { cost: 5, attack: 3, health: 4, target: "enemy", battlecry: { type: "freezeZone" }, text: "登场：冻结目标所在阵位的所有敌方随从。核心：冻结。" },
+    snow_last_snow: { cost: 7, spell: { type: "freezeDraw", draw: 2 }, text: "冻结所有敌方随从；抽 2 张牌。核心：冻结控场。" },
+    lt_brood_mother: { cost: 6, attack: 5, health: 5, battlecry: { type: "summonCount", token: "losutai_imp", count: 3 }, text: "登场：召唤三个 1/1 洛斯汰魔物。核心：铺场。" },
+    lanxi: { cost: 6, attack: 5, health: 5, passive: { type: "impGrowth", attack: 1, health: 1 }, text: "被动：场上每有一个洛斯汰魔物，获得 +1/+1。核心：铺场。" },
+    konrad: { cost: 5, attack: 4, health: 5, keywords: ["taunt", "battlecry"], battlecry: { type: "armor", amount: 3 }, text: "守备。登场：获得 3 点护甲。核心：守备。" },
+    beatrix: { cost: 6, attack: 5, health: 5, keywords: ["taunt", "divineShield"], text: "守备。格挡。核心：圣盾守备。" },
+    gh_bounty_king: { cost: 7, attack: 7, health: 7, passive: { type: "bountyClaimDamage", amount: 4 }, text: "被动：完成悬赏时，对敌方领袖造成 4 点伤害。核心：悬赏。" },
+    vera: { cost: 5, attack: 5, health: 5, keywords: ["stealth", "rush"], text: "隐匿。先遣。核心：连击。" },
+    tiega: { cost: 5, attack: 5, health: 5, keywords: ["charge", "battlecry"], battlecry: { type: "damage", amount: 3 }, target: "enemy", text: "先遣。登场：对一个敌方随从造成 3 点伤害。核心：野兽快攻。" },
+    lize: { cost: 4, attack: 4, health: 4, battlecry: { type: "damageHero", amount: 2 }, text: "登场：对敌方领袖造成 2 点伤害。核心：压脉。" },
+    shextena: { cost: 5, attack: 4, health: 5, battlecry: { type: "healHeroSelfBuff", amount: 4 }, text: "登场：恢复你的领袖 4 点生命；每实际恢复 1 点，获得 +1/+1。核心：治疗。" },
+    orlicas: { cost: 4, attack: 3, health: 4, battlecry: { type: "draw", amount: 2 }, text: "登场：抽 2 张牌。核心：资源。" },
+    spellstorm: { cost: 7, spell: { type: "damageAllEnemyUnitsPerGameSpell", amount: 1 }, text: "对所有敌方单位造成等同于本局已使用战术牌数量的伤害（最高 10 点）。核心：法术洪流。" },
+    cassian: { cost: 6, attack: 4, health: 6, passive: { type: "repeatLastSpell" }, text: "被动：你的回合结束时，重复你最后使用的一张战术牌。核心：法术复写。" }
+  };
+  for (const [id, patch] of Object.entries(V6_CORE)) { const c = CARDS[id]; if (!c) continue; if (id === "konrad" || id === "beatrix") delete c.passive; Object.assign(c, patch); }
+  const V6_RAMP = {
+    coordination: { type: "spell", cost: 2, spell: { type: "rampSpell", amount: 1 }, text: "本回合获得 1 点行动力；抽 1 张牌。", target: "none" },
+    mana_surge: { type: "spell", cost: 1, spell: { type: "rampSpell", amount: 2 }, text: "本回合获得 2 点行动力。", target: "none" },
+    south_pole_tracker: { type: "spell", cost: 2, spell: { type: "draw", amount: 1 }, text: "抽 1 张牌；本回合获得 1 点行动力。", target: "none" },
+    levy: { type: "spell", cost: 2, spell: { type: "rampSpell", amount: 1 }, text: "本回合获得 1 点行动力；抽 1 张牌。", target: "none" },
+    mobilize: { type: "spell", cost: 3, spell: { type: "rampSpell", amount: 1 }, text: "本回合获得 1 点行动力；抽 1 张牌。", target: "none" },
+    commission_advance: { type: "spell", cost: 2, spell: { type: "draw", amount: 1 }, text: "抽 1 张牌；本回合获得 1 点行动力。", target: "none" },
+    lt_tide_birth: { type: "spell", cost: 2, spell: { type: "draw", amount: 1 }, text: "抽 1 张牌；本回合获得 1 点行动力。", target: "none" },
+    world_map: { type: "spell", cost: 2, spell: { type: "draw", amount: 1 }, text: "抽 1 张牌；本回合获得 1 点行动力。", target: "none" }
+  };
+  for (const [id, patch] of Object.entries(V6_RAMP)) { const c = CARDS[id]; if (!c) continue; Object.assign(c, patch); }
+
+  // v6 Academy: Warlock / spell-chain identity. All Academy cards are re-statted and re-scripted.
+  (function redesignAcademy() {
+    const all = Object.values(CARDS).filter(c => c.faction === "academy" && !c.token && !c.disabled && !c.experimental);
+    const clear = (c, keepType) => { for (const k of ["keywords","battlecry","passive","deathrattle","formation","spell","target","attack","health","maxHealth","text","target2","zoneBonus"]) delete c[k]; if (keepType) c.type = keepType; };
+    const keywordText = ["", "守备。", "先遣。", "连携。", "血偿。"];
+    const minions = all.filter(c => c.type === "minion").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const mCost = [1,1,2,2,3,3,3,4,4,4,5,5,5,5,6,6,6,7,7,8,8,8,9,9];
+    minions.forEach((c, i) => {
+      clear(c, "minion");
+      const cost = mCost[i % mCost.length];
+      const atk = Math.max(1, Math.ceil(cost / 2) + (i % 2));
+      const hp = Math.max(1, cost + 2 - Math.max(1, Math.ceil(cost / 2)) + (i % 3 === 0 ? 1 : 0));
+      c.cost = cost; c.attack = atk; c.health = hp; c.maxHealth = hp;
+      const role = i % 9;
+      if (role === 0) { c.keywords = ["battlecry"]; c.battlecry = { type: "draw", amount: 1 }; c.text = "登场：抽 1 张牌。"; }
+      else if (role === 1) { c.keywords = ["battlecry"]; c.battlecry = { type: "armor", amount: 1 + (i % 3) }; c.text = "登场：获得 " + (1 + (i % 3)) + " 点护甲。"; }
+      else if (role === 2) { c.keywords = ["battlecry"]; c.target = "enemy"; c.battlecry = { type: "damage", amount: 1 + (i % 4) }; c.text = "登场：对一个敌方随从造成 " + (1 + (i % 4)) + " 点伤害。"; }
+      else if (role === 3) { c.keywords = ["battlecry"]; c.battlecry = { type: "summon", token: "medic_apprentice" }; c.text = "登场：召唤一个医疗学徒。"; }
+      else if (role === 4) { c.passive = { type: "spellDrawOne" }; c.text = "被动：每当你施放一张战术牌，抽 1 张牌。"; }
+      else if (role === 5) { c.passive = { type: "spellGrowth", attack: 1, health: 0 }; c.text = "被动：每当你施放一张战术牌，获得 +1 攻击。"; }
+      else if (role === 6) { c.keywords = ["deathrattle"]; c.deathrattle = { type: "damageRandomEnemy", amount: 1 + (i % 3) }; c.text = "余响：对随机敌方目标造成 " + (1 + (i % 3)) + " 点伤害。"; }
+      else if (role === 7) { c.keywords = ["battlecry", "taunt"]; c.battlecry = { type: "healHero", amount: 1 + (i % 3) }; c.text = "守备。登场：恢复你的领袖 " + (1 + (i % 3)) + " 点生命。"; }
+      else { c.keywords = ["battlecry"]; c.battlecry = { type: "discover", pool: "spell" }; c.text = "登场：预兆：从牌库顶 3 张中选 1 张战术牌。"; }
+    });
+    const spells = all.filter(c => c.type === "spell").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const sCost = [1,1,2,2,2,3,3,3,3,4,4,4,4,5,5,5,6,6,6,7,7,7,8,8,8,9,9];
+    spells.forEach((c, i) => {
+      clear(c, "spell");
+      c.cost = sCost[i % sCost.length]; c.target = "none";
+      const role = i % 9;
+      if (role === 0) { c.target = "enemy"; c.spell = { type: "damage", amount: 1 + (i % 4) }; c.text = "对一个敌方随从造成 " + (1 + (i % 4)) + " 点伤害。"; }
+      else if (role === 1) { c.spell = { type: "draw", amount: 1 }; c.text = "抽 1 张牌。"; }
+      else if (role === 2) { c.spell = { type: "armor", amount: 1 + (i % 4) }; c.text = "获得 " + (1 + (i % 4)) + " 点护甲。"; }
+      else if (role === 3) { c.spell = { type: "healHero", amount: 1 + (i % 4) }; c.text = "恢复你的领袖 " + (1 + (i % 4)) + " 点生命。"; }
+      else if (role === 4) { c.spell = { type: "damageAllEnemies", amount: 1 + (i % 3) }; c.text = "对所有敌方随从造成 " + (1 + (i % 3)) + " 点伤害。"; }
+      else if (role === 5) { c.target = "enemy"; c.spell = { type: "freeze" }; c.text = "冻结一个敌方随从。"; }
+      else if (role === 6) { c.target = "enemy"; c.spell = { type: "damageFreeze", amount: 1 }; c.text = "对一个敌方随从造成 1 点伤害，并冻结它。"; }
+      else if (role === 7) { c.spell = { type: "summon", token: "medic_apprentice", count: 1 + (i % 2) }; c.text = "召唤 " + (1 + (i % 2)) + " 个医疗学徒。"; }
+      else { c.spell = { type: "discover", pool: "spell" }; c.text = "预兆：从牌库顶 3 张中选 1 张战术牌。"; }
+    });
+    const formations = all.filter(c => c.type === "formation").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const fTemplates = [
+      [{attack:1}, "该阵位友方随从固定获得 +1 攻击。"],
+      [{health:1}, "该阵位友方随从固定获得 +0/+1。"],
+      [{attack:1,health:1}, "该阵位友方随从固定获得 +1/+1。"],
+      [{taunt:true}, "该阵位友方随从固定获得守备。"],
+      [{rush:true}, "该阵位友方随从固定获得先遣。"],
+      [{windfury:true}, "该阵位友方随从固定获得连携。"],
+      [{health:2}, "该阵位友方随从固定获得 +0/+2。"]
+    ];
+    formations.forEach((c, i) => { clear(c, "formation"); c.cost = 2 + (i % 3); const [f,text] = fTemplates[i % fTemplates.length]; c.formation = f; c.text = text; });
+    const equipment = all.filter(c => c.type === "equipment");
+    equipment.forEach((c, i) => { c.cost = 2 + (i % 3); });
+    // Academy core
+    if (CARDS.spellstorm) { CARDS.spellstorm.cost = 7; CARDS.spellstorm.spell = { type: "damageAllEnemyUnitsPerGameSpell", amount: 1 }; CARDS.spellstorm.text = "对所有敌方单位造成等同于本局已使用战术牌数量的伤害（最高 10 点）。核心：法术洪流。"; }
+    if (CARDS.cassian) { CARDS.cassian.cost = 6; CARDS.cassian.attack = 4; CARDS.cassian.health = 6; CARDS.cassian.passive = { type: "repeatLastSpell" }; CARDS.cassian.text = "被动：你的回合结束时，重复你最后使用的一张战术牌。核心：法术复写。"; }
+    if (CARDS.mana_surge) { CARDS.mana_surge.cost = 1; CARDS.mana_surge.spell = { type: "rampSpell", amount: 2 }; CARDS.mana_surge.text = "本回合获得 2 点行动力。"; }
+    if (CARDS.old_ledger) { CARDS.old_ledger.cost = 3; CARDS.old_ledger.spell = { type: "drawIfSpellPlayed", draw: 1, bonus: 2 }; CARDS.old_ledger.text = "抽 1 张牌；若本回合施放过战术牌，再抽 2 张。"; }
+  })();
+
+  // Academy duplicate cleanup after the v6 first pass
+  const ACADEMY_FIX = {
+    karl_desmond: { target: "enemy", battlecry: { type: "damage", amount: 3 }, text: "登场：对一个敌方随从造成 3 点伤害。" },
+    index_assistant: { battlecry: { type: "armor", amount: 4 }, text: "登场：获得 4 点护甲。" },
+    magic_lecturer: { battlecry: { type: "armor", amount: 3 }, text: "登场：获得 3 点护甲。" },
+    page_scholar: { battlecry: { type: "draw", amount: 2 }, text: "登场：抽 2 张牌。" },
+    arcane_conduit: { target: "enemy", battlecry: { type: "damage", amount: 1 }, text: "登场：对一个敌方随从造成 1 点伤害。" },
+    smoke_screen: { spell: { type: "draw", amount: 2 }, text: "抽 2 张牌。" },
+    cassian_foreign: { battlecry: { type: "armor", amount: 2 }, text: "登场：获得 2 点护甲。" },
+    arcane_theorist: { passive: { type: "spellGrowth", attack: 0, health: 1 }, text: "被动：每当你施放一张战术牌，获得 +0/+1。" },
+    ac_absolute_theory: { spell: { type: "damageAllEnemies", amount: 2 }, text: "对所有敌方随从造成 2 点伤害。" },
+    combo_spark: { spell: { type: "damageAllEnemies", amount: 1 }, text: "对所有敌方随从造成 1 点伤害。" },
+    formula_fix: { spell: { type: "damageAllEnemies", amount: 3 }, text: "对所有敌方随从造成 3 点伤害。" },
+    ac_arcane_insight: { spell: { type: "draw", amount: 2 }, text: "抽 2 张牌。" },
+    spell_novice: { battlecry: { type: "armor", amount: 2 }, text: "登场：获得 2 点护甲。" },
+    pure_theorist: { battlecry: { type: "armor", amount: 4 }, text: "登场：获得 4 点护甲。" },
+    record_clerk: { battlecry: { type: "armor", amount: 1 }, text: "登场：获得 1 点护甲。" },
+    old_compass: { spell: { type: "freeze" }, text: "冻结一个敌方随从。" },
+    ac_final_proof: { spell: { type: "damageFreeze", amount: 2 }, text: "对一个敌方随从造成 2 点伤害，并冻结它。" },
+    ac_grand_library: { spell: { type: "draw", amount: 3 }, text: "抽 3 张牌。" },
+    ac_field_notes: { spell: { type: "freeze" }, text: "冻结一个敌方随从。" },
+    echo_observer: { deathrattle: { type: "damageRandomEnemy", amount: 2 }, text: "余响：对随机敌方目标造成 2 点伤害。" },
+    archive_keeper: { passive: { type: "spellGrowth", attack: 0, health: 1 }, text: "被动：每当你施放一张战术牌，获得 +0/+1。" },
+    ac_archive_eruption: { spell: { type: "draw", amount: 4 }, text: "抽 4 张牌。" }
+  };
+  for (const [id, patch] of Object.entries(ACADEMY_FIX)) { const c = CARDS[id]; if (c) Object.assign(c, patch); }
+
+  const ACADEMY_FIX2 = {
+    arcane_scribe: { battlecry: { type: "armor", amount: 5 }, text: "登场：获得 5 点护甲。" },
+    spell_conductor: { passive: { type: "spellDrawOne" }, text: "被动：每当你施放一张战术牌，抽 1 张牌。" },
+    ac_arcane_insight: { spell: { type: "armor", amount: 3 }, text: "获得 3 点护甲。" },
+    reflux_apprentice: { target: "enemy", battlecry: { type: "armor", amount: 1 }, text: "登场：获得 1 点护甲。" },
+    archive_keeper: { passive: { type: "spellGrowth", attack: 1, health: 0 }, text: "被动：每当你施放一张战术牌，获得 +1 攻击。" },
+    double_formula: { target: "enemy", spell: { type: "damageFreeze", amount: 3 }, text: "对一个敌方随从造成 3 点伤害，并冻结它。" },
+    ac_field_notes: { spell: { type: "freezeAll" }, text: "冻结所有敌方随从。" },
+    cassian_foreign: { battlecry: { type: "armor", amount: 5 }, text: "登场：获得 5 点护甲。" },
+    pure_theorist: { battlecry: { type: "armor", amount: 5 }, text: "登场：获得 5 点护甲。" }
+  };
+  for (const [id, patch] of Object.entries(ACADEMY_FIX2)) { const c = CARDS[id]; if (c) Object.assign(c, patch); }
+
+  const ACADEMY_FIX3 = {
+    reflux_apprentice: { battlecry: { type: "armor", amount: 6 }, text: "登场：获得 6 点护甲。" },
+    arcane_scribe: { battlecry: { type: "armor", amount: 7 }, text: "登场：获得 7 点护甲。" },
+    pure_theorist: { battlecry: { type: "armor", amount: 8 }, text: "登场：获得 8 点护甲。" },
+    cassian_foreign: { battlecry: { type: "armor", amount: 9 }, text: "登场：获得 9 点护甲。" },
+    council_elder: { passive: { type: "spellGrowth", attack: 1, health: 1 }, text: "被动：每当你施放一张战术牌，获得 +1/+1。" },
+    recon: { spell: { type: "armor", amount: 4 }, text: "获得 4 点护甲。" },
+    spell_echo: { passive: { type: "spellGrowth", attack: 0, health: 1 }, text: "被动：每当你施放一张战术牌，获得 +0/+1。" }
+  };
+  for (const [id, patch] of Object.entries(ACADEMY_FIX3)) { const c = CARDS[id]; if (c) Object.assign(c, patch); }
+
+  const ACADEMY_FIX4 = {
+    spell_echo: { passive: { type: "spellGrowth", attack: 2, health: 0 }, text: "被动：每当你施放一张战术牌，获得 +2 攻击。" },
+    recon: { spell: { type: "armor", amount: 5 }, text: "获得 5 点护甲。" }
+  };
+  for (const [id, patch] of Object.entries(ACADEMY_FIX4)) { const c = CARDS[id]; if (c) Object.assign(c, patch); }
+
+  if (CARDS.cassian_foreign) delete CARDS.cassian_foreign.passive;
+  if (CARDS.shextena) { delete CARDS.shextena.reflux; delete CARDS.shextena.veinBonus; delete CARDS.shextena.veinTiers; delete CARDS.shextena.pressure; }
+  if (CARDS.tiega) delete CARDS.tiega.bloodCost;
+  if (CARDS.lanxi) delete CARDS.lanxi.pressure;
+  if (CARDS.nina) delete CARDS.nina.reflux;
+  if (CARDS.karl_schwarz) { CARDS.karl_schwarz.keywords = ["charge"]; CARDS.karl_schwarz.text = "先遣。登场：对一个敌方随从造成等同于你护甲的伤害。核心：护甲战。"; }
+  if (CARDS.spell_conductor) { delete CARDS.spell_conductor.battlecry; CARDS.spell_conductor.text = "被动：每当你施放一张战术牌，抽 1 张牌。"; }
+
+  if (CARDS.spell_conductor) CARDS.spell_conductor.keywords = (CARDS.spell_conductor.keywords || []).filter(k => k !== "battlecry");
+
+  // v6 Snow: Mage / freeze-burn. All Snow cards re-statted and re-scripted.
+  (function redesignSnow() {
+    const all = Object.values(CARDS).filter(c => c.faction === "snow" && !c.token && !c.disabled && !c.experimental);
+    const clear = (c) => { for (const k of ["keywords","battlecry","passive","deathrattle","formation","spell","target","attack","health","maxHealth","text"]) delete c[k]; };
+    const minions = all.filter(c => c.type === "minion").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const mCost = [1,1,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,7,7,7,8,8,8,9,9];
+    minions.forEach((c, i) => {
+      clear(c); c.type = "minion"; c.cost = mCost[i % mCost.length];
+      const atk = Math.max(1, Math.ceil(c.cost / 2) + (i % 2));
+      const hp = Math.max(1, c.cost + 2 - Math.ceil(c.cost / 2) + (i % 3 === 0 ? 1 : 0));
+      c.attack = atk; c.health = hp; c.maxHealth = hp;
+      const role = i % 10;
+      if (role === 0) { c.keywords = ["battlecry"]; c.target = "enemy"; c.battlecry = { type: "freeze" }; c.text = "登场：冻结一个敌方随从。"; }
+      else if (role === 1) { c.keywords = ["battlecry"]; c.target = "enemy"; c.battlecry = { type: "damage", amount: 1 + (i % 4) }; c.text = "登场：对一个敌方随从造成 " + (1 + (i % 4)) + " 点伤害。"; }
+      else if (role === 2) { c.keywords = ["battlecry"]; c.battlecry = { type: "armor", amount: 1 + (i % 4) }; c.text = "登场：获得 " + (1 + (i % 4)) + " 点护甲。"; }
+      else if (role === 3) { c.keywords = ["battlecry"]; c.battlecry = { type: "draw", amount: 1 }; c.text = "登场：抽 1 张牌。"; }
+      else if (role === 4) { c.keywords = ["battlecry"]; c.battlecry = { type: "summon", token: "snow_fox_sentry" }; c.text = "登场：召唤一个雪狐哨兵。"; }
+      else if (role === 5) { c.passive = { type: "spellGrowth", attack: 1, health: 0 }; c.text = "被动：每当你施放战术牌，获得 +1 攻击。"; }
+      else if (role === 6) { c.keywords = ["deathrattle"]; c.deathrattle = { type: "damageRandomEnemy", amount: 1 + (i % 3) }; c.text = "余响：对随机敌方目标造成 " + (1 + (i % 3)) + " 点伤害。"; }
+      else if (role === 7) { c.keywords = ["taunt"]; c.text = "守备。"; }
+      else if (role === 8) { c.keywords = ["battlecry"]; c.battlecry = { type: "freezeAllEnemies" }; c.text = "登场：冻结所有敌方随从。"; }
+      else { c.keywords = ["battlecry"]; c.target = "enemy"; c.battlecry = { type: "damageFreeze", amount: 1 }; c.text = "登场：对一个敌方随从造成 1 点伤害，并冻结它。"; }
+    });
+    const spells = all.filter(c => c.type === "spell").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const sCost = [1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6,7,7,8];
+    spells.forEach((c, i) => {
+      clear(c); c.type = "spell"; c.cost = sCost[i % sCost.length]; c.target = "none";
+      const role = i % 8;
+      if (role === 0) { c.target = "enemy"; c.spell = { type: "damage", amount: 1 + (i % 4) }; c.text = "对一个敌方随从造成 " + (1 + (i % 4)) + " 点伤害。"; }
+      else if (role === 1) { c.target = "enemy"; c.spell = { type: "freeze" }; c.text = "冻结一个敌方随从。"; }
+      else if (role === 2) { c.spell = { type: "damageAllEnemies", amount: 1 + (i % 3) }; c.text = "对所有敌方随从造成 " + (1 + (i % 3)) + " 点伤害。"; }
+      else if (role === 3) { c.spell = { type: "draw", amount: 1 }; c.text = "抽 1 张牌。"; }
+      else if (role === 4) { c.spell = { type: "armor", amount: 1 + (i % 4) }; c.text = "获得 " + (1 + (i % 4)) + " 点护甲。"; }
+      else if (role === 5) { c.target = "enemy"; c.spell = { type: "damageFreeze", amount: 1 + (i % 3) }; c.text = "对一个敌方随从造成 " + (1 + (i % 3)) + " 点伤害，并冻结它。"; }
+      else if (role === 6) { c.spell = { type: "freezeAll" }; c.text = "冻结所有敌方随从。"; }
+      else { c.spell = { type: "discover", pool: "spell" }; c.text = "预兆：从牌库顶 3 张中选 1 张战术牌。"; }
+    });
+    const formations = all.filter(c => c.type === "formation").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const fTemplates = [
+      [{attack:1}, "该阵位友方随从固定获得 +1 攻击。"],
+      [{health:1}, "该阵位友方随从固定获得 +0/+1。"],
+      [{attack:1,health:1}, "该阵位友方随从固定获得 +1/+1。"],
+      [{taunt:true}, "该阵位友方随从固定获得守备。"],
+      [{rush:true}, "该阵位友方随从固定获得先遣。"],
+      [{windfury:true}, "该阵位友方随从固定获得连携。"],
+      [{attackVsFrozen:1}, "该阵位友方随从攻击已冻结随从时 +1 攻击。"],
+      [{attackVsFrozen:2}, "该阵位友方随从攻击已冻结随从时 +2 攻击。"],
+      [{reborn:true}, "该阵位友方随从固定获得回潮。"]
+    ];
+    formations.forEach((c, i) => { clear(c); c.type = "formation"; c.cost = 2 + (i % 4); const [f,text] = fTemplates[i % fTemplates.length]; c.formation = f; c.text = text; });
+    const equipment = all.filter(c => c.type === "equipment");
+    equipment.forEach((c, i) => { c.cost = 2 + (i % 4); });
+    if (CARDS.nina) { CARDS.nina.cost = 6; CARDS.nina.attack = 4; CARDS.nina.health = 5; CARDS.nina.target = "enemy"; CARDS.nina.battlecry = { type: "freezeZone" }; CARDS.nina.text = "登场：冻结目标所在阵位的所有敌方随从。核心：冻结。"; }
+    if (CARDS.snow_last_snow) { CARDS.snow_last_snow.cost = 7; CARDS.snow_last_snow.spell = { type: "freezeDraw", draw: 3 }; CARDS.snow_last_snow.text = "冻结所有敌方随从；抽 3 张牌。核心：冻结控场。"; }
+    if (CARDS.snow_frost_dragon) { CARDS.snow_frost_dragon.cost = 8; CARDS.snow_frost_dragon.attack = 7; CARDS.snow_frost_dragon.health = 7; CARDS.snow_frost_dragon.target = "enemy"; CARDS.snow_frost_dragon.battlecry = { type: "freezeZone" }; CARDS.snow_frost_dragon.text = "登场：冻结目标所在阵位的所有敌方随从。核心：冰霜巨龙。"; }
+    if (CARDS.world_map) { CARDS.world_map.cost = 2; CARDS.world_map.spell = { type: "draw", amount: 1 }; CARDS.world_map.text = "抽 1 张牌；本回合获得 1 点行动力。"; }
+    if (CARDS.gok_lamp) { CARDS.gok_lamp.cost = 1; CARDS.gok_lamp.spell = { type: "antiFreezeHeal", heal: 1 }; CARDS.gok_lamp.text = "恢复你的领袖 1 点生命；本回合免疫冻结。"; }
+  })();
+
+  if (CARDS.snow_frost_dragon) delete CARDS.snow_frost_dragon.deathrattle;
+  if (CARDS.snow_wind_altar) { CARDS.snow_wind_altar.text = "该阵位友方随从固定获得连携。"; }
+  if (CARDS.snow_throne) { CARDS.snow_throne.text = "该阵位友方随从固定获得 +1 攻击和守备。"; }
+
+  const SNOW_FIX = {
+    samuel: { battlecry: { type: "damage", amount: 3 }, text: "登场：对一个敌方随从造成 3 点伤害。" },
+    frost_seal: { spell: { type: "armor", amount: 2 }, text: "获得 2 点护甲。" },
+    echo_adept: { battlecry: { type: "freezeDrawIfSpell", draw: 1 }, text: "登场：冻结一个敌方随从；若你本回合施放过战术牌，抽 1 张牌。" },
+    frost_line_guard: { target: "enemy", battlecry: { type: "damageFreeze", amount: 1 }, text: "登场：对一个敌方随从造成 1 点伤害，并冻结它。" },
+    frost_archivist: { battlecry: { type: "armor", amount: 4 }, text: "登场：获得 4 点护甲。" },
+    frost_page: { passive: { type: "spellGrowth", attack: 2, health: 0 }, text: "被动：每当你施放战术牌，获得 +2 攻击。" },
+    smuggler_ship: { spell: { type: "draw", amount: 2 }, text: "抽 2 张牌。" },
+    world_map: { spell: { type: "rampSpell", amount: 1 }, text: "本回合获得 1 点行动力。" },
+    north_trail: { spell: { type: "draw", amount: 2 }, text: "抽 2 张牌。" },
+    snow_fox_sentry: { battlecry: { type: "armor", amount: 2 }, text: "登场：获得 2 点护甲。" },
+    snow_frostwind_novice: { battlecry: { type: "draw", amount: 2 }, text: "登场：抽 2 张牌。" },
+    snow_storm_hunter: { battlecry: { type: "damageFreeze", amount: 2 }, text: "登场：对一个敌方随从造成 2 点伤害，并冻结它。" },
+    snow_priest: { battlecry: { type: "healHero", amount: 2 }, text: "登场：恢复你的领袖 2 点生命。" },
+    snow_gale: { spell: { type: "damage", amount: 2 }, text: "对一个敌方随从造成 2 点伤害。" },
+    snow_frost_veil: { target: "enemy", spell: { type: "freeze" }, text: "冻结一个敌方随从。" },
+    snow_tundrabracer: { text: "装备（持续生效）：你的回合开始时恢复 2 点生命。" }
+  };
+  for (const [id, patch] of Object.entries(SNOW_FIX)) { const c = CARDS[id]; if (c) Object.assign(c, patch); }
+
+  const SNOW_FIX2 = {
+    frost_line_guard: { battlecry: { type: "armor", amount: 3 }, text: "登场：获得 3 点护甲。" },
+    smuggler_ship: { spell: { type: "draw", amount: 3 }, text: "抽 3 张牌。" },
+    snow_rin: { battlecry: { type: "freezeDrawIfSpell", draw: 1 }, text: "登场：冻结一个敌方随从；若你本回合施放过战术牌，抽 1 张牌。" },
+    snow_time_shade: { battlecry: { type: "freezeDrawIfSpell", draw: 2 }, text: "登场：冻结一个敌方随从；若你本回合施放过战术牌，抽 2 张牌。" },
+    snow_fox_guard: { battlecry: { type: "armor", amount: 2 }, text: "登场：获得 2 点护甲。" },
+    snow_windweaver: { passive: { type: "spellGrowth", attack: 0, health: 1 }, text: "被动：每当你施放战术牌，获得 +0/+1。" },
+    snow_last_stand: { battlecry: { type: "armor", amount: 5 }, text: "登场：获得 5 点护甲。" },
+    snow_ice_wall: { spell: { type: "freezeDraw", draw: 1 }, text: "冻结一个敌方随从；抽 1 张牌。" },
+    snow_aurora: { spell: { type: "freezeDraw", draw: 2 }, text: "冻结一个敌方随从；抽 2 张牌。" }
+  };
+  for (const [id, patch] of Object.entries(SNOW_FIX2)) { const c = CARDS[id]; if (c) Object.assign(c, patch); }
+
+  const SNOW_FIX3 = {
+    snow_rin: { battlecry: { type: "freezeDrawIfSpell", draw: 2 }, text: "登场：冻结一个敌方随从；若你本回合施放过战术牌，抽 2 张牌。" },
+    snow_blizzard_elemental: { battlecry: { type: "armor", amount: 4 }, text: "登场：获得 4 点护甲。" },
+    snow_fox_guard: { battlecry: { type: "armor", amount: 3 }, text: "登场：获得 3 点护甲。" }
+  };
+  for (const [id, patch] of Object.entries(SNOW_FIX3)) { const c = CARDS[id]; if (c) Object.assign(c, patch); }
+
+  if (CARDS.frost_line_guard) { CARDS.frost_line_guard.battlecry = { type: "armor", amount: 5 }; CARDS.frost_line_guard.text = "登场：获得 5 点护甲。"; }
+  if (CARDS.snow_time_shade) { CARDS.snow_time_shade.battlecry = { type: "freezeDrawIfSpell", draw: 3 }; CARDS.snow_time_shade.text = "登场：冻结一个敌方随从；若你本回合施放过战术牌，抽 3 张牌。"; }
+
+  if (CARDS.snow_last_stand) { CARDS.snow_last_stand.battlecry = { type: "armor", amount: 6 }; CARDS.snow_last_stand.text = "登场：获得 6 点护甲。"; }
+
+  if (CARDS.nina) CARDS.nina.keywords = (CARDS.nina.keywords || []).filter(k => k !== "taunt");
+  if (CARDS.frost_archivist) CARDS.frost_archivist.keywords = (CARDS.frost_archivist.keywords || []).filter(k => k !== "taunt");
+  if (CARDS.index_assistant) CARDS.index_assistant.keywords = (CARDS.index_assistant.keywords || []).filter(k => k !== "taunt");
+  if (CARDS.beatrix) delete CARDS.beatrix.battlecry;
+  if (CARDS.vera) delete CARDS.vera.battlecry;
+  if (CARDS.echo_adept) delete CARDS.echo_adept.reflux;
+
+  // v6 Xizhao: Hunter / beasts / blood-debt. All Xizhao cards are re-statted and re-scripted.
+  (function redesignXizhao() {
+    const all = Object.values(CARDS).filter(c => c.faction === "xizhao" && !c.token && !c.disabled && !c.experimental);
+    const clear = (c) => { for (const k of ["keywords","battlecry","passive","deathrattle","formation","spell","target","attack","health","maxHealth","text"]) delete c[k]; };
+    const minions = all.filter(c => c.type === "minion").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const mCost = [1,1,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,7,7,8,8];
+    minions.forEach((c, i) => {
+      clear(c); c.type = "minion"; c.cost = mCost[i % mCost.length];
+      const atk = Math.max(1, Math.ceil(c.cost / 2) + (i % 2));
+      const hp = Math.max(1, c.cost + 2 - Math.ceil(c.cost / 2) + (i % 3 === 0 ? 1 : 0));
+      c.attack = atk; c.health = hp; c.maxHealth = hp;
+      const role = i % 8;
+      if (role === 0) { c.keywords = ["battlecry"]; c.target = "enemy"; c.battlecry = { type: "damage", amount: 1 + (i % 4) }; c.text = "登场：对一个敌方随从造成 " + (1 + (i % 4)) + " 点伤害。"; }
+      else if (role === 1) { c.keywords = ["battlecry"]; c.battlecry = { type: "summon", token: "snow_frostclaw" }; c.text = "登场：召唤一只霜爪兽。"; }
+      else if (role === 2) { c.keywords = ["rush"]; c.text = "先遣。"; }
+      else if (role === 3) { c.keywords = ["battlecry"]; c.battlecry = { type: "armor", amount: 1 + (i % 3) }; c.text = "登场：获得 " + (1 + (i % 3)) + " 点护甲。"; }
+      else if (role === 4) { c.passive = { type: "spellGrowth", attack: 1, health: 0 }; c.text = "被动：每当你施放战术牌，获得 +1 攻击。"; }
+      else if (role === 5) { c.keywords = ["deathrattle"]; c.deathrattle = { type: "damageRandomEnemy", amount: 1 + (i % 3) }; c.text = "余响：对随机敌方目标造成 " + (1 + (i % 3)) + " 点伤害。"; }
+      else if (role === 6) { c.keywords = ["taunt"]; c.text = "守备。"; }
+      else { c.keywords = ["battlecry"]; c.battlecry = { type: "draw", amount: 1 }; c.text = "登场：抽 1 张牌。"; }
+    });
+    const spells = all.filter(c => c.type === "spell").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const sCost = [1,1,2,2,3,3,4,4,5,6];
+    spells.forEach((c, i) => {
+      clear(c); c.type = "spell"; c.cost = sCost[i % sCost.length]; c.target = "none";
+      const role = i % 6;
+      if (role === 0) { c.target = "enemy"; c.spell = { type: "damage", amount: 1 + (i % 4) }; c.text = "对一个敌方随从造成 " + (1 + (i % 4)) + " 点伤害。"; }
+      else if (role === 1) { c.spell = { type: "damageAllEnemies", amount: 1 + (i % 2) }; c.text = "对所有敌方随从造成 " + (1 + (i % 2)) + " 点伤害。"; }
+      else if (role === 2) { c.spell = { type: "draw", amount: 1 }; c.text = "抽 1 张牌。"; }
+      else if (role === 3) { c.spell = { type: "summon", token: "snow_frostclaw" }; c.text = "召唤一只霜爪兽。"; }
+      else if (role === 4) { c.spell = { type: "armor", amount: 1 + (i % 3) }; c.text = "获得 " + (1 + (i % 3)) + " 点护甲。"; }
+      else { c.target = "enemy"; c.spell = { type: "damageFreeze", amount: 1 }; c.text = "对一个敌方随从造成 1 点伤害，并冻结它。"; }
+    });
+    const formations = all.filter(c => c.type === "formation").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const fTemplates = [
+      [{attack:1}, "该阵位友方随从固定获得 +1 攻击。"],
+      [{health:1}, "该阵位友方随从固定获得 +0/+1。"],
+      [{attack:1,health:1}, "该阵位友方随从固定获得 +1/+1。"],
+      [{rush:true}, "该阵位友方随从固定获得先遣。"],
+      [{taunt:true}, "该阵位友方随从固定获得守备。"],
+      [{windfury:true}, "该阵位友方随从固定获得连携。"]
+    ];
+    formations.forEach((c, i) => { clear(c); c.type = "formation"; c.cost = 2 + (i % 3); const [f,text] = fTemplates[i % fTemplates.length]; c.formation = f; c.text = text; });
+    const equipment = all.filter(c => c.type === "equipment"); equipment.forEach((c, i) => { c.cost = 2 + (i % 3); });
+    // 12 debt cards: unique hunter debt patterns
+    const debts = all.filter(c => c.type === "debt").sort((a,b) => a.id.localeCompare(b.id));
+    debts.forEach((c, i) => {
+      const repayType = i % 3 === 0 ? "hp" : "mana";
+      const repay = 1 + (i % 4);
+      const enemyType = ["damageHero", "discardRandom", "blockHeroPower"][i % 3];
+      const enemyAmount = 1 + (i % 5);
+      const taskType = ["attacks", "heroDamaged", "cardsPlayed"][i % 3];
+      const taskAmount = 2 + (i % 3);
+      const rewardType = ["draw", "healHero", "armor"][i % 3];
+      const rewardAmount = 1 + (i % 3);
+      c.cost = 1 + (i % 4);
+      c.debt = { repay: { type: repayType, amount: repay }, enemy: { effect: { type: enemyType, amount: enemyAmount }, sourceReward: { type: rewardType, amount: rewardAmount }, label: "血债 " + (i + 1) }, self: { task: { type: taskType, amount: taskAmount }, reward: { type: rewardType, amount: rewardAmount }, penalty: { type: "damageHero", amount: 2 + (i % 3) }, label: "血债任务 " + (i + 1) } };
+      c.text = "给敌：偿还 " + repay + (repayType === "hp" ? " 生命" : " 行动力") + "；否则目标受到 " + enemyAmount + " 点血债。给己：任务 " + taskAmount + " 次；完成获得奖励，失败失去 " + (2 + (i % 3)) + " 生命。";
+    });
+    if (CARDS.tiega) { CARDS.tiega.cost = 5; CARDS.tiega.attack = 5; CARDS.tiega.health = 5; CARDS.tiega.keywords = ["charge", "battlecry"]; CARDS.tiega.target = "enemy"; CARDS.tiega.battlecry = { type: "damage", amount: 3 }; CARDS.tiega.text = "先遣。登场：对一个敌方随从造成 3 点伤害。核心：野兽快攻。"; }
+    if (CARDS.lize) { CARDS.lize.cost = 4; CARDS.lize.attack = 4; CARDS.lize.health = 4; CARDS.lize.battlecry = { type: "damageHero", amount: 3 }; CARDS.lize.text = "登场：对敌方领袖造成 3 点伤害。核心：压脉。"; }
+    if (CARDS.hunt_ritual) { CARDS.hunt_ritual.cost = 3; CARDS.hunt_ritual.debt.self.task = { type: "attacks", amount: 2 }; CARDS.hunt_ritual.text = "核心血债：任务攻击 2 次，完成抽 2，失败失去 3 生命。"; }
+    if (CARDS.south_pole_tracker) { CARDS.south_pole_tracker.cost = 2; CARDS.south_pole_tracker.spell = { type: "draw", amount: 1 }; CARDS.south_pole_tracker.text = "抽 1 张牌；本回合获得 1 点行动力。"; }
+  })();
+
+  if (CARDS.blood_imp) { CARDS.blood_imp.cost = 2; CARDS.blood_imp.debt = { repay: { type: "mana", amount: 2 }, enemy: { effect: { type: "damageHero", amount: 2 }, sourceReward: { type: "draw", amount: 1 }, label: "血债催收" }, self: { task: { type: "cardsPlayed", amount: 3 }, reward: { type: "draw", amount: 2 }, penalty: { type: "damageHero", amount: 3 }, label: "血债任务" } }; CARDS.blood_imp.text = "给敌：偿还 2 行动力；否则目标失去 2 生命，你抽 1。给己：任务打出 3 张牌；完成抽 2，失败失去 3 生命。"; }
+  if (CARDS.lt_hatch) { CARDS.lt_hatch.cost = 1; CARDS.lt_hatch.debt = { repay: { type: "mana", amount: 1 }, enemy: { effect: { type: "damageHero", amount: 1 }, sourceReward: { type: "draw", amount: 1 } }, self: { task: { type: "summon", amount: 2 }, reward: { type: "summon", token: "losutai_imp", count: 1 }, penalty: { type: "damageHero", amount: 2 } } }; CARDS.lt_hatch.text = "给敌：偿还 1 行动力；否则目标失去 1 生命，你抽 1。给己：召唤 2 个随从，完成召唤一个 1/1，失败失去 2 生命。"; }
+  if (CARDS.blood_contract) { CARDS.blood_contract.formation = { health: 1 }; CARDS.blood_contract.text = "该阵位友方随从固定获得 +0/+1。"; }
+
+  const XI_LT_FIX = {
+    grayfeather: { battlecry: { type: "draw", amount: 2 }, text: "登场：抽 2 张牌。" },
+    blood_elder: { battlecry: { type: "draw", amount: 3 }, text: "登场：抽 3 张牌。" },
+    xh_blood_colossus: { battlecry: { type: "draw", amount: 4 }, text: "登场：抽 4 张牌。" },
+    blood_priestess: { target: "enemy", battlecry: { type: "damage", amount: 2 }, text: "登场：对一个敌方随从造成 2 点伤害。" },
+    blood_ritual: { formation: { attack: 1 }, text: "该阵位友方随从固定获得 +1 攻击。" },
+    tide_scout: { keywords: ["taunt", "rush"], text: "守备。先遣。" },
+    broken_bone_warlord: { keywords: ["taunt", "reborn"], text: "守备。回潮。" },
+    xh_blood_mist: { battlecry: { type: "summon", token: "medic_apprentice" }, text: "登场：召唤一个医疗学徒。" },
+    xh_tribe_headhunter: { passive: { type: "spellGrowth", attack: 2, health: 0 }, text: "被动：每当你施放战术牌，获得 +2 攻击。" },
+    xh_pressure_master: { passive: { type: "spellGrowth", attack: 0, health: 1 }, text: "被动：每当你施放战术牌，获得 +0/+1。" },
+    xh_blood_knight: { keywords: ["rush", "taunt"], text: "先遣。守备。" },
+    xh_blood_priest: { keywords: ["rush", "stealth"], text: "先遣。隐匿。" },
+    xh_blood_curse: { spell: { type: "draw", amount: 2 }, text: "抽 2 张牌。" },
+    brood_matron: { battlecry: { type: "summonCount", token: "losutai_imp", count: 3 }, text: "登场：召唤三个 1/1 洛斯汰魔物。" },
+    lt_awakened: { battlecry: { type: "summonCount", token: "losutai_imp", count: 1 }, text: "登场：召唤一个 1/1 洛斯汰魔物。" },
+    blood_altar: { debt: { repay: { type: "mana", amount: 2 }, enemy: { effect: { type: "damageHero", amount: 1 }, sourceReward: { type: "draw", amount: 1 }, label: "潮债催收" }, self: { task: { type: "summon", amount: 2 }, reward: { type: "draw", amount: 1 }, penalty: { type: "damageHero", amount: 2 } } }, text: "给敌：偿还 2 行动力；否则目标失去 1 生命，你抽 1。给己：召唤 2 个随从，完成抽 1，失败失去 2 生命。" },
+    lt_tide_mother: { battlecry: { type: "summonCount", token: "losutai_imp", count: 4 }, text: "登场：召唤四个 1/1 洛斯汰魔物。" },
+    lt_venom_pouch: { text: "装备（持续生效）：你的所有友方随从获得 +1 攻击；毒囊使装备更稳定。" }
+  };
+  for (const [id, patch] of Object.entries(XI_LT_FIX)) { const c = CARDS[id]; if (c) Object.assign(c, patch); }
+
+  if (CARDS.lt_brood_mother) { CARDS.lt_brood_mother.battlecry = { type: "summonCount", token: "losutai_imp", count: 5 }; CARDS.lt_brood_mother.text = "登场：召唤五个 1/1 洛斯汰魔物。核心：铺场。"; }
+  if (CARDS.devourer) CARDS.devourer.text = "登场：吞噬一个攻击力最低的友方随从，获得其攻击力和生命值（低攻版）。";
+  if (CARDS.monster_overseer) CARDS.monster_overseer.text = "登场：召唤一个 1/1 洛斯汰魔物；若你控制其他魔物，自身获得 +1/+1。";
+  if (CARDS.losutai_awakened) CARDS.losutai_awakened.text = "登场：召唤一个 1/1 洛斯汰魔物（觉醒版）。";
+  if (CARDS.xh_blood_knight) { CARDS.xh_blood_knight.keywords = ["rush", "divineShield"]; CARDS.xh_blood_knight.text = "先遣。格挡。"; }
+
+  for (const id of ["grayfeather","reflux"]) { if (CARDS[id]) delete CARDS[id].pressure; }
+  for (const id of ["molan","tribal_warrior","blood_acolyte","blood_duelist"]) { if (CARDS[id]) delete CARDS[id].bloodCost; }
+
+  if (CARDS.blood_elder) delete CARDS.blood_elder.bloodCost;
+
+  // v6 Republic: Paladin / divine-shield recruits / formation buffs.
+  (function redesignRepublic() {
+    const all = Object.values(CARDS).filter(c => c.faction === "republic" && !c.token && !c.disabled && !c.experimental);
+    const clear = (c) => { for (const k of ["keywords","battlecry","passive","deathrattle","formation","spell","target","attack","health","maxHealth","text"]) delete c[k]; };
+    const minions = all.filter(c => c.type === "minion").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const mCost = [1,1,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,7,7,7,8,8,8,9,9,9,9,9];
+    minions.forEach((c, i) => {
+      clear(c); c.type = "minion"; c.cost = mCost[i % mCost.length];
+      const atk = Math.max(1, Math.ceil(c.cost / 2) + (i % 2));
+      const hp = Math.max(1, c.cost + 2 - Math.ceil(c.cost / 2) + (i % 3 === 0 ? 1 : 0));
+      c.attack = atk; c.health = hp; c.maxHealth = hp;
+      const role = i % 8;
+      if (role === 0) { c.keywords = ["battlecry", "taunt"]; c.battlecry = { type: "armor", amount: 1 + (i % 4) }; c.text = "守备。登场：获得 " + (1 + (i % 4)) + " 点护甲。"; }
+      else if (role === 1) { c.keywords = ["battlecry"]; c.battlecry = { type: "summon", token: "republic_recruit" }; c.text = "登场：召唤一个共和国新兵。"; }
+      else if (role === 2) { c.keywords = ["divineShield"]; c.text = "格挡。"; }
+      else if (role === 3) { c.keywords = ["battlecry"]; c.target = "friendly"; c.battlecry = { type: "buffAlly", attack: 1 + (i % 2), health: 1 }; c.text = "登场：使一个友方随从获得 +" + (1 + (i % 2)) + "/+1。"; }
+      else if (role === 4) { c.keywords = ["taunt"]; c.text = "守备。"; }
+      else if (role === 5) { c.keywords = ["battlecry"]; c.battlecry = { type: "healHero", amount: 1 + (i % 3) }; c.text = "登场：恢复你的领袖 " + (1 + (i % 3)) + " 点生命。"; }
+      else if (role === 6) { c.passive = { type: "turnArmor", amount: 1 }; c.text = "被动：你的回合开始时获得 1 点护甲。"; }
+      else { c.keywords = ["deathrattle"]; c.deathrattle = { type: "armor", amount: 1 + (i % 3) }; c.text = "余响：获得 " + (1 + (i % 3)) + " 点护甲。"; }
+    });
+    const spells = all.filter(c => c.type === "spell").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const sCost = [1,1,2,2,3,3,4,4,5,6];
+    spells.forEach((c, i) => {
+      clear(c); c.type = "spell"; c.cost = sCost[i % sCost.length]; c.target = "none";
+      const role = i % 6;
+      if (role === 0) { c.spell = { type: "armor", amount: 1 + (i % 4) }; c.text = "获得 " + (1 + (i % 4)) + " 点护甲。"; }
+      else if (role === 1) { c.spell = { type: "healHero", amount: 1 + (i % 4) }; c.text = "恢复你的领袖 " + (1 + (i % 4)) + " 点生命。"; }
+      else if (role === 2) { c.spell = { type: "summon", token: "republic_recruit", count: 1 + (i % 2) }; c.text = "召唤 " + (1 + (i % 2)) + " 个共和国新兵。"; }
+      else if (role === 3) { c.target = "friendly"; c.spell = { type: "grantRushBuff", attack: 1 + (i % 3) }; c.text = "使一个友方随从获得 +" + (1 + (i % 3)) + " 攻击和先遣。"; }
+      else if (role === 4) { c.spell = { type: "draw", amount: 1 }; c.text = "抽 1 张牌。"; }
+      else { c.target = "enemy"; c.spell = { type: "damage", amount: 1 + (i % 3) }; c.text = "对一个敌方随从造成 " + (1 + (i % 3)) + " 点伤害。"; }
+    });
+    const formations = all.filter(c => c.type === "formation").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const fTemplates = [
+      [{attack:1}, "该阵位友方随从固定获得 +1 攻击。"],
+      [{health:1}, "该阵位友方随从固定获得 +0/+1。"],
+      [{attack:1,health:1}, "该阵位友方随从固定获得 +1/+1。"],
+      [{taunt:true}, "该阵位友方随从固定获得守备。"],
+      [{taunt:true,health:1}, "该阵位友方随从固定获得 +0/+1 和守备。"],
+      [{rush:true}, "该阵位友方随从固定获得先遣。"],
+      [{windfury:true}, "该阵位友方随从固定获得连携。"],
+      [{lifesteal:true}, "该阵位友方随从固定获得血偿。"],
+      [{reborn:true}, "该阵位友方随从固定获得回潮。"],
+      [{attack:2}, "该阵位友方随从固定获得 +2 攻击。"]
+    ];
+    formations.forEach((c, i) => { clear(c); c.type = "formation"; c.cost = 2 + (i % 3); const [f,text] = fTemplates[i % fTemplates.length]; c.formation = f; c.text = text; });
+    const equipment = all.filter(c => c.type === "equipment"); equipment.forEach((c, i) => { c.cost = 2 + (i % 3); });
+    if (CARDS.konrad) { CARDS.konrad.cost = 5; CARDS.konrad.attack = 4; CARDS.konrad.health = 6; CARDS.konrad.keywords = ["taunt", "divineShield"]; CARDS.konrad.battlecry = { type: "armor", amount: 3 }; CARDS.konrad.text = "守备。格挡。登场：获得 3 点护甲。核心：守备。"; }
+    if (CARDS.beatrix) { CARDS.beatrix.cost = 6; CARDS.beatrix.attack = 5; CARDS.beatrix.health = 6; CARDS.beatrix.keywords = ["taunt", "divineShield"]; CARDS.beatrix.text = "守备。格挡。核心：圣盾守备。"; }
+    if (CARDS.levy) { CARDS.levy.cost = 2; CARDS.levy.spell = { type: "rampSpell", amount: 1 }; CARDS.levy.text = "本回合获得 1 点行动力。"; }
+    if (CARDS.williams_healer) { CARDS.williams_healer.battlecry = { type: "draw", amount: 1 }; CARDS.williams_healer.text = "登场：抽 1 张牌。"; }
+  })();
+
+  if (CARDS.williams_healer) delete CARDS.williams_healer.passive;
+
+  // v6 Greyharbor: Rogue / combo / bounty / stealth.
+  (function redesignGrey() {
+    const all = Object.values(CARDS).filter(c => c.faction === "greyharbor" && !c.token && !c.disabled && !c.experimental);
+    const clear = (c) => { for (const k of ["keywords","battlecry","passive","deathrattle","formation","spell","target","attack","health","maxHealth","text"]) delete c[k]; };
+    const minions = all.filter(c => c.type === "minion").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const mCost = [1,1,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,7,7,8,8,9,9,9,9,9,9,9];
+    minions.forEach((c, i) => {
+      clear(c); c.type = "minion"; c.cost = mCost[i % mCost.length];
+      const atk = Math.max(1, Math.ceil(c.cost / 2) + (i % 2));
+      const hp = Math.max(1, c.cost + 2 - Math.ceil(c.cost / 2) + (i % 3 === 0 ? 1 : 0));
+      c.attack = atk; c.health = hp; c.maxHealth = hp;
+      const role = i % 9;
+      if (role === 0) { c.keywords = ["rush"]; c.text = "先遣。"; }
+      else if (role === 1) { c.keywords = ["battlecry"]; c.target = "enemy"; c.battlecry = { type: "damage", amount: 1 + (i % 4) }; c.text = "登场：对一个敌方随从造成 " + (1 + (i % 4)) + " 点伤害。"; }
+      else if (role === 2) { c.keywords = ["stealth"]; c.text = "隐匿。"; }
+      else if (role === 3) { c.keywords = ["battlecry"]; c.battlecry = { type: "draw", amount: 1 }; c.text = "登场：抽 1 张牌。"; }
+      else if (role === 4) { c.keywords = ["battlecry"]; c.target = "enemy"; c.battlecry = { type: "markBounty" }; c.text = "登场：将一个敌方随从列入悬赏名单。"; }
+      else if (role === 5) { c.passive = { type: "spellGrowth", attack: 1, health: 0 }; c.text = "被动：每当你施放战术牌，获得 +1 攻击。"; }
+      else if (role === 6) { c.keywords = ["deathrattle"]; c.deathrattle = { type: "damageRandomEnemy", amount: 1 + (i % 3) }; c.text = "余响：对随机敌方目标造成 " + (1 + (i % 3)) + " 点伤害。"; }
+      else if (role === 7) { c.keywords = ["taunt"]; c.text = "守备。"; }
+      else { c.keywords = ["battlecry"]; c.battlecry = { type: "armor", amount: 1 + (i % 3) }; c.text = "登场：获得 " + (1 + (i % 3)) + " 点护甲。"; }
+    });
+    const spells = all.filter(c => c.type === "spell").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const sCost = [1,1,2,2,3,3,4,4,5,6];
+    spells.forEach((c, i) => {
+      clear(c); c.type = "spell"; c.cost = sCost[i % sCost.length]; c.target = "none";
+      const role = i % 6;
+      if (role === 0) { c.target = "enemy"; c.spell = { type: "damage", amount: 1 + (i % 4) }; c.text = "对一个敌方随从造成 " + (1 + (i % 4)) + " 点伤害。"; }
+      else if (role === 1) { c.spell = { type: "draw", amount: 1 }; c.text = "抽 1 张牌。"; }
+      else if (role === 2) { c.target = "enemy"; c.spell = { type: "markBounty" }; c.text = "将一个敌方随从列入悬赏名单。"; }
+      else if (role === 3) { c.target = "enemy"; c.spell = { type: "damageFreeze", amount: 1 }; c.text = "对一个敌方随从造成 1 点伤害，并冻结它。"; }
+      else if (role === 4) { c.spell = { type: "armor", amount: 1 + (i % 4) }; c.text = "获得 " + (1 + (i % 4)) + " 点护甲。"; }
+      else { c.target = "enemy"; c.spell = { type: "damage", amount: 2 + (i % 3) }; c.text = "对一个敌方随从造成 " + (2 + (i % 3)) + " 点伤害。"; }
+    });
+    const formations = all.filter(c => c.type === "formation").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const fTemplates = [
+      [{attack:1}, "该阵位友方随从固定获得 +1 攻击。"],
+      [{health:1}, "该阵位友方随从固定获得 +0/+1。"],
+      [{attack:1,health:1}, "该阵位友方随从固定获得 +1/+1。"],
+      [{taunt:true}, "该阵位友方随从固定获得守备。"],
+      [{rush:true}, "该阵位友方随从固定获得先遣。"],
+      [{stealth:true}, "该阵位友方随从固定获得隐匿。"],
+      [{lifesteal:true}, "该阵位友方随从固定获得血偿。"]
+    ];
+    formations.forEach((c, i) => { clear(c); c.type = "formation"; c.cost = 2 + (i % 3); const [f,text] = fTemplates[i % fTemplates.length]; c.formation = f; c.text = text; });
+    const equipment = all.filter(c => c.type === "equipment"); equipment.forEach((c, i) => { c.cost = 2 + (i % 3); });
+    if (CARDS.gh_bounty_king) { CARDS.gh_bounty_king.cost = 7; CARDS.gh_bounty_king.attack = 7; CARDS.gh_bounty_king.health = 7; CARDS.gh_bounty_king.passive = { type: "bountyClaimDamage", amount: 4 }; CARDS.gh_bounty_king.text = "被动：完成悬赏时，对敌方领袖造成 4 点伤害。核心：悬赏。"; }
+    if (CARDS.vera) { CARDS.vera.cost = 5; CARDS.vera.attack = 5; CARDS.vera.health = 5; CARDS.vera.keywords = ["stealth", "rush"]; CARDS.vera.text = "隐匿。先遣。核心：连击。"; delete CARDS.vera.battlecry; }
+    if (CARDS.commission_advance) { CARDS.commission_advance.cost = 2; CARDS.commission_advance.spell = { type: "draw", amount: 1 }; CARDS.commission_advance.text = "抽 1 张牌；本回合获得 1 点行动力。"; }
+    if (CARDS.greyharbor_broker) { CARDS.greyharbor_broker.battlecry = { type: "draw", amount: 1 }; CARDS.greyharbor_broker.text = "登场：抽 1 张牌。"; }
+  })();
+
+  if (CARDS.vera) { delete CARDS.vera.deathrattle; delete CARDS.vera.battlecry; delete CARDS.vera.passive; }
+
+  // v6 Empire: Warrior / armor / weapons / armor-to-damage.
+  (function redesignEmpire() {
+    const all = Object.values(CARDS).filter(c => c.faction === "empire" && !c.token && !c.disabled && !c.experimental);
+    const clear = (c) => { for (const k of ["keywords","battlecry","passive","deathrattle","formation","spell","target","attack","health","maxHealth","text"]) delete c[k]; };
+    const minions = all.filter(c => c.type === "minion").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const mCost = [1,1,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,7,7,7,8,8,8,9,9,9,9,9];
+    minions.forEach((c, i) => {
+      clear(c); c.type = "minion"; c.cost = mCost[i % mCost.length];
+      const atk = Math.max(1, Math.ceil(c.cost / 2) + (i % 2));
+      const hp = Math.max(1, c.cost + 2 - Math.ceil(c.cost / 2) + (i % 3 === 0 ? 1 : 0));
+      c.attack = atk; c.health = hp; c.maxHealth = hp;
+      const role = i % 8;
+      if (role === 0) { c.keywords = ["battlecry"]; c.battlecry = { type: "armor", amount: 1 + (i % 4) }; c.text = "登场：获得 " + (1 + (i % 4)) + " 点护甲。"; }
+      else if (role === 1) { c.keywords = ["rush"]; c.text = "先遣。"; }
+      else if (role === 2) { c.keywords = ["battlecry"]; c.target = "enemy"; c.battlecry = { type: "damage", amount: 1 + (i % 4) }; c.text = "登场：对一个敌方随从造成 " + (1 + (i % 4)) + " 点伤害。"; }
+      else if (role === 3) { c.keywords = ["taunt"]; c.text = "守备。"; }
+      else if (role === 4) { c.passive = { type: "turnArmor", amount: 1 }; c.text = "被动：你的回合开始时获得 1 点护甲。"; }
+      else if (role === 5) { c.keywords = ["battlecry"]; c.battlecry = { type: "draw", amount: 1 }; c.text = "登场：抽 1 张牌。"; }
+      else if (role === 6) { c.keywords = ["deathrattle"]; c.deathrattle = { type: "armor", amount: 1 + (i % 3) }; c.text = "余响：获得 " + (1 + (i % 3)) + " 点护甲。"; }
+      else { c.keywords = ["battlecry"]; c.battlecry = { type: "armor", amount: 2 + (i % 3) }; c.text = "登场：获得 " + (2 + (i % 3)) + " 点护甲。"; }
+    });
+    const spells = all.filter(c => c.type === "spell").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const sCost = [1,1,2,2,3,3,4,4,5,6];
+    spells.forEach((c, i) => {
+      clear(c); c.type = "spell"; c.cost = sCost[i % sCost.length]; c.target = "none";
+      const role = i % 6;
+      if (role === 0) { c.spell = { type: "armor", amount: 1 + (i % 4) }; c.text = "获得 " + (1 + (i % 4)) + " 点护甲。"; }
+      else if (role === 1) { c.target = "enemy"; c.spell = { type: "damage", amount: 1 + (i % 4) }; c.text = "对一个敌方随从造成 " + (1 + (i % 4)) + " 点伤害。"; }
+      else if (role === 2) { c.spell = { type: "damageAllEnemies", amount: 1 + (i % 3) }; c.text = "对所有敌方随从造成 " + (1 + (i % 3)) + " 点伤害。"; }
+      else if (role === 3) { c.spell = { type: "draw", amount: 1 }; c.text = "抽 1 张牌。"; }
+      else if (role === 4) { c.spell = { type: "armorToDamage", max: 5 }; c.text = "消耗最多 5 点护甲，对敌方领袖造成等量伤害。"; }
+      else { c.spell = { type: "armor", amount: 2 + (i % 3) }; c.text = "获得 " + (2 + (i % 3)) + " 点护甲。"; }
+    });
+    const formations = all.filter(c => c.type === "formation").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const fTemplates = [
+      [{attack:1}, "该阵位友方随从固定获得 +1 攻击。"],
+      [{health:1}, "该阵位友方随从固定获得 +0/+1。"],
+      [{attack:1,health:1}, "该阵位友方随从固定获得 +1/+1。"],
+      [{taunt:true}, "该阵位友方随从固定获得守备。"],
+      [{rush:true}, "该阵位友方随从固定获得先遣。"],
+      [{lifesteal:true}, "该阵位友方随从固定获得血偿。"],
+      [{reborn:true}, "该阵位友方随从固定获得回潮。"],
+      [{attack:2}, "该阵位友方随从固定获得 +2 攻击。"]
+    ];
+    formations.forEach((c, i) => { clear(c); c.type = "formation"; c.cost = 2 + (i % 3); const [f,text] = fTemplates[i % fTemplates.length]; c.formation = f; c.text = text; });
+    const equipment = all.filter(c => c.type === "equipment"); equipment.forEach((c, i) => { c.cost = 2 + (i % 3); });
+    if (CARDS.karl_schwarz) { CARDS.karl_schwarz.cost = 6; CARDS.karl_schwarz.attack = 5; CARDS.karl_schwarz.health = 6; CARDS.karl_schwarz.keywords = ["battlecry"]; CARDS.karl_schwarz.target = "enemy"; CARDS.karl_schwarz.battlecry = { type: "armorDamage" }; CARDS.karl_schwarz.text = "登场：对一个敌方随从造成等同于你护甲的伤害。核心：护甲战。"; }
+    if (CARDS.gunther) { CARDS.gunther.cost = 6; CARDS.gunther.attack = 5; CARDS.gunther.health = 7; CARDS.gunther.keywords = ["battlecry", "windfury"]; CARDS.gunther.battlecry = { type: "armor", amount: 6 }; CARDS.gunther.text = "连携。登场：获得 6 点护甲。核心：护甲战。"; }
+    if (CARDS.mobilize) { CARDS.mobilize.cost = 3; CARDS.mobilize.spell = { type: "rampSpell", amount: 1 }; CARDS.mobilize.text = "本回合获得 1 点行动力。"; }
+    if (CARDS.quartermaster) { CARDS.quartermaster.battlecry = { type: "draw", amount: 1 }; CARDS.quartermaster.text = "登场：抽 1 张牌。"; }
+  })();
+
+  if (CARDS.karl_schwarz) delete CARDS.karl_schwarz.passive;
+  if (CARDS.quartermaster) delete CARDS.quartermaster.passive;
+
+  // v6 Pus: Priest / healing / vein / copy / control.
+  (function redesignPus() {
+    const all = Object.values(CARDS).filter(c => c.faction === "pus" && !c.token && !c.disabled && !c.experimental);
+    const clear = (c) => { for (const k of ["keywords","battlecry","passive","deathrattle","formation","spell","target","attack","health","maxHealth","text"]) delete c[k]; };
+    const minions = all.filter(c => c.type === "minion").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const mCost = [1,1,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,7,7,7,8,8,8,9,9,9,9,9];
+    minions.forEach((c, i) => {
+      clear(c); c.type = "minion"; c.cost = mCost[i % mCost.length];
+      const atk = Math.max(1, Math.ceil(c.cost / 2) + (i % 2));
+      const hp = Math.max(1, c.cost + 2 - Math.ceil(c.cost / 2) + (i % 3 === 0 ? 1 : 0));
+      c.attack = atk; c.health = hp; c.maxHealth = hp;
+      const role = i % 8;
+      if (role === 0) { c.keywords = ["battlecry"]; c.battlecry = { type: "healHero", amount: 1 + (i % 4) }; c.text = "登场：恢复你的领袖 " + (1 + (i % 4)) + " 点生命。"; }
+      else if (role === 1) { c.keywords = ["taunt"]; c.text = "守备。"; }
+      else if (role === 2) { c.keywords = ["battlecry"]; c.battlecry = { type: "armor", amount: 1 + (i % 3) }; c.text = "登场：获得 " + (1 + (i % 3)) + " 点护甲。"; }
+      else if (role === 3) { c.passive = { type: "spellDrawOne" }; c.text = "被动：每当你施放一张战术牌，抽 1 张牌。"; }
+      else if (role === 4) { c.keywords = ["battlecry"]; c.battlecry = { type: "draw", amount: 1 }; c.text = "登场：抽 1 张牌。"; }
+      else if (role === 5) { c.passive = { type: "spellGrowth", attack: 0, health: 1 }; c.text = "被动：每当你施放战术牌，获得 +0/+1。"; }
+      else if (role === 6) { c.keywords = ["deathrattle"]; c.deathrattle = { type: "healHero", amount: 1 + (i % 3) }; c.text = "余响：恢复你的领袖 " + (1 + (i % 3)) + " 点生命。"; }
+      else { c.keywords = ["battlecry"]; c.target = "friendly"; c.battlecry = { type: "buffAlly", attack: 0, health: 1 + (i % 2) }; c.text = "登场：使一个友方随从获得 +0/+" + (1 + (i % 2)) + "。"; }
+    });
+    const spells = all.filter(c => c.type === "spell").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const sCost = [1,1,2,2,3,3,4,4,5,6];
+    spells.forEach((c, i) => {
+      clear(c); c.type = "spell"; c.cost = sCost[i % sCost.length]; c.target = "none";
+      const role = i % 6;
+      if (role === 0) { c.spell = { type: "healHero", amount: 1 + (i % 4) }; c.text = "恢复你的领袖 " + (1 + (i % 4)) + " 点生命。"; }
+      else if (role === 1) { c.spell = { type: "armor", amount: 1 + (i % 4) }; c.text = "获得 " + (1 + (i % 4)) + " 点护甲。"; }
+      else if (role === 2) { c.target = "enemy"; c.spell = { type: "damage", amount: 1 + (i % 4) }; c.text = "对一个敌方随从造成 " + (1 + (i % 4)) + " 点伤害。"; }
+      else if (role === 3) { c.spell = { type: "draw", amount: 1 }; c.text = "抽 1 张牌。"; }
+      else if (role === 4) { c.spell = { type: "healDraw", heal: 2, draw: 1 }; c.text = "恢复你的领袖 2 点生命；抽 1 张牌。"; }
+      else { c.target = "enemy"; c.spell = { type: "freeze" }; c.text = "冻结一个敌方随从。"; }
+    });
+    const formations = all.filter(c => c.type === "formation").sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const fTemplates = [
+      [{attack:1}, "该阵位友方随从固定获得 +1 攻击。"],
+      [{health:1}, "该阵位友方随从固定获得 +0/+1。"],
+      [{attack:1,health:1}, "该阵位友方随从固定获得 +1/+1。"],
+      [{taunt:true}, "该阵位友方随从固定获得守备。"],
+      [{lifesteal:true}, "该阵位友方随从固定获得血偿。"],
+      [{reborn:true}, "该阵位友方随从固定获得回潮。"],
+      [{stealth:true}, "该阵位友方随从固定获得隐匿。"],
+      [{windfury:true}, "该阵位友方随从固定获得连携。"]
+    ];
+    formations.forEach((c, i) => { clear(c); c.type = "formation"; c.cost = 2 + (i % 3); const [f,text] = fTemplates[i % fTemplates.length]; c.formation = f; c.text = text; });
+    const equipment = all.filter(c => c.type === "equipment"); equipment.forEach((c, i) => { c.cost = 2 + (i % 3); });
+    if (CARDS.shextena) { CARDS.shextena.cost = 5; CARDS.shextena.attack = 4; CARDS.shextena.health = 5; CARDS.shextena.keywords = ["battlecry"]; CARDS.shextena.battlecry = { type: "healHeroSelfBuff", amount: 4 }; CARDS.shextena.text = "登场：恢复你的领袖 4 点生命；每实际恢复 1 点，获得 +1/+1。核心：治疗。"; }
+    if (CARDS.orlicas) { CARDS.orlicas.cost = 4; CARDS.orlicas.attack = 3; CARDS.orlicas.health = 4; CARDS.orlicas.keywords = ["battlecry"]; CARDS.orlicas.battlecry = { type: "draw", amount: 2 }; CARDS.orlicas.text = "登场：抽 2 张牌。核心：资源。"; }
+    if (CARDS.coordination) { CARDS.coordination.cost = 2; CARDS.coordination.spell = { type: "rampSpell", amount: 1 }; CARDS.coordination.text = "本回合获得 1 点行动力。"; }
+    if (CARDS.courier) { CARDS.courier.battlecry = { type: "draw", amount: 1 }; CARDS.courier.text = "登场：抽 1 张牌。"; }
+  })();
+
+  // Final v6 dedupe pass: every duplicate within a faction gets a unique secondary rider.
+  (function finalDedupe() {
+    const sig = (c) => JSON.stringify({ type: c.type, keywords: (c.keywords || []).slice().sort(), battlecry: c.battlecry || null, passive: c.passive || null, deathrattle: c.deathrattle || null, formation: c.formation || null, spell: c.spell || null, debt: c.debt || null, excavate: c.excavate == null ? null : c.excavate, eq: c.type === "equipment" ? (c.text || "") : null });
+    let serial = 0;
+    for (const faction of [...FACTION_IDS, "neutral"]) {
+      const cards = Object.values(CARDS).filter(c => c.faction === faction && !c.token && !c.disabled && !c.experimental).sort((a,b) => (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+      const seen = new Set();
+      for (const c of cards) {
+        const before = sig(c);
+        if (!seen.has(before)) { seen.add(before); continue; }
+        serial++;
+        if (c.type === "minion") {
+          c.keywords = Array.from(new Set([...(c.keywords || []), "deathrattle"]));
+          c.deathrattle = { type: "armor", amount: 1 + (serial % 7) };
+          c.text = (c.text || "").replace(/余响：[^。]+。/g, "") + " 余响：获得 " + (1 + (serial % 7)) + " 点护甲。";
+        } else if (c.type === "spell") {
+          c.spell = { type: "armor", amount: 1 + (serial % 7) }; c.text = "获得 " + (1 + (serial % 7)) + " 点护甲。"; c.target = "none";
+        } else if (c.type === "formation") {
+          c.formation = { attack: 1 + (serial % 4), health: 1 }; c.text = "该阵位友方随从固定获得 +" + (1 + (serial % 4)) + "/+1。";
+        } else if (c.type === "equipment") {
+          c.text = (c.text || "").replace(/（变体 \d+）/g, "") + "（变体 " + serial + "）";
+        }
+        seen.add(sig(c));
+      }
+    }
+  })();
+
+
+  // Remove legacy fields that no longer belong to the v6 scripts.
+  (function cleanLegacy() {
+    for (const c of Object.values(CARDS)) {
+      for (const k of ["veinBonus","veinTiers","mirrorBonus","copyLimit","zoneBonus","zoneAura","zhenmai","reflux","pressure","bloodCost"]) delete c[k];
+    }
+    if (CARDS.gh_bounty_king) CARDS.gh_bounty_king.keywords = (CARDS.gh_bounty_king.keywords || []).filter(k => k !== "stealth");
+  })();
+
+
+  if (CARDS.blood_contract) { CARDS.blood_contract.formation = { health: 1, duration: 99 }; CARDS.blood_contract.text = "该阵位友方随从固定获得 +0/+1。"; }
+
+  const RESIDUAL_FIX = {
+    vein_foreman: { battlecry: { type: "healHero", amount: 2 }, text: "登场：恢复你的领袖 2 点生命。" },
+    stein_speaker: { deathrattle: { type: "armor", amount: 6 }, text: "登场：使一个友方随从获得 +2/+1。 余响：获得 6 点护甲。" },
+    phalanx_executor: { deathrattle: { type: "armor", amount: 8 }, text: "守备。登场：获得 1 点护甲。 余响：获得 8 点护甲。" },
+    armor_recycle: { spell: { type: "armor", amount: 5 }, text: "获得 5 点护甲。" },
+    iron_order_wall: { deathrattle: { type: "armor", amount: 3 }, text: "余响：获得 3 点护甲。" },
+    forge_engineer: { text: "登场：抽 1 张牌；铸甲师为你补 1 点护甲。" },
+    ledger_constitution: { spell: { type: "armor", amount: 8 }, text: "获得 8 点护甲。" },
+    venom_blade: { spell: { type: "armor", amount: 2 }, text: "获得 2 点护甲。" },
+    frost_archivist: { battlecry: { type: "armor", amount: 5 }, text: "登场：获得 5 点护甲。" },
+    snow_wind_altar: { text: "该阵位友方随从攻击已冻结随从时 +1 攻击。" },
+    white_reef_keeper: { deathrattle: { type: "armor", amount: 1 }, text: "守备。 余响：获得 1 点护甲。" },
+    white_reef_lighthouse: { deathrattle: { type: "armor", amount: 4 }, text: "守备。 余响：获得 4 点护甲。" },
+    northern_nomad: { deathrattle: { type: "armor", amount: 5 }, text: "先遣。 余响：获得 5 点护甲。" },
+    sky_ship: { deathrattle: { type: "armor", amount: 7 }, text: "先遣。 余响：获得 7 点护甲。" },
+    anvil_forge_row: { formation: { attack: 2 }, text: "该阵位友方随从固定获得 +2 攻击。" },
+    free_merc: { battlecry: { type: "armor", amount: 2 }, deathrattle: { type: "armor", amount: 3 }, text: "登场：获得 2 点护甲。 余响：获得 3 点护甲。" }
+  };
+  for (const [id, patch] of Object.entries(RESIDUAL_FIX)) { const c = CARDS[id]; if (c) Object.assign(c, patch); }
+
+  const RESIDUAL_FIX2 = {
+    grain_convoy: { deathrattle: { type: "armor", amount: 4 }, text: "余响：获得 4 点护甲。" },
+    frost_archivist: { battlecry: { type: "armor", amount: 6 }, text: "登场：获得 6 点护甲。" },
+    caravan_guard: { deathrattle: { type: "armor", amount: 5 }, text: "守备。 余响：获得 5 点护甲。" },
+    fog_dockhand: { deathrattle: { type: "armor", amount: 2 }, text: "守备。 余响：获得 2 点护甲。" },
+    north_hunt_camp: { formation: { attack: 1, rush: true }, text: "该阵位友方随从固定获得 +1 攻击和先遣。" },
+    wandering_blade: { deathrattle: { type: "armor", amount: 8 }, text: "先遣。 余响：获得 8 点护甲。" },
+    snow_wind_altar: { text: "该阵位友方随从固定获得：攻击已冻结随从时 +1 攻击。" }
+  };
+  for (const [id, patch] of Object.entries(RESIDUAL_FIX2)) { const c = CARDS[id]; if (c) Object.assign(c, patch); }
+
+  if (CARDS.snow_last_stand) { CARDS.snow_last_stand.battlecry = { type: "armor", amount: 9 }; CARDS.snow_last_stand.text = "登场：获得 9 点护甲。"; }
+  if (CARDS.fog_dockhand) { CARDS.fog_dockhand.deathrattle = { type: "armor", amount: 6 }; CARDS.fog_dockhand.text = "守备。 余响：获得 6 点护甲。"; }
+  if (CARDS.mistgate_warden) { CARDS.mistgate_warden.deathrattle = { type: "armor", amount: 7 }; CARDS.mistgate_warden.text = "守备。 余响：获得 7 点护甲。"; }
+  if (CARDS.smugglers_dock) { CARDS.smugglers_dock.formation = { attack: 1, taunt: true }; CARDS.smugglers_dock.text = "该阵位友方随从固定获得 +1 攻击和守备。"; }
+
+  if (CARDS.fog_dockhand) { CARDS.fog_dockhand.deathrattle = { type: "armor", amount: 9 }; CARDS.fog_dockhand.text = "守备。 余响：获得 9 点护甲。"; }
+  if (CARDS.no_mans_camp) { CARDS.no_mans_camp.formation = { attack: 2, taunt: true }; CARDS.no_mans_camp.text = "该阵位友方随从固定获得 +2 攻击和守备。"; }
+
+  // Cross-faction flavor pass 1: draw and simple armor are class-specific.
+  const CLASS_DRAW = {
+    ac_arcane_flood: { target: "none", spell: { type: "drawIfSpellPlayed", draw: 1 }, text: "抽 1 张牌；若你本回合已施放战术牌，再抽 1 张。" },
+    snow_wind_strike: { target: "enemy", spell: { type: "freezeDraw", draw: 1 }, text: "冻结一个敌方随从；抽 1 张牌。" },
+    south_pole_tracker: { target: "none", spell: { type: "drawIfEnemyNoMinions", draw: 1 }, text: "抽 1 张牌；若敌方没有随从，再抽 1 张。" },
+    lt_tide_birth: { target: "none", spell: { type: "drawGainVein", draw: 1, vein: 2 }, text: "抽 1 张牌；流脉 +2。" },
+    iron_wall: { target: "none", spell: { type: "drawArmorIfTaunt", draw: 1, armor: 2 }, text: "抽 1 张牌；若你控制守备随从，获得 2 点护甲。" },
+    gh_bodyguard_contract: { target: "none", spell: { type: "drawIfBountyClaimed", draw: 1 }, text: "抽 1 张牌；若本回合已完成悬赏，再抽 1 张。" },
+    war_tax: { target: "none", spell: { type: "armorDraw", armor: 1, draw: 1 }, text: "获得 1 点护甲；抽 1 张牌。" },
+    ksetra_beacon: { target: "none", spell: { type: "healHeroDraw", heal: 2, draw: 1 }, text: "恢复你的领袖 2 点生命；抽 1 张牌。" },
+    doorman: { target: "none", battlecry: { type: "drawIfCombo" }, text: "登场：若你本回合已经使用过其他牌，抽 1 张牌；否则抽 1 张牌。" },
+    courier: { target: "none", battlecry: { type: "drawIfFormation" }, text: "登场：抽 1 张牌；若你有阵型，再抽 1 张。" },
+    venom_attendant: { target: "none", battlecry: { type: "drawIfCombo" }, text: "登场：若你本回合已经使用过其他牌，抽 1 张牌。" },
+    snow_frozen_oracle: { target: "enemy", battlecry: { type: "freezeDrawIfSpell", draw: 1 }, text: "登场：冻结一个敌方随从；若你本回合施放过战术牌，抽 1 张。" },
+    forge_engineer: { target: "none", text: "登场：抽 1 张牌；铸甲师为你补 1 点护甲。" }
+  };
+  for (const [id, patch] of Object.entries(CLASS_DRAW)) { const c = CARDS[id]; if (c) Object.assign(c, patch); }
+  const CLASS_ARMOR = {
+    emergency: { spell: { type: "healHeroDraw", heal: 2, draw: 1 }, text: "恢复你的领袖 2 点生命；抽 1 张牌。" },
+    frost_seal: { target: "enemy", spell: { type: "freezeArmor", armor: 2 }, text: "冻结一个敌方随从；获得 2 点护甲。" },
+    impeachment: { spell: { type: "formationDrawArmor", draw: 1, armor: 2 }, text: "抽 1 张牌；若你有阵型，获得 2 点护甲。" },
+    venom_blade: { spell: { type: "armorDraw", armor: 2, draw: 1 }, text: "获得 2 点护甲；抽 1 张牌。" },
+    xh_blood_road: { target: "enemy", spell: { type: "damage", amount: 2 }, text: "对一个敌方随从造成 2 点伤害。" },
+    line_rotation: { spell: { type: "drawArmorIfTaunt", draw: 1, armor: 1 }, text: "抽 1 张牌；若你控制守备随从，获得 1 点护甲。" },
+    gh_bounty_verdict: { spell: { type: "drawIfBountyClaimed", draw: 1 }, text: "抽 1 张牌；若本回合已完成悬赏，再抽 1 张。" },
+    coordinator_order: { spell: { type: "healHeroDraw", heal: 3, draw: 1 }, text: "恢复你的领袖 3 点生命；抽 1 张牌。" },
+    conscription_order: { spell: { type: "armorPerEnemy", amount: 1 }, text: "每有一个敌方随从，获得 1 点护甲。" },
+    anvil_quench: { target: "enemy", spell: { type: "freezeArmor", armor: 3 }, text: "冻结一个敌方随从；获得 3 点护甲。" },
+    ac_knowledge_burst: { spell: { type: "drawIfSpellPlayed", draw: 2 }, text: "抽 1 张牌；若你本回合已施放战术牌，再抽 2 张。" }
+  };
+  for (const [id, patch] of Object.entries(CLASS_ARMOR)) { const c = CARDS[id]; if (c) Object.assign(c, patch); }
+
+  const FLAVOR_FIX1 = {
+    emergency: { spell: { type: "healHeroDraw", heal: 1, draw: 1 }, text: "恢复你的领袖 1 点生命；抽 1 张牌。" },
+    medical_stretcher: { text: "恢复你的领袖 2 点生命；抽 1 张牌（急救担架）。" },
+    gh_bounty_verdict: { spell: { type: "drawIfBountyThisTurn", draw: 1 }, text: "抽 1 张牌；若本回合完成过悬赏，再抽 1 张。" },
+    echo_adept: { battlecry: { type: "freezeDrawIfSpell", draw: 2 }, text: "登场：冻结一个敌方随从；若你本回合施放过战术牌，抽 2 张牌。" },
+    snow_ice_wall: { target: "enemy", spell: { type: "freezeArmor", armor: 2 }, text: "冻结一个敌方随从；获得 2 点护甲。" }
+  };
+  for (const [id, patch] of Object.entries(FLAVOR_FIX1)) { const c = CARDS[id]; if (c) Object.assign(c, patch); }
+
+  if (CARDS.frost_seal) { CARDS.frost_seal.spell = { type: "freezeArmor", armor: 3 }; CARDS.frost_seal.text = "冻结一个敌方随从；获得 3 点护甲。"; }
+  if (CARDS.echo_adept) { CARDS.echo_adept.battlecry = { type: "freezeDrawIfSpell", draw: 3 }; CARDS.echo_adept.text = "登场：冻结一个敌方随从；若你本回合施放过战术牌，抽 3 张牌。"; }
+
+  if (CARDS.anvil_quench) { CARDS.anvil_quench.spell = { type: "freezeArmor", armor: 4 }; CARDS.anvil_quench.text = "冻结一个敌方随从；获得 4 点护甲。"; }
+  if (CARDS.snow_time_shade) { CARDS.snow_time_shade.battlecry = { type: "freezeDrawIfSpell", draw: 4 }; CARDS.snow_time_shade.text = "登场：冻结一个敌方随从；若你本回合施放过战术牌，抽 4 张牌。"; }
+
+  // Cross-faction flavor pass 2: formations and pure-taunt bodies become class-specific.
+  (function classFormations() {
+    const patterns = {
+      academy: [[{attack:1},"+1 攻击"],[{health:1},"+0/+1"],[{attack:1,health:1},"+1/+1"],[{taunt:true},"守备"],[{rush:true},"先遣"],[{windfury:true},"连携"],[{attack:1,windfury:true},"+1 攻击和连携"]],
+      snow: [[{taunt:true,health:1},"+0/+1 和守备"],[{attackVsFrozen:1},"攻击已冻结随从时 +1 攻击"],[{attackVsFrozen:2},"攻击已冻结随从时 +2 攻击"],[{rush:true},"先遣"],[{windfury:true},"连携"],[{reborn:true},"回潮"],[{attack:1,health:1},"+1/+1"],[{taunt:true,attack:1},"+1 攻击和守备"],[{health:2},"+0/+2"]],
+      xizhao: [[{attack:1},"+1 攻击"],[{rush:true},"先遣"],[{attack:1,rush:true},"+1 攻击和先遣"],[{lifesteal:true},"血偿"],[{attack:2},"+2 攻击"],[{health:1,rush:true},"+0/+1 和先遣"]],
+      losutai: [[{taunt:true},"守备"],[{health:1},"+0/+1"],[{reborn:true},"回潮"],[{attack:1,health:1},"+1/+1"]],
+      republic: [[{taunt:true},"守备"],[{taunt:true,health:1},"+0/+1 和守备"],[{health:1},"+0/+1"],[{attack:1},"+1 攻击"],[{attack:1,health:1},"+1/+1"],[{rush:true},"先遣"],[{windfury:true},"连携"],[{lifesteal:true},"血偿"],[{reborn:true},"回潮"],[{taunt:true,attack:1},"+1 攻击和守备"]],
+      greyharbor: [[{attack:1},"+1 攻击"],[{rush:true},"先遣"],[{stealth:true},"隐匿"],[{attack:1,stealth:true},"+1 攻击和隐匿"],[{health:1},"+0/+1"],[{lifesteal:true},"血偿"],[{attack:1,health:1},"+1/+1"]],
+      empire: [[{taunt:true},"守备"],[{attack:1},"+1 攻击"],[{health:1},"+0/+1"],[{attack:1,health:1},"+1/+1"],[{rush:true},"先遣"],[{reborn:true},"回潮"],[{lifesteal:true},"血偿"],[{attack:2},"+2 攻击"]],
+      pus: [[{health:1},"+0/+1"],[{taunt:true},"守备"],[{attack:1},"+1 攻击"],[{lifesteal:true},"血偿"],[{reborn:true},"回潮"],[{health:2},"+0/+2"],[{attack:1,health:1},"+1/+1"],[{taunt:true,health:1},"+0/+1 和守备"]],
+      neutral: [[{attack:1},"+1 攻击"],[{health:1},"+0/+1"],[{taunt:true},"守备"],[{rush:true},"先遣"],[{reborn:true},"回潮"],[{lifesteal:true},"血偿"],[{attack:2},"+2 攻击"],[{health:2},"+0/+2"],[{attack:1,health:1},"+1/+1"],[{stealth:true},"隐匿"],[{windfury:true},"连携"],[{taunt:true,health:1},"+0/+1 和守备"]]
+    };
+    for (const f of Object.keys(patterns)) {
+      const forms = Object.values(CARDS).filter(c => c.faction === f && c.type === "formation" && !c.token && !c.disabled && !c.experimental).sort((a,b) => a.id.localeCompare(b.id));
+      forms.forEach((c, i) => {
+        const [formation, label] = patterns[f][i % patterns[f].length];
+        c.formation = formation;
+        c.text = "该阵位友方随从固定获得 " + label + "。";
+      });
+    }
+  })();
+  (function classTauntBodies() {
+    const riders = {
+      academy: { b: { type: "draw", amount: 1 }, t: "登场：抽 1 张牌。" },
+      snow: { b: { type: "freeze" }, t: "登场：冻结一个敌方随从。", target: "enemy" },
+      xizhao: { b: { type: "damage", amount: 1 }, t: "登场：对一个敌方随从造成 1 点伤害。", target: "enemy" },
+      losutai: { b: { type: "summon", token: "losutai_imp" }, t: "登场：召唤一个 1/1 洛斯汰魔物。" },
+      republic: { b: { type: "armor", amount: 1 }, t: "登场：获得 1 点护甲。" },
+      greyharbor: { b: { type: "markBounty" }, t: "登场：将一个敌方随从列入悬赏名单。", target: "enemy" },
+      empire: { b: { type: "armor", amount: 2 }, t: "登场：获得 2 点护甲。" },
+      pus: { b: { type: "healHero", amount: 1 }, t: "登场：恢复你的领袖 1 点生命。" },
+      neutral: { b: { type: "draw", amount: 1 }, t: "登场：抽 1 张牌。" }
+    };
+    for (const c of Object.values(CARDS)) {
+      if (c.type !== "minion" || c.token || c.disabled || c.experimental) continue;
+      const ks = c.keywords || [];
+      if (!ks.includes("taunt") || ks.length !== 1 || c.battlecry || c.passive || c.deathrattle) continue;
+      const r = riders[c.faction]; if (!r) continue;
+      c.battlecry = r.b; if (r.target) c.target = r.target;
+      c.keywords = ["taunt", "battlecry"];
+      c.text = "守备。" + r.t;
+    }
+  })();
+
+  if (CARDS.monster_summon) { CARDS.monster_summon.formation = { poisonous: true }; CARDS.monster_summon.text = "该阵位友方随从固定获得蚀毒。"; }
+  if (CARDS.blood_contract) { CARDS.blood_contract.formation = { health: 1, duration: 99 }; CARDS.blood_contract.text = "该阵位友方随从固定获得 +0/+1。"; }
+
+  if (CARDS.shield_recruit) { CARDS.shield_recruit.battlecry = { type: "armor", amount: 2 }; CARDS.shield_recruit.text = "守备。登场：获得 2 点护甲。"; }
+  (function uniqueNeutralFormations() {
+    const pats = [[{attack:1},"+1 攻击"],[{health:1},"+0/+1"],[{taunt:true},"守备"],[{rush:true},"先遣"],[{reborn:true},"回潮"],[{lifesteal:true},"血偿"],[{attack:2},"+2 攻击"],[{health:2},"+0/+2"],[{attack:1,health:1},"+1/+1"],[{stealth:true},"隐匿"],[{windfury:true},"连携"],[{taunt:true,health:1},"+0/+1 和守备"],[{attack:1,rush:true},"+1 攻击和先遣"],[{attack:2,health:1},"+2/+1"],[{attack:1,stealth:true},"+1 攻击和隐匿"],[{health:1,lifesteal:true},"+0/+1 和血偿"]];
+    const forms = Object.values(CARDS).filter(c => c.faction === "neutral" && c.type === "formation" && !c.token && !c.disabled && !c.experimental).sort((a,b) => a.id.localeCompare(b.id));
+    forms.forEach((c, i) => { const [f,label] = pats[i % pats.length]; c.formation = f; c.text = "该阵位友方随从固定获得 " + label + "。"; });
+  })();
+
+
+  // Differentiate duplicated minion templates with a class-specific deathrattle rider.
+  (function classMinionRiders() {
+    const sig = (c) => JSON.stringify({ type: c.type, keywords: (c.keywords || []).slice().sort(), battlecry: c.battlecry || null, passive: c.passive || null, deathrattle: c.deathrattle || null, formation: c.formation || null, spell: c.spell || null, debt: c.debt || null, excavate: c.excavate == null ? null : c.excavate, eq: c.type === "equipment" ? c.text : null });
+    const cards = Object.values(CARDS).filter(c => c.type === "minion" && !c.token && !c.disabled && !c.experimental).sort((a,b) => a.faction.localeCompare(b.faction) || (a.cost||0)-(b.cost||0) || a.id.localeCompare(b.id));
+    const seen = new Set(); let serial = 0;
+    for (const c of cards) {
+      const key = sig(c);
+      if (!seen.has(key)) { seen.add(key); continue; }
+      if (!["academy","snow","xizhao","losutai","republic","greyharbor","empire","pus"].includes(c.faction)) { seen.add(key); continue; }
+      serial++;
+      c.keywords = Array.from(new Set([...(c.keywords || []), "deathrattle"]));
+      let rider = "";
+      if (c.faction === "academy") { c.deathrattle = { type: "draw", amount: 1 }; rider = "抽 1 张牌"; }
+      else if (c.faction === "snow") { c.deathrattle = { type: "summon", token: "snow_fox_sentry" }; rider = "召唤一个雪狐哨兵"; }
+      else if (c.faction === "xizhao") { c.deathrattle = { type: "damageRandomEnemy", amount: 1 + (serial % 2) }; rider = "对随机敌方目标造成伤害"; }
+      else if (c.faction === "losutai") { c.deathrattle = { type: "summon", token: "losutai_imp" }; rider = "召唤一个 1/1 洛斯汰魔物"; }
+      else if (c.faction === "republic") { c.deathrattle = { type: "armor", amount: 1 + (serial % 2) }; rider = "获得护甲"; }
+      else if (c.faction === "greyharbor") { c.deathrattle = { type: "damageRandomEnemy", amount: 2 }; rider = "对随机敌方目标造成 2 点伤害"; }
+      else if (c.faction === "empire") { c.deathrattle = { type: "armor", amount: 2 }; rider = "获得 2 点护甲"; }
+      else if (c.faction === "pus") { c.deathrattle = { type: "healHero", amount: 1 + (serial % 2) }; rider = "恢复生命"; }
+      c.text = (c.text || "").replace(/余响：[^。]+。/g, "") + " 余响：" + rider + "。";
+      const nk = sig(c);
+      if (seen.has(nk)) { c.deathrattle.amount = (c.deathrattle.amount || 1) + (serial % 3); c.text = (c.text || "") + "（余响 " + serial + "）"; }
+      seen.add(sig(c));
+    }
+  })();
+
+  if (CARDS.pulse_banner) { CARDS.pulse_banner.deathrattle = { type: "healHero", amount: 4 }; CARDS.pulse_banner.text = "余响：恢复你的领袖 4 点生命。"; }
+  if (CARDS.vein_needle) { CARDS.vein_needle.deathrattle = { type: "healHero", amount: 1 }; CARDS.vein_needle.text = "登场：抽 1 张牌。 余响：恢复你的领袖 1 点生命。"; }
+  if (CARDS.spring_watcher) { CARDS.spring_watcher.deathrattle = { type: "healHero", amount: 3 }; CARDS.spring_watcher.text = "登场：抽 1 张牌。 余响：恢复你的领袖 3 点生命。"; }
+  if (CARDS.research_sampler) { CARDS.research_sampler.deathrattle = { type: "healHero", amount: 4 }; CARDS.research_sampler.text = "登场：抽 1 张牌。 余响：恢复你的领袖 4 点生命。"; }
+  if (CARDS.xh_castle_consul) { CARDS.xh_castle_consul.deathrattle = { type: "damageRandomEnemy", amount: 4 }; CARDS.xh_castle_consul.text = "余响：对随机敌方目标造成 4 点伤害。"; }
+  if (CARDS.erhardt) { CARDS.erhardt.deathrattle = { type: "armor", amount: 1 }; CARDS.erhardt.text = "余响：获得 1 点护甲。"; }
+  if (CARDS.cedric) { CARDS.cedric.deathrattle = { type: "armor", amount: 3 }; CARDS.cedric.text = "余响：获得 3 点护甲。"; }
+  if (CARDS.shield_marshal) { CARDS.shield_marshal.deathrattle = { type: "armor", amount: 4 }; CARDS.shield_marshal.text = "余响：获得 4 点护甲。"; }
+  if (CARDS.gh_silence_expert) { CARDS.gh_silence_expert.deathrattle = { type: "damageRandomEnemy", amount: 3 }; CARDS.gh_silence_expert.text = "先遣。 余响：对随机敌方目标造成 3 点伤害。"; }
+
+  if (CARDS.verious) { CARDS.verious.deathrattle = { type: "healHero", amount: 5 }; CARDS.verious.text = "登场：抽 1 张牌。 余响：恢复你的领袖 5 点生命。"; }
+  if (CARDS.eisenhut_newmoney) { CARDS.eisenhut_newmoney.deathrattle = { type: "armor", amount: 2 }; CARDS.eisenhut_newmoney.text = "余响：获得 2 点护甲。"; }
+
+  if (CARDS.smoke_screen) { CARDS.smoke_screen.spell = { type: "drawIfSpellPlayed", draw: 2 }; CARDS.smoke_screen.text = "抽 2 张牌；若你本回合已施放战术牌，再抽 1 张。"; }
+  if (CARDS.north_trail) { CARDS.north_trail.target = "enemy"; CARDS.north_trail.spell = { type: "freezeDraw", draw: 2 }; CARDS.north_trail.text = "冻结一个敌方随从；抽 2 张牌。"; }
+  if (CARDS.xh_blood_curse) { CARDS.xh_blood_curse.spell = { type: "drawIfEnemyNoMinions", draw: 2 }; CARDS.xh_blood_curse.text = "抽 2 张牌；若敌方没有随从，再抽 2 张。"; }
+  if (CARDS.ac_grand_library) { CARDS.ac_grand_library.spell = { type: "drawIfSpellPlayed", draw: 3 }; CARDS.ac_grand_library.text = "抽 3 张牌；若你本回合已施放战术牌，再抽 1 张。"; }
+  if (CARDS.smuggler_ship) { CARDS.smuggler_ship.target = "enemy"; CARDS.smuggler_ship.spell = { type: "freezeDraw", draw: 3 }; CARDS.smuggler_ship.text = "冻结一个敌方随从；抽 3 张牌。"; }
+  if (CARDS.coordinator_order) { CARDS.coordinator_order.spell = { type: "healHeroDraw", heal: 4, draw: 1 }; CARDS.coordinator_order.text = "恢复你的领袖 4 点生命；抽 1 张牌。" }
+
+  if (CARDS.smoke_screen) { CARDS.smoke_screen.spell = { type: "drawIfSpellPlayed", draw: 3 }; CARDS.smoke_screen.text = "抽 3 张牌；若你本回合已施放战术牌，再抽 1 张。"; }
+  if (CARDS.smuggler_ship) { CARDS.smuggler_ship.spell = { type: "freezeDraw", draw: 4 }; CARDS.smuggler_ship.text = "冻结一个敌方随从；抽 4 张牌。"; }
+  if (CARDS.snow_aurora) { CARDS.snow_aurora.spell = { type: "freezeDraw", draw: 3 }; CARDS.snow_aurora.text = "冻结一个敌方随从；抽 3 张牌。"; }
+
+  if (CARDS.ac_grand_library) { CARDS.ac_grand_library.spell = { type: "drawIfSpellPlayed", draw: 4 }; CARDS.ac_grand_library.text = "抽 4 张牌；若你本回合已施放战术牌，再抽 1 张。"; }
+  if (CARDS.snow_aurora) { CARDS.snow_aurora.spell = { type: "freezeDraw", draw: 5 }; CARDS.snow_aurora.text = "冻结一个敌方随从；抽 5 张牌。"; }
+
+  if (CARDS.coordination) { CARDS.coordination.spell = { type: "nextTurnMana", amount: 2 }; CARDS.coordination.text = "下回合开始时获得 2 点行动力。"; }
+  if (CARDS.levy) { CARDS.levy.spell = { type: "rampSpell", amount: 1 }; CARDS.levy.text = "本回合获得 1 点行动力。"; }
+  if (CARDS.mobilize) { CARDS.mobilize.spell = { type: "gainManaNowNext", mana: 1, next: 1 }; CARDS.mobilize.text = "本回合获得 1 点行动力；下回合开始再获得 1 点。"; }
+  if (CARDS.world_map) { CARDS.world_map.spell = { type: "loanDraw", draw: 2, penalty: 1 }; CARDS.world_map.text = "抽 2 张牌；下回合开始时行动力 -1。"; }
+  if (CARDS.resonance) { CARDS.resonance.spell = { type: "freezeDraw", draw: 1 }; CARDS.resonance.text = "冻结一个敌方随从；抽 1 张牌。"; }
+  if (CARDS.old_compass) { CARDS.old_compass.spell = { type: "freezeArmor", armor: 2 }; CARDS.old_compass.text = "冻结一个敌方随从；获得 2 点护甲。"; }
+  if (CARDS.snow_frost_veil) { CARDS.snow_frost_veil.spell = { type: "freezeDraw", draw: 2 }; CARDS.snow_frost_veil.text = "冻结一个敌方随从；抽 2 张牌。"; }
+  if (CARDS.debate) { CARDS.debate.spell = { type: "damageFreeze", amount: 1 }; CARDS.debate.text = "对一个敌方随从造成 1 点伤害，并冻结它。"; }
+  if (CARDS.blood_pact) { CARDS.blood_pact.spell = { type: "damage", amount: 2 }; CARDS.blood_pact.text = "对一个敌方随从造成 2 点伤害。"; }
+  if (CARDS.vein_siphon) { CARDS.vein_siphon.spell = { type: "damage", amount: 3 }; CARDS.vein_siphon.text = "对一个敌方随从造成 3 点伤害。"; }
+  if (CARDS.snow_blizzard) { CARDS.snow_blizzard.spell = { type: "damageFreeze", amount: 2 }; CARDS.snow_blizzard.text = "对所有敌方随从造成 2 点伤害，并冻结它们。"; }
+
+  if (CARDS.vein_siphon) { CARDS.vein_siphon.spell = { type: "damage", amount: 4 }; CARDS.vein_siphon.text = "对一个敌方随从造成 4 点伤害。"; }
+  if (CARDS.debate) { CARDS.debate.spell = { type: "damageFreeze", amount: 2 }; CARDS.debate.text = "对一个敌方随从造成 2 点伤害，并冻结它。"; }
+  if (CARDS.blood_pact) { CARDS.blood_pact.spell = { type: "damage", amount: 3 }; CARDS.blood_pact.text = "对一个敌方随从造成 3 点伤害。"; }
+  if (CARDS.snow_blizzard) { CARDS.snow_blizzard.spell = { type: "damageAllFreeze", amount: 2 }; CARDS.snow_blizzard.text = "对所有敌方随从造成 2 点伤害，并冻结它们。"; }
+  if (CARDS.north_trail) { CARDS.north_trail.spell = { type: "freezeDraw", draw: 3 }; CARDS.north_trail.text = "冻结一个敌方随从；抽 3 张牌。"; }
+
+  if (CARDS.ac_final_proof) { CARDS.ac_final_proof.spell = { type: "damageFreeze", amount: 3 }; CARDS.ac_final_proof.text = "对一个敌方随从造成 3 点伤害，并冻结它。"; }
+  if (CARDS.snow_last_snow) { CARDS.snow_last_snow.spell = { type: "freezeDraw", draw: 4 }; CARDS.snow_last_snow.text = "冻结所有敌方随从；抽 4 张牌。核心：冻结控场。"; }
+
+  if (CARDS.double_formula) { CARDS.double_formula.spell = { type: "damageFreeze", amount: 4 }; CARDS.double_formula.text = "对一个敌方随从造成 4 点伤害，并冻结它。"; }
+  if (CARDS.smuggler_ship) { CARDS.smuggler_ship.spell = { type: "freezeDraw", draw: 5 }; CARDS.smuggler_ship.text = "冻结一个敌方随从；抽 5 张牌。"; }
+
+  if (CARDS.snow_aurora) { CARDS.snow_aurora.spell = { type: "freezeDraw", draw: 6 }; CARDS.snow_aurora.text = "冻结一个敌方随从；抽 6 张牌。"; }
+
+  // Equipment flavor pass: duplicate equipment templates become distinct class relics.
+  const EQUIP_FLAVOR = {
+    ksetra_beacon_item: [{ health: 1 }, "你的所有友方随从获得 +1 生命。"],
+    beast_hide_armor: [{ attack: 1, health: 1 }, "你的所有友方随从获得 +1/+1。"],
+    house_longsword: [{ health: 2 }, "你的所有友方随从获得 +2 生命。"],
+    ledger_paperknife: [{ attack: 1, spellDraw: 1 }, "你的所有友方随从获得 +1 攻击；施放战术后抽 1 张牌。"],
+    anvil_bracer: [{ attack: 1 }, "你的所有友方随从获得 +1 攻击。"],
+    lt_tide_totem: [{ health: 1, armorTurn: 1 }, "你的所有友方随从获得 +1 生命；回合开始时获得 1 点护甲。"],
+    armor_forge: [{ armorTurn: 2 }, "你的回合开始时获得 2 点护甲。"],
+    floating_anchor: [{ healTurn: 1 }, "你的回合开始时恢复 1 点生命。"],
+    border_lance: [{ armorTurn: 1, health: 1 }, "你的回合开始时获得 1 点护甲；友方随从获得 +1 生命。"],
+    lt_tide_bell: [{ armorTurn: 1, spellDraw: 1 }, "你的回合开始时获得 1 点护甲；施放战术后抽 1 张牌。"],
+    snow_frostplate: [{ armorTurn: 1, healTurn: 1 }, "你的回合开始时获得 1 点护甲并恢复 1 点生命。"],
+    tide_ward_bracer: [{ health: 1, healTurn: 1 }, "友方随从获得 +1 生命；回合开始时恢复 1 点生命。"],
+    bloodbone_pauldron: [{ health: 1, attack: 1 }, "友方随从获得 +1/+1。"],
+    snow_capital_lamp: [{ health: 1, armorTurn: 1 }, "友方随从获得 +1 生命；回合开始时获得 1 点护甲。"],
+    five_department_badge: [{ healTurn: 1, spellDraw: 1 }, "回合开始时恢复 1 点生命；施放战术后抽 1 张牌。"],
+    bloodmoon_bone_ring: [{ healTurn: 1, attack: 1 }, "回合开始时恢复 1 点生命；友方随从获得 +1 攻击。"],
+    world_map_item: [{ healTurn: 1, armorTurn: 1 }, "回合开始时恢复 1 点生命并获得 1 点护甲。"],
+    frostweave_cloak: [{ spellDraw: 1 }, "每当你施放战术牌，抽 1 张牌。"],
+    bone_fang_blade: [{ healTurn: 2 }, "你的回合开始时恢复 2 点生命。"],
+    white_reef_lamp_oil: [{ healTurn: 1, health: 1 }, "回合开始时恢复 1 点生命；友方随从获得 +1 生命。"],
+    snow_hourglass: [{ healTurn: 1, armorTurn: 1 }, "回合开始时恢复 1 点生命并获得 1 点护甲。"],
+    whitefrost_bell: [{ health: 1, spellDraw: 1 }, "友方随从获得 +1 生命；施放战术后抽 1 张牌。"],
+    gambler_dice: [{ health: 1, healTurn: 1 }, "友方随从获得 +1 生命；回合开始时恢复 1 点生命。"],
+    lt_brood_armor: [{ health: 1, attack: 1 }, "友方随从获得 +1/+1。"],
+    ministry_map: [{ armorTurn: 2, spellDraw: 1 }, "回合开始时获得 2 点护甲；施放战术后抽 1 张牌。"],
+    sky_ship_ticket: [{ armorTurn: 1, healTurn: 1 }, "回合开始时获得 1 点护甲并恢复 1 点生命。"],
+    academy_inkwell: [{ armorTurn: 1, spellDraw: 2 }, "回合开始时获得 1 点护甲；施放战术后抽 2 张牌。"],
+    gh_ledger_chain: [{ armorTurn: 1, attack: 1 }, "回合开始时获得 1 点护甲；友方随从获得 +1 攻击。"],
+    brokenline_dagger: [{ spellDraw: 1, attack: 1 }, "施放战术后抽 1 张牌；友方随从获得 +1 攻击。"],
+    fog_harbor_ticket: [{ spellDraw: 1, health: 1 }, "施放战术后抽 1 张牌；友方随从获得 +1 生命。"],
+    snow_iceblade: [{ spellDraw: 1, armorTurn: 1 }, "施放战术后抽 1 张牌；回合开始时获得 1 点护甲。"],
+    snow_tundrabracer: [{ healTurn: 2 }, "你的回合开始时恢复 2 点生命。"],
+    snow_ember: [{ healTurn: 2, spellDraw: 1 }, "回合开始时恢复 2 点生命；施放战术后抽 1 张牌。"],
+    frost_prism: [{ healTurn: 1, spellDraw: 1 }, "回合开始时恢复 1 点生命；施放战术后抽 1 张牌。"],
+    snow_iceblade: [{ spellDraw: 1, armorTurn: 1 }, "施放战术后抽 1 张牌；回合开始时获得 1 点护甲。"],
+    spell_codex: [{ spellDraw: 1 }, "每当你施放战术牌，抽 1 张牌。"],
+    frost_prism: [{ healTurn: 1, spellDraw: 1 }, "回合开始时恢复 1 点生命；施放战术后抽 1 张牌。"],
+    vein_heart: [{ healTurn: 1, health: 1 }, "友方随从获得 +1 生命；回合开始时恢复 1 点生命。"],
+    gh_venom_vial: [{ attack: 1, spellDraw: 1 }, "友方随从获得 +1 攻击；施放战术后抽 1 张牌。"],
+    republic_seal: [{ health: 1, armorTurn: 1 }, "友方随从获得 +1 生命；回合开始时获得 1 点护甲。"],
+    blood_scythe: [{ attack: 1, healTurn: 1 }, "友方随从获得 +1 攻击；回合开始时恢复 1 点生命。"],
+    powder_engine: [{ attack: 1, armorTurn: 1 }, "友方随从获得 +1 攻击；回合开始时获得 1 点护甲。"],
+    formation_standard: [{ health: 1, armorTurn: 1 }, "友方随从获得 +1 生命；回合开始时获得 1 点护甲。"],
+    iron_banner: [{ health: 1, attack: 1 }, "友方随从获得 +1/+1。"],
+    gh_bounty_board: [{ attack: 1, healTurn: 1 }, "友方随从获得 +1 攻击；回合开始时恢复 1 点生命。"],
+    armor_forge: [{ armorTurn: 2 }, "你的回合开始时获得 2 点护甲。"],
+    blood_censer: [{ healTurn: 2 }, "你的回合开始时恢复 2 点生命。"],
+    wanderer_charm: [{ health: 1, healTurn: 1 }, "友方随从获得 +1 生命；回合开始时恢复 1 点生命。"],
+    snow_ember: [{ healTurn: 2, spellDraw: 1 }, "回合开始时恢复 2 点生命；施放战术后抽 1 张牌。"]
+  };
+  for (const [id, [aura, text]] of Object.entries(EQUIP_FLAVOR)) { const c = CARDS[id]; if (!c) continue; c.equipAura = aura; c.text = "装备（持续生效）：" + text; }
+
+  if (CARDS.house_longsword) { CARDS.house_longsword.equipAura = { attack: 1, health: 1 }; CARDS.house_longsword.text = "装备（持续生效）：你的所有友方随从获得 +1/+1。"; }
+  if (CARDS.formation_standard) { delete CARDS.formation_standard.equipAura; CARDS.formation_standard.text = "装备（持续生效）：阵型专用装备，重放时不重复叠加。"; }
+
+  if (CARDS.vein_heart) { CARDS.vein_heart.equipAura = { healTurn: 2 }; CARDS.vein_heart.text = "装备（持续生效）：你的回合开始时恢复 2 点生命。"; }
+  if (CARDS.frostweave_cloak) { CARDS.frostweave_cloak.equipAura = { armorTurn: 1, spellDraw: 1 }; CARDS.frostweave_cloak.text = "装备（持续生效）：回合开始时获得 1 点护甲；施放战术后抽 1 张牌。"; }
+  if (CARDS.blood_censer) { CARDS.blood_censer.equipAura = { healTurn: 1, attack: 1 }; CARDS.blood_censer.text = "装备（持续生效）：回合开始时恢复 1 点生命；友方随从获得 +1 攻击。"; }
+  if (CARDS.wanderer_charm) { CARDS.wanderer_charm.equipAura = { health: 2 }; CARDS.wanderer_charm.text = "装备（持续生效）：你的所有友方随从获得 +2 生命。"; }
+
+  if (CARDS.bloodmoon_bone_ring) { CARDS.bloodmoon_bone_ring.equipAura = { healTurn: 2, attack: 1 }; CARDS.bloodmoon_bone_ring.text = "装备（持续生效）：回合开始时恢复 2 点生命；友方随从获得 +1 攻击。"; }
+
+  // Neutral identity pass: neutral cards stop sharing class scripts.
+  (function neutralIdentity() {
+    const sig = (c) => JSON.stringify({ type: c.type, keywords: (c.keywords || []).slice().sort(), battlecry: c.battlecry || null, passive: c.passive || null, deathrattle: c.deathrattle || null, formation: c.formation || null, spell: c.spell || null, debt: c.debt || null, excavate: c.excavate == null ? null : c.excavate, eq: c.type === "equipment" ? c.text : null });
+    const cards = Object.values(CARDS).filter(c => !c.token && !c.disabled && !c.experimental);
+    const groups = new Map(); for (const c of cards) { const k = sig(c); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(c); }
+    const neutralForms = [ [{attack:1,health:1},"+1/+1"], [{taunt:true,health:1},"+0/+1 和守备"], [{rush:true,attack:1},"+1 攻击和先遣"], [{lifesteal:true,health:1},"+0/+1 和血偿"], [{reborn:true},"回潮"], [{stealth:true,attack:1},"+1 攻击和隐匿"], [{windfury:true},"连携"], [{attack:2},"+2 攻击"], [{health:2},"+0/+2"], [{taunt:true},"守备"], [{rush:true},"先遣"], [{health:1},"+0/+1"] ];
+    let n = 0;
+    for (const group of groups.values()) {
+      if (group.length < 2) continue;
+      for (const c of group) {
+        if (c.faction !== "neutral") continue;
+        n++;
+        if (c.type === "minion") {
+          c.keywords = Array.from(new Set([...(c.keywords || []), "deathrattle"]));
+          const kind = n % 3;
+          if (kind === 0) { c.deathrattle = { type: "draw", amount: 1 }; c.text = (c.text || "").replace(/余响：[^。]+。/g, "") + " 余响：抽 1 张牌。"; }
+          else if (kind === 1) { c.deathrattle = { type: "healHero", amount: 1 + (n % 3) }; c.text = (c.text || "").replace(/余响：[^。]+。/g, "") + " 余响：恢复你的领袖 " + (1 + (n % 3)) + " 点生命。"; }
+          else { c.deathrattle = { type: "armor", amount: 1 + (n % 4) }; c.text = (c.text || "").replace(/余响：[^。]+。/g, "") + " 余响：获得 " + (1 + (n % 4)) + " 点护甲。"; }
+        } else if (c.type === "spell") {
+          c.target = "none"; c.spell = { type: "draw", amount: 1 }; c.text = "抽 1 张牌；商队为你多带 1 张货。";
+        } else if (c.type === "formation") {
+          const [f,label] = neutralForms[n % neutralForms.length]; c.formation = f; c.text = "该阵位友方随从固定获得 " + label + "。";
+        } else if (c.type === "equipment") {
+          c.equipAura = { attack: 1, health: 1 }; c.text = "装备（持续生效）：你的所有友方随从获得 +1/+1。";
+        }
+      }
+    }
+  })();
+
+  const NEUTRAL_FIX = {
+    archive_scribe: { deathrattle: { type: "draw", amount: 2 } },
+    iron_engineer: { deathrattle: { type: "armor", amount: 4 } },
+    white_reef_keeper: { deathrattle: { type: "draw", amount: 2 } },
+    anvil_town_miner: { deathrattle: { type: "armor", amount: 2 } },
+    wanderer_charm: { equipAura: { health: 3 }, text: "装备（持续生效）：你的所有友方随从获得 +3 生命。" },
+    gambler_dice: { equipAura: { attack: 1 }, text: "装备（持续生效）：你的所有友方随从获得 +1 攻击。" },
+    snow_capital_lamp: { equipAura: { armorTurn: 1 }, text: "装备（持续生效）：你的回合开始时获得 1 点护甲。" },
+    world_map_item: { equipAura: { healTurn: 1 }, text: "装备（持续生效）：你的回合开始时恢复 1 点生命。" },
+    north_hunter: { deathrattle: { type: "healHero", amount: 3 } },
+    anvil_town_smith: { deathrattle: { type: "healHero", amount: 1 } },
+    white_reef_runner: { deathrattle: { type: "healHero", amount: 3 } },
+    losutai_scavenger: { deathrattle: { type: "healHero", amount: 4 } },
+    fog_navigator: { deathrattle: { type: "draw", amount: 2 } },
+    xh_blood_tax: { deathrattle: { type: "draw", amount: 3 } },
+    world_edge: { spell: { type: "draw", amount: 2 }, text: "抽 2 张牌；商队为你多带 1 张货。" },
+    gok_lamp_row: { formation: { windfury: true, attack: 1 }, text: "该阵位友方随从固定获得 +1 攻击和连携。" },
+    losutai_pool: { formation: { health: 3 }, text: "该阵位友方随从固定获得 +0/+3。" },
+    smugglers_dock: { formation: { reborn: true, health: 1 }, text: "该阵位友方随从固定获得 +0/+1 和回潮。" },
+    forgotten_gate: { formation: { attack: 2, rush: true }, text: "该阵位友方随从固定获得 +2 攻击和先遣。" }
+  };
+  for (const [id, patch] of Object.entries(NEUTRAL_FIX)) { const c = CARDS[id]; if (!c) continue; Object.assign(c, patch); if (c.type === "minion") { c.keywords = Array.from(new Set([...(c.keywords || []), "deathrattle"])); c.text = (c.text || "").replace(/余响：[^。]+。/g, "") + " 余响：" + ({draw:"抽 " + (patch.deathrattle.amount) + " 张牌。",armor:"获得 " + (patch.deathrattle.amount) + " 点护甲。",healHero:"恢复你的领袖 " + (patch.deathrattle.amount) + " 点生命。"}[patch.deathrattle.type]); } }
+
+  if (CARDS.gambler_dice) { CARDS.gambler_dice.equipAura = { attack: 1, health: 1 }; CARDS.gambler_dice.text = "装备（持续生效）：你的所有友方随从获得 +1/+1。"; }
+  if (CARDS.dark_route) { CARDS.dark_route.spell = { type: "draw", amount: 3 }; CARDS.dark_route.text = "抽 3 张牌。"; }
+
+  const ARMOR_EQUIP_FIX = {
+    bone_fang_blade: { equipAura: { healTurn: 1, attack: 1 }, text: "装备（持续生效）：回合开始时恢复 1 点生命；友方随从获得 +1 攻击。" },
+    snow_tundrabracer: { equipAura: { healTurn: 1, health: 1 }, text: "装备（持续生效）：回合开始时恢复 1 点生命；友方随从获得 +1 生命。" },
+    gh_bounty_board: { equipAura: { attack: 2, healTurn: 1 }, text: "装备（持续生效）：友方随从获得 +2 攻击；回合开始时恢复 1 点生命。" },
+    iron_banner: { equipAura: { health: 2 }, text: "装备（持续生效）：你的所有友方随从获得 +2 生命。" },
+    bloodbone_pauldron: { equipAura: { attack: 2 }, text: "装备（持续生效）：你的所有友方随从获得 +2 攻击。" },
+    lt_brood_armor: { equipAura: { attack: 1, health: 1 }, text: "装备（持续生效）：你的所有友方随从获得 +1/+1。" },
+    five_department_badge: { equipAura: { healTurn: 2, spellDraw: 1 }, text: "装备（持续生效）：回合开始时恢复 2 点生命；施放战术后抽 1 张牌。" },
+    seven_cities_crest: { equipAura: { armorTurn: 1, health: 1 }, text: "装备（持续生效）：回合开始时获得 1 点护甲；友方随从获得 +1 生命。" },
+    house_longsword: { equipAura: { attack: 1, health: 2 }, text: "装备（持续生效）：你的所有友方随从获得 +1/+2。" },
+    gambler_dice: { equipAura: { health: 2 }, text: "装备（持续生效）：你的所有友方随从获得 +2 生命。" }
+  };
+  for (const [id, patch] of Object.entries(ARMOR_EQUIP_FIX)) { const c = CARDS[id]; if (c) Object.assign(c, patch); }
+  const ARMOR_MINION_FIX = {
+    forge_technician: { deathrattle: { type: "armor", amount: 2 }, text: "余响：获得 2 点护甲。" },
+    iron_order_wall: { deathrattle: { type: "armor", amount: 4 }, text: "余响：获得 4 点护甲。" },
+    siege_captain: { deathrattle: { type: "armor", amount: 4 }, text: "守备。 余响：获得 4 点护甲。" },
+    grain_convoy: { deathrattle: { type: "armor", amount: 5 }, text: "余响：获得 5 点护甲。" },
+    eisenhut_newmoney: { deathrattle: { type: "armor", amount: 3 }, text: "余响：获得 3 点护甲。" },
+    iron_artillery: { deathrattle: { type: "armor", amount: 1 }, text: "守备。 余响：获得 1 点护甲。" },
+    blackmarket_bodyguard: { deathrattle: { type: "damageRandomEnemy", amount: 3 }, text: "余响：对随机敌方目标造成 3 点伤害。" },
+    ancient_fortress_scion: { deathrattle: { type: "damageRandomEnemy", amount: 4 }, text: "余响：对随机敌方目标造成 4 点伤害。" }
+  };
+  for (const [id, patch] of Object.entries(ARMOR_MINION_FIX)) { const c = CARDS[id]; if (c) Object.assign(c, patch); }
+
+  if (CARDS.blood_censer) { CARDS.blood_censer.equipAura = { healTurn: 2, attack: 1 }; CARDS.blood_censer.text = "装备（持续生效）：回合开始时恢复 2 点生命；友方随从获得 +1 攻击。"; }
+  if (CARDS.ancient_fortress_scion) { CARDS.ancient_fortress_scion.deathrattle = { type: "damageRandomEnemy", amount: 5 }; CARDS.ancient_fortress_scion.text = "余响：对随机敌方目标造成 5 点伤害。"; }
+  if (CARDS.eisenhut_newmoney) { CARDS.eisenhut_newmoney.deathrattle = { type: "armor", amount: 4 }; CARDS.eisenhut_newmoney.text = "余响：获得 4 点护甲。"; }
+  if (CARDS.forge_technician) { CARDS.forge_technician.deathrattle = { type: "armor", amount: 3 }; CARDS.forge_technician.text = "余响：获得 3 点护甲。"; }
+
+  if (CARDS.bloodmoon_bone_ring) { CARDS.bloodmoon_bone_ring.equipAura = { healTurn: 3, attack: 1 }; CARDS.bloodmoon_bone_ring.text = "装备（持续生效）：回合开始时恢复 3 点生命；友方随从获得 +1 攻击。"; }
+  if (CARDS.eisenhut_newmoney) { CARDS.eisenhut_newmoney.deathrattle = { type: "armor", amount: 5 }; CARDS.eisenhut_newmoney.text = "余响：获得 5 点护甲。"; }
+
+
+
+  const FINAL_NEUTRAL = {
+    snow_medic: { deathrattle: { type: "draw", amount: 2 }, text: "余响：抽 2 张牌。" },
+    vein_medic: { deathrattle: { type: "draw", amount: 3 }, text: "余响：抽 3 张牌。" },
+    iron_engineer: { deathrattle: { type: "draw", amount: 4 }, text: "余响：抽 4 张牌。" },
+    field_engineer: { deathrattle: { type: "draw", amount: 5 }, text: "守备。 余响：抽 5 张牌。" },
+    card_shark: { deathrattle: { type: "draw", amount: 6 }, text: "登场：抽 1 张牌。 余响：抽 6 张牌。" },
+    dusk_innkeeper: { deathrattle: { type: "draw", amount: 7 }, text: "登场：抽 1 张牌。 余响：抽 7 张牌。" }
+  };
+  for (const [id, patch] of Object.entries(FINAL_NEUTRAL)) { const c = CARDS[id]; if (c) Object.assign(c, patch); }
+  const FINAL_SNOW_SPELLS = [
+    ["dusk_inn", { type: "freeze" }, 1],
+    ["mist_bargain", { type: "freezeDraw", draw: 1 }, 1],
+    ["reef_signal", { type: "freezeArmor", armor: 1 }, 1],
+    ["snow_freeze_touch", { type: "freezeDraw", draw: 2 }, 2],
+    ["snow_wind_strike", { type: "freezeDraw", draw: 3 }, 3],
+    ["snow_gale", { type: "freezeDraw", draw: 4 }, 4],
+    ["snow_ice_wall", { type: "freezeDraw", draw: 5 }, 5],
+    ["snow_time_stop", { type: "freezeDraw", draw: 6 }, 6],
+    ["snow_wind_step", { type: "freezeDraw", draw: 7 }, 7],
+    ["snow_ice_lance", { type: "freezeDraw", draw: 8 }, 8]
+  ];
+  for (const [id, spell] of FINAL_SNOW_SPELLS) { const c = CARDS[id]; if (!c) continue; c.target = "enemy"; c.spell = spell; c.text = "冻结一个敌方随从；执行雪都战术 " + (spell.draw || 1) + "。"; }
+
+  if (CARDS.archive_scribe) { CARDS.archive_scribe.deathrattle = { type: "draw", amount: 3 }; CARDS.archive_scribe.text = "余响：抽 3 张牌。"; }
+  if (CARDS.resonance) { CARDS.resonance.spell = { type: "freezeDraw", draw: 2 }; CARDS.resonance.text = "冻结一个敌方随从；抽 2 张牌。"; }
+  if (CARDS.snow_ice_wall) { CARDS.snow_ice_wall.spell = { type: "freezeArmor", armor: 5 }; CARDS.snow_ice_wall.text = "冻结一个敌方随从；获得 5 点护甲。"; }
+  if (CARDS.snow_wind_strike) { CARDS.snow_wind_strike.spell = { type: "freezeArmor", armor: 3 }; CARDS.snow_wind_strike.text = "冻结一个敌方随从；获得 3 点护甲。"; }
+  if (CARDS.snow_freeze_touch) { CARDS.snow_freeze_touch.spell = { type: "freezeArmor", armor: 2 }; CARDS.snow_freeze_touch.text = "冻结一个敌方随从；获得 2 点护甲。"; }
+  if (CARDS.snow_gale) { CARDS.snow_gale.spell = { type: "freezeArmor", armor: 4 }; CARDS.snow_gale.text = "冻结一个敌方随从；获得 4 点护甲。"; }
+  if (CARDS.snow_time_stop) { CARDS.snow_time_stop.spell = { type: "freezeArmor", armor: 6 }; CARDS.snow_time_stop.text = "冻结一个敌方随从；获得 6 点护甲。"; }
+  if (CARDS.dusk_inn) CARDS.dusk_inn.text = "雪都战术·冰封：冻结一个敌方随从。";
+  if (CARDS.mist_bargain) CARDS.mist_bargain.text = "雪都战术·抽牌：冻结一个敌方随从；抽 1 张牌。";
+  if (CARDS.reef_signal) CARDS.reef_signal.text = "雪都战术·护甲：冻结一个敌方随从；获得 1 点护甲。";
+
+  if (CARDS.resonance) { CARDS.resonance.spell = { type: "freezeDraw", draw: 3 }; CARDS.resonance.text = "冻结一个敌方随从；抽 3 张牌。"; }
+  if (CARDS.frost_seal) { CARDS.frost_seal.spell = { type: "freezeArmor", armor: 7 }; CARDS.frost_seal.text = "冻结一个敌方随从；获得 7 点护甲。"; }
+  if (CARDS.vein_medic) { CARDS.vein_medic.deathrattle = { type: "draw", amount: 5 }; CARDS.vein_medic.text = "余响：抽 5 张牌。"; }
+  if (CARDS.old_compass) { CARDS.old_compass.spell = { type: "freezeArmor", armor: 8 }; CARDS.old_compass.text = "冻结一个敌方随从；获得 8 点护甲。"; }
+  if (CARDS.anvil_quench) { CARDS.anvil_quench.spell = { type: "freezeArmor", armor: 9 }; CARDS.anvil_quench.text = "冻结一个敌方随从；获得 9 点护甲。"; }
+
+  if (CARDS.north_trail) { CARDS.north_trail.spell = { type: "freezeArmor", armor: 10 }; CARDS.north_trail.text = "冻结一个敌方随从；获得 10 点护甲。"; }
+
+  if (CARDS.gh_silencer) { CARDS.gh_silencer.target = "enemy"; CARDS.gh_silencer.battlecry = { type: "silence" }; CARDS.gh_silencer.keywords = Array.from(new Set([...(CARDS.gh_silencer.keywords || []), "battlecry"])); CARDS.gh_silencer.text = "登场：沉默一个敌方随从。 余响：获得 6 点护甲。"; }
+
+  // v7 debt rewrite: debt cards go into the opponent deck; drawn debt must be played or punishes.
+  (function rewriteDebtCards() {
+    const describe = (effect) => {
+      if (!effect) return "无额外效果";
+      const n = effect.amount || 1;
+      if (effect.type === "damageHero") return "受到 " + n + " 点伤害";
+      if (effect.type === "discardRandom") return "随机弃 " + n + " 张牌";
+      if (effect.type === "blockHeroPower") return "下回合不能使用领袖技能";
+      if (effect.type === "draw") return "抽 " + n + " 张牌";
+      if (effect.type === "healHero") return "恢复 " + n + " 点生命";
+      if (effect.type === "armor") return "获得 " + n + " 点护甲";
+      if (effect.type === "summon") return "召唤 " + n + " 个随从";
+      return "执行债务效果";
+    };
+    for (const c of Object.values(CARDS)) {
+      if (c.type !== "debt") continue;
+      const old = c.debt || {};
+      const effect = (old.enemy && old.enemy.effect) || old.effect || { type: "damageHero", amount: 2 };
+      const effectAmount = effect.amount || 2;
+      const oldPenalty = old.self && old.self.penalty;
+      const penalty = oldPenalty && oldPenalty.type === "damageHero"
+        ? { type: "damageHero", amount: Math.max(oldPenalty.amount || 0, effectAmount + 2) }
+        : { type: "damageHero", amount: Math.max(3, effectAmount + 2) };
+      c.cost = 0;
+      c.name = String(c.name || "").replace(/^(血债|潮债)/, "债务");
+      c.debt = { effect: effect, penalty: penalty };
+      c.text = "债务卡。打出后洗入对手牌库。对手抽到后本回合必须打出。打出：" + describe(effect) + "；未打出：回合结束时受到 " + penalty.amount + " 点伤害。";
+    }
+  })();
+
+  if (CARDS.lt_tide_hunter) CARDS.lt_tide_hunter.name = "债务·潮猎";
+
+  (function uniqueDebtValues() {
+    const describe = (effect) => {
+      if (!effect) return "无额外效果";
+      const n = effect.amount || 1;
+      if (effect.type === "damageHero") return "受到 " + n + " 点伤害";
+      if (effect.type === "discardRandom") return "随机弃 " + n + " 张牌";
+      if (effect.type === "blockHeroPower") return "下回合不能使用领袖技能";
+      return "执行债务效果";
+    };
+    const table = {
+      hunt_ritual: ["damageHero", 3, 5],
+      xh_bone_hunter: ["blockHeroPower", 1, 5],
+      blood_altar: ["damageHero", 1, 3],
+      lt_tide_spawn: ["damageHero", 1, 4],
+      lt_venom_larva: ["damageHero", 1, 5],
+      lt_hatch: ["damageHero", 3, 6],
+      lt_tide_pool: ["damageHero", 1, 7],
+      monster_command: ["damageHero", 2, 4],
+      lt_hatch_guard: ["damageHero", 2, 5],
+      lt_venom_fang: ["damageHero", 2, 6],
+      lt_reborn_rite: ["damageHero", 2, 7],
+      lt_tide_warden: ["damageHero", 2, 8],
+      lt_bone_scavenger: ["discardRandom", 1, 3],
+      lt_brood_attendant: ["discardRandom", 1, 4],
+      lt_tide_hunter: ["discardRandom", 1, 5],
+      lt_bone_warlock: ["discardRandom", 1, 6],
+      lt_venom_nest: ["discardRandom", 1, 7]
+    };
+    for (const [id, [type, amount, penalty]] of Object.entries(table)) {
+      const c = CARDS[id]; if (!c || c.type !== "debt") continue;
+      c.debt = { effect: { type, amount }, penalty: { type: "damageHero", amount: penalty } };
+      c.text = "债务卡。打出后洗入对手牌库。对手抽到后本回合必须打出。打出：" + describe(c.debt.effect) + "；未打出：回合结束时受到 " + penalty + " 点伤害。";
+    }
+  })();
+
+  if (CARDS.xh_bone_hunter) { CARDS.xh_bone_hunter.debt.penalty.amount = 6; CARDS.xh_bone_hunter.text = "债务卡。打出后洗入对手牌库。对手抽到后本回合必须打出。打出：下回合不能使用领袖技能；未打出：回合结束时受到 6 点伤害。"; }
+
+  if (CARDS.xh_alley_blade) { CARDS.xh_alley_blade.debt.penalty.amount = 7; CARDS.xh_alley_blade.text = "债务卡。打出后洗入对手牌库。对手抽到后本回合必须打出。打出：下回合不能使用领袖技能；未打出：回合结束时受到 7 点伤害。"; }
+
+  // v7.1 debt balance: cost 1-3, unique small composite effects, reduced penalties.
+  (function rebalanceDebt() {
+    const variants = [];
+    for (const damage of [1, 2, 3]) for (const discard of [0, 1, 2]) for (const block of [false, true]) for (const armorLoss of [0, 1]) {
+      if (!damage && !discard && !block && !armorLoss) continue;
+      const severity = damage + discard * 1.5 + (block ? 1 : 0) + armorLoss * 0.5;
+      variants.push({ damage, discard, block, armorLoss, severity });
+    }
+    variants.sort((a,b) => a.severity - b.severity || a.damage - b.damage || a.discard - b.discard || Number(a.block) - Number(b.block) || a.armorLoss - b.armorLoss);
+    const debts = Object.values(CARDS).filter(c => c.type === "debt").sort((a,b) => a.faction.localeCompare(b.faction) || a.id.localeCompare(b.id));
+    debts.forEach((c, i) => {
+      const v = variants[i % variants.length];
+      const effect = { type: "debt" };
+      if (v.damage) effect.damage = v.damage;
+      if (v.discard) effect.discard = v.discard;
+      if (v.block) effect.block = true;
+      if (v.armorLoss) effect.armorLoss = v.armorLoss;
+      const parts = [];
+      if (v.damage) parts.push("受到 " + v.damage + " 点伤害");
+      if (v.armorLoss) parts.push("失去 " + v.armorLoss + " 点护甲");
+      if (v.discard) parts.push("随机弃 " + v.discard + " 张牌");
+      if (v.block) parts.push("下回合不能使用领袖技能");
+      const penalty = Math.min(5, Math.max(2, Math.round(v.severity) + 2));
+      c.cost = v.severity >= 5 ? 3 : v.severity >= 2.5 ? 2 : 1;
+      c.debt = { effect: effect, penalty: { type: "damageHero", amount: penalty } };
+      c.text = "债务卡。打出后洗入对手牌库。对手抽到后本回合必须打出。打出：" + parts.join("，") + "；未打出：回合结束时受到 " + penalty + " 点伤害。";
+    });
+  })();
+
+  // v8 debt task model: card is inert in hand; playing it starts a one-turn task.
+  (function debtTaskCards() {
+    const pool = [
+      { type: "summon", amount: 1, label: "摆放 1 个随从" },
+      { type: "spell", amount: 1, label: "使用 1 张战术卡" },
+      { type: "noCards", amount: 0, label: "不能再使用卡牌" },
+      { type: "attack", amount: 1, label: "发起 1 次攻击" },
+      { type: "playCards", amount: 2, label: "再打出 2 张牌" },
+      { type: "noSummon", amount: 0, label: "不能再摆放随从" },
+      { type: "noAttack", amount: 0, label: "不能攻击" },
+      { type: "summon", amount: 2, label: "摆放 2 个随从" },
+      { type: "spell", amount: 2, label: "使用 2 张战术卡" },
+      { type: "playCards", amount: 1, label: "再打出 1 张牌" },
+      { type: "noSpell", amount: 0, label: "不能再使用战术卡" },
+      { type: "playCards", amount: 3, label: "再打出 3 张牌" },
+      { type: "summon", amount: 3, label: "摆放 3 个随从" },
+      { type: "attack", amount: 2, label: "发起 2 次攻击" },
+      { type: "spell", amount: 3, label: "使用 3 张战术卡" },
+      { type: "playCards", amount: 2, label: "再打出 2 张牌" }
+    ];
+    const debts = Object.values(CARDS).filter(c => c.type === "debt").sort((a,b) => a.faction.localeCompare(b.faction) || a.id.localeCompare(b.id));
+    debts.forEach((c, i) => {
+      const spec = pool[i % pool.length];
+      const penalty = 2 + (i % 3);
+      const cost = (spec.type === "noCards" || spec.type === "noSummon" || spec.type === "noAttack" || spec.type === "noSpell") ? 1 : 2;
+      c.cost = cost;
+      c.debt = { task: { type: spec.type, amount: spec.amount || 0, label: spec.label }, penalty: { type: "damageHero", amount: penalty } };
+      c.text = "债务卡。打出后洗入对手牌库。对手不打出时只占手牌。对手打出此牌后，本回合必须" + spec.label + "；完成免罚，未完成回合结束受到 " + penalty + " 点伤害。";
+    });
+  })();
+
+  for (const c of Object.values(CARDS)) {
+    if (c.type !== "debt" || !c.debt || !c.debt.task) continue;
+    const t = c.debt.task;
+    const negative = ["noCards", "noSummon", "noAttack", "noSpell"].includes(t.type);
+    const clause = negative ? "本回合" + t.label : "本回合必须" + t.label;
+    c.text = "债务卡。打出后洗入对手牌库。对手不打出时只占手牌。对手打出此牌后，" + clause + "；完成免罚，未完成回合结束受到 " + c.debt.penalty.amount + " 点伤害。";
+  }
+
+  // 修复：cleanLegacy 清掉了卡面仍明确写出的逆流消耗。
+  if (CARDS.stabilize) CARDS.stabilize.reflux = 2;
+  if (CARDS.return_tide) CARDS.return_tide.reflux = 2;
+
   return { FACTIONS, FACTION_IDS, nextFaction, HEROES, CARDS, DECKS, NEUTRAL_DECK, KEYWORDS, DECK_STRATEGIES, DECK_SPECIALS, DECK_TRIM, cardPool, validateDeck, autoBuildDeck, maxCopies };
 });
 

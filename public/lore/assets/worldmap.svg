@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid meet"><style>text{font-family:"STKaiti","KaiTi","Microsoft YaHei",serif;}</style>
+  <defs>
+    <!-- 纸张纹理 -->
+    <filter id="paper" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="4" result="n"/>
+      <feColorMatrix type="saturate" values="0" in="n" result="g"/>
+      <feComponentTransfer in="g" result="a">
+        <feFuncA type="linear" slope="0.5"/>
+      </feComponentTransfer>
+      <feComposite in="a" in2="SourceGraphic" operator="in" result="t"/>
+      <feBlend in="SourceGraphic" in2="t" mode="multiply"/>
+    </filter>
+
+    <!-- 海岸晕染 -->
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+    <filter id="soft2" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2.5"/>
+    </filter>
+
+    <!-- 地形渐变 -->
+    <linearGradient id="gEmpire" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0%" stop-color="#d8c7a0"/>
+      <stop offset="60%" stop-color="#c9b48a"/>
+      <stop offset="100%" stop-color="#b9a173"/>
+    </linearGradient>
+    <linearGradient id="gRepublic" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0%" stop-color="#dccb9a"/>
+      <stop offset="60%" stop-color="#cfb87e"/>
+      <stop offset="100%" stop-color="#bfa46a"/>
+    </linearGradient>
+    <linearGradient id="gIce" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f4f8fa"/>
+      <stop offset="55%" stop-color="#dfe9ee"/>
+      <stop offset="100%" stop-color="#c3d3dc"/>
+    </linearGradient>
+    <linearGradient id="gPus" x1="0" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#b6d6cc"/>
+      <stop offset="100%" stop-color="#8cb8ac"/>
+    </linearGradient>
+    <linearGradient id="gXizhao" x1="0" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#cfa49c"/>
+      <stop offset="100%" stop-color="#b07f78"/>
+    </linearGradient>
+    <linearGradient id="gGrey" x1="0" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#b9c9b6"/>
+      <stop offset="100%" stop-color="#93a891"/>
+    </linearGradient>
+
+    <!-- 海洋波纹 -->
+    <pattern id="waves" width="46" height="22" patternUnits="userSpaceOnUse">
+      <path d="M 2 14 Q 12 8 22 14 T 42 14" fill="none" stroke="#8a9a95" stroke-width="1" opacity=".35"/>
+    </pattern>
+
+    <!-- 森林 -->
+    <pattern id="trees" width="26" height="22" patternUnits="userSpaceOnUse">
+      <g fill="none" stroke="#5d6b4e" stroke-width="1.2" opacity=".65">
+        <path d="M 13 4 L 7 15 L 19 15 Z"/>
+        <path d="M 13 9 L 5 21 L 21 21 Z"/>
+      </g>
+    </pattern>
+
+    <!-- 山 -->
+    <g id="mt">
+      <path d="M 0 0 L -11 20 L 11 20 Z" fill="#a8977a" stroke="#4a3c2b" stroke-width="1.2"/>
+      <path d="M 0 0 L -4 9 L 4 9 Z" fill="#efe7d6" stroke="none"/>
+    </g>
+    <g id="mt2">
+      <path d="M 0 0 L -8 15 L 8 15 Z" fill="#b3a284" stroke="#4a3c2b" stroke-width="1"/>
+      <path d="M 0 0 L -3 7 L 3 7 Z" fill="#f2ead9" stroke="none"/>
+    </g>
+  </defs>
+
+  <!-- ============ 纸张底 ============ -->
+  <rect width="1600" height="1000" fill="#e9ddc2"/>
+  <rect width="1600" height="1000" filter="url(#paper)" opacity=".55"/>
+
+  <!-- ============ 边框 ============ -->
+  <rect x="24" y="24" width="1552" height="952" fill="none" stroke="#4a3a25" stroke-width="3"/>
+  <rect x="34" y="34" width="1532" height="932" fill="none" stroke="#4a3a25" stroke-width="1" opacity=".7"/>
+  <!-- 角花 -->
+  <g fill="none" stroke="#4a3a25" stroke-width="1.6" opacity=".85">
+    <path d="M 24 66 Q 44 44 66 24"/>
+    <path d="M 1576 66 Q 1556 44 1534 24"/>
+    <path d="M 24 934 Q 44 956 66 976"/>
+    <path d="M 1576 934 Q 1556 956 1534 976"/>
+    <circle cx="40" cy="40" r="3"/>
+    <circle cx="1560" cy="40" r="3"/>
+    <circle cx="40" cy="960" r="3"/>
+    <circle cx="1560" cy="960" r="3"/>
+  </g>
+
+  <!-- ============ 海洋 ============ -->
+  <rect x="34" y="34" width="1532" height="932" fill="#cfdcd6"/>
+  <rect x="34" y="34" width="1532" height="932" fill="url(#waves)"/>
+  <!-- 洋流线 -->
+  <g fill="none" stroke="#7f918b" stroke-width="1.2" opacity=".5" stroke-dasharray="2 5">
+    <path d="M 180 760 C 300 780 420 750 520 770 C 620 790 700 760 780 772"/>
+    <path d="M 900 780 C 1020 800 1140 770 1260 786 C 1360 800 1440 776 1500 786"/>
+    <path d="M 120 560 C 240 580 360 548 480 566"/>
+  </g>
+
+  <!-- ============ 北方大陆（帝国） ============ -->
+  <!-- 海岸晕 -->
+  <path d="M 140,210
+    C 150,160 200,120 270,105 C 340,90 400,120 470,108
+    C 540,96 600,72 670,86 C 740,100 800,70 870,84
+    C 940,98 1010,78 1080,96 C 1150,114 1220,100 1280,130
+    C 1330,155 1360,200 1340,245 C 1315,300 1250,320 1180,330
+    C 1110,340 1050,320 980,336 C 910,352 850,330 780,344
+    C 710,358 650,336 580,350 C 510,364 450,344 380,352
+    C 310,360 240,340 180,318 C 130,300 120,260 140,210 Z"
+    fill="#b9c9c2" filter="url(#soft)" opacity=".55"/>
+  <!-- 大陆主体 -->
+  <path d="M 140,210
+    C 150,160 200,120 270,105 C 340,90 400,120 470,108
+    C 540,96 600,72 670,86 C 740,100 800,70 870,84
+    C 940,98 1010,78 1080,96 C 1150,114 1220,100 1280,130
+    C 1330,155 1360,200 1340,245 C 1315,300 1250,320 1180,330
+    C 1110,340 1050,320 980,336 C 910,352 850,330 780,344
+    C 710,358 650,336 580,350 C 510,364 450,344 380,352
+    C 310,360 240,340 180,318 C 130,300 120,260 140,210 Z"
+    fill="url(#gEmpire)" stroke="#4a3a25" stroke-width="2.2"/>
+  <!-- 内陆高地 -->
+  <path d="M 300,180 C 420,150 560,170 680,150 C 800,130 920,160 1040,145 C 1120,160 1160,200 1140,240 C 1080,280 960,270 840,285 C 720,300 600,280 480,295 C 380,306 300,290 260,255 C 235,225 250,195 300,180 Z"
+    fill="#c4b088" opacity=".55"/>
+  <!-- 森林 -->
+  <path d="M 330,250 C 400,235 470,250 540,240 C 560,270 540,295 500,300 C 430,310 360,300 320,290 C 305,272 310,258 330,250 Z" fill="url(#trees)"/>
+  <!-- 山脉：黑脊脉 -->
+  <g>
+    <use href="#mt" x="700" y="150"/>
+    <use href="#mt2" x="732" y="160"/>
+    <use href="#mt" x="762" y="142"/>
+    <use href="#mt2" x="792" y="158"/>
+    <use href="#mt" x="822" y="148"/>
+    <use href="#mt2" x="854" y="164"/>
+    <use href="#mt" x="884" y="152"/>
+    <use href="#mt2" x="916" y="168"/>
+    <use href="#mt" x="946" y="156"/>
+    <use href="#mt2" x="976" y="172"/>
+  </g>
+  <!-- 北境山脉 -->
+  <g>
+    <use href="#mt2" x="520" y="110"/>
+    <use href="#mt" x="552" y="120"/>
+    <use href="#mt2" x="584" y="108"/>
+    <use href="#mt2" x="614" y="122"/>
+  </g>
+  <!-- 河流 -->
+  <path d="M 760,190 C 740,230 720,270 700,300 C 690,318 680,330 664,344"
+    fill="none" stroke="#6d8792" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+  <path d="M 900,190 C 920,220 930,250 950,280 C 962,300 968,312 972,332"
+    fill="none" stroke="#6d8792" stroke-width="1.6" opacity=".75"/>
+
+  <!-- ============ 中部大陆（共和国） ============ -->
+  <path d="M 300,470
+    C 380,440 460,462 540,450 C 620,438 700,462 780,452
+    C 860,442 940,466 1020,458 C 1090,452 1140,480 1150,520
+    C 1160,565 1120,605 1050,622 C 980,640 900,620 820,632
+    C 740,644 660,622 580,632 C 500,642 420,624 350,636
+    C 280,648 220,628 200,592 C 180,552 220,500 300,470 Z"
+    fill="url(#gRepublic)" stroke="#4a3a25" stroke-width="2.2"/>
+  <!-- 农田 -->
+  <path d="M 560,520 C 660,500 780,510 880,505 C 920,530 900,560 850,570 C 750,585 640,575 560,565 C 525,548 530,532 560,520 Z"
+    fill="#dfd3ad" opacity=".7"/>
+  <!-- 森林 -->
+  <path d="M 380,560 C 440,548 500,558 540,552 C 555,575 540,595 505,600 C 450,608 400,600 370,585 C 358,572 362,564 380,560 Z" fill="url(#trees)"/>
+  <!-- 山脉（南部丘陵） -->
+  <g>
+    <use href="#mt2" x="880" y="500"/>
+    <use href="#mt" x="912" y="512"/>
+    <use href="#mt2" x="944" y="498"/>
+    <use href="#mt" x="976" y="514"/>
+  </g>
+  <!-- 河流 -->
+  <path d="M 690,460 C 680,500 660,540 640,580 C 628,605 620,620 610,634"
+    fill="none" stroke="#6d8792" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+  <path d="M 820,460 C 840,490 850,520 870,548"
+    fill="none" stroke="#6d8792" stroke-width="1.6" opacity=".7"/>
+  <!-- 地峡 -->
+  <path d="M 600,350 C 640,370 670,395 690,420 C 710,395 730,370 750,352 C 720,336 640,334 600,350 Z"
+    fill="#cbb891" stroke="#4a3a25" stroke-width="1.8"/>
+
+  <!-- ============ 南极大陆 ============ -->
+  <path d="M 60,900 C 200,870 400,884 600,868 C 800,852 1000,880 1200,866 C 1360,856 1500,872 1540,896 L 1540,960 L 60,960 Z"
+    fill="url(#gIce)" stroke="#4a3a25" stroke-width="2"/>
+  <g stroke="#8aa0ad" stroke-width="1" fill="none" opacity=".7">
+    <path d="M 300 920 l 16 -24 l 16 24 Z"/>
+    <path d="M 500 930 l 14 -20 l 14 20 Z"/>
+    <path d="M 820 925 l 15 -22 l 15 22 Z"/>
+    <path d="M 1080 935 l 12 -18 l 12 18 Z"/>
+  </g>
+
+  <!-- ============ 普卫岛 ============ -->
+  <path d="M 760,700 C 800,680 850,688 872,716 C 894,744 884,786 852,802 C 820,818 772,810 748,786 C 724,762 728,716 760,700 Z"
+    fill="url(#gPus)" stroke="#4a3a25" stroke-width="2"/>
+  <!-- 浮空学院 -->
+  <g fill="none" stroke="#3f6f9e" stroke-width="1.6" opacity=".9">
+    <ellipse cx="810" cy="666" rx="30" ry="10"/>
+    <path d="M 792,666 l 8,-14 l 20,0 l 8,14"/>
+  </g>
+  <text x="810" y="638" text-anchor="middle" font-size="12" fill="#3f6f9e">凯斯特学院（浮空）</text>
+
+  <!-- 白礁 -->
+  <path d="M 1010,690 C 1030,682 1050,690 1054,706 C 1058,722 1042,732 1024,728 C 1006,724 998,700 1010,690 Z"
+    fill="#c9d8d4" stroke="#4a3a25" stroke-width="1.6"/>
+
+  <!-- ============ 西昭 ============ -->
+  <path d="M 380,660 C 440,636 510,650 540,682 C 570,714 556,756 516,774 C 476,792 416,784 386,758 C 356,732 346,686 380,660 Z"
+    fill="url(#gXizhao)" stroke="#4a3a25" stroke-width="2"/>
+  <path d="M 300,760 C 326,750 352,758 358,776 C 364,794 346,806 324,802 C 300,798 286,772 300,760 Z"
+    fill="#c9a49c" stroke="#4a3a25" stroke-width="1.4"/>
+  <!-- 西昭古堡旧址（南极边） -->
+  <g fill="none" stroke="#7a4a44" stroke-width="1.4" stroke-dasharray="3 3">
+    <rect x="540" y="812" width="30" height="22"/>
+    <path d="M 540,812 l 8,-10 l 8,10 M 562,812 l 8,-10 l 8,10"/>
+  </g>
+
+  <!-- ============ 灰港半岛 ============ -->
+  <path d="M 1600,600 C 1520,608 1450,622 1400,648 C 1350,674 1318,706 1300,742
+    C 1282,778 1296,802 1330,804 C 1364,806 1400,784 1432,764
+    C 1478,736 1540,726 1600,718 Z"
+    fill="url(#gGrey)" stroke="#4a3a25" stroke-width="2.2"/>
+  <!-- 灯柱 -->
+  <g fill="#c08a3e">
+    <circle cx="1352" cy="742" r="3"/>
+    <circle cx="1382" cy="762" r="3"/>
+    <circle cx="1414" cy="778" r="3"/>
+    <circle cx="1448" cy="764" r="3"/>
+    <circle cx="1482" cy="750" r="3"/>
+  </g>
+  <!-- 悬赏榜小图标 -->
+  <g fill="#e8ddc2" stroke="#4a3a25" stroke-width="1.2">
+    <rect x="1338" y="712" width="16" height="12" rx="1"/>
+  </g>
+
+  <!-- ============ 洛斯汰 ============ -->
+  <path d="M 1330,830 C 1358,818 1390,824 1402,846 C 1414,868 1398,886 1372,884 C 1346,882 1320,848 1330,830 Z"
+    fill="#cdb894" stroke="#4a3a25" stroke-width="1.6"/>
+  <path d="M 1430,850 C 1450,842 1470,848 1476,862 C 1482,876 1468,886 1450,882 C 1432,878 1420,860 1430,850 Z"
+    fill="#cdb894" stroke="#4a3a25" stroke-width="1.2"/>
+
+  <!-- ============ 航路 ============ -->
+  <g fill="none" stroke="#8a6a3a" stroke-width="1.8" stroke-dasharray="7 6" opacity=".85">
+    <!-- 帝国压力线 -->
+    <path d="M 380,368 L 380,446"/>
+    <!-- 普卫岛 → 雾港城 -->
+    <path d="M 748,780 C 640,792 520,784 420,772"/>
+    <!-- 普卫岛 → 白礁 -->
+    <path d="M 874,742 C 920,730 960,720 1004,712"/>
+    <!-- 普卫岛 → 灰港（暗航路） -->
+    <path d="M 890,776 C 1020,790 1160,792 1300,780"/>
+  </g>
+  <!-- 航路箭头 -->
+  <g fill="#8a6a3a">
+    <path d="M 380,446 l -4,-8 l 8,0 Z"/>
+    <path d="M 420,772 l 8,-4 l 0,8 Z"/>
+    <path d="M 1004,712 l -8,-3 l 1,8 Z"/>
+    <path d="M 1300,780 l 8,-4 l 0,8 Z"/>
+  </g>
+  <text x="396" y="416" font-size="11" fill="#6a4f2c">帝国压力线</text>
+  <text x="560" y="808" font-size="11" fill="#6a4f2c">航路</text>
+  <text x="1090" y="812" font-size="11" fill="#4f6a55">暗航路</text>
+
+  <!-- ============ 城市 ============ -->
+  <!-- 都城图标：带城墙的圆 -->
+  <g id="capital">
+    <circle r="7" fill="#f0e6cf" stroke="#4a3a25" stroke-width="2"/>
+    <path d="M -5,-4 l 0,-5 l 3,0 l 0,5 M 2,-4 l 0,-5 l 3,0 l 0,5" fill="none" stroke="#4a3a25" stroke-width="1.4"/>
+  </g>
+  <g id="cityDot">
+    <circle r="5" fill="#f0e6cf" stroke="#4a3a25" stroke-width="1.8"/>
+  </g>
+  <g id="townDot">
+    <circle r="3.4" fill="#6a5536" stroke="#4a3a25" stroke-width="1.2"/>
+  </g>
+  <g id="ruinDot">
+    <circle r="4.5" fill="none" stroke="#7a6750" stroke-width="1.4" stroke-dasharray="2 2"/>
+    <path d="M -2.5,0 l 5,0 M 0,-2.5 l 0,5" stroke="#7a6750" stroke-width="1"/>
+  </g>
+
+  <!-- 帝国 -->
+  <use href="#capital" x="380" y="158"/>
+  <text x="396" y="156" font-size="15" fill="#3a2f22">铁序城 · 帝都</text>
+  <use href="#townDot" x="706" y="152"/>
+  <text x="718" y="156" font-size="11" fill="#5a4a33">黑脊脉</text>
+  <use href="#cityDot" x="990" y="206"/>
+  <text x="1004" y="210" font-size="12" fill="#4a3a25">铁砧镇</text>
+  <use href="#townDot" x="520" y="96"/>
+  <text x="532" y="100" font-size="11" fill="#5a4a33">北境诸部</text>
+
+  <!-- 共和国 -->
+  <use href="#cityDot" x="380" y="420"/>
+  <text x="394" y="424" font-size="13" fill="#3a2f22">雪镇</text>
+  <use href="#capital" x="690" y="452"/>
+  <text x="706" y="450" font-size="15" fill="#3a2f22">格洛克</text>
+  <use href="#townDot" x="912" y="412"/>
+  <text x="924" y="416" font-size="11" fill="#5a4a33">罗森边境</text>
+
+  <!-- 南方 -->
+  <use href="#cityDot" x="330" y="648"/>
+  <text x="344" y="652" font-size="12" fill="#3a2f22">雾港城</text>
+  <use href="#cityDot" x="810" y="760"/>
+  <text x="826" y="764" font-size="14" fill="#24483f">普卫岛</text>
+  <use href="#townDot" x="1024" y="708"/>
+  <text x="1036" y="712" font-size="11" fill="#5a4a33">白礁</text>
+  <use href="#cityDot" x="452" y="700"/>
+  <text x="466" y="704" font-size="14" fill="#6b3430">西昭</text>
+  <use href="#cityDot" x="1400" y="760"/>
+  <text x="1414" y="764" font-size="14" fill="#2f4a3a">灰港</text>
+  <text x="1414" y="780" font-size="10" fill="#4f6a55">（国界不承认）</text>
+  <use href="#townDot" x="1372" y="858"/>
+  <text x="1384" y="862" font-size="11" fill="#5a4a33">洛斯汰</text>
+
+  <!-- 南极遗址 -->
+  <use href="#ruinDot" x="430" y="912"/>
+  <text x="444" y="916" font-size="11" fill="#5f6f7a">雪都旧址（已毁）</text>
+  <g>
+    <rect x="700" y="846" width="30" height="20" fill="none" stroke="#5f6f7a" stroke-width="1.2" stroke-dasharray="3 3"/>
+    <text x="740" y="861" font-size="11" fill="#5f6f7a">西昭古堡旧址（已毁）</text>
+  </g>
+  <use href="#townDot" x="210" y="922"/>
+  <text x="222" y="926" font-size="11" fill="#5f6f7a">遗民聚落</text>
+
+  <!-- ============ 罗盘玫瑰 ============ -->
+  <g transform="translate(1450,150)" opacity=".9">
+    <circle r="46" fill="none" stroke="#4a3a25" stroke-width="1.2"/>
+    <circle r="38" fill="none" stroke="#4a3a25" stroke-width=".8" opacity=".7"/>
+    <g fill="#4a3a25">
+      <path d="M 0,-42 L 7,-8 L 0,-12 L -7,-8 Z"/>
+      <path d="M 0,42 L 7,8 L 0,12 L -7,8 Z" opacity=".45"/>
+      <path d="M -42,0 L -8,7 L -12,0 L -8,-7 Z" opacity=".45"/>
+      <path d="M 42,0 L 8,7 L 12,0 L 8,-7 Z" opacity=".45"/>
+    </g>
+    <text x="0" y="-52" text-anchor="middle" font-size="12" fill="#4a3a25">北</text>
+    <text x="0" y="58" text-anchor="middle" font-size="10" fill="#4a3a25" opacity=".6">南</text>
+    <text x="54" y="4" font-size="10" fill="#4a3a25" opacity=".6">东</text>
+    <text x="-54" y="4" font-size="10" fill="#4a3a25" opacity=".6">西</text>
+  </g>
+
+  <!-- ============ 标题框 ============ -->
+  <g>
+    <rect x="70" y="52" width="380" height="66" rx="3" fill="#e9ddc2" stroke="#4a3a25" stroke-width="1.6"/>
+    <rect x="76" y="58" width="368" height="54" rx="2" fill="none" stroke="#4a3a25" stroke-width=".7" opacity=".6"/>
+    <text x="260" y="84" text-anchor="middle" font-size="21" letter-spacing="6" fill="#3a2f22">戈 克 世 界</text>
+    <text x="260" y="104" text-anchor="middle" font-size="11" letter-spacing="3" fill="#6a5536">世 界 地 形 图 · 六 方 鼎 立</text>
+  </g>
+
+  <!-- ============ 图例框 ============ -->
+  <g>
+    <rect x="70" y="742" width="230" height="176" rx="3" fill="#e9ddc2" stroke="#4a3a25" stroke-width="1.4" opacity=".96"/>
+    <text x="86" y="766" font-size="13" letter-spacing="2" fill="#3a2f22">图　例</text>
+    <line x1="86" y1="774" x2="284" y2="774" stroke="#4a3a25" stroke-width=".8"/>
+    <g font-size="11" fill="#4a3a25">
+      <rect x="86" y="786" width="14" height="9" fill="#c9b48a" stroke="#4a3a25" stroke-width=".8"/><text x="108" y="795">汉瑟尔帝国</text>
+      <rect x="86" y="804" width="14" height="9" fill="#cfb87e" stroke="#4a3a25" stroke-width=".8"/><text x="108" y="813">格洛克联邦共和国</text>
+      <rect x="86" y="822" width="14" height="9" fill="#93a891" stroke="#4a3a25" stroke-width=".8"/><text x="108" y="831">灰港同盟（国家）</text>
+      <rect x="86" y="840" width="14" height="9" fill="#8cb8ac" stroke="#4a3a25" stroke-width=".8"/><text x="108" y="849">普卫岛 / 凯斯特</text>
+      <rect x="86" y="858" width="14" height="9" fill="#b07f78" stroke="#4a3a25" stroke-width=".8"/><text x="108" y="867">西　昭</text>
+      <rect x="86" y="876" width="14" height="9" fill="#dfe9ee" stroke="#4a3a25" stroke-width=".8"/><text x="108" y="885">南极冰原</text>
+    </g>
+    <g font-size="10" fill="#6a5536">
+      <text x="86" y="906">⋯ 航路 / 暗航路　　△ 山脉</text>
+    </g>
+  </g>
+
+  <!-- ============ 比例尺 ============ -->
+  <g transform="translate(1240,906)" stroke="#4a3a25" fill="#4a3a25">
+    <line x1="0" y1="0" x2="220" y2="0" stroke-width="1.4"/>
+    <line x1="0" y1="-4" x2="0" y2="4" stroke-width="1.2"/>
+    <line x1="55" y1="-3" x2="55" y2="3" stroke-width="1"/>
+    <line x1="110" y1="-4" x2="110" y2="4" stroke-width="1.2"/>
+    <line x1="165" y1="-3" x2="165" y2="3" stroke-width="1"/>
+    <line x1="220" y1="-4" x2="220" y2="4" stroke-width="1.2"/>
+    <text x="0" y="18" font-size="9" fill="#6a5536" stroke="none">0</text>
+    <text x="100" y="18" font-size="9" fill="#6a5536" stroke="none">500 里</text>
+    <text x="206" y="18" font-size="9" fill="#6a5536" stroke="none">1000 里</text>
+  </g>
+
+</svg>

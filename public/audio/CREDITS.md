@@ -28,3 +28,18 @@ License: Creative Commons Zero (CC0) — https://creativecommons.org/publicdomai
 
 ## e51 BGM
 - 2026-10-21: 旧 BGM 替换为本地生成的暗色环境循环（tools/make_bgm.py）。旧曲备份在 tests/audio-old。
+
+## 2026-10-22 实验版 BGM
+豆包音乐生成页要求登录，未登录会话无法下载音频。本版暂用本地程序化生成的暗色环境音乐替换 bgm_title / bgm_game / 八首阵营 BGM；旧文件备份在 public/audio/backup。登录豆包后可再替换为豆包生成版本。
+
+
+## 2026-10-22 豆包生成 BGM
+豆包音乐生成《秘雪暗鸣》（48 秒，账号：小猫月月）已下载并转为 OGG，替换 bgm_title、bgm_game 与八首阵营 BGM。源文件保存在 tests/doubao-music.m4a，转换文件 tests/doubao-music.ogg；旧本地临时版备份在 public/audio/backup-local。
+
+
+
+## 2026-10-22 阵营/街机/娱乐 BGM 更新
+本轮以豆包已生成的《秘雪暗鸣》母版制作了 12 个不同的编曲/音色循环：主菜单、通用对局、八阵营、街机模式、娱乐模式。由于当前会话无法登录豆包生成新曲，所有变体均为本地滤镜/编曲处理；源母版与旧文件均保留在 tests 与备份目录。
+- 新增 bgm_arcade.ogg、bgm_entertainment.ogg
+- 八阵营 BGM 已全部替换为不同版本
+- BGM_ASSET_VERSION 提升到 20261022amb3

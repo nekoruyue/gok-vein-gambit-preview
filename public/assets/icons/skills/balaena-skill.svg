@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="70%">
+      <stop offset="0" stop-color="#126a6b"/>
+      <stop offset=".55" stop-color="#062f34"/>
+      <stop offset="1" stop-color="#031519"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#ffe7a8"/><stop offset=".5" stop-color="#c59a4d"/><stop offset="1" stop-color="#6e4b23"/>
+    </linearGradient>
+    <linearGradient id="coral" x1="0" y1="1" x2="1" y2="0">
+      <stop stop-color="#d96f7d"/><stop offset="1" stop-color="#ffc0a2"/>
+    </linearGradient>
+    <linearGradient id="tide" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#9af5e5"/><stop offset="1" stop-color="#1c9fa3"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="38" fill="url(#bg)"/>
+  <circle cx="128" cy="128" r="103" fill="none" stroke="url(#gold)" stroke-width="3" opacity=".9"/>
+  <circle cx="128" cy="128" r="93" fill="none" stroke="#7ce8d7" stroke-width="1" opacity=".35"/>
+  <path d="M26 150c28-18 46-18 68-3s40 15 62 0 48-14 74 2v28c-27-12-50-8-73 5s-42 13-64-1-39-12-67 4z" fill="url(#tide)" opacity=".26"/>
+  <path d="M26 168c30-16 48-13 69 0s38 14 61 1 48-13 74 1" fill="none" stroke="#9af5e5" stroke-width="3" opacity=".7"/>
+  <path d="M128 204c-2-27 5-44 19-59 8-9 12-22 10-37 18 18 24 38 16 57-5 12-14 21-25 28 18-3 33 2 44 16-21 3-38 1-50-5" fill="none" stroke="url(#coral)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M141 177c12-12 26-17 43-14-7 11-16 18-28 22M123 184c-7-13-18-20-32-20 2 13 9 22 20 28" fill="none" stroke="url(#coral)" stroke-width="6" stroke-linecap="round"/>
+  <path d="M128 60c15 18 23 32 23 43 0 12-10 21-23 21s-23-9-23-21c0-11 8-25 23-43z" fill="none" stroke="url(#gold)" stroke-width="3" opacity=".85"/>
+  <circle cx="128" cy="105" r="5" fill="#aef9ec"/>
+  <path d="M52 86c8 4 13 10 16 18M204 86c-8 4-13 10-16 18" fill="none" stroke="#f1d28d" stroke-width="2" opacity=".7"/>
+</svg>

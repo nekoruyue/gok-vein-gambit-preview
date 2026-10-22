@@ -95,6 +95,7 @@
       cardsPlayedThisTurn: 0,
       overload: 0,
       veinDebt: 0,
+      debtTasks: [],
       freezeImmuneTurn: false,
       healBlockTurn: false,
       freeSpellTurn: false,
@@ -224,7 +225,10 @@
   function formationBonus(player, zone) {
     const out = { attack: 0, health: 0, taunt: false, rush: false, charge: false, lifesteal: false, stealth: false, poisonous: false, windfury: false, reborn: false, deathrattleSummon: null, excludeDeathrattle: null, attackVsFrozen: 0 };
     let hasFormation = false;
+    const seenFormations = new Set();
     for (const f of player.formations || []) {
+      if (seenFormations.has(f.cardId)) continue;
+      seenFormations.add(f.cardId);
       if (f.zone !== zone) continue;
       if (f.turnsLeft != null && f.turnsLeft <= 0) continue;
       const d = card(f.cardId);
@@ -321,6 +325,7 @@
     state.events.push({ structured: true, kind: "summon", player: player.index, zone: z });
     state.stats.minionsSummoned++;
     bumpDebtProgress(state, player, "summon", 1);
+    bumpDebtTaskProgress(state, player, "summon", 1);
     if (cardId === "republic_recruit") player.recruitsSummonedThisTurn = (player.recruitsSummonedThisTurn || 0) + 1;
     if (m.taunt) {
       for (const ally of aliveMinions(player)) {
@@ -347,11 +352,16 @@
         continue;
       }
       const c = player.deck.shift();
+      const drawnDef = card(c.cardId);
       if (player.hand.length >= 8) {
-        log(state, player.name + " 手牌已满，" + card(c.cardId).name + " 被烧掉。", player, "burn");
+        log(state, player.name + " 手牌已满，" + drawnDef.name + " 被烧掉。", player, "burn");
       } else {
         player.hand.push(c);
-        log(state, player.name + " 抽到 " + card(c.cardId).name + "。", player, "draw");
+        if (c.isDebt) {
+          log(state, player.name + " 抽到债务卡「" + drawnDef.name + "」，可保留在手中；不打出时只占手牌。", player, "debt");
+        } else {
+          log(state, player.name + " 抽到 " + drawnDef.name + "。", player, "draw");
+        }
         state.events.push({ structured: true, kind: "draw", player: player.index });
         maybeCopyGainedSpell(state, player, c);
       }
@@ -997,6 +1007,56 @@
     }
   }
 
+  function debtTaskLabel(task) {
+    if (!task) return "债务任务";
+    const n = task.amount || 1;
+    if (task.type === "summon") return "摆放 " + n + " 个随从";
+    if (task.type === "spell") return "使用 " + n + " 张战术卡";
+    if (task.type === "attack") return "发起 " + n + " 次攻击";
+    if (task.type === "playCards") return "再打出 " + n + " 张牌";
+    if (task.type === "noCards") return "不能再使用卡牌";
+    if (task.type === "noSummon") return "不能再摆放随从";
+    if (task.type === "noAttack") return "不能攻击";
+    if (task.type === "noSpell") return "不能再使用战术卡";
+    return "完成债务任务";
+  }
+
+  function debtTaskDone(task) {
+    if (!task) return true;
+    const progress = task.progress || 0;
+    if (task.type === "noCards" || task.type === "noSummon" || task.type === "noAttack" || task.type === "noSpell") return progress === 0;
+    return progress >= (task.amount || 1);
+  }
+
+  function startDebtTask(state, player, def, debtSource) {
+    if (!player || !def || !def.debt || !def.debt.task) return null;
+    const task = def.debt.task;
+    const entry = {
+      cardId: def.id,
+      source: debtSource == null ? null : debtSource,
+      type: task.type,
+      amount: task.amount || 1,
+      progress: 0,
+      dueTurn: state.turnNumber,
+      penalty: def.debt.penalty || { type: "damageHero", amount: 2 }
+    };
+    if (!Array.isArray(player.debtTasks)) player.debtTasks = [];
+    player.debtTasks.push(entry);
+    log(state, player.name + " 打出债务卡「" + def.name + "」，本回合任务：" + debtTaskLabel(entry) + "。", player, "debt");
+    return entry;
+  }
+
+  function bumpDebtTaskProgress(state, player, kind, amount) {
+    if (!player || !Array.isArray(player.debtTasks)) return;
+    for (const task of player.debtTasks) {
+      if (!task || task.dueTurn !== state.turnNumber) continue;
+      if (kind === "summon" && (task.type === "summon" || task.type === "noSummon")) task.progress = (task.progress || 0) + (amount || 1);
+      else if (kind === "attack" && (task.type === "attack" || task.type === "noAttack")) task.progress = (task.progress || 0) + (amount || 1);
+      else if (kind === "spell" && (task.type === "spell" || task.type === "noSpell")) task.progress = (task.progress || 0) + (amount || 1);
+      else if (kind === "card" && (task.type === "playCards" || task.type === "noCards")) task.progress = (task.progress || 0) + (amount || 1);
+    }
+  }
+
   function discardRandomCards(state, player, count) {
     let left = count || 1;
     while (left-- > 0) {
@@ -1037,22 +1097,22 @@
     checkGameOver(state);
   }
 
-  function insertDebt(state, source, target, def, mode) {
-    if (!target || hasDebtOnHand(target)) return { ok: false, reason: "目标已有债务" };
-    if (target.hand.length >= 8) return { ok: false, reason: "目标手牌已满" };
-    const dueTurn = state.turnNumber + (mode === "self" ? 2 : 1);
+  function insertDebt(state, source, target, def) {
+    if (!target || !Array.isArray(target.deck)) return { ok: false, reason: "目标牌库不可用" };
     const debtCard = {
       uid: uid("c"),
       cardId: def.id,
       isDebt: true,
-      debtMode: mode,
       debtSource: source.index,
-      debtDueTurn: dueTurn,
+      debtDueTurn: null,
+      mustPlayTurn: null,
       debtProgress: {}
     };
-    target.hand.push(debtCard);
-    state.events.push({ structured: true, kind: "debt", player: target.index, source: source.index, cardId: def.id, mode: mode });
-    log(state, source.name + " 将「" + def.name + "」作为债务交给" + (target === source ? "自己" : "对手") + "。", target === source ? source : target, "debt");
+    // 债务卡直接洗入对方牌库，不进入手牌。
+    const at = randomInt(state, target.deck.length + 1);
+    target.deck.splice(at, 0, debtCard);
+    state.events.push({ structured: true, kind: "debt", player: target.index, source: source.index, cardId: def.id, inserted: "deck" });
+    log(state, source.name + " 将债务卡「" + def.name + "」洗入" + target.name + "的牌库。", target, "debt");
     return { ok: true, debt: debtCard };
   }
 
@@ -1062,26 +1122,26 @@
 
   function resolveDebtForTurn(state, playerIndex) {
     const holder = state.players[playerIndex];
-    if (!holder) return;
-    const debtCard = handDebt(holder);
-    if (!debtCard) return;
-    if (state.turnNumber < (debtCard.debtDueTurn || 0)) return;
-    const def = card(debtCard.cardId);
-    holder.hand = holder.hand.filter(c => c.uid !== debtCard.uid);
-    if (!def || !def.debt) return;
-    if (debtCard.debtMode === "enemy") {
-      const source = state.players[debtCard.debtSource];
-      log(state, "债务催收：「" + def.name + "」到期。", holder, "debt");
-      applyDebtEffect(state, holder, def.debt.enemy && def.debt.enemy.effect, "催收");
-      if (source && def.debt.enemy && def.debt.enemy.sourceReward) applyDebtEffect(state, source, def.debt.enemy.sourceReward, "追债");
-    } else {
-      const self = def.debt.self || {};
-      const task = self.task || {};
-      const got = (debtCard.debtProgress && debtCard.debtProgress[task.type]) || 0;
-      const done = got >= (task.amount || 0);
-      log(state, "债务考核：「" + def.name + "」" + (done ? "完成。" : "失败。") + "（" + debtTaskLabel(task.type) + " " + got + "/" + (task.amount || 0) + "）", holder, "debt");
-      applyDebtEffect(state, holder, done ? self.reward : self.penalty, done ? "债务奖励" : "债务惩罚");
+    if (!holder || !Array.isArray(holder.debtTasks) || !holder.debtTasks.length) {
+      if (holder && state.status === "playing") checkGameOver(state);
+      return;
     }
+    const pending = [];
+    for (const task of holder.debtTasks) {
+      if (!task || task.dueTurn > state.turnNumber) { pending.push(task); continue; }
+      const def = card(task.cardId);
+      const done = debtTaskDone(task);
+      if (done) {
+        log(state, "债务任务完成：「" + (def ? def.name : "债务卡") + "」" + debtTaskLabel(task) + "。", holder, "debt");
+        state.events.push({ structured: true, kind: "debtTaskDone", player: holder.index, source: task.source, cardId: task.cardId });
+      } else {
+        log(state, "债务任务失败：「" + (def ? def.name : "债务卡") + "」未完成" + debtTaskLabel(task) + "，结算惩罚。", holder, "debt");
+        applyDebtEffect(state, holder, task.penalty, "债务惩罚");
+        state.events.push({ structured: true, kind: "debtPenalty", player: holder.index, source: task.source, cardId: task.cardId });
+        if (state.status !== "playing") { checkGameOver(state); return; }
+      }
+    }
+    holder.debtTasks = pending;
     if (state.status === "playing") checkGameOver(state);
   }
 
@@ -1107,13 +1167,14 @@
     if (state.status !== "playing") return { ok: false, reason: "对局已结束" };
     if (state.mulliganPhase) return { ok: false, reason: "请先完成起手调度" };
     if (state.pendingChoice) return { ok: false, reason: "请先完成当前选择" };
+    if (state.pendingMinionTarget) return { ok: false, reason: "请先选择登场目标" };
     const player = state.players[playerIndex];
     if (!player || state.current !== playerIndex) return { ok: false, reason: "还没轮到你" };
     const handCard = player.hand.find(c => c.uid === cardUid);
     if (!handCard) return { ok: false, reason: "手牌中没有这张牌" };
-    if (handCard.isDebt) return { ok: false, reason: "这是债务，请先偿还或等待结算", code: "debt" };
     const def = card(handCard.cardId);
     opts = Object.assign({}, opts || {});
+    const deferTarget = !!opts.deferTarget;
     if (def.bloodCost != null) opts.payBlood = true;
     const cost = getCardCost(state, player, handCard);
     const freeCast = !!(opts && opts.freeCast);
@@ -1122,19 +1183,24 @@
     if (def.id === "armor_mortar" && (player.armor || 0) < 3) return { ok: false, reason: "需要至少 3 点护甲", code: "armor" };
     if (def.type === "minion" && boardCount(player) >= 6) return { ok: false, reason: "随从已满", code: "boardFull" };
     if (def.type === "debt") {
-      let side = opts.debtSide;
-      if (!side && player.isAI) side = def.faction === "xizhao" ? "enemy" : "self";
-      if (side !== "self" && side !== "enemy") return { ok: false, reason: "请选择债务方向", code: "debtSide", card: def };
-      const target = side === "self" ? player : opponentOf(state, player);
-      if (hasDebtOnHand(target)) return { ok: false, reason: "目标已有债务", code: "debtFull" };
-      if (target.hand.length >= 8) return { ok: false, reason: "目标手牌已满", code: "handFull" };
+      if (handCard.isDebt) {
+        // 抽到债务卡后主动打出：开始本回合债务任务；完成后免罚，未完成才结算惩罚。
+        if (!freeCast) player.mana -= cost;
+        player.hand = player.hand.filter(c => c.uid !== cardUid);
+        const task = startDebtTask(state, player, def, handCard.debtSource);
+        state.lastAction = { type: "play", player: playerIndex, cardId: def.id, cardName: def.name, cardType: def.type, seq: ((state.lastAction && state.lastAction.seq) || 0) + 1 };
+        checkGameOver(state);
+        return { ok: true, debtTask: task };
+      }
+      // 从手牌打出原始债务卡：直接洗入对手牌库，不进入手牌。
+      const target = opponentOf(state, player);
       if (!freeCast) player.mana -= cost;
       player.hand = player.hand.filter(c => c.uid !== cardUid);
-      const insert = insertDebt(state, player, target, def, side);
+      const insert = insertDebt(state, player, target, def);
       if (!insert.ok) { if (!freeCast) player.mana += cost; player.hand.push(handCard); return insert; }
       state.lastAction = { type: "play", player: playerIndex, cardId: def.id, cardName: def.name, cardType: def.type, seq: ((state.lastAction && state.lastAction.seq) || 0) + 1 };
-      log(state, player.name + " 打出债务「" + def.name + "」。", player, "debt");
-      return { ok: true, debt: true, side: side };
+      log(state, player.name + " 打出债务卡「" + def.name + "」，洗入对手牌库。", player, "debt");
+      return { ok: true, debt: true };
     }
     const targetType = getTargetType(state, def);
     const target = opts && opts.targetUid ? findMinion(state, opts.targetUid) : null;
@@ -1144,7 +1210,7 @@
         if (!targetAllowed(state, player, target.uid, targetType)) {
           return { ok: false, reason: "目标不合法", code: "target", targetType: targetType, targets: valid.map(m => m.uid) };
         }
-      } else if (!(def.type === "minion" && valid.length === 0) && !def.optionalTarget) {
+      } else if (!deferTarget && !(def.type === "minion" && valid.length === 0) && !def.optionalTarget) {
         return { ok: false, reason: "需要选择一个合法目标", code: "target", targetType: targetType, targets: valid.map(m => m.uid) };
       }
     }
@@ -1187,7 +1253,7 @@
     if (def.type === "spell") player.discard.push({ uid: cardUid, cardId: def.id });
     player.cardsPlayed++;
     player.cardsPlayedThisTurn = (player.cardsPlayedThisTurn || 0) + 1;
-    if (def.type !== "debt") bumpDebtProgress(state, player, "cardsPlayed", 1);
+    if (def.type !== "debt") { bumpDebtProgress(state, player, "cardsPlayed", 1); bumpDebtTaskProgress(state, player, "card", 1); }
     if (def.overload) {
       player.overload = (player.overload || 0) + def.overload;
       log(state, player.name + " 过载 " + def.overload + "：下回合行动力减少。", player, "overload");
@@ -1195,6 +1261,7 @@
     state.lastAction = { type: "play", player: playerIndex, cardId: def.id, cardName: def.name, cardType: def.type, zone: zone || null, seq: ((state.lastAction && state.lastAction.seq) || 0) + 1 };
     log(state, player.name + " 打出 " + def.name + "（" + cost + " 行动力）。", player, def.type === "spell" ? "spell" : "play", def.id);
     if (def.type === "spell") {
+      bumpDebtTaskProgress(state, player, "spell", 1);
       player.spellsCastThisTurn = (player.spellsCastThisTurn || 0) + 1;
       player.spellsCastThisGame = (player.spellsCastThisGame || 0) + 1;
       player.freeSpellTurn = false;
@@ -1253,13 +1320,26 @@
       if (state.status === "playing") {
         beginDeferredDeaths(state);
         const needsTarget = !!getTargetType(state, def);
+        const pendingTarget = !!(needsTarget && !target && deferTarget && getValidTargets(state, player, getTargetType(state, def)).length);
+        if (pendingTarget) {
+          state.pendingMinionTarget = {
+            playerIndex: playerIndex,
+            minionUid: m.uid,
+            cardId: def.id,
+            targetType: getTargetType(state, def),
+            opts: Object.assign({}, opts)
+          };
+        }
         const refluxReady = !def.reflux || ((!needsTarget || !!target) && payReflux(state, player, def));
         const pressureReady = !def.pressure || (state.vein || 0) >= def.pressure;
-        if (refluxReady && pressureReady) resolveBattlecry(state, player, def, m, target || null, opts || {});
-        else if (!refluxReady) log(state, "没有合法目标或流脉不足，效果未触发。", player, "battlecry");
+        if (!pendingTarget) {
+          if (refluxReady && pressureReady) resolveBattlecry(state, player, def, m, target || null, opts || {});
+          else if (!refluxReady) log(state, "没有合法目标或流脉不足，效果未触发。", player, "battlecry");
+        }
         resolvePressure(state, player, def, m);
         resolveZhenmai(state, player, def);
         processDeaths(state);
+        if (state.pendingMinionTarget && (!m || m.dead)) state.pendingMinionTarget = null;
         if (m && !m.dead) {
           if (def.zoneBonus && !(def.zoneBonus.attack || def.zoneBonus.health) && aliveMinions(player).some(x => x.uid !== m.uid && x.zone === m.zone)) applyCardBonus(state, player, m, def.zoneBonus, "阵位");
           const mirrorOnce = def.mirrorBonus && !(def.mirrorBonus.attack || def.mirrorBonus.health) ? def.mirrorBonus : null;
@@ -1298,9 +1378,10 @@
       log(state, player.name + " 装备「" + def.name + "」。", player, "equipment");
     } else if (def.type === "formation") {
       player.formations = player.formations || [];
+      const already = (player.formations || []).some(f => f.cardId === def.id && f.zone === zone);
       if (player.formations.length >= 3) player.formations.shift();
       player.formations.push({ cardId: def.id, zone: zone, turnsLeft: def.formation && def.formation.duration ? def.formation.duration : null });
-      applyFormationToZone(state, player, zone, def.formation);
+      if (!already) applyFormationToZone(state, player, zone, def.formation);
       if (def.formation && def.formation.summonOnPlay) {
         const targetZone = zoneHasSpace(player, zone) ? zone : openZones(player)[0];
         if (targetZone) summonMinion(state, player, def.formation.summonOnPlay, targetZone, null);
@@ -1326,7 +1407,7 @@
       }
     }
     checkGameOver(state);
-    return { ok: true, pending: state.pendingChoice ? state.pendingChoice.type : null };
+    return { ok: true, pending: state.pendingChoice ? state.pendingChoice.type : null, deferredTarget: !!state.pendingMinionTarget };
   }
 
   function returnMinionToHand(state, m) {
@@ -1558,6 +1639,10 @@
       }
     } else if (b.type === "bloodBuff") {
       if (opts.payBlood) buffMinion(state, minion, b.attack || 0, b.health || 0, "血祭", true);
+    } else if (b.type === "damageHero") {
+      damageHero(state, opponentOf(state, player), b.amount || 1, minion, "登场");
+    } else if (b.type === "damageFreeze") {
+      if (target && !target.dead) { damageMinion(state, target, b.amount || 1, minion, "登场"); freezeMinion(state, target); }
     } else if (b.type === "damage") {
       if (target && !target.dead) damageMinion(state, target, b.amount || 1, minion, "登场");
     } else if (b.type === "discover") {
@@ -1999,6 +2084,8 @@
       damageMinion(state, target, s.damage || 2, { owner: player.index }, "血祭仪式");
       drawCard(state, player, s.draw || 1);
       if (target.dead) drawCard(state, player, s.extraIfDead || 1);
+    } else if (s.type === "summon") {
+      for (let i = 0; i < (s.count || 1); i++) summonMinion(state, player, s.token || "medic_apprentice", openZones(player)[0], null);
     } else if (s.type === "summonMonster") {
       const zone = openZones(player)[0];
       const first = zone ? summonMinion(state, player, "losutai_beast", zone, null) : null;
@@ -2635,6 +2722,7 @@
     attacker.attacksLeft -= 1;
     attacker.attacksUsedThisTurn = (attacker.attacksUsedThisTurn || 0) + 1;
     bumpDebtProgress(state, player, "attacks", 1);
+    bumpDebtTaskProgress(state, player, "attack", 1);
     attacker.hasAttacked = true;
     attacker.stealth = false;
     if (targetUid === "hero") {
@@ -2930,6 +3018,7 @@
     if (state.mulliganPhase) return { ok: false, reason: "请先完成起手调度" };
     if (state.current !== playerIndex) return { ok: false, reason: "还没轮到你" };
     if (state.pendingChoice) return { ok: false, reason: "请先完成当前选择" };
+    if (state.pendingMinionTarget) return { ok: false, reason: "请先选择登场目标" };
     const player = state.players[playerIndex];
     player.nextCostReduction = 0;
     // 冻结解冻：控制者的回合结束时递减
@@ -2968,9 +3057,20 @@
     const cost = getCardCost(state, player, c);
     const canMana = player.mana >= cost;
     if (def.type === "debt") {
-      const selfFree = !hasDebtOnHand(player) && player.hand.length < 8;
-      const enemyFree = !hasDebtOnHand(opponentOf(state, player)) && opponentOf(state, player).hand.length < 8;
-      return { ok: canMana && (selfFree || enemyFree), cost: cost, targetType: null, targets: [], target2Targets: [], zones: [], canMana: canMana, canDebt: selfFree || enemyFree, selfDebt: selfFree, enemyDebt: enemyFree, bloodCost: 0, reason: !canMana ? "行动力不足" : !(selfFree || enemyFree) ? "债务已满或手牌已满" : null };
+      return {
+        ok: canMana,
+        card: def,
+        cost: cost,
+        targetType: null,
+        targets: [],
+        target2Targets: [],
+        zones: [],
+        canMana: canMana,
+        canDebt: true,
+        bloodCost: 0,
+        isDebtCard: !!c.isDebt,
+        reason: !canMana ? "行动力不足" : null
+      };
     }
     const canArmor = def.id !== "armor_mortar" || (player.armor || 0) >= 3;
     const canBlood = def.bloodCost == null || player.hp > def.bloodCost;
@@ -3163,6 +3263,49 @@
     return state;
   }
 
+  function getPendingMinionTargets(state) {
+    const pending = state && state.pendingMinionTarget;
+    if (!pending) return [];
+    const player = state.players[pending.playerIndex];
+    if (!player) return [];
+    return getValidTargets(state, player, pending.targetType).map((m) => m.uid);
+  }
+
+  function resolvePendingMinionTarget(state, targetUid) {
+    const pending = state && state.pendingMinionTarget;
+    if (!pending) return { ok: false, reason: "没有待选择的登场目标" };
+    const player = state.players[pending.playerIndex];
+    const m = findMinion(state, pending.minionUid);
+    if (!m || m.dead) {
+      state.pendingMinionTarget = null;
+      return { ok: false, reason: "该随从已不在场" };
+    }
+    const def = card(pending.cardId);
+    const target = findMinion(state, targetUid);
+    const targetType = getTargetType(state, def);
+    if (targetType && (!target || !targetAllowed(state, player, target.uid, targetType))) {
+      return { ok: false, reason: "目标不合法", code: "target", targetType: targetType, targets: getValidTargets(state, player, targetType).map(x => x.uid) };
+    }
+    state.pendingMinionTarget = null;
+    beginDeferredDeaths(state);
+    const refluxReady = !def.reflux || payReflux(state, player, def);
+    if (refluxReady) resolveBattlecry(state, player, def, m, target || null, pending.opts || {});
+    else log(state, "流脉不足，登场效果未触发。", player, "battlecry");
+    processDeaths(state);
+    endDeferredDeaths(state);
+    checkGameOver(state);
+    return { ok: true, pending: state.pendingChoice ? state.pendingChoice.type : null };
+  }
+
+  function cancelPendingMinionTarget(state) {
+    if (state && state.pendingMinionTarget) {
+      const player = state.players[state.pendingMinionTarget.playerIndex];
+      state.pendingMinionTarget = null;
+      if (player) log(state, "已跳过登场目标。", player, "battlecry");
+    }
+    return { ok: true };
+  }
+
   function getMinion(state, minionUid) { return findMinion(state, minionUid); }
   function getPlayer(state, index) { return state.players[index]; }
 
@@ -3179,6 +3322,9 @@
     mulliganPlayer: mulliganPlayer,
     retreatMinion: retreatMinion,
     getPlayOptions: getPlayOptions,
+    getPendingMinionTargets: getPendingMinionTargets,
+    resolvePendingMinionTarget: resolvePendingMinionTarget,
+    cancelPendingMinionTarget: cancelPendingMinionTarget,
     getAttackOptions: getAttackOptions,
     getHeroPowerOptions: getHeroPowerOptions,
     getMinion: getMinion,

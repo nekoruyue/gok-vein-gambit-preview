@@ -10,7 +10,8 @@ const { URL } = require("url");
 
 const PORT = Number(process.env.PORT || 4173);
 const PUBLIC = path.join(__dirname, "..", "public");
-const CHANNEL = process.env.GOK_CHANNEL === "preview" ? "preview" : "stable";
+// 本地/局域网服务器默认就是实验通道；只有显式声明 stable 才走稳定通道。
+const CHANNEL = process.env.GOK_CHANNEL === "stable" ? "stable" : "preview";
 const MIME = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",

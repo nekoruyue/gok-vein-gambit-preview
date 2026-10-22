@@ -61,6 +61,44 @@
     art.appendChild(img);
   }
 
+  const CUSTOM_CARD_ART_KEY = "gok_custom_card_art_v1";
+  function loadCustomCardArt() {
+    if (app.customCardArt && typeof app.customCardArt === "object") return app.customCardArt;
+    app.customCardArt = {};
+    try { const raw = localStorage.getItem(CUSTOM_CARD_ART_KEY); if (raw) app.customCardArt = JSON.parse(raw) || {}; } catch (e) { app.customCardArt = {}; }
+    return app.customCardArt;
+  }
+  function customCardArtFor(id) {
+    const map = loadCustomCardArt();
+    return map[id] || "";
+  }
+  function persistCustomCardArt() {
+    try { localStorage.setItem(CUSTOM_CARD_ART_KEY, JSON.stringify(app.customCardArt || {})); } catch (e) {}
+  }
+  function clearCustomCardArt(id) {
+    loadCustomCardArt(); delete app.customCardArt[id]; persistCustomCardArt();
+  }
+  function storeCustomCardArt(id, dataUrl) {
+    loadCustomCardArt(); app.customCardArt[id] = dataUrl; persistCustomCardArt();
+  }
+  function replaceCardArtFromFile(id, file, done) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const w = 300, h = 420; const canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext("2d"); const scale = Math.max(w / img.width, h / img.height);
+        const dw = img.width * scale, dh = img.height * scale;
+        ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+        storeCustomCardArt(id, canvas.toDataURL("image/webp", 0.84));
+        if (done) done();
+      };
+      img.src = String(reader.result || "");
+    };
+    reader.readAsDataURL(file);
+  }
+
   function cardArtUrl(def) {
     if (!def) return "";
     if (def.art) return portraitImage(def.art);
@@ -103,7 +141,11 @@
   }
   function heroImage(id) { if (id === "balaena" || id === "sernach") return portraitImage(id); const file = id === "otto" ? "otto_centered" : id; return "assets/heroes/" + file + ".webp"; }
   function portraitImage(id) { return "assets/portraits/" + id + ".webp?v=" + ART_VERSION; }
-  function heroSkillIcon(id) { return "assets/icons/skills/" + id + ".webp?v=" + ART_VERSION; }
+  const HERO_SKILL_ICONS = {
+    balaena: "assets/icons/skills/balaena-skill.svg?v=" + ART_VERSION,
+    sernach: "assets/icons/skills/sernach-skill.svg?v=" + ART_VERSION
+  };
+  function heroSkillIcon(id) { return HERO_SKILL_ICONS[id] || ("assets/icons/skills/" + id + ".webp?v=" + ART_VERSION); }
   function escapeText(s) { return s == null ? "" : String(s); }
 
   const SAVED_HAND_MODE = (() => { try { return localStorage.getItem("gok_hand_play_mode"); } catch (e) { return null; } })();
@@ -140,6 +182,7 @@
     animating: false,
     net: null,
     customDecks: {},
+    customCardArt: null,
     activeRelics: {},
     tutorial: false,
     tutorialStep: 1,
@@ -205,7 +248,7 @@
     motionOn: true,
     damageNumbers: true,
     fxOn: true,
-    aiSpeed: "normal",
+    aiSpeed: isPhoneLayout() ? "slow" : "normal",
     aiDifficulty: "hard",
     aiOpponent: null,
     aiOpponentChoice: null,
@@ -228,9 +271,11 @@
     settingsReturn: "home",
     tutorialReturn: "home",
     codexReturn: "home",
-    handPlayMode: isPhoneLayout() ? "click" : "drag",
+    handPlayMode: isPhoneLayout() ? "click" : (SAVED_HAND_MODE === "double" ? "double" : "drag"),
     mobileClickArmed: null,
-    animSpeed: parseFloat(localStorage.getItem("gok_anim_speed")) || 0.7,
+    mobileWelcomeShown: false,
+    mobilePreviewUid: null,
+    animSpeed: isPhoneLayout() ? 1.25 : (parseFloat(localStorage.getItem("gok_anim_speed")) || 0.7),
     tutorialCoachCollapsed: false,
     opponentOnline: true,
     onlineTurnKey: "",
@@ -254,6 +299,13 @@
     losutai: "bgm_faction_losutai",
     snow: "bgm_faction_snow"
   };
+  const SCREEN_BGM = {
+    arcade: "bgm_arcade",
+    other: "bgm_entertainment",
+    lab: "bgm_arcade",
+    battler: "bgm_arcade",
+    "battler-setup": "bgm_arcade"
+  };
   const SFX_FILES = {
     click: "click.wav", hover: "hover.wav", select: "select.wav", cancel: "cancel.wav",
     coin: "coin.wav", battle: "battle.wav", wave: "wave.wav", end_turn: "end_turn.wav",
@@ -269,12 +321,18 @@
     click: 0.9, hover: 0.6, select: 1.2, cancel: 0.72, coin: 1.0, battle: 1.05,
     wave: 0.7, end_turn: 1.05, victory: 0.95, error: 0.7, ui_open: 1.2,
     damage: 0.95, hero_hit: 0.85, death: 1.0, deathrattle: 1.05, heal: 0.95,
-    draw: 0.8, armor: 1.15, freeze: 1.05, summon: 0.78, spell: 0.8, buff: 1.15,
+    draw: 0.8, armor: 1.15, freeze: 1.05, summon: 0.78, spell: 0.55, buff: 1.15,
     discover: 0.8, hero_power: 0.92, turn_start: 0.58, relic: 1.3, shield: 1.1,
     poison: 0.9, victory_jingle: 0.95, defeat_jingle: 1.05
   };
   const SFX_RATE = 0.82;
   const BGM_RATE = 1.0;
+  const BGM_ASSET_VERSION = "20261022amb3";
+  function cardSoundHash(id) {
+    let h = 2166136261;
+    for (const ch of String(id || "")) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
+    return Math.abs(h);
+  }
   const AudioBox = {
     sfx: {},
     gains: {},
@@ -301,7 +359,8 @@
       app.motionOn = localStorage.getItem("gok_motion") !== "0";
       app.damageNumbers = localStorage.getItem("gok_damage_numbers") !== "0";
       app.fxOn = localStorage.getItem("gok_fx") !== "0";
-      app.aiSpeed = localStorage.getItem("gok_ai_speed") || "normal";
+      if (isPhoneLayout() && !localStorage.getItem("gok_screen_shake")) app.screenShake = false;
+      app.aiSpeed = localStorage.getItem("gok_ai_speed") || (isPhoneLayout() ? "slow" : "normal");
       app.screenShake = localStorage.getItem("gok_screen_shake") !== "0";
       app.textLarge = localStorage.getItem("gok_text_large") === "1";
       const savedDim = parseInt(localStorage.getItem("gok_bg_dim") || "0", 10);
@@ -358,8 +417,9 @@
       this.sfx[name] = a;
       return a;
     },
-    play(name) {
+    play(name, opts) {
       if (!app.audioOn || !app.sfxOn) return;
+      opts = opts || {};
       const a = this.makeSfx(name);
       if (!a) return;
       const now = typeof performance !== "undefined" ? performance.now() : Date.now();
@@ -372,7 +432,12 @@
       if (!uiSound) this.lastAnyAt = now;
       this.lastPlayAt[name] = now;
       this.lastPlayedAt = now;
-      try { a.playbackRate = SFX_RATE; a.currentTime = 0; a.play().catch(() => {}); } catch (e) {}
+      try {
+        a.playbackRate = opts.rate || SFX_RATE;
+        a.volume = Math.min(1, app.sfxVolume * app.audioVolume * (opts.gain == null ? (this.gains[name] || 1) : opts.gain));
+        a.currentTime = 0;
+        a.play().catch(() => {});
+      } catch (e) {}
       if (this.bgmEl && ["battle", "hero_hit", "spell", "hero_power", "victory_jingle", "defeat_jingle"].indexOf(name) >= 0 && !this.bgmFade) {
         const target = Math.min(1, app.bgmVolume * app.audioVolume);
         this.bgmEl.volume = Math.min(1, target * 0.74);
@@ -380,12 +445,41 @@
         this.duckTimer = setTimeout(() => { if (this.bgmEl && !this.bgmFade) this.bgmEl.volume = Math.min(1, app.bgmVolume * app.audioVolume); }, 260);
       }
     },
+    playCard(def, side) {
+      if (!def) return;
+      const hash = cardSoundHash(def.id);
+      const rate = 0.90 + (hash % 13) / 100;
+      const type = def.type;
+      const base = type === "spell" ? "spell" : type === "formation" ? "wave" : type === "equipment" ? "relic" : type === "debt" ? "coin" : "summon";
+      // 战术牌执行时音效更轻，避免盖过日志与目标反馈。
+      const gain = type === "spell" ? 0.38 : type === "formation" ? 0.46 : type === "equipment" ? 0.62 : 0.56;
+      this.play(base, { rate, gain });
+      if (type === "spell") {
+        this.duckBgm(0.42, 900);
+      }
+      const keywords = def.keywords || [];
+      if (type === "minion" && (keywords.indexOf("charge") >= 0 || keywords.indexOf("rush") >= 0)) {
+        this.play("battle", { rate: rate + 0.05, gain: 0.34 });
+      }
+      if (type === "minion" && keywords.indexOf("taunt") >= 0) {
+        this.play("shield", { rate: rate - 0.04, gain: 0.28 });
+      }
+    },
+    duckBgm(factor, ms) {
+      if (!this.bgmEl || this.bgmFade) return;
+      if (this.duckTimer) clearTimeout(this.duckTimer);
+      const target = Math.min(1, app.bgmVolume * app.audioVolume);
+      this.bgmEl.volume = Math.max(0, target * factor);
+      this.duckTimer = setTimeout(() => {
+        if (this.bgmEl && !this.bgmFade) this.bgmEl.volume = target;
+      }, ms || 600);
+    },
     bgm(name) {
       if (!name) return;
       this.bgmName = name;
       if (!this.unlocked) return;
       if (!app.audioOn || !app.bgmOn) { if (this.bgmEl) this.bgmEl.pause(); return; }
-      const src = "audio/" + name + ".ogg?v=" + ART_VERSION;
+      const src = "audio/" + name + ".ogg?v=" + BGM_ASSET_VERSION;
       const target = Math.min(1, app.bgmVolume * app.audioVolume);
       if (this.bgmEl && this.bgmEl.getAttribute("data-bgm") === name) {
         this.bgmEl.volume = target;
@@ -485,9 +579,11 @@
     document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
     const target = $("screen-" + name);
     if (target) target.classList.add("active");
-    if (name === "home" || name === "mode" || name === "sim" || name === "setup" || name === "lan" || name === "deck" || name === "tutorial" || name === "codex" || name === "achievements" || name === "settings" || name === "rank" || name === "rules" || name === "match" || name === "room" || name === "lab" || name === "other" || name === "arcade" || name === "battler-setup" || name === "battler") AudioBox.bgm("bgm_title");
-    if (name !== "home") closeStartMenu();
-    if (name === "home") { updateHomeLegendary(); updateHomeAccount(); renderHomeDash(); }
+    const screenBgm = SCREEN_BGM[name];
+    if (screenBgm) AudioBox.bgm(screenBgm);
+    else if (name === "home" || name === "mode" || name === "sim" || name === "setup" || name === "lan" || name === "deck" || name === "tutorial" || name === "codex" || name === "achievements" || name === "settings" || name === "rank" || name === "rules" || name === "match" || name === "room") AudioBox.bgm("bgm_title");
+    if (name !== "home") { closeStartMenu(); hideMobileWelcome(); }
+    if (name === "home") { updateHomeLegendary(); updateHomeAccount(); renderHomeDash(); startHomeQuoteRotation(); }
     if (name === "rules") renderRulesKeywords();
     if (name === "other") renderOtherModes();
     applyVideoPrefs();
@@ -550,8 +646,46 @@
   }
 
   /* ===== setup ===== */
+  const HOME_TIPS = [
+    "每个阵位最多放 3 个随从，全场最多 6 个。",
+    "点击手牌，再点阵位或目标出牌；桌面端也可以直接拖拽。",
+    "守备随从会保护同阵位的其他友方随从。",
+    "先遣随从登场当回合可以攻击，但不能攻击敌方领袖。",
+    "连携需要同阵位有另一个友方随从。",
+    "冻结会让目标失去下一次攻击。",
+    "4 震荡：所有随从受到 1 点伤害。",
+    "7 裂隙：双方领袖受到 2 点伤害。",
+    "10 魔物潮：所有随从受到 3 点伤害，双方领袖受到 5 点伤害。",
+    "12 回流：共享流脉清空，重新开始积累。",
+    "装备槽最多 2 个，阵位槽最多 3 个。",
+    "鼠标悬停卡牌可以查看关键词说明。",
+    "手机长按卡牌查看完整卡牌详情。",
+    "预兆会从牌库顶 3 张里选 1 张置入手牌。",
+    "采掘会抽牌并增加共享流脉。",
+    "引脉只在共享流脉达到标注数字时触发。",
+    "牌库抽空会进入疲劳，过牌也要算代价。",
+    "结束回合前先确认行动力和可攻击随从。"
+  ];
+  let homeQuoteTimer = null;
+  let homeQuoteIndex = 0;
+  function setHomeQuote(text) {
+    const quote = $("home-quote");
+    if (!quote || !text) return;
+    quote.classList.remove("swap");
+    void quote.offsetWidth;
+    quote.textContent = text;
+    quote.classList.add("swap");
+  }
+  function startHomeQuoteRotation() {
+    if (homeQuoteTimer) clearInterval(homeQuoteTimer);
+    setHomeQuote(HOME_TIPS[homeQuoteIndex % HOME_TIPS.length]);
+    homeQuoteTimer = setInterval(() => {
+      homeQuoteIndex = (homeQuoteIndex + 1) % HOME_TIPS.length;
+      setHomeQuote(HOME_TIPS[homeQuoteIndex]);
+    }, 6200);
+  }
   function updateHomeLegendary() {
-    const candidates = Object.values(D.CARDS).filter(c => c.rarity === "legendary" && !c.token && !c.disabled);
+    const candidates = Object.values(D.CARDS).filter(c => !c.disabled && c.name);
     if (!candidates.length) return;
     let pick = candidates[Math.floor(Math.random() * candidates.length)];
     if (app.lastLegendary && candidates.length > 1) {
@@ -565,11 +699,25 @@
       const url = cardArtUrl(pick);
       img.src = url || "assets/backgrounds/menu.webp";
       img.alt = pick.name;
+      const art = $("home-legendary-art");
+      if (art) {
+        art.classList.remove("swap");
+        void art.offsetWidth;
+        art.classList.add("swap");
+      }
     }
     const name = $("home-legendary-name");
     if (name) name.textContent = pick.name;
     const faction = $("home-legendary-faction");
-    if (faction) faction.textContent = factionName(pick.faction) + " · " + (pick.type === "spell" ? "传说战术" : "传说随从") + " · " + (pick.cost || 0) + " 行动力";
+    const typeText = pick.type === "spell" ? "战术" : pick.type === "formation" ? "阵型" : pick.type === "equipment" ? "装备" : pick.type === "debt" ? "债务" : "随从";
+    const rarityText = pick.token ? "衍生卡" : (RARITY_NAMES[pick.rarity] || "档案卡");
+    if (faction) faction.textContent = factionName(pick.faction) + " · " + rarityText + " · " + typeText + " · " + (pick.cost || 0) + " 行动力";
+    const aside = $("home-legendary");
+    if (aside) {
+      aside.title = "点击随机换一张卡牌";
+      aside.style.cursor = "pointer";
+      aside.onclick = updateHomeLegendary;
+    }
   }
 
   function renderOtherModes() {
@@ -722,6 +870,25 @@
     "assets/heroes/otto_centered.webp"
   ];
   let bootBusy = false;
+  let bootTipTimer = null;
+  function startBootTips(initialTip) {
+    if (bootTipTimer) clearInterval(bootTipTimer);
+    const tips = HOME_TIPS;
+    let index = Math.floor(Math.random() * tips.length);
+    const show = (text) => {
+      const el = $("boot-tip");
+      if (el) el.textContent = text;
+    };
+    show(initialTip || tips[index]);
+    bootTipTimer = setInterval(() => {
+      index = (index + 1) % tips.length;
+      show(tips[index]);
+    }, 850);
+  }
+  function stopBootTips() {
+    if (bootTipTimer) clearInterval(bootTipTimer);
+    bootTipTimer = null;
+  }
 
   function preloadImages(list, onProgress) {
     let done = 0;
@@ -755,11 +922,14 @@
     const titleEl = $("boot-title");
     if (titleEl) titleEl.textContent = title || "正在展开流脉档案";
     setBootProgress(0, tip || "正在校准地脉与阵位…");
+    startBootTips(tip || "正在校准地脉与阵位…");
     const started = Date.now();
-    preloadImages(list || BOOT_ASSETS, (p) => setBootProgress(p * 92, tip)).then(() => {
-      setBootProgress(100, "推演准备完成");
-      const wait = Math.max(0, 620 - (Date.now() - started));
+    preloadImages(list || BOOT_ASSETS, (p) => setBootProgress(p * 92)).then(() => {
+      setBootProgress(100);
+      const wait = Math.max(0, 1800 - (Date.now() - started));
       setTimeout(() => {
+        stopBootTips();
+        setBootProgress(100, "推演准备完成");
         box.classList.add("hidden");
         bootBusy = false;
         if (done) done();
@@ -870,6 +1040,8 @@
       }
     }
     if (conn) conn.hidden = !(app.net && app.opponentOnline === false);
+    const emoteBtn = $("btn-emote");
+    if (emoteBtn) emoteBtn.hidden = !(app.net && app.net.active);
   }
 
   function setOpponentOnline(online) {
@@ -1016,7 +1188,7 @@
     syncMulliganUI();
     if (s.status === "gameover") $("game-hint").textContent = "推演已结束。";
     else if (app.busy) $("game-hint").textContent = app.currentHint || "推演中…";
-    else if (app.targetInfo) $("game-hint").textContent = app.targetInfo.kind === "heroPower" ? "选择领袖技能目标" : "选择目标";
+    else if (app.targetInfo) $("game-hint").textContent = app.targetInfo.kind === "heroPower" ? "选择领袖技能目标" : app.targetInfo.kind === "minionTarget" ? "选择登场强化目标" : "选择目标";
     else if (app.zoneSelect) $("game-hint").textContent = "选择一个阵位放置随从或阵型";
     else if (app.attacker) $("game-hint").textContent = "选择攻击目标";
     else $("game-hint").textContent = "点击或拖动卡牌；点击我方随从攻击。";
@@ -1151,9 +1323,12 @@
     const box = $("targeting-prompt");
     if (!box) return;
     clear(box);
-    document.body.classList.toggle("targeting-mode", !!(app.targetInfo && app.targetInfo.kind === "card"));
+    document.body.classList.toggle("targeting-mode", !!(app.targetInfo && (app.targetInfo.kind === "card" || app.targetInfo.kind === "minionTarget")));
     if (!app.targetInfo) { box.classList.remove("show"); return; }
-    if (app.targetInfo.kind === "card") {
+    if (app.targetInfo.kind === "minionTarget") {
+      box.appendChild(el("span", "targeting-title", "登场「" + (app.targetInfo.defName || "随从") + "」"));
+      box.appendChild(el("span", "targeting-sub", "随从已登场，点击高亮目标选择强化"));
+    } else if (app.targetInfo.kind === "card") {
       const card = viewer.hand.find((c) => c.uid === app.targetInfo.cardUid);
       const def = card ? D.CARDS[card.cardId] : null;
       if (!def) { box.classList.remove("show"); return; }
@@ -1171,6 +1346,9 @@
   }
 
   function cancelSelection(silent) {
+    if (app.targetInfo && app.targetInfo.kind === "minionTarget" && app.game && app.game.pendingMinionTarget) {
+      E.cancelPendingMinionTarget(app.game);
+    }
     app.targetInfo = null;
     app.zoneSelect = null;
     app.attacker = null;
@@ -1309,6 +1487,9 @@
   function renderMana(player) {
     fillManaBox($("mana-display"), player, "行动力");
     if (app.game && app.game.players[1]) fillManaBox($("enemy-mana-display"), app.game.players[1], "对手行动力");
+    const pm = $("mobile-mana-player"), em = $("mobile-mana-enemy");
+    if (pm) pm.innerHTML = "◈ <b>" + player.mana + " / " + Math.max(player.maxMana, player.mana) + "</b>";
+    if (em && app.game && app.game.players[1]) { const ep = app.game.players[1]; em.innerHTML = "◈ <b>" + ep.mana + " / " + Math.max(ep.maxMana, ep.mana) + "</b>"; }
   }
 
   function buildHeroMana(player, side) {
@@ -1381,6 +1562,129 @@
     heroTooltipEl = tip;
   }
 
+  function openHeroInfo(player) {
+    if (!player || !player.hero) return;
+    hideHeroTooltip();
+    openModal((content) => {
+      content.classList.add("hero-info-modal");
+      content.appendChild(el("div", "eyebrow", "LEADER / " + factionName(player.faction)));
+      content.appendChild(el("h3", null, player.name));
+      content.appendChild(el("p", "muted", player.hero.name + " · 生命 " + player.hp + " · 护甲 " + player.armor + " · 行动力 " + player.mana + "/" + player.maxMana));
+
+      const power = el("div", "hero-info-block");
+      const powerPassive = !!(player.hero.power.passive || player.hero.power.target === "passive");
+      power.appendChild(el("span", "hero-info-kicker", powerPassive ? "被动技能" : "领袖技能 · " + player.hero.power.cost + " 行动力"));
+      power.appendChild(el("strong", null, player.hero.power.name));
+      power.appendChild(el("p", null, player.hero.power.text || ""));
+      content.appendChild(power);
+
+      const equippedIds = Array.isArray(player.equipments) && player.equipments.length ? player.equipments : (player.relic ? [player.relic] : []);
+      const equipBlock = el("div", "hero-info-block");
+      equipBlock.appendChild(el("span", "hero-info-kicker", "已装备"));
+      if (!equippedIds.length) equipBlock.appendChild(el("p", "muted", "暂无装备。"));
+      for (const eid of equippedIds) {
+        const rd = D.CARDS[eid];
+        if (!rd) continue;
+        const row = el("div", "hero-info-row");
+        row.appendChild(el("strong", null, rd.name));
+        row.appendChild(el("span", null, rd.text || ""));
+        equipBlock.appendChild(row);
+      }
+      content.appendChild(equipBlock);
+
+      const formations = (player.formations || []).filter((f) => f.turnsLeft == null || f.turnsLeft > 0);
+      const formBlock = el("div", "hero-info-block");
+      formBlock.appendChild(el("span", "hero-info-kicker", "阵位效果"));
+      if (!formations.length) formBlock.appendChild(el("p", "muted", "暂无阵位效果。"));
+      for (const f of formations) {
+        const fd = D.CARDS[f.cardId];
+        if (!fd) continue;
+        const row = el("div", "hero-info-row");
+        row.appendChild(el("strong", null, (E.ZONE_NAMES[f.zone] || f.zone) + " · " + fd.name));
+        row.appendChild(el("span", null, fd.text || ""));
+        formBlock.appendChild(row);
+      }
+      content.appendChild(formBlock);
+
+      const debtCards = (player.hand || []).filter((c) => c.isDebt);
+      if (debtCards.length) {
+        const debtBlock = el("div", "hero-info-block");
+        debtBlock.appendChild(el("span", "hero-info-kicker", "债务卡"));
+        for (const dc of debtCards) {
+          const dd = D.CARDS[dc.cardId];
+          if (!dd) continue;
+          const row = el("div", "hero-info-row");
+          row.appendChild(el("strong", null, dd.name));
+          row.appendChild(el("span", null, dd.text || ""));
+          debtBlock.appendChild(row);
+        }
+        content.appendChild(debtBlock);
+      }
+      const debtTasks = Array.isArray(player.debtTasks) ? player.debtTasks : [];
+      if (debtTasks.length) {
+        const taskBlock = el("div", "hero-info-block");
+        taskBlock.appendChild(el("span", "hero-info-kicker", "债务任务"));
+        for (const task of debtTasks) {
+          const td = D.CARDS[task.cardId];
+          const taskName = task.type === "summon" ? "摆放 " + (task.amount || 1) + " 个随从"
+            : task.type === "spell" ? "使用 " + (task.amount || 1) + " 张战术卡"
+            : task.type === "attack" ? "发起 " + (task.amount || 1) + " 次攻击"
+            : task.type === "playCards" ? "再打出 " + (task.amount || 1) + " 张牌"
+            : task.type === "noCards" ? "不能再使用卡牌"
+            : task.type === "noSummon" ? "不能再摆放随从"
+            : task.type === "noAttack" ? "不能攻击"
+            : task.type === "noSpell" ? "不能再使用战术卡" : "完成债务任务";
+          const negative = ["noCards", "noSummon", "noAttack", "noSpell"].includes(task.type);
+          const progress = negative ? "遵守中" : (task.progress || 0) + " / " + (task.amount || 1);
+          const row = el("div", "hero-info-row");
+          row.appendChild(el("strong", null, (td ? td.name : "债务卡") + " · " + taskName));
+          row.appendChild(el("span", null, "进度：" + progress + "；未完成回合结束受到 " + (task.penalty && task.penalty.amount || 2) + " 点伤害。"));
+          taskBlock.appendChild(row);
+        }
+        content.appendChild(taskBlock);
+      }
+
+      const actions = el("div", "modal-actions");
+      const close = el("button", "btn btn-primary", "知道了");
+      close.onclick = () => closeModal(true);
+      actions.appendChild(close);
+      content.appendChild(actions);
+    });
+  }
+
+  function centerHeroDeckBadge(container) {
+    if (!container || isPhoneLayout()) return;
+    const badge = container.querySelector(".hs-hero-deck");
+    const portrait = container.querySelector(".hs-hero-portrait");
+    const side = container.querySelector(".hs-hero-side");
+    if (!badge || !portrait || !side) return;
+    const cr = container.getBoundingClientRect();
+    const pr = portrait.getBoundingClientRect();
+    const sr = side.getBoundingClientRect();
+    const freeLeft = pr.right;
+    const freeRight = sr.left;
+    if (freeRight <= freeLeft) return;
+    const gap = freeRight - freeLeft;
+    const width = Math.max(72, gap - 22);
+    const height = Math.max(48, container.clientHeight - 24);
+    badge.style.setProperty("width", width + "px", "important");
+    badge.style.setProperty("min-width", width + "px", "important");
+    badge.style.setProperty("height", height + "px", "important");
+    badge.style.setProperty("padding", "4px 10px", "important");
+    const art = badge.querySelector(".hs-hero-deck-art");
+    if (art) {
+      const artH = Math.max(28, height - 16);
+      const artW = Math.round(artH * 0.68);
+      art.style.setProperty("height", artH + "px", "important");
+      art.style.setProperty("width", artW + "px", "important");
+      art.style.setProperty("flex-basis", artW + "px", "important");
+    }
+    const left = (freeLeft + freeRight) / 2 - width / 2 - cr.left;
+    badge.style.left = Math.max(0, left) + "px";
+    badge.style.right = "auto";
+    badge.style.transform = "translateY(-50%)";
+  }
+
   function renderHero(container, player, side) {
     if (!container) return;
     hideHeroTooltip();
@@ -1396,6 +1700,79 @@
     const body = el("div", "hs-hero-body");
     const identity = el("div", "hs-hero-identity");
     identity.appendChild(el("strong", "hs-hero-name", player.name));
+    const heroBadges = el("span", "hs-hero-badges");
+    const heroEquipped = Array.isArray(player.equipments) && player.equipments.length ? player.equipments : (player.relic ? [player.relic] : []);
+    const heroFormationCount = (player.formations || []).filter((f) => f.turnsLeft == null || f.turnsLeft > 0).length;
+    const heroDebtCount = (player.hand || []).filter((c) => c.isDebt).length;
+    const heroDebtTasks = Array.isArray(player.debtTasks) ? player.debtTasks : [];
+    const debtTaskText = (task) => {
+      const n = task.amount || 1;
+      if (task.type === "summon") return "摆放 " + n + " 个随从";
+      if (task.type === "spell") return "使用 " + n + " 张战术卡";
+      if (task.type === "attack") return "发起 " + n + " 次攻击";
+      if (task.type === "playCards") return "再打出 " + n + " 张牌";
+      if (task.type === "noCards") return "不能再使用卡牌";
+      if (task.type === "noSummon") return "不能再摆放随从";
+      if (task.type === "noAttack") return "不能攻击";
+      if (task.type === "noSpell") return "不能再使用战术卡";
+      return "完成债务任务";
+    };
+    if (heroEquipped.length) {
+      const b = el("span", "hs-status-badge eq");
+      const firstEq = D.CARDS[heroEquipped[0]];
+      if (firstEq && cardArtUrl(firstEq)) {
+        const img = el("img", "hs-status-badge-art");
+        img.alt = "";
+        img.src = cardArtUrl(firstEq);
+        b.appendChild(img);
+      } else {
+        b.appendChild(el("span", null, "⚙"));
+      }
+      b.appendChild(el("small", null, String(heroEquipped.length)));
+      b.title = "已装备 " + heroEquipped.map((id) => (D.CARDS[id] && D.CARDS[id].name) || id).join("、");
+      heroBadges.appendChild(b);
+    }
+    if (heroFormationCount) {
+      const b = el("span", "hs-status-badge fm");
+      const activeFormation = (player.formations || []).find((f) => f.turnsLeft == null || f.turnsLeft > 0) || {};
+      const fdef = D.CARDS[activeFormation.cardId];
+      if (fdef && cardArtUrl(fdef)) {
+        const img = el("img", "hs-status-badge-art");
+        img.alt = "";
+        img.src = cardArtUrl(fdef);
+        b.appendChild(img);
+      }
+      b.appendChild(el("small", null, String(heroFormationCount)));
+      b.title = "已部署 " + heroFormationCount + " 个阵型";
+      heroBadges.appendChild(b);
+    }
+    if (heroDebtCount || heroDebtTasks.length) {
+      const b = el("span", "hs-status-badge debt" + (heroDebtTasks.length ? " debt-task" : ""));
+      const debtCard = (player.hand || []).find((c) => c.isDebt);
+      const taskCard = heroDebtTasks.length ? D.CARDS[heroDebtTasks[0].cardId] : null;
+      const ddef = debtCard ? D.CARDS[debtCard.cardId] : taskCard;
+      if (ddef && cardArtUrl(ddef)) {
+        const img = el("img", "hs-status-badge-art");
+        img.alt = "";
+        img.src = cardArtUrl(ddef);
+        b.appendChild(img);
+      }
+      const total = heroDebtCount + heroDebtTasks.length;
+      b.appendChild(el("small", null, String(total)));
+      const taskLines = heroDebtTasks.map((t) => {
+        const name = (D.CARDS[t.cardId] && D.CARDS[t.cardId].name) || "债务卡";
+        const progress = (t.type === "noCards" || t.type === "noSummon" || t.type === "noAttack" || t.type === "noSpell")
+          ? "（遵守中）" : "（" + (t.progress || 0) + "/" + (t.amount || 1) + "）";
+        return name + "：" + debtTaskText(t) + progress;
+      });
+      b.title = (heroDebtCount ? "手里有 " + heroDebtCount + " 张债务卡。" : "") + (taskLines.length ? "债务任务：" + taskLines.join("；") : "");
+      b.setAttribute("aria-label", b.title);
+      heroBadges.appendChild(b);
+    }
+    if (isPhoneLayout() && side === "bottom") {
+      const hint = el("span", "hs-hero-longpress-hint", "长按此条看信息");
+      heroBadges.appendChild(hint);
+    }
     body.appendChild(identity);
 
     const vitals = el("div", "hs-hero-vitals");
@@ -1415,6 +1792,7 @@
     armor.appendChild(el("b", null, String(player.armor)));
     armor.appendChild(el("small", null, "护甲"));
     vitals.appendChild(armor);
+    vitals.appendChild(heroBadges);
     const meta = el("span", "hs-hero-counts");
     const handMeta = el("span", "hs-hero-count hs-hero-hand");
     const handIcon = el("img", "hs-hero-hand-icon");
@@ -1459,26 +1837,46 @@
     if (hpPct <= 25) hpFill.classList.add("low");
     else if (hpPct <= 55) hpFill.classList.add("mid");
     hpTrack.appendChild(hpFill);
-    body.appendChild(hpTrack);
+
+    // 手机端把行动力槽整合进英雄栏，避免场外两个浮动条挡视野。
+    const manaBar = el("div", "hs-hero-mana");
+    manaBar.appendChild(el("span", "hs-hero-mana-label", "行动"));
+    const manaPips = el("div", "hs-hero-mana-pips");
+    for (let i = 0; i < 10; i++) {
+      const pip = el("i", "hs-hero-mana-pip");
+      if (i < player.mana) pip.classList.add("filled");
+      else if (i < player.maxMana) pip.classList.add("available");
+      manaPips.appendChild(pip);
+    }
+    manaBar.appendChild(manaPips);
+    manaBar.appendChild(el("b", "hs-hero-mana-value", player.mana + "/" + Math.max(player.maxMana, player.mana)));
+    const deckInline = el("span", "hs-hero-deck-inline", "牌库 " + (player.deck ? player.deck.length : 0));
+    deckInline.title = "牌库剩余 " + (player.deck ? player.deck.length : 0) + " 张";
+    deckInline.setAttribute("aria-label", deckInline.title);
+    manaBar.appendChild(deckInline);
+    manaBar.title = "行动力 " + player.mana + " / " + player.maxMana + " · 牌库 " + (player.deck ? player.deck.length : 0) + " 张";
+    body.appendChild(manaBar);
     container.classList.toggle("low-hp", hpPct <= 25);
     const equippedIds = Array.isArray(player.equipments) && player.equipments.length ? player.equipments : (player.relic ? [player.relic] : []);
     container.classList.toggle("has-relic", equippedIds.length > 0);
     if (side === "bottom") document.body.classList.toggle("low-hp-warning", hpPct <= 25 && app.screen === "game");
     container.appendChild(body);
-    equippedIds.forEach((eid, idx) => {
-      const rd = D.CARDS[eid];
-      if (!rd) return;
-      const chip = el("div", "hs-relic-chip");
-      chip.style.right = (76 + idx * 26) + "px";
-      const chipArt = el("img", "hs-relic-chip-art");
-      chipArt.alt = "";
-      chipArt.src = cardArtUrl(rd) || factionIcon(rd.faction);
-      chip.appendChild(chipArt);
-      chip.appendChild(el("span", "hs-relic-chip-label", rd.name));
-      chip.title = "已装备：" + rd.name + "\n" + (rd.text || "");
-      chip.setAttribute("aria-label", "已装备 " + rd.name);
-      container.appendChild(chip);
-    });
+    if (!isPhoneLayout()) {
+      equippedIds.forEach((eid, idx) => {
+        const rd = D.CARDS[eid];
+        if (!rd) return;
+        const chip = el("div", "hs-relic-chip");
+        chip.style.right = (76 + idx * 26) + "px";
+        const chipArt = el("img", "hs-relic-chip-art");
+        chipArt.alt = "";
+        chipArt.src = cardArtUrl(rd) || factionIcon(rd.faction);
+        chip.appendChild(chipArt);
+        chip.appendChild(el("span", "hs-relic-chip-label", rd.name));
+        chip.title = "已装备：" + rd.name + "\n" + (rd.text || "");
+        chip.setAttribute("aria-label", "已装备 " + rd.name);
+        container.appendChild(chip);
+      });
+    }
 
     const sideCol = el("div", "hs-hero-side");
     const skill = el("button", "hs-skill");
@@ -1496,6 +1894,7 @@
     const reason = powerPassive ? "被动" : player.heroPowerUsed ? "已用" : app.game.current !== player.index ? "等待" : player.mana < (player.hero.power.cost || 2) ? "行动力不足" : (player.hero.power.id === "spell_codex" && !player.hand.some(c => D.CARDS[c.cardId] && D.CARDS[c.cardId].type === "spell")) ? "无战术牌" : "可用";
     skill.appendChild(el("small", "hs-skill-state", reason));
     skill.classList.toggle("ready", ready);
+    skill.classList.toggle("used", !!player.heroPowerUsed);
     skill.disabled = !ready || side !== "bottom";
     if (side === "bottom") skill.onclick = () => { const b = $("btn-hero-power"); if (b && !b.disabled) b.click(); };
     sideCol.appendChild(skill);
@@ -1515,6 +1914,69 @@
       sideCol.appendChild(hand);
     }
     container.appendChild(sideCol);
+    const heroDeckBadge = el("span", "hs-hero-deck");
+    heroDeckBadge.id = side === "bottom" ? "player-hero-deck" : "opponent-hero-deck";
+    heroDeckBadge.innerHTML = "<img class=\"hs-hero-deck-art\" alt=\"\" src=\"" + cardBackUrl() + "\"><span class=\"hs-hero-deck-copy\"><span class=\"hs-hero-deck-label\">牌库</span><b>" + player.deck.length + "</b></span>";
+    heroDeckBadge.title = "牌库剩余 " + player.deck.length + " 张";
+    heroDeckBadge.setAttribute("aria-label", "牌库剩余 " + player.deck.length + " 张");
+    container.appendChild(heroDeckBadge);
+    if (!isPhoneLayout()) { centerHeroDeckBadge(container); requestAnimationFrame(() => centerHeroDeckBadge(container)); }
+
+    if (side === "bottom" || side === "top") {
+      const loadout = el("div", "hs-loadout-strip");
+      const makeGroup = (label, kind, count, cards) => {
+        const group = el("div", "hs-loadout-group");
+        group.appendChild(el("span", "hs-loadout-label", label));
+        const slots = el("div", "hs-loadout-slots");
+        for (let i = 0; i < count; i++) {
+          const def = cards[i];
+          const slot = el("div", "hs-loadout-slot " + kind + (def ? " filled" : " empty"));
+          if (def) {
+            const art = el("img", "hs-loadout-art");
+            art.alt = "";
+            art.src = cardArtUrl(def) || factionIcon(def.faction);
+            slot.appendChild(art);
+            slot.title = label + "槽 " + (i + 1) + "：" + def.name + "\n" + (def.text || "");
+            slot.setAttribute("aria-label", label + "：" + def.name);
+          } else {
+            slot.appendChild(el("b", null, kind === "equip" ? "※" : kind === "debt" ? "债" : "◇"));
+            slot.title = label + "槽 " + (i + 1) + "：空";
+            slot.setAttribute("aria-label", label + "空槽");
+          }
+          if (kind === "formation") slot.appendChild(el("small", "hs-loadout-slot-label", ["左翼", "中枢", "右翼"][i] || ""));
+          slots.appendChild(slot);
+        }
+        group.appendChild(slots);
+        return group;
+      };
+      const equipCards = equippedIds.map((eid) => D.CARDS[eid]).filter(Boolean);
+      const zoneOrder = ["left", "center", "right"];
+      const formationCards = zoneOrder.map((zone) => {
+        const active = (player.formations || []).find((f) => f.zone === zone);
+        return active ? D.CARDS[active.cardId] : null;
+      });
+      const debtEntry = (player.hand || []).find((c) => c.isDebt);
+      const debtCards = debtEntry ? [D.CARDS[debtEntry.cardId]].filter(Boolean) : [];
+      loadout.appendChild(makeGroup("装备", "equip", 2, equipCards));
+      loadout.appendChild(makeGroup("阵位", "formation", 3, formationCards));
+      if (debtCards.length) loadout.appendChild(makeGroup("债务卡", "debt", 1, debtCards));
+      container.appendChild(loadout);
+
+      const action = el("div", "hs-action-slot");
+      action.appendChild(el("span", "hs-action-label", "行动力"));
+      const crystals = el("div", "hs-action-crystals");
+      for (let i = 0; i < 10; i++) {
+        const pip = el("i", "hs-action-pip");
+        if (i < player.mana) pip.classList.add("filled");
+        else if (i < player.maxMana) pip.classList.add("available");
+        crystals.appendChild(pip);
+      }
+      action.appendChild(crystals);
+      action.appendChild(el("strong", "hs-action-value", player.mana + " / " + Math.max(player.maxMana, player.mana)));
+      action.title = "行动力 " + player.mana + " / " + Math.max(player.maxMana, player.mana);
+      action.setAttribute("aria-label", "行动力 " + player.mana + " / " + Math.max(player.maxMana, player.mana));
+      container.appendChild(action);
+    }
 
     const powerNote = el("div", "hs-hero-power-note");
     powerNote.appendChild(el("span", "hs-hero-power-kicker", powerPassive ? "被动技能" : "领袖技能"));
@@ -1567,8 +2029,37 @@
       }
     }
 
-    container.onmouseenter = () => showHeroTooltip(container, player);
+    container.onmouseenter = () => { if (!isPhoneLayout()) showHeroTooltip(container, player); };
     container.onmouseleave = hideHeroTooltip;
+    let heroPress = null;
+    let heroPressTimer = null;
+    const clearHeroPress = () => {
+      if (heroPressTimer) clearTimeout(heroPressTimer);
+      heroPressTimer = null;
+      heroPress = null;
+    };
+    container.addEventListener("pointerdown", (ev) => {
+      if (!isPhoneLayout() || ev.button !== 0 || app.modalOpen) return;
+      if (ev.target && ev.target.closest && ev.target.closest(".hs-skill,.hs-relic-chip")) return;
+      if (app.selectedCard || app.targetInfo || app.zoneSelect || app.attacker || app.draggingUid) return;
+      clearHeroPress();
+      heroPress = { x: ev.clientX, y: ev.clientY, at: Date.now(), fired: false };
+      heroPressTimer = setTimeout(() => {
+        if (!heroPress || !isPhoneLayout() || app.modalOpen) return;
+        if (app.selectedCard || app.targetInfo || app.zoneSelect || app.attacker || app.draggingUid) return;
+        heroPress.fired = true;
+        app.suppressClick = Date.now();
+        if (navigator.vibrate) { try { navigator.vibrate(8); } catch (e) {} }
+        openHeroInfo(player);
+      }, 450);
+    });
+    container.addEventListener("pointermove", (ev) => {
+      if (!heroPress) return;
+      if (Math.abs(ev.clientX - heroPress.x) > 14 || Math.abs(ev.clientY - heroPress.y) > 14) clearHeroPress();
+    });
+    container.addEventListener("pointerup", () => { clearHeroPress(); });
+    container.addEventListener("pointercancel", clearHeroPress);
+    container.addEventListener("contextmenu", (ev) => { if (isPhoneLayout()) ev.preventDefault(); });
 
     if (side === "top") {
       const targets = targetList();
@@ -1630,6 +2121,7 @@
       zone.dataset.zoneKey = z;
       zone.dataset.zoneName = E.ZONE_NAMES[z];
       zone.setAttribute("data-zone", E.ZONE_NAMES[z]);
+      zone.appendChild(el("i", "zone-diamond"));
       const zonesOpen = app.zoneSelect && side === "bottom" && app.game.current === player.index;
       zone.classList.toggle("zone-open", !!zonesOpen);
       if (zonesOpen) zone.onclick = () => onZoneClick(z);
@@ -1661,6 +2153,7 @@
         const empty = el("div", "empty-slot");
         zone.appendChild(empty);
       } else {
+        if (isPhoneLayout() && minions.length >= 2) zone.classList.add(minions.length >= 3 ? "zone-crowded" : "zone-two");
         for (const m of minions) {
           const card = createBoardCard(m, player, ownerIndex);
           zone.appendChild(card);
@@ -1929,7 +2422,7 @@
     if (m.silenced) card.classList.add("silenced");
     if (m.bounty != null) {
       const seal = el("div", "bounty-seal");
-      seal.title = "悬赏名单：该随从死亡时，名单主人抽 1 张牌";
+      seal.title = "悬赏名单：该随从已被标记为悬赏目标";
       seal.setAttribute("aria-label", "悬赏目标");
       seal.innerHTML =
         '<svg viewBox="0 0 40 40" aria-hidden="true">' +
@@ -1956,7 +2449,7 @@
       card.classList.add("targetable");
       card.dataset.targetType = (app.targetInfo && app.targetInfo.targetType) || "attack";
     }
-    if (app.targetInfo && app.targetInfo.kind === "card" && targetList().indexOf(m.uid) >= 0) {
+    if (app.targetInfo && (app.targetInfo.kind === "card" || app.targetInfo.kind === "minionTarget") && targetList().indexOf(m.uid) >= 0) {
       const tPlayer = app.game.players[app.viewer];
       const tInst = tPlayer && tPlayer.hand.find(c => c.uid === app.targetInfo.cardUid);
       const tDef = tInst ? D.CARDS[tInst.cardId] : null;
@@ -2037,7 +2530,7 @@
   }
 
   function typeLine(def, m) {
-    return def.type === "spell" ? "战术" : (def.type === "equipment" || def.type === "relic") ? "装备" : def.type === "formation" ? "阵型" : def.type === "debt" ? "债务" : def.type === "leader" ? "领袖" : "随从";
+    return def.type === "spell" ? "战术" : (def.type === "equipment" || def.type === "relic") ? "装备" : def.type === "formation" ? "阵型" : def.type === "debt" ? "债务卡" : def.type === "leader" ? "领袖" : "随从";
   }
 
   function renderVein(s) {
@@ -2420,6 +2913,7 @@
       const span = el("span", "kw", m[0]);
       if (["采掘", "引脉"].indexOf(m[0]) >= 0) span.classList.add("vein-kw");
       if (m[0] === "血祭") span.classList.add("danger-kw");
+      applyKeywordColor(span, m[0]);
       node.appendChild(span);
       last = m.index + m[0].length;
     }
@@ -2427,32 +2921,33 @@
   }
 
   const RARITY_NAMES = { common: "普通", rare: "稀有", epic: "史诗", legendary: "传说", token: "衍生物" };
+  const RARITY_COLORS = { common: "#aebac2", rare: "#78b6ef", epic: "#c08bff", legendary: "#f2c66d", token: "#7de8d5" };
 
   const KEYWORD_HELP = {
-    "登场": "从手牌打出时立即触发一次效果。",
-    "余响": "该随从死亡时立即触发一次效果。",
-    "守备": "保护同一阵位的其他友方随从：只要该阵位有守备，其他随从不能被攻击。守备随从本身可以被攻击。若攻击者同阵位有守备，敌方领袖也不能被攻击。",
-    "先遣": "登场当回合可以攻击，但本回合不能攻击敌方领袖。",
-    "被动": "无需主动触发，满足条件时自动生效。",
-    "冻结": "被冻结的角色失去其下一次攻击机会。",
-    "沉默": "移除卡牌当前的强化，以及卡牌描述带来的效果。",
-    "隐匿": "无法被敌方选为目标，攻击后解除。",
-    "引脉": "当共享流脉达到标注阈值时触发；若有多个阈值，只结算其中最高的一个。",
-    "预兆": "从牌库顶 3 张中挑选 1 张置入手牌。",
-    "采掘": "采掘 X：抽 X 张牌，并使共享流脉 +X。",
-    "血祭": "以支付生命为代价打出或触发效果。",
-    "吞噬": "消灭一个友方随从，并获得其攻击力与生命值。",
-    "格挡": "受到的下一次伤害减少 2 点，然后移除格挡。",
-    "连携": "同阵位有另一个友方随从时，本回合第一次攻击额外 +1 攻击；不再获得额外攻击次数。",
-    "蚀毒": "消灭任何受到其伤害的随从。",
-    "血偿": "造成伤害时，超过目标生命的溢出伤害转化为你的护甲。",
-    "回潮": "第一次死亡后以 1 点生命返回战场一次。",
-    "固定": "固定效果不随条件变化消失，当前和之后以任何方式进入该阵位的随从都会获得。",
-    "逆流": "消耗指定数量的流脉来触发；流脉不足时消耗到 0 仍可触发，流脉为 0 时无效。",
-    "镇脉": "消耗指定数量的流脉，获得等量护甲；流脉不足时只获得剩余流脉的护甲并把流脉清零。",
-    "压脉": "消耗指定数量的流脉，对敌方领袖造成等量伤害；流脉不足时整张牌效果无效。",
-    "悬赏": "被列入悬赏名单的敌方随从死亡时，触发效果。",
-    "装备": "一个持续生效的增益；打出后占用一个装备槽，同名装备只能装备一件。"
+    "登场": "打出时触发一次。",
+    "余响": "死亡时触发一次。",
+    "守备": "保护同阵位其他友方随从；自身仍可被攻击。",
+    "先遣": "登场当回合可攻击，但不能攻击敌方领袖。",
+    "被动": "满足条件时自动生效。",
+    "冻结": "目标失去下一次攻击。",
+    "沉默": "移除强化和卡牌效果。",
+    "隐匿": "敌方无法选中；攻击后解除。",
+    "引脉": "共享流脉达到数字时触发；多个阈值只结算最高。",
+    "预兆": "从牌库顶 3 张选 1 张。",
+    "采掘": "抽 X 张牌，流脉 +X。",
+    "血祭": "支付生命来触发。",
+    "吞噬": "消灭一个友方随从，获得其攻击和生命。",
+    "格挡": "下一次伤害 -2，然后移除。",
+    "连携": "同阵位有友方随从时，本回合首次攻击 +1；不增加攻击次数。",
+    "蚀毒": "伤害直接消灭随从。",
+    "血偿": "溢出伤害转化为护甲。",
+    "回潮": "第一次死亡后以 1 血回场一次。",
+    "固定": "不随条件消失，之后进入该阵位的随从也获得。",
+    "逆流": "消耗流脉触发；不足时消耗到 0 仍可触发，0 点无效。",
+    "镇脉": "消耗流脉换等量护甲；不足时只获得剩余部分。",
+    "压脉": "消耗流脉对敌方领袖造成等量伤害；不足时整张无效。",
+    "悬赏": "将一个目标标记为悬赏名单；该标记本身不触发死亡效果。",
+    "装备": "持续生效；最多可同时装备两件。"
   };
   const KEYWORD_ICONS = {
     "登场": "battlecry", "余响": "deathrattle", "守备": "taunt", "先遣": "charge",
@@ -2462,6 +2957,31 @@
     "血偿": "heal", "回潮": "passive", "固定": "passive", "逆流": "vein",
     "镇脉": "armor", "压脉": "damage", "悬赏": "damage", "装备": "passive"
   };
+  const KEYWORD_COLORS = {
+    "登场": "#f2c66d", "余响": "#c49bff", "守备": "#82b7ff", "先遣": "#ff9b5e",
+    "被动": "#8fd9cd", "冻结": "#8de8ff", "沉默": "#b6c0cc", "隐匿": "#d1a1ff",
+    "引脉": "#4fe0c0", "预兆": "#9cc7ff", "采掘": "#ffc86b", "血祭": "#ff7a7a",
+    "吞噬": "#d88cff", "格挡": "#8fb5d9", "连携": "#ffd36d", "蚀毒": "#9be36f",
+    "血偿": "#ff9db1", "回潮": "#74e7d8", "固定": "#a7bdd0", "逆流": "#65d4ff",
+    "镇脉": "#7fe0cf", "压脉": "#ff8666", "悬赏": "#ffb36b", "装备": "#d8b96f",
+    "阵位": "#e6c06a", "对位": "#e6c06a", "行动力": "#8ec5ff", "战术": "#c49bff", "阵型": "#7fd8c5"
+  };
+  function keywordColor(label) { return KEYWORD_COLORS[label] || "#f0c878"; }
+  function applyKeywordColor(node, label) {
+    if (!node) return;
+    const color = keywordColor(label);
+    node.dataset.keyword = label;
+    node.style.setProperty("--kw", color);
+    node.style.setProperty("--kw-bg", color + "24");
+    node.style.setProperty("--kw-border", color + "99");
+    if (node.classList.contains("keyword-tag") || node.classList.contains("preview-keyword")) {
+      node.style.setProperty("color", color, "important");
+      node.style.setProperty("border-color", color + "99", "important");
+      node.style.setProperty("background", color + "1f", "important");
+      const icon = node.querySelector(".keyword-tag-icon");
+      if (icon) icon.style.filter = "none";
+    }
+  }
   let keywordTipTimer = null;
 
   const TUTORIAL_KEYWORD_ORDER = [
@@ -2489,7 +3009,10 @@
       }
       const body = el("div", "keyword-glossary-copy");
       const alias = TUTORIAL_KEYWORD_ALIASES[label];
-      body.appendChild(el("strong", null, label + (alias ? "（" + alias + "）" : "")));
+      const glossaryName = el("strong", null, label + (alias ? "（" + alias + "）" : ""));
+      applyKeywordColor(glossaryName, label);
+      applyKeywordColor(item, label);
+      body.appendChild(glossaryName);
       body.appendChild(el("span", null, desc));
       item.appendChild(body);
       host.appendChild(item);
@@ -2716,11 +3239,13 @@
     for (const tag of tags) {
       const span = el("span", "keyword-tag");
       span.dataset.tag = tag;
+      applyKeywordColor(span, tag);
       const iconName = KEYWORD_ICONS[tag];
       if (iconName) {
         const img = el("img", "keyword-tag-icon");
         img.src = "/assets/icons/" + iconName + ".svg";
         img.alt = "";
+        img.style.filter = "none";
         span.appendChild(img);
       }
       span.appendChild(el("b", null, tag));
@@ -2740,11 +3265,13 @@
     const row = el("div", "preview-keywords");
     for (const tag of tags) {
       const chip = el("span", "preview-keyword");
+      applyKeywordColor(chip, tag);
       const iconName = KEYWORD_ICONS[tag];
       if (iconName) {
         const img = el("img", "keyword-tag-icon");
         img.src = "/assets/icons/" + iconName + ".svg";
         img.alt = "";
+        img.style.filter = "none";
         chip.appendChild(img);
       }
       chip.appendChild(el("b", null, tag));
@@ -2896,11 +3423,7 @@
     card.classList.add("hand-card", "type-" + def.type);
     if (instance.isDebt) {
       card.classList.add("debt-card");
-      const remaining = Math.max(0, (instance.debtDueTurn || s.turnNumber) - s.turnNumber);
-      const task = def.debt && def.debt.self && def.debt.self.task;
-      const progress = task ? " · 任务 " + ((instance.debtProgress && instance.debtProgress[task.type]) || 0) + "/" + task.amount : "";
-      const status = el("div", "debt-status", "债务 · " + (instance.debtMode === "enemy" ? "敌方" : "己方") + " · " + remaining + " 回合" + progress);
-      card.appendChild(status);
+      card.appendChild(el("div", "debt-status", "债务卡 · 打出后开始任务"));
     }
     card.dataset.faction = def.faction;
     card.dataset.cardId = def.id;
@@ -2908,18 +3431,22 @@
     const back = el("div", "card-back-edge");
     back.style.backgroundImage = "url('" + cardBackUrl() + "')";
     card.insertBefore(back, card.firstChild);
+    const backSeal = el("div", "card-back-seal");
+    backSeal.style.backgroundImage = "url('" + cardBackUrl() + "')";
+    backSeal.title = "卡背：" + (app.account && app.account.cardBack ? cardBackDefinition(app.account.cardBack).name : "档案原版");
+    card.appendChild(backSeal);
     if (app.selectedCard === instance.uid) card.classList.add("selected");
     if (app.mobileGoldCard === instance.uid) card.classList.add("mobile-gold");
     const powerTarget = !!(app.targetInfo && app.targetInfo.kind === "heroPower" && targetList().indexOf(instance.uid) >= 0);
     if (powerTarget) card.classList.add("targetable");
-    const playable = !instance.isDebt && s.status === "playing" && !s.mulliganPhase && s.current === player.index && player.mana >= cost && !app.busy;
+    const playable = s.status === "playing" && !s.mulliganPhase && s.current === player.index && player.mana >= cost && !app.busy;
     if (!playable) card.classList.add("disabled");
     attachMobilePreview(card, def, null, instance);
     card.onmouseenter = () => showPreview(def, null);
     card.onmouseleave = hidePreview;
     if (playable) {
       card.draggable = !isPhoneLayout() && def.type !== "debt" && !instance.isDebt;
-      card.title = def.type === "debt" ? "点击选择给对手/给自己" : def.type === "spell" ? "点击选择目标施放，或直接拖到目标" : def.type === "equipment" ? "点击打出装备" : "点击出牌，或拖到阵位";
+      card.title = instance.isDebt ? "打出债务卡：本回合开始债务任务，完成免罚" : def.type === "debt" ? "打出后洗入对手牌库" : def.type === "spell" ? "点击选择目标施放，或直接拖到目标" : def.type === "equipment" ? "点击打出装备" : "点击出牌，或拖到阵位";
       card.addEventListener("dragstart", (ev) => {
         if (!ev.dataTransfer) return;
         app.draggingUid = instance.uid;
@@ -2941,19 +3468,22 @@
     card.onclick = (ev) => {
       ev.stopPropagation();
       if (app.suppressClick && Date.now() - app.suppressClick < 300) return;
-      if (instance.isDebt) { openDebtRepayModal(instance); return; }
+      if (instance.isDebt) {
+        if (!playable) { toast(s.current !== player.index ? "还没轮到你。" : player.mana < cost ? "行动力不足。" : "现在不能打出这张债务卡。"); return; }
+        commitPlay(instance.uid, null, null);
+        return;
+      }
       if (def.type === "debt") {
-        if (!playable) { toast(s.current !== player.index ? "还没轮到你。" : "现在不能打出这张债务。"); return; }
-        openDebtSideModal(instance, def);
+        if (!playable) { toast(s.current !== player.index ? "还没轮到你。" : player.mana < cost ? "行动力不足。" : "现在不能打出这张债务卡。"); return; }
+        commitPlay(instance.uid, null, null);
         return;
       }
       if (powerTarget) { onTargetClick(instance.uid); return; }
-      if (isPhoneLayout() && app.mobileClickArmed === instance.uid) {
+      if (isPhoneLayout() && app.mobilePreviewUid === instance.uid) {
         app.mobileClickArmed = null;
         app.mobileGoldCard = null;
         hideSimpleCardPreview();
         clearCardDropHints();
-        beginCard(instance.uid);
         return;
       }
       if ((app.targetInfo && app.targetInfo.kind === "card" && app.targetInfo.cardUid === instance.uid) || (app.zoneSelect && app.zoneSelect.cardUid === instance.uid)) {
@@ -2963,6 +3493,14 @@
       if (!playable) {
         if (isPhoneLayout()) {
           const why = s.current !== player.index ? "还没轮到你" : player.mana < cost ? "行动力不足" : "现在不能打出";
+          if (app.mobilePreviewUid === instance.uid) {
+            hideSimpleCardPreview();
+            return;
+          }
+          app.mobileClickArmed = null;
+          app.mobileGoldCard = null;
+          app.mobilePreviewUid = instance.uid;
+          markMobilePreview(card);
           showSimpleCardPreview(def, why);
           return;
         }
@@ -2972,24 +3510,20 @@
         return;
       }
       if (isPhoneLayout()) {
-        hideSimpleCardPreview();
+        const wasArmed = app.mobileClickArmed === instance.uid;
         app.mobileClickArmed = null;
+        app.mobileGoldCard = null;
         document.querySelectorAll(".hand-card.mobile-gold").forEach((x) => x.classList.remove("mobile-gold"));
-        app.mobileGoldCard = instance.uid;
-        card.classList.add("mobile-gold");
-        if (def.type === "minion" || def.type === "formation") {
-          beginCard(instance.uid);
-          if (app.zoneSelect || app.targetInfo || app.selectedCard === instance.uid) {
-            const hint = app.zoneSelect ? "再点卡牌收起，点阵位摆放" : app.targetInfo ? "再点卡牌收起，先点目标再点阵位" : "再点卡牌收起";
-            showSimpleCardPreview(def, hint);
-            if (app.zoneSelect) showCardDropHints(instance.uid, def, "点击摆放到此处");
-          } else {
-            showSimpleCardPreview(def, "再次点击卡牌可继续查看");
-          }
-          return;
-        }
+        hideSimpleCardPreview();
+        clearCardDropHints();
+        if (wasArmed) return;
         app.mobileClickArmed = instance.uid;
-        showSimpleCardPreview(def, "再点一次卡牌释放");
+        app.mobilePreviewUid = instance.uid;
+        markMobilePreview(card);
+        const tip = def.type === "minion" || def.type === "formation"
+          ? "预览中：再点此卡收起；点击阵位摆放"
+          : "预览中：点手牌区外任意位置释放；再点此卡收起";
+        showSimpleCardPreview(def, tip);
         return;
       }
       const now = Date.now();
@@ -3018,7 +3552,7 @@
       app.attacker = null;
       hidePreviewNow();
       renderGame();
-      toast("拖动到阵位或目标出牌；可在设置中切换操作方式。");
+      toast(app.handPlayMode === "double" ? "再次点击确认出牌，或直接拖动。" : "拖动到阵位或目标出牌；可在设置切换拖拽/双击。");
     };
     return card;
   }
@@ -3112,6 +3646,7 @@
       heroSkill.disabled = disabled;
       heroSkill.classList.toggle("ready", !disabled);
       heroSkill.classList.toggle("passive", powerPassive);
+      heroSkill.classList.toggle("used", !!o.used);
       heroSkill.title = (powerPassive ? "被动技能 · " : "") + viewer.hero.power.name + (powerPassive ? "" : " · " + (viewer.hero.power.cost || 2) + " 行动力") + "\n" + (viewer.hero.power.text || "") + (codexMarta ? "\n被动：每回合第一张战术牌行动力消耗 -1。" : "");
       const hs = heroSkill.querySelector(".hs-skill-state");
       if (hs) hs.textContent = powerPassive ? "被动" : o.used ? "已用" : !current ? "等待" : !o.ok ? "不可用" : "可用";
@@ -3264,8 +3799,10 @@
 
   function showFloatingNumber(text, x, y, cls) {
     const n = el("div", "floating-number" + (cls ? " " + cls : ""), text);
-    n.style.left = x + "px";
-    n.style.top = y + "px";
+    const safeX = Math.max(20, Math.min(window.innerWidth - 20, x));
+    const safeY = Math.max(54, Math.min(window.innerHeight - 18, y));
+    n.style.left = safeX + "px";
+    n.style.top = safeY + "px";
     document.body.appendChild(n);
     setTimeout(() => { if (n.parentNode) n.parentNode.removeChild(n); }, animMs(2400));
   }
@@ -3296,9 +3833,10 @@
 
   function animateDrawToCard(card) {
     if (!card || !document.body.contains(card)) return;
+    AudioBox.play("draw", { gain: 0.42 });
     if (isPhoneLayout()) return;
     if (document.body.classList.contains("simple-fx") || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
-    const deck = $("player-deck-rail") || $("deck-corner");
+    const deck = $("player-hero-deck") || $("player-deck-rail") || $("deck-corner");
     if (!deck) return;
     const d = deck.getBoundingClientRect();
     const h = card.getBoundingClientRect();
@@ -3343,7 +3881,7 @@
   }
 
   function playRevealType(def) {
-    return def.type === "spell" ? "战术" : (def.type === "equipment" || def.type === "relic") ? "装备" : def.type === "formation" ? "阵型" : def.type === "debt" ? "债务" : "随从";
+    return def.type === "spell" ? "战术" : (def.type === "equipment" || def.type === "relic") ? "装备" : def.type === "formation" ? "阵型" : def.type === "debt" ? "债务卡" : "随从";
   }
 
   function showCardReveal(def, side) {
@@ -3410,7 +3948,6 @@
       hero.classList.add("relic-just-equipped");
       setTimeout(() => hero.classList.remove("relic-just-equipped"), 1000);
     }
-    AudioBox.play("equipment");
     flashScreen("equipment");
   }
 
@@ -3423,11 +3960,7 @@
     document.body.appendChild(ring);
     setTimeout(() => { if (ring.parentNode) ring.parentNode.removeChild(ring); }, animMs(def.type === "spell" ? 1800 : 1100));
     const st = (def.spell && def.spell.type) || "";
-    let sound = def.type === "spell" ? "spell" : def.type === "equipment" ? "equipment" : null;
-    if (st.indexOf("freeze") >= 0) sound = "freeze";
-    else if (st.indexOf("armor") >= 0) sound = "armor";
-    else if (st.indexOf("heal") >= 0 || st.indexOf("Vein") >= 0) sound = "heal";
-    if (sound) AudioBox.play(sound);
+    AudioBox.playCard(def, side);
     if (global.GokVFX) {
       const isFreeze = st.indexOf("freeze") >= 0;
       const isBlood = st.indexOf("blood") >= 0 || def.bloodCost != null;
@@ -3612,7 +4145,7 @@
       ? document.getElementById(targetHeroId)
       : document.querySelector('.board-card[data-minion="' + targetUid + '"]');
     if (attackerEl) attackerEl.classList.add(attackerOwner === app.viewer ? "attack-up" : "attack-down");
-    if (targetEl) setTimeout(() => targetEl.classList.add("hit"), 180);
+    if (targetEl) { showTargetMarker(targetEl, targetUid === "hero" ? "领袖" : (targetMinion && targetMinion.name) || "目标"); setTimeout(() => targetEl.classList.add("hit"), 180); }
 
     if (attackerRect) {
       const ax = attackerRect.left + attackerRect.width / 2;
@@ -3718,6 +4251,20 @@
       renderGame();
       if (r.ok) showManaSpend(powerPlayer, powerBefore - app.game.players[powerPlayer].mana);
       if (showPendingDiscoverIfNeeded()) return;
+      if (checkGameOverAfterAction()) return;
+      if (app.game.current === app.aiPlayer) beginAiTurn();
+      return;
+    }
+    if (app.targetInfo && app.targetInfo.kind === "minionTarget") {
+      const r = E.resolvePendingMinionTarget(app.game, uid);
+      app.targetInfo = null;
+      if (!r.ok) {
+        toast(r.reason || "目标不合法。");
+        renderGame();
+        return;
+      }
+      renderGame();
+      if (r.pending) showDiscover();
       if (checkGameOverAfterAction()) return;
       if (app.game.current === app.aiPlayer) beginAiTurn();
       return;
@@ -3833,6 +4380,52 @@
     commitPlay(cardUid, null, null);
   }
 
+  function releaseMobileArmed(ev) {
+    if (!isPhoneLayout() || !app.mobileClickArmed || app.modalOpen) return;
+    const target = ev.target;
+    if (!target || !target.closest) return;
+    if (target.closest("#hand,.hand-zone,#mobile-simple-preview,.mobile-card-sheet,.modal,.log-panel,#log-backdrop,.game-top,button,a,input,select,textarea")) return;
+    const s = app.game;
+    if (!s || s.current !== app.viewer || app.busy) return;
+    const uid = app.mobileClickArmed;
+    const p = s.players[s.current];
+    const hc = p.hand.find((c) => c.uid === uid);
+    if (!hc) { app.mobileClickArmed = null; hideSimpleCardPreview(); return; }
+    const def = D.CARDS[hc.cardId];
+    if (!def) return;
+    const opt = E.getPlayOptions(s, s.current, uid);
+    if (!opt.ok) { toast(opt.reason || "现在不能打出这张牌。"); return; }
+
+    ev.stopPropagation();
+    app.mobileClickArmed = null;
+    app.mobileGoldCard = null;
+    hideSimpleCardPreview();
+    clearCardDropHints();
+
+    if (def.type === "minion" || def.type === "formation") {
+      const zoneEl = target.closest(".zone");
+      if (zoneEl && zoneEl.closest(".hs-player")) {
+        const zone = zoneEl.dataset.zoneKey;
+        // 先落地随从，再由 commitPlay 延迟打开登场目标选择。
+        commitPlay(uid, null, zone);
+      } else {
+        beginCard(uid);
+      }
+      return;
+    }
+
+    let targetUid = null;
+    const minionEl = target.closest(".board-card");
+    if (minionEl) targetUid = minionEl.dataset.uid;
+    else if (target.closest("#opponent-hero")) targetUid = "hero";
+    else if (target.closest("#player-hero")) targetUid = "hero";
+    if (targetUid && Array.isArray(opt.targets) && opt.targets.indexOf(targetUid) >= 0) {
+      commitPlay(uid, targetUid, null);
+    } else {
+      beginCard(uid);
+    }
+  }
+
   function commitPlay(cardUid, targetUid, zone, targetUid2, extraOpts) {
     extraOpts = extraOpts || {};
     hidePreviewNow();
@@ -3849,6 +4442,7 @@
     const def = D.CARDS[handCard.cardId];
     const opt = E.getPlayOptions(s, s.current, cardUid);
     if (!opt.ok) { app.pendingDragZone = null; toast(opt.reason || "现在不能打出这张牌。"); renderGame(); return; }
+    const deferMinionTarget = def.type === "minion" && !!opt.targetType && !targetUid && (opt.targets || []).length > 0 && !(app.net && app.net.role === "guest");
     if (def.type === "minion" && (!zone || opt.zones.indexOf(zone) < 0)) {
       app.pendingDragZone = null;
       toast("这个阵位已满，请换一个阵位。");
@@ -3868,7 +4462,7 @@
         renderGame();
         return;
       }
-      if (!targetUid && opt.targets.length > 0) {
+      if (!targetUid && opt.targets.length > 0 && !deferMinionTarget) {
         app.pendingDragZone = null;
         toast("请先选择目标。");
         renderGame();
@@ -3900,6 +4494,7 @@
     }
     app.pendingDragZone = null;
     const playPoint = capturePlayPoint(zone, targetUid);
+    if (targetUid) showTargetByUid(targetUid, targetUid === "hero" ? "领袖" : null);
     const sourceEl = document.querySelector(".hand-card.selected");
     const sourceRect = sourceEl ? sourceEl.getBoundingClientRect() : null;
     const actingPlayer = s.current;
@@ -3931,6 +4526,7 @@
       targetUid2: targetUid2 || null,
       zone: zone || null,
       payBlood: true,
+      deferTarget: deferMinionTarget,
       debtSide: extraOpts.debtSide || null
     });
     app.payBloodChoice = null;
@@ -3946,9 +4542,19 @@
       return;
     }
     showPlayFeedback(def, playPoint, sourceRect, "player");
+    if (s.pendingMinionTarget) {
+      app.targetInfo = {
+        kind: "minionTarget",
+        minionUid: s.pendingMinionTarget.minionUid,
+        targetType: s.pendingMinionTarget.targetType,
+        targets: E.getPendingMinionTargets(s),
+        defName: def.name
+      };
+    }
     renderGame();
     showManaSpend(actingPlayer, manaBefore - s.players[actingPlayer].mana);
     if (def.type === "equipment") showRelicEquipped(def, actingPlayer);
+    if (s.pendingMinionTarget) gameWarn("随从已登场，请选择要强化的目标。");
     if (s.pendingChoice) showDiscover();
     if (checkGameOverAfterAction()) return;
   }
@@ -4007,7 +4613,7 @@
 
   /* ===== AI ===== */
   function aiDelay(base) {
-    const factor = app.aiSpeed === "slow" ? 2.8 : app.aiSpeed === "fast" ? 1.2 : 2.0;
+    const factor = app.aiSpeed === "slow" ? 3.2 : app.aiSpeed === "fast" ? 1.2 : 2.4;
     return Math.round(base * factor);
   }
 
@@ -4090,10 +4696,6 @@
     if (!action || action.seq == null || action.seq === app.lastSfxSeq) return;
     app.lastSfxSeq = action.seq;
     if (action.type === "heroPower") AudioBox.play("hero_power");
-    else if (action.type === "play") {
-      if (action.cardType === "spell") AudioBox.play("spell");
-      else if (action.cardType === "equipment") AudioBox.play("equipment");
-    }
   }
 
   function afterAiAction() {
@@ -4113,7 +4715,7 @@
         const hpCost = (app.game.players[app.aiPlayer].hero.power && app.game.players[app.aiPlayer].hero.power.cost) || 0;
         showManaSpend(app.aiPlayer, hpCost);
       }
-      setTimeout(aiStep, aiDelay(1000) + (last && last.type === "play" ? 420 : 0));
+      setTimeout(aiStep, aiDelay(1300) + (last && last.type === "play" ? 650 : 0));
     } else if (app.game.status === "playing") {
       app.aiRunning = false;
       app.busy = false;
@@ -4176,6 +4778,9 @@
     const root = $("modal-root");
     if (root) clear(root);
     app.modalOpen = false;
+    if (app.screen === "home" && isPhoneLayout() && !app.mobileWelcomeShown) {
+      setTimeout(() => { if (app.screen === "home" && !app.modalOpen) showMobileWelcome(); }, 280);
+    }
   }
 
   function showDiscover() {
@@ -4236,10 +4841,70 @@
     });
   }
 
+  function openVeinThresholdHelp() {
+    const current = app.game && typeof app.game.vein === "number" ? app.game.vein : 0;
+    openModal((content) => {
+      content.classList.add("vein-help-modal");
+      content.appendChild(el("div", "eyebrow", "共享流脉 / 阈值预览"));
+      content.appendChild(el("h3", null, "流脉 " + current + " / 12"));
+      content.appendChild(el("p", "muted", "达到阈值时自动结算。悬停查看简略，点击左侧流脉图标查看完整规则。"));
+      const list = el("div", "vein-help-list");
+      [
+        ["4", "震荡", "所有随从受到 1 点伤害"],
+        ["7", "裂隙", "双方领袖受到 2 点伤害"],
+        ["10", "魔物潮", "所有随从受到 3 点伤害，双方领袖受到 5 点伤害"],
+        ["12", "回流", "流脉清空，重新开始累积"]
+      ].forEach(([at, name, desc]) => {
+        const row = el("div", "vein-help-row" + (Number(at) <= current ? " reached" : ""));
+        row.appendChild(el("b", null, at));
+        row.appendChild(el("strong", null, name));
+        row.appendChild(el("span", null, desc));
+        list.appendChild(row);
+      });
+      content.appendChild(list);
+      const actions = el("div", "modal-actions");
+      const close = el("button", "btn btn-primary", "知道了");
+      close.onclick = () => closeModal(true);
+      actions.appendChild(close);
+      content.appendChild(actions);
+    });
+  }
+
+  function showTargetMarker(targetEl, label) {
+    if (!targetEl) return;
+    const old = document.getElementById("target-focus-label");
+    if (old) old.remove();
+    const chip = el("div", "target-focus-label", "目标 · " + (label || "目标"));
+    document.body.appendChild(chip);
+    const r = targetEl.getBoundingClientRect();
+    const w = chip.offsetWidth || 100;
+    chip.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + "px";
+    chip.style.top = Math.max(46, r.top - 32) + "px";
+    targetEl.classList.add("action-target-now");
+    setTimeout(() => {
+      targetEl.classList.remove("action-target-now");
+      if (chip.parentNode) chip.remove();
+    }, animMs(1150));
+  }
+
+  function showTargetByUid(targetUid, label) {
+    if (!targetUid) return;
+    const node = targetUid === "hero"
+      ? document.getElementById(app.game && app.game.current === app.viewer ? "opponent-hero" : "player-hero")
+      : document.querySelector('[data-minion="' + targetUid + '"]');
+    const def = targetUid === "hero" ? null : (app.game && E.findMinion(app.game, targetUid));
+    showTargetMarker(node, label || (def && def.name) || "领袖");
+  }
+
   function toggleGameLog(force) {
     app.logOpen = force == null ? !app.logOpen : !!force;
     const panel = $("log-panel");
+    const backdrop = $("log-backdrop");
     if (panel) panel.classList.toggle("open", app.logOpen);
+    if (backdrop) {
+      backdrop.hidden = !app.logOpen;
+      backdrop.classList.toggle("show", app.logOpen);
+    }
   }
 
   function openGameSettings() {
@@ -4538,6 +5203,31 @@
   }
 
   /* ===== preview ===== */
+  function cardKeywordHelpNode(def) {
+    const labels = (typeof codexKeywordLabels === "function" ? codexKeywordLabels(def) : [])
+      .filter((label) => KEYWORD_HELP[label])
+      .sort((a, b) => {
+        const ia = (def.text || "").indexOf(a);
+        const ib = (def.text || "").indexOf(b);
+        if (ia < 0 && ib < 0) return a.localeCompare(b);
+        if (ia < 0) return 1;
+        if (ib < 0) return -1;
+        return ia - ib;
+      });
+    if (!labels.length) return null;
+    const box = el("div", "preview-keyword-help");
+    box.appendChild(el("div", "preview-keyword-title", "关键词速查"));
+    for (const label of labels) {
+      const row = el("div", "preview-keyword-row");
+      const strong = el("strong", null, label + "：");
+      applyKeywordColor(strong, label);
+      row.appendChild(strong);
+      row.appendChild(el("span", null, KEYWORD_HELP[label]));
+      box.appendChild(row);
+    }
+    return box;
+  }
+
   function showMobileCard(def, minion, hint) {
     const old = document.getElementById("mobile-card-sheet");
     if (old) old.remove();
@@ -4566,7 +5256,8 @@
     const text = el("p", "mobile-preview-text");
     appendKeywordText(text, def.text || "—");
     sheet.appendChild(text);
-    if (def.flavor) sheet.appendChild(el("div", "preview-flavor", "“" + def.flavor + "”"));
+    const keywordHelp = cardKeywordHelpNode(def);
+    if (keywordHelp) sheet.appendChild(keywordHelp);
     if (hint) sheet.appendChild(el("p", "mobile-preview-close-hint", hint));
     document.body.appendChild(bg);
   }
@@ -4586,6 +5277,8 @@
     box.appendChild(el("small", null, ""));
     box.appendChild(el("p", null, ""));
     box.appendChild(el("em", null, ""));
+    const help = el("div", "preview-keyword-help");
+    box.appendChild(help);
     const close = el("button", "mobile-simple-close", "关闭");
     close.type = "button";
     close.onclick = (ev) => { ev.stopPropagation(); hideSimpleCardPreview(); };
@@ -4595,8 +5288,17 @@
   }
 
   function hideSimpleCardPreview() {
+    app.mobilePreviewUid = null;
     const old = document.getElementById("mobile-simple-preview");
     if (old) old.hidden = true;
+    document.querySelectorAll(".hand-card.mobile-previewing").forEach((card) => {
+      card.classList.remove("mobile-previewing");
+    });
+  }
+
+  function markMobilePreview(card) {
+    document.querySelectorAll(".hand-card.mobile-previewing").forEach((x) => x.classList.remove("mobile-previewing"));
+    if (card) card.classList.add("mobile-previewing");
   }
 
   function showSimpleCardPreview(def, hint) {
@@ -4607,6 +5309,12 @@
     const em = box.querySelector("em");
     em.textContent = hint || "";
     em.hidden = !hint;
+    const help = box.querySelector(".preview-keyword-help");
+    if (help) {
+      clear(help);
+      const keywordHelp = cardKeywordHelpNode(def);
+      if (keywordHelp) help.appendChild(keywordHelp);
+    }
     box.hidden = false;
   }
 
@@ -4618,6 +5326,8 @@
     const em = box.querySelector("em");
     em.textContent = hint || "";
     em.hidden = !hint;
+    const help = box.querySelector(".preview-keyword-help");
+    if (help) clear(help);
     box.hidden = false;
   }
 
@@ -4739,7 +5449,6 @@
     };
     const onDocumentUp = () => {
       clearTimer();
-      hideHeldPreview();
       start = null;
       document.removeEventListener("pointermove", onDocumentMove);
     };
@@ -4804,7 +5513,9 @@
     box.appendChild(meta);
     addKeywordChips(box, def, minion);
     const art = el("div", "preview-art");
-    if (def.art) art.style.backgroundImage = "url('" + portraitImage(def.art) + "')";
+    const previewCustomArt = customCardArtFor(def.id);
+    if (previewCustomArt) { art.style.backgroundImage = "url('" + previewCustomArt + "')"; art.classList.add("has-custom-art"); }
+    else if (def.art) art.style.backgroundImage = "url('" + portraitImage(def.art) + "')";
     else {
       art.classList.add("placeholder");
       art.style.display = "grid";
@@ -4818,7 +5529,8 @@
     }
     box.appendChild(art);
     box.appendChild(el("div", "preview-text", def.text || "—"));
-    if (def.flavor) box.appendChild(el("div", "preview-flavor", "“" + def.flavor + "”"));
+    const keywordHelp = cardKeywordHelpNode(def);
+    if (keywordHelp) box.appendChild(keywordHelp);
   }
   function hidePreview() {
     clearTimeout(previewHideTimer);
@@ -4880,6 +5592,19 @@
     t.classList.add("show");
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => t.classList.remove("show"), 1900);
+  }
+  function showMobileWelcome() {
+    const box = $("mobile-welcome");
+    if (!box || app.mobileWelcomeShown) return;
+    app.mobileWelcomeShown = true;
+    box.hidden = false;
+    requestAnimationFrame(() => box.classList.add("show"));
+  }
+  function hideMobileWelcome() {
+    const box = $("mobile-welcome");
+    if (!box) return;
+    box.classList.remove("show");
+    setTimeout(() => { box.hidden = true; }, 220);
   }
 
   /* ===== simulation ===== */
@@ -4989,7 +5714,11 @@
   const PROFILE_AVATARS = [
     { id: "gk", name: "档案徽记", glyph: "GK" },
     ...D.FACTION_IDS.map(id => ({ id: id, name: D.FACTIONS[id].name, emblem: D.FACTIONS[id].emblem })),
-    { id: "neutral", name: "无主旅人", glyph: "旅" }
+    { id: "neutral", name: "无主旅人", glyph: "旅" },
+    { id: "dawn", name: "晨曦记录者", glyph: "晨" },
+    { id: "dusk", name: "暮色抄写员", glyph: "暮" },
+    { id: "mask", name: "无名面具", glyph: "隐" },
+    { id: "ember", name: "余烬旅人", glyph: "烬" }
   ];
   const PROFILE_TITLES = [
     { id: "archivist", name: "档案员", desc: "默认称号", test: () => true },
@@ -4998,7 +5727,11 @@
     { id: "archive_regular", name: "档案常客", desc: "完成 10 局推演", test: () => !!(app.achievements && app.achievements.play_10 && app.achievements.play_10.unlocked) },
     { id: "gold_vein", name: "黄金执脉者", desc: "排位达到黄金", test: () => ((app.profile && app.profile.rankPoints) || 0) >= 600 },
     { id: "grey_traveler", name: "灰港旅人", desc: "使用灰港赢得 3 局", test: () => ((((app.profile || {}).byFaction || {}).greyharbor || {}).wins || 0) >= 3 },
-    { id: "academy_listener", name: "学院旁听生", desc: "使用学院赢得 3 局", test: () => ((((app.profile || {}).byFaction || {}).academy || {}).wins || 0) >= 3 }
+    { id: "academy_listener", name: "学院旁听生", desc: "使用学院赢得 3 局", test: () => ((((app.profile || {}).byFaction || {}).academy || {}).wins || 0) >= 3 },
+    { id: "ten_rounds", name: "十局档案员", desc: "完成 10 局推演", test: () => ((app.profile && app.profile.games) || 0) >= 10 },
+    { id: "eightfold", name: "八阵收集者", desc: "八阵营各赢 1 局", test: () => D.FACTION_IDS.every(id => ((((app.profile || {}).byFaction || {})[id] || {}).wins || 0) >= 1) },
+    { id: "snowbound", name: "霜页旅人", desc: "使用雪都赢得 3 局", test: () => ((((app.profile || {}).byFaction || {}).snow || {}).wins || 0) >= 3 },
+    { id: "iron_oath", name: "铁誓见证者", desc: "使用帝国赢得 3 局", test: () => ((((app.profile || {}).byFaction || {}).empire || {}).wins || 0) >= 3 }
   ];
   const PROFILE_CARD_BACKS = [
     { id: "classic", name: "档案原版", color: "#173b3a", glyph: "GK" },
@@ -5007,8 +5740,52 @@
     { id: "xizhao", name: "西昭 · 血契", color: "#5c2024", glyph: "血" },
     { id: "republic", name: "共和国 · 铁誓", color: "#4a506f", glyph: "誓" },
     { id: "empire", name: "帝国 · 铁序", color: "#4e3a2a", glyph: "序" },
-    { id: "greyharbor", name: "灰港 · 账本", color: "#2f4b3d", glyph: "账" }
+    { id: "greyharbor", name: "灰港 · 账本", color: "#2f4b3d", glyph: "账" },
+    { id: "snow", name: "雪都 · 极光", color: "#2f5f78", glyph: "霜" },
+    { id: "losutai", name: "洛斯汰 · 潮纹", color: "#245c54", glyph: "潮" },
+    { id: "neutral", name: "无主 · 旅印", color: "#4b4438", glyph: "旅" },
+    { id: "gold", name: "黄金档案", color: "#6d5125", glyph: "金" }
   ];
+  const PROFILE_AVATAR_FRAMES = [
+    { id: "none", name: "无框", color: "rgba(159,207,196,.25)" },
+    { id: "gold", name: "档案金", color: "#d9a441" },
+    { id: "vein", name: "流脉青", color: "#5fd3c4" },
+    { id: "frost", name: "霜纹蓝", color: "#78b9dc" },
+    { id: "blood", name: "血契红", color: "#c0504d" },
+    { id: "iron", name: "铁序灰", color: "#8f9aa4" },
+    { id: "pulse", name: "流脉脉冲", color: "#5fd3c4" }
+  ];
+  const PROFILE_NAME_COLORS = [
+    { id: "ink", name: "档案白", color: "#e9e1d2" },
+    { id: "gold", name: "黄金", color: "#f2c66d" },
+    { id: "vein", name: "流脉", color: "#79e0d2" },
+    { id: "frost", name: "霜蓝", color: "#9bd2ee" },
+    { id: "blood", name: "血契", color: "#e58b87" },
+    { id: "grey", name: "灰烬", color: "#aab3b8" }
+  ];
+  const PROFILE_TITLE_PLATES = [
+    { id: "none", name: "无底板" },
+    { id: "gold", name: "金线" },
+    { id: "vein", name: "流脉纹" },
+    { id: "frost", name: "霜纹" },
+    { id: "blood", name: "血契" }
+  ];
+  const PROFILE_TABLE_THEMES = [
+    { id: "archive", name: "档案原版", tint: "rgba(95,211,196,.10)" },
+    { id: "pus", name: "普卫潮雾", tint: "rgba(74,183,177,.20)" },
+    { id: "academy", name: "学院霜纹", tint: "rgba(92,154,206,.20)" },
+    { id: "snow", name: "雪都极光", tint: "rgba(132,210,224,.20)" },
+    { id: "greyharbor", name: "灰港账本", tint: "rgba(111,157,122,.18)" }
+  ];
+  const PROFILE_CARD_FRAMES = [
+    { id: "none", name: "原版", color: "rgba(159,207,196,.18)" },
+    { id: "gold", name: "金线", color: "#d9a441" },
+    { id: "vein", name: "流脉", color: "#5fd3c4" },
+    { id: "frost", name: "霜纹", color: "#78b9dc" },
+    { id: "blood", name: "血契", color: "#c0504d" },
+    { id: "iron", name: "铁序", color: "#8f9aa4" }
+  ];
+
   function profileTitleName(id) {
     const t = PROFILE_TITLES.find(x => x.id === id) || PROFILE_TITLES[0];
     return t.name;
@@ -5035,6 +5812,9 @@
   }
   function applyProfileCosmetics() {
     document.documentElement.style.setProperty("--card-back-image", "url('" + cardBackUrl() + "')");
+    const account = ensureAccount();
+    document.body.dataset.tableTheme = account.tableTheme || "archive";
+    document.body.dataset.cardFrame = account.cardFrame || "none";
     updateHomeAccount();
   }
   function accountDisplayName() {
@@ -5086,6 +5866,7 @@
   let saveBackupTimer = null;
 
   function ensureAccount() {
+    if (app.account && app.account.id) return app.account;
     let account = null;
     try { account = JSON.parse(localStorage.getItem(ACCOUNT_KEY) || "null"); } catch (e) {}
     if (!account || !account.id) {
@@ -5095,6 +5876,14 @@
     account.avatar = account.avatar || "gk";
     account.title = account.title || "archivist";
     account.cardBack = account.cardBack || "classic";
+    account.avatarFrame = account.avatarFrame || "none";
+    account.customAvatar = typeof account.customAvatar === "string" ? account.customAvatar : "";
+    account.nameColor = account.nameColor || "ink";
+    account.titlePlate = account.titlePlate || "none";
+    account.signature = typeof account.signature === "string" ? account.signature.slice(0, 24) : "";
+    account.badges = Array.isArray(account.badges) ? account.badges.slice(0, 3) : [];
+    account.tableTheme = account.tableTheme || "archive";
+    account.cardFrame = account.cardFrame || "none";
     app.account = account;
     if (account.name && account.name !== "档案员") { try { localStorage.setItem(ACCOUNT_NAMED_KEY, "1"); } catch (e) {} }
     return account;
@@ -5106,6 +5895,7 @@
       savedAt: Date.now(),
       account: app.account || null,
       customDecks: app.customDecks || {},
+      customCardArt: loadCustomCardArt(),
       rawCustomDecks: app.rawCustomDecks || null,
       legacyDecks: app.legacyDecks || {},
       activeRelics: app.activeRelics || {},
@@ -5145,6 +5935,8 @@
     app.account = account;
     try { localStorage.setItem(ACCOUNT_KEY, JSON.stringify(account)); if (account.name && account.name !== "档案员") localStorage.setItem(ACCOUNT_NAMED_KEY, "1"); } catch (e) {}
     app.customDecks = bundle.customDecks && typeof bundle.customDecks === "object" ? bundle.customDecks : {};
+    app.customCardArt = bundle.customCardArt && typeof bundle.customCardArt === "object" ? bundle.customCardArt : {};
+    persistCustomCardArt();
     app.rawCustomDecks = bundle.rawCustomDecks || null;
     app.legacyDecks = bundle.legacyDecks || {};
     app.activeRelics = bundle.activeRelics && typeof bundle.activeRelics === "object" ? bundle.activeRelics : {};
@@ -5413,7 +6205,7 @@ const tabs = $("deck-faction-tabs");
     const debts = list.filter(id => D.CARDS[id].type === "debt").length;
     const formations = list.filter(id => D.CARDS[id].type === "formation").length;
     const drawTotal = deckDrawCount(list);
-    $("deck-type-stats").textContent = "随从 " + minions + " · 战术 " + tactics + " · 阵型 " + formations + " · 债务 " + debts + " · 传说 " + list.filter(id => D.CARDS[id].rarity === "legendary").length + " · 过牌 " + drawTotal;
+    $("deck-type-stats").textContent = "随从 " + minions + " · 战术 " + tactics + " · 阵型 " + formations + " · 债务卡 " + debts + " · 传说 " + list.filter(id => D.CARDS[id].rarity === "legendary").length + " · 过牌 " + drawTotal;
     msg.classList.toggle("warn", validation.ok && drawTotal > 10);
     msg.hidden = validation.ok && !(drawTotal > 10);
     if (validation.ok && drawTotal > 10) {
@@ -5787,6 +6579,7 @@ const tabs = $("deck-faction-tabs");
       RELIC_STORAGE_KEY,
       ACHIEVEMENT_KEY,
       PROFILE_KEY,
+      CUSTOM_CARD_ART_KEY,
       SAVE_BACKUP_KEY,
       "gok_content_v1",
       HOST_SESSION_KEY
@@ -5841,7 +6634,7 @@ const tabs = $("deck-faction-tabs");
     clear(content);
     content.appendChild(el("div", "eyebrow", "ARCHIVE / IDENTITY"));
     content.appendChild(el("h3", null, "档案外观"));
-    content.appendChild(el("p", null, "头像、称号和卡背会保存在本机。卡背会应用于对局中的手牌背面、牌库和对手手牌。"));
+    content.appendChild(el("p", null, "头像、头像框、昵称色、称号底板、徽章、签名、卡背、牌桌和牌套都会保存在本机，并显示在主页或对局中。"));
     const account = ensureAccount();
     const avatarSection = el("div", "profile-custom-section");
     avatarSection.appendChild(el("h4", null, "头像"));
@@ -5851,9 +6644,38 @@ const tabs = $("deck-faction-tabs");
       if (av.emblem) { const img = el("img"); img.src = av.emblem; img.alt = av.name; b.appendChild(img); }
       else b.appendChild(el("b", null, av.glyph || "GK"));
       b.appendChild(el("span", null, av.name));
-      b.onclick = () => { account.avatar = av.id; saveAccountCosmetics(); renderProfileCustomization(content); updateHomeAccount(); AudioBox.play("select"); };
+      b.dataset.optionId = av.id;
+      b.onclick = () => {
+        account.avatar = av.id; saveAccountCosmetics();
+        avatarGrid.querySelectorAll(".profile-custom-option").forEach((x) => x.classList.toggle("active", x.dataset.optionId === av.id));
+        updateHomeAccount(); AudioBox.play("select");
+      };
       avatarGrid.appendChild(b);
     }
+    const customAvatarBtn = el("button", "profile-custom-option profile-avatar-option" + (account.avatar === "custom" ? " active" : ""));
+    customAvatarBtn.appendChild(el("b", null, "＋"));
+    customAvatarBtn.appendChild(el("span", null, "自传头像"));
+    const avatarFile = document.createElement("input");
+    avatarFile.type = "file"; avatarFile.accept = "image/png,image/jpeg,image/webp"; avatarFile.style.display = "none";
+    customAvatarBtn.onclick = () => avatarFile.click();
+    avatarFile.onchange = () => {
+      const file = avatarFile.files && avatarFile.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const size = 128; const canvas = document.createElement("canvas"); canvas.width = size; canvas.height = size;
+          const ctx = canvas.getContext("2d"); const side = Math.min(img.width, img.height);
+          ctx.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
+          account.customAvatar = canvas.toDataURL("image/webp", 0.82); account.avatar = "custom";
+          saveAccountCosmetics(); updateHomeAccount(); avatarGrid.querySelectorAll(".profile-custom-option").forEach(x => x.classList.remove("active")); customAvatarBtn.classList.add("active"); AudioBox.play("select");
+        };
+        img.src = String(reader.result || "");
+      };
+      reader.readAsDataURL(file);
+    };
+    avatarGrid.appendChild(customAvatarBtn); avatarGrid.appendChild(avatarFile);
     avatarSection.appendChild(avatarGrid); content.appendChild(avatarSection);
     const titleSection = el("div", "profile-custom-section");
     titleSection.appendChild(el("h4", null, "称号"));
@@ -5862,12 +6684,95 @@ const tabs = $("deck-faction-tabs");
       const unlocked = t.test();
       const b = el("button", "profile-custom-option" + (account.title === t.id ? " active" : "") + (unlocked ? "" : " locked"));
       b.disabled = !unlocked;
+      b.dataset.optionId = t.id;
       b.appendChild(el("strong", null, t.name));
       b.appendChild(el("span", null, unlocked ? t.desc : "未解锁 · " + t.desc));
-      b.onclick = () => { if (!unlocked) return; account.title = t.id; saveAccountCosmetics(); renderProfileCustomization(content); updateHomeAccount(); AudioBox.play("select"); };
+      b.onclick = () => {
+        if (!unlocked) return;
+        account.title = t.id; saveAccountCosmetics();
+        titleGrid.querySelectorAll(".profile-custom-option").forEach((x) => x.classList.toggle("active", x.dataset.optionId === t.id));
+        updateHomeAccount(); AudioBox.play("select");
+      };
       titleGrid.appendChild(b);
     }
     titleSection.appendChild(titleGrid); content.appendChild(titleSection);
+
+    const choiceSection = (title, hint, items, currentId, build, onPick) => {
+      const section = el("div", "profile-custom-section");
+      section.appendChild(el("h4", null, title));
+      if (hint) section.appendChild(el("p", "profile-custom-hint", hint));
+      const grid = el("div", "profile-custom-grid");
+      for (const item of items) {
+        const b = el("button", "profile-custom-option" + (currentId === item.id ? " active" : ""));
+        b.dataset.optionId = item.id;
+        build(b, item);
+        b.onclick = () => {
+          onPick(item, b, grid);
+          grid.querySelectorAll(".profile-custom-option").forEach((x) => x.classList.toggle("active", x.dataset.optionId === item.id));
+          saveAccountCosmetics(); updateHomeAccount(); AudioBox.play("select");
+        };
+        grid.appendChild(b);
+      }
+      section.appendChild(grid); content.appendChild(section);
+      return grid;
+    };
+
+    choiceSection("头像框", "只改主页与排位档案里的头像外框，不影响对局数值。", PROFILE_AVATAR_FRAMES, account.avatarFrame || "none", (b, item) => {
+      const mark = el("b", "profile-frame-mark", "GK"); mark.style.borderColor = item.color; mark.style.boxShadow = "0 0 12px " + item.color;
+      b.appendChild(mark); b.appendChild(el("span", null, item.name));
+    }, (item) => { account.avatarFrame = item.id; });
+
+    choiceSection("昵称颜色", "应用到主页和排位档案里的账号昵称。", PROFILE_NAME_COLORS, account.nameColor || "ink", (b, item) => {
+      b.appendChild(el("strong", null, "档案员")); b.querySelector("strong").style.color = item.color; b.appendChild(el("span", null, item.name));
+    }, (item) => { account.nameColor = item.id; });
+
+    choiceSection("称号底板", "改变称号背后的底板纹理。", PROFILE_TITLE_PLATES, account.titlePlate || "none", (b, item) => {
+      const plate = el("b", "profile-plate-preview", profileTitleName(account.title)); plate.dataset.plate = item.id;
+      b.appendChild(plate); b.appendChild(el("span", null, item.name));
+    }, (item) => { account.titlePlate = item.id; });
+
+    const sigSection = el("div", "profile-custom-section");
+    sigSection.appendChild(el("h4", null, "个人签名"));
+    sigSection.appendChild(el("p", "profile-custom-hint", "最多 24 字，只显示在本机档案与排位页。"));
+    const sigInput = el("input", "account-name-input profile-signature-input");
+    sigInput.maxLength = 24; sigInput.value = account.signature || ""; sigInput.placeholder = "例如：只在流脉涨潮时出牌。";
+    const saveSig = el("button", "btn btn-small btn-ghost", "保存签名");
+    saveSig.onclick = () => { account.signature = String(sigInput.value || "").trim().slice(0, 24); saveAccountCosmetics(); updateHomeAccount(); toast("个人签名已保存。"); };
+    sigInput.addEventListener("keydown", (ev) => { if (ev.key === "Enter") saveSig.onclick(); });
+    const sigRow = el("div", "account-name-row"); sigRow.appendChild(sigInput); sigRow.appendChild(saveSig); sigSection.appendChild(sigRow); content.appendChild(sigSection);
+
+    const badgeSection = el("div", "profile-custom-section");
+    badgeSection.appendChild(el("h4", null, "展示徽章"));
+    badgeSection.appendChild(el("p", "profile-custom-hint", "从已解锁成就中最多选 3 个，显示在主页账号栏。"));
+    const badgeGrid = el("div", "profile-custom-grid");
+    const unlockedBadges = ACHIEVEMENTS.filter(a => !!(app.achievements && app.achievements[a.id] && app.achievements[a.id].unlocked));
+    if (!unlockedBadges.length) badgeSection.appendChild(el("p", "muted", "还没有已解锁成就。完成一局或触发流脉后再来。 "));
+    const currentBadges = new Set(account.badges || []);
+    for (const a of ACHIEVEMENTS) {
+      const unlocked = !!unlockedBadges.find(x => x.id === a.id);
+      const b = el("button", "profile-custom-option profile-badge-option" + (currentBadges.has(a.id) ? " active" : "") + (unlocked ? "" : " locked"));
+      b.disabled = !unlocked;
+      b.appendChild(el("b", null, a.icon)); b.appendChild(el("strong", null, a.name)); b.appendChild(el("span", null, a.desc));
+      b.onclick = () => {
+        if (!unlocked) return;
+        const now = new Set(account.badges || []);
+        if (now.has(a.id)) now.delete(a.id); else if (now.size < 3) now.add(a.id); else { toast("最多展示 3 个徽章。"); return; }
+        account.badges = [...now]; b.classList.toggle("active", now.has(a.id)); saveAccountCosmetics(); updateHomeAccount(); AudioBox.play("select");
+      };
+      badgeGrid.appendChild(b);
+    }
+    badgeSection.appendChild(badgeGrid); content.appendChild(badgeSection);
+
+    choiceSection("牌桌主题", "改变对局桌面的边缘光色，不遮挡卡牌与阵位。", PROFILE_TABLE_THEMES, account.tableTheme || "archive", (b, item) => {
+      const sw = el("div", "profile-table-swatch"); sw.style.background = "radial-gradient(circle at 50% 40%, " + item.tint + ", rgba(4,15,17,.92))";
+      b.appendChild(sw); b.appendChild(el("strong", null, item.name));
+    }, (item) => { account.tableTheme = item.id; document.body.dataset.tableTheme = item.id; });
+
+    choiceSection("卡牌牌套", "给手牌和场上随从加一层外框，不改卡面文字。", PROFILE_CARD_FRAMES, account.cardFrame || "none", (b, item) => {
+      const mini = el("div", "profile-cardframe-preview"); mini.style.borderColor = item.color; mini.style.boxShadow = "0 0 14px " + item.color;
+      b.appendChild(mini); b.appendChild(el("strong", null, item.name));
+    }, (item) => { account.cardFrame = item.id; document.body.dataset.cardFrame = item.id; });
+
     const backSection = el("div", "profile-custom-section");
     backSection.appendChild(el("h4", null, "卡背"));
     const backGrid = el("div", "profile-custom-grid");
@@ -5877,10 +6782,21 @@ const tabs = $("deck-faction-tabs");
       preview.style.backgroundImage = "url('" + (cb.id === "classic" ? "assets/ui/card_back.svg" : cardBackUrlFor(cb.id)) + "')";
       b.appendChild(preview);
       b.appendChild(el("strong", null, cb.name));
-      b.onclick = () => { account.cardBack = cb.id; saveAccountCosmetics(); applyProfileCardBack(); renderProfileCustomization(content); updateHomeAccount(); AudioBox.play("select"); };
+      b.dataset.optionId = cb.id;
+      b.onclick = () => {
+        account.cardBack = cb.id; saveAccountCosmetics(); applyProfileCardBack();
+        backGrid.querySelectorAll(".profile-custom-option").forEach((x) => x.classList.toggle("active", x.dataset.optionId === cb.id));
+        updateHomeAccount(); AudioBox.play("select");
+      };
       backGrid.appendChild(b);
     }
     backSection.appendChild(backGrid); content.appendChild(backSection);
+    const artSection = el("div", "profile-custom-section");
+    artSection.appendChild(el("h4", null, "自由替换卡面"));
+    artSection.appendChild(el("p", "profile-custom-hint", "打开图鉴，任意卡牌详情里都有「替换卡面」。只保存在本机，可随时恢复原卡面。"));
+    const artCodexBtn = el("button", "btn btn-small btn-ghost", "打开图鉴替换卡面");
+    artCodexBtn.onclick = () => { closeModal(true); openCodex(); };
+    artSection.appendChild(artCodexBtn); content.appendChild(artSection);
     const actions = el("div", "modal-actions");
     const accountBtn = el("button", "btn btn-small btn-ghost", "返回账号与存档");
     accountBtn.onclick = () => { closeModal(true); openAccountModal(); };
@@ -5891,7 +6807,7 @@ const tabs = $("deck-faction-tabs");
 
   function openProfileCustomization() {
     snapshotSave("open-cosmetics");
-    openModal((content) => renderProfileCustomization(content));
+    openModal((content) => { content.classList.add("profile-custom-modal"); renderProfileCustomization(content); });
   }
 
   function openAccountModal() {
@@ -6065,7 +6981,37 @@ const tabs = $("deck-faction-tabs");
   }
 
   function applyProfileCardBack() {
-    document.documentElement.style.setProperty("--card-back-image", "url('" + cardBackUrl() + "')");
+    const url = cardBackUrl();
+    const absolute = /^data:/.test(url) ? url : new URL(url, location.href).href;
+    document.documentElement.style.setProperty("--card-back-image", "url('" + absolute + "')");
+  }
+
+  function renderRankIdentity() {
+    const account = ensureAccount();
+    const avatar = $("rank-identity-avatar");
+    if (avatar) {
+      clear(avatar);
+      const av = PROFILE_AVATARS.find(x => x.id === account.avatar) || PROFILE_AVATARS[0];
+      if (account.avatar === "custom" && account.customAvatar) { const img = el("img"); img.src = account.customAvatar; img.alt = "自传头像"; avatar.appendChild(img); }
+      else if (av.emblem) { const img = el("img"); img.src = av.emblem; img.alt = av.name; avatar.appendChild(img); }
+      else avatar.textContent = av.glyph || "GK";
+      avatar.dataset.frame = account.avatarFrame || "none";
+    }
+    const name = $("rank-identity-name");
+    if (name) {
+      name.textContent = account.name || "档案员";
+      name.style.color = (PROFILE_NAME_COLORS.find(x => x.id === account.nameColor) || PROFILE_NAME_COLORS[0]).color;
+    }
+    const title = $("rank-identity-title");
+    if (title) { title.textContent = profileTitleName(account.title); title.dataset.plate = account.titlePlate || "none"; }
+    const sig = $("rank-identity-signature"); if (sig) { sig.textContent = account.signature || ""; sig.hidden = !account.signature; }
+    const badges = $("rank-identity-badges");
+    if (badges) {
+      clear(badges);
+      (account.badges || []).map(id => ACHIEVEMENTS.find(a => a.id === id)).filter(Boolean).forEach(a => {
+        const chip = el("span", "home-account-badge", a.icon + " " + a.name); chip.title = a.desc; badges.appendChild(chip);
+      });
+    }
   }
 
   function updateHomeAccount() {
@@ -6079,10 +7025,41 @@ const tabs = $("deck-faction-tabs");
     if (avatarEl) {
       clear(avatarEl);
       const av = PROFILE_AVATARS.find(x => x.id === account.avatar) || PROFILE_AVATARS[0];
-      if (av.emblem) { const img = el("img"); img.src = av.emblem; img.alt = av.name; avatarEl.appendChild(img); }
+      if (account.avatar === "custom" && account.customAvatar) { const img = el("img"); img.src = account.customAvatar; img.alt = "自传头像"; avatarEl.appendChild(img); }
+      else if (av.emblem) { const img = el("img"); img.src = av.emblem; img.alt = av.name; avatarEl.appendChild(img); }
       else avatarEl.textContent = av.glyph || "GK";
+      avatarEl.dataset.frame = account.avatarFrame || "none";
     }
+    if (nameEl) {
+      const nc = PROFILE_NAME_COLORS.find(x => x.id === account.nameColor) || PROFILE_NAME_COLORS[0];
+      nameEl.style.color = nc.color;
+    }
+    if (titleEl) {
+      titleEl.dataset.plate = account.titlePlate || "none";
+    }
+    const sigEl = $("home-account-signature");
+    if (sigEl) { sigEl.textContent = account.signature || ""; sigEl.hidden = !account.signature; }
+    const badgesEl = $("home-account-badges");
+    if (badgesEl) {
+      clear(badgesEl);
+      const badges = (account.badges || []).map(id => ACHIEVEMENTS.find(a => a.id === id)).filter(Boolean);
+      badges.forEach(a => {
+        const chip = el("span", "home-account-badge", a.icon + " " + a.name);
+        chip.title = a.desc;
+        badgesEl.appendChild(chip);
+      });
+      badgesEl.hidden = !badges.length;
+    }
+    document.body.dataset.tableTheme = account.tableTheme || "archive";
+    document.body.dataset.cardFrame = account.cardFrame || "none";
     applyProfileCardBack();
+    const cardBackEl = $("home-account-cardback");
+    if (cardBackEl) {
+      const cb = cardBackDefinition(account.cardBack || "classic");
+      cardBackEl.style.backgroundImage = "url('" + cardBackUrl() + "')";
+      cardBackEl.textContent = cb.glyph || "GK";
+      cardBackEl.title = "当前卡背：" + cb.name;
+    }
     if (!metaEl) return;
     let content = {};
     try { content = JSON.parse(localStorage.getItem("gok_content_v1") || "{}"); } catch (e) {}
@@ -6269,8 +7246,18 @@ const tabs = $("deck-faction-tabs");
     const card = el("article", "gok-library-card" + (opts.variant === "mini" ? " library-mini" : "") + variantClass);
     card.dataset.cardId = def.id;
     card.dataset.faction = def.faction;
+    card.dataset.rarity = def.rarity || "common";
+    card.dataset.type = def.type || "";
+    const factionColor = (D.FACTIONS[def.faction] && D.FACTIONS[def.faction].color) || "#d6b25f";
+    const rarityColor = RARITY_COLORS[def.rarity] || RARITY_COLORS.common;
+    card.style.setProperty("--faction-color", factionColor);
+    card.style.setProperty("--rarity-color", rarityColor);
     const art = el("div", "gok-lib-art");
-    if (def.art) art.style.backgroundImage = "url('" + portraitImage(def.art) + "')";
+    const customArt = customCardArtFor(def.id);
+    if (customArt) {
+      art.style.backgroundImage = "url('" + customArt + "')";
+      art.classList.add("has-custom-art");
+    } else if (def.art) art.style.backgroundImage = "url('" + portraitImage(def.art) + "')";
     else {
       art.classList.add("placeholder");
       art.style.backgroundImage = genericArtStyle(def);
@@ -6278,12 +7265,29 @@ const tabs = $("deck-faction-tabs");
     }
     card.appendChild(art);
     card.appendChild(el("div", "gok-lib-scrim"));
-    card.appendChild(el("div", "gok-lib-cost", String(opts.cost != null ? opts.cost : def.cost)));
+    const costEl = el("div", "gok-lib-cost", String(opts.cost != null ? opts.cost : def.cost));
+    costEl.style.setProperty("--faction-color", factionColor);
+    card.appendChild(costEl);
     if (opts.count != null) card.appendChild(el("div", "gok-lib-count", opts.count));
-    if (opts.faction !== false) card.appendChild(el("div", "gok-lib-faction", factionName(def.faction)));
+    if (opts.faction !== false) {
+      const factionEl = el("div", "gok-lib-faction", factionName(def.faction));
+      factionEl.style.setProperty("--faction-color", factionColor);
+      card.appendChild(factionEl);
+    }
     card.appendChild(el("div", "gok-lib-name", def.name));
-    const kind = opts.typeText || (typeLine(def) + " · " + (RARITY_NAMES[def.rarity] || "普通"));
-    card.appendChild(el("div", "gok-lib-kind", kind));
+    const kindEl = el("div", "gok-lib-kind");
+    kindEl.dataset.rarity = def.rarity || "common";
+    kindEl.style.setProperty("--rarity-color", rarityColor);
+    if (opts.typeText) {
+      kindEl.textContent = opts.typeText;
+    } else {
+      kindEl.appendChild(el("span", "gok-lib-type", typeLine(def)));
+      kindEl.appendChild(el("span", "gok-lib-kind-sep", " · "));
+      const rarityEl = el("b", "gok-lib-rarity", RARITY_NAMES[def.rarity] || "普通");
+      rarityEl.style.setProperty("--rarity-color", rarityColor);
+      kindEl.appendChild(rarityEl);
+    }
+    card.appendChild(kindEl);
     const text = el("div", "gok-lib-text");
     appendKeywordText(text, opts.text != null ? opts.text : (def.text || "—"));
     card.appendChild(text);
@@ -6344,11 +7348,13 @@ const tabs = $("deck-faction-tabs");
   function renderCodex() {
     const tabs = $("codex-faction-tabs");
     clear(tabs);
-    const allCards = Object.values(D.CARDS).filter(d => !d.token && !d.disabled);
+    const allCards = Object.values(D.CARDS).filter(d => !d.disabled);
     const factions = [{ id: "all", name: "全部" }, ...D.FACTION_IDS.map(id => ({ id, name: D.FACTIONS[id].name })), { id: "neutral", name: "中立" }];
     for (const f of factions) {
       const count = f.id === "all" ? allCards.length : allCards.filter(d => d.faction === f.id).length;
       const b = el("button", "deck-faction-tab" + (app.codexFaction === f.id ? " active" : ""), f.name + " " + count);
+      const factionColor = f.id === "all" ? "#f2c66d" : f.id === "neutral" ? "#b7c5cc" : (D.FACTIONS[f.id] && D.FACTIONS[f.id].color) || "#f2c66d";
+      b.style.setProperty("--faction-color", factionColor);
       b.onclick = () => { app.codexFaction = f.id; app.codexLimit = 60; renderCodex(); };
       tabs.appendChild(b);
     }
@@ -6373,6 +7379,16 @@ const tabs = $("deck-faction-tabs");
     if (sortSelect) sortSelect.value = app.codexSort || "faction";
     const raritySelect = $("codex-rarity");
     if (raritySelect) raritySelect.value = app.codexRarity || "all";
+    const tokenQuick = $("codex-token-quick");
+    if (tokenQuick) {
+      tokenQuick.textContent = "衍生卡 " + allCards.filter(d => d.token).length;
+      tokenQuick.classList.toggle("active", app.codexRarity === "token");
+      tokenQuick.onclick = () => {
+        app.codexRarity = app.codexRarity === "token" ? "all" : "token";
+        app.codexLimit = 60;
+        renderCodex();
+      };
+    }
     const favButton = $("codex-favorites");
     if (favButton) {
       const n = app.codexFavorites ? app.codexFavorites.size : 0;
@@ -6402,7 +7418,7 @@ const tabs = $("deck-faction-tabs");
     });
     const shown = list.slice(0, app.codexLimit || 60);
     const seenCount = allCards.filter(d => app.codexSeen && app.codexSeen[d.id]).length;
-    $("codex-count").textContent = "收录 " + allCards.length + " 张 · 已阅 " + seenCount + " · 收藏 " + (app.codexFavorites ? app.codexFavorites.size : 0) + " · 当前 " + list.length + " 张" + (list.length > shown.length ? " · 已显示 " + shown.length : "");
+    $("codex-count").innerHTML = '<span class="codex-count-total">收录 <b>' + allCards.length + '</b> 张</span><span class="codex-count-sep"> · </span><span class="codex-count-seen">已阅 ' + seenCount + '</span><span class="codex-count-sep"> · </span><span class="codex-count-fav">收藏 ' + (app.codexFavorites ? app.codexFavorites.size : 0) + '</span><span class="codex-count-sep"> · </span><span class="codex-count-hit">当前 <b>' + list.length + '</b> 张</span>' + (list.length > shown.length ? '<span class="codex-count-sep"> · </span><span class="codex-count-shown">已显示 ' + shown.length + '</span>' : "");
     const more = $("codex-more");
     if (more) { more.hidden = list.length <= shown.length; more.onclick = () => { app.codexLimit = (app.codexLimit || 60) + 60; renderCodex(); }; }
     const empty = $("codex-empty");
@@ -6424,12 +7440,14 @@ const tabs = $("deck-faction-tabs");
     markCodexSeen(d.id);
     openModal((content) => {
       content.classList.add("card-large-modal");
-      content.appendChild(el("div", "eyebrow", "ARCHIVE / CARD"));
+      content.appendChild(el("div", "eyebrow", "ARCHIVE / 卡牌档案"));
       content.appendChild(el("h3", null, d.name));
       content.appendChild(el("div", "preview-meta", factionName(d.faction) + " · " + typeLine(d) + " · " + (RARITY_NAMES[d.rarity] || "普通") + " · " + d.cost + " 行动力" + (d.type === "minion" ? " · 攻 " + d.attack + " / 血 " + d.health : "")));
       addKeywordChips(content, d, null);
       const art = el("div", "preview-art");
-      if (d.art) art.style.backgroundImage = "url('" + portraitImage(d.art) + "')";
+      const codexCustomArt = customCardArtFor(d.id);
+      if (codexCustomArt) { art.style.backgroundImage = "url('" + codexCustomArt + "')"; art.classList.add("has-custom-art"); }
+      else if (d.art) art.style.backgroundImage = "url('" + portraitImage(d.art) + "')";
       else {
         art.classList.add("placeholder");
         art.textContent = d.type === "spell" ? "术" : factionIcon(d.faction);
@@ -6440,6 +7458,19 @@ const tabs = $("deck-faction-tabs");
       content.appendChild(art);
       content.appendChild(el("p", null, d.text || "—"));
       if (d.flavor) content.appendChild(el("div", "preview-flavor", "“" + d.flavor + "”"));
+      const artTools = el("div", "card-art-tools");
+      artTools.appendChild(el("small", null, "卡面替换只保存在本机，不会上传，也不会改变对手看到的卡面。"));
+      const artFile = document.createElement("input"); artFile.type = "file"; artFile.accept = "image/png,image/jpeg,image/webp"; artFile.style.display = "none";
+      const replaceArt = el("button", "btn btn-small btn-ghost", "替换卡面");
+      replaceArt.onclick = () => artFile.click();
+      artFile.onchange = () => { const file = artFile.files && artFile.files[0]; if (!file) return; replaceCardArtFromFile(d.id, file, () => { toast("卡面已替换。 "); openCodexCard(d, backLabel, list, index); }); };
+      artTools.appendChild(replaceArt); artTools.appendChild(artFile);
+      if (codexCustomArt) {
+        const resetArt = el("button", "btn btn-small btn-ghost", "恢复原卡面");
+        resetArt.onclick = () => { clearCustomCardArt(d.id); toast("已恢复原卡面。 "); openCodexCard(d, backLabel, list, index); };
+        artTools.appendChild(resetArt);
+      }
+      content.appendChild(artTools);
       const actions = el("div", "modal-actions");
       if (list && list.length > 1) {
         const prev = el("button", "btn btn-small btn-ghost", "‹ 上一张");
@@ -6469,7 +7500,7 @@ const tabs = $("deck-faction-tabs");
         ["行动力与先后手", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张，并额外获得「采掘许可」（本回合 +2 点行动力）。"],
         ["阵位", "左翼 / 中枢 / 右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。阵位会影响部分卡牌的范围与固定效果。"],
         ["流脉", "双方共享 0→12，每次完整轮次（双方各行动一次）自然 +1。4 震荡、7 裂隙、10 魔物潮触发世界事件，12 回流清空。"],
-        ["牌组结构", "30 张主牌（随从 + 战术 + 阵型）+ 2 件装备牌。领袖在开局单独选择，不占牌组，也不进入牌库。装备需要抽到并打出，同一时间只能装备一件。"]
+        ["牌组结构", "30 张主牌（随从 + 战术 + 阵型）+ 2 件装备牌。领袖在开局单独选择，不占牌组，也不进入牌库。装备需要抽到并打出，最多可同时装备两件。"]
       ];
       for (const [title, desc] of sections) {
         const sec = el("div", "guide-section");
@@ -6548,6 +7579,7 @@ const tabs = $("deck-faction-tabs");
     AudioBox.play("cancel");
     const target = app.rankReturn || "home";
     if (target === "match") { showScreen("match"); renderMatchPage(); return; }
+    if (target === "mode") { showScreen("mode"); showModeMulti(true); return; }
     showScreen(target);
     if (target === "game" && app.game) renderGame();
   }
@@ -6580,6 +7612,7 @@ const tabs = $("deck-faction-tabs");
     $("rank-total-wins").textContent = String(p.wins || 0);
     $("rank-peak").textContent = String(p.rankPeak || 0);
     $("rank-best-streak").textContent = String(p.rankBestStreak || 0);
+    renderRankIdentity();
     const grid = document.querySelector(".rank-detail-grid");
     const oldLadder = $("rank-ladder-panel"); if (oldLadder) oldLadder.remove();
     const oldReward = $("rank-reward-panel"); if (oldReward) oldReward.remove();
@@ -6869,12 +7902,56 @@ const tabs = $("deck-faction-tabs");
     });
   }
 
+  function applySettingsSimplicity() {
+    const screen = $("screen-settings");
+    if (!screen) return;
+    const grid = screen.querySelector(".settings-grid");
+    if (!grid) return;
+    let bar = screen.querySelector(".settings-simple-bar");
+    if (!bar) {
+      bar = el("div", "settings-simple-bar");
+      const common = el("button", "btn btn-small btn-primary", "常用设置");
+      const advanced = el("button", "btn btn-small btn-ghost", "高级设置");
+      const hint = el("span", "settings-simple-hint", "只显示最常调整的选项；画面细节、重置与实验项收进高级。" );
+      common.onclick = () => { app.settingsAdvanced = false; applySettingsSimplicity(); };
+      advanced.onclick = () => { app.settingsAdvanced = true; applySettingsSimplicity(); };
+      bar.appendChild(common); bar.appendChild(advanced); bar.appendChild(hint);
+      bar._common = common; bar._advanced = advanced;
+      grid.parentNode.insertBefore(bar, grid);
+    }
+    const advanced = !!app.settingsAdvanced;
+    screen.classList.toggle("settings-advanced", advanced);
+    document.body.classList.toggle("settings-advanced", advanced);
+    if (bar._common) bar._common.className = "btn btn-small " + (advanced ? "btn-ghost" : "btn-primary");
+    if (bar._advanced) bar._advanced.className = "btn btn-small " + (advanced ? "btn-primary" : "btn-ghost");
+    const advancedIds = [
+      "btn-settings-cinema", "btn-settings-replay-cg", "btn-settings-bg", "btn-settings-fx",
+      "btn-settings-shake", "btn-settings-density", "btn-settings-hand-sort", "btn-settings-bgm-mode",
+      "btn-settings-contrast", "btn-settings-zone-labels", "btn-settings-battler-fx",
+      "btn-settings-clear-achievements", "btn-settings-clear-profile", "btn-settings-reset-prefs",
+      "btn-settings-credits"
+    ];
+    for (const id of advancedIds) {
+      const btn = $(id); const row = btn && btn.closest ? btn.closest(".settings-row") : null;
+      if (row) row.classList.add("settings-advanced-row");
+    }
+    for (const id of ["settings-bgm-volume", "settings-sfx-volume", "settings-dim"]) {
+      const input = $(id); const row = input && input.closest ? input.closest(".settings-row") : null;
+      if (row) row.classList.add("settings-advanced-row");
+    }
+    const exp = screen.querySelector(".settings-experience-panel"); if (exp) exp.classList.add("settings-advanced-panel");
+    const about = screen.querySelector(".settings-about-panel"); if (about) about.classList.add("settings-advanced-panel");
+    const controls = screen.querySelector(".settings-controls-panel");
+    if (controls) [...controls.querySelectorAll(".settings-row")].forEach((row, i) => { if (i > 0) row.classList.add("settings-advanced-row"); });
+  }
+
   function openSettings(returnScreen) {
     app.settingsReturn = returnScreen === "game" ? "game" : (returnScreen || "home");
     const back = $("btn-settings-back");
     if (back) back.textContent = app.settingsReturn === "game" ? "← 返回对局" : "← 返回档案处";
     showScreen("settings");
     updateSettingsUI();
+    applySettingsSimplicity();
   }
 
   function applyHomeVideo() {
@@ -6890,7 +7967,7 @@ const tabs = $("deck-faction-tabs");
   function applyMobileFixedSettings() {
     const mobile = isPhoneLayout();
     const controls = document.querySelector(".settings-controls-panel");
-    if (controls) controls.hidden = !mobile;
+    if (controls) controls.hidden = false;
     const handBtn = $("btn-settings-hand-mode");
     const handFixed = $("settings-hand-fixed");
     if (handBtn) handBtn.hidden = mobile;
@@ -6910,6 +7987,11 @@ const tabs = $("deck-faction-tabs");
       app.motionOn = false;
       app.fxOn = false;
       app.textLarge = true;
+      if (!localStorage.getItem("gok_screen_shake")) app.screenShake = false;
+      if (!localStorage.getItem("gok_anim_speed")) app.animSpeed = 1.25;
+      if (!localStorage.getItem("gok_ai_speed")) app.aiSpeed = "slow";
+      if (!localStorage.getItem("gok_ui_density")) app.uiDensity = "compact";
+      if (!localStorage.getItem("gok_damage_numbers")) app.damageNumbers = false;
     }
     document.documentElement.style.setProperty("--anim-scale", String(app.animSpeed || 0.7));
     document.body.classList.toggle("no-bg-animation", !app.bgAnimOn);
@@ -7127,7 +8209,7 @@ const tabs = $("deck-faction-tabs");
     const anim = $("btn-settings-anim");
     if (anim) anim.textContent = "动画：" + (app.animSpeed <= 0.6 ? "很快" : app.animSpeed <= 0.78 ? "快" : app.animSpeed <= 1.02 ? "标准" : "慢");
     const handMode = $("btn-settings-hand-mode");
-    if (handMode) handMode.textContent = "出牌：" + (isPhoneLayout() ? "点击" : "拖拽");
+    if (handMode) handMode.textContent = "出牌：" + (isPhoneLayout() ? "点击" : app.handPlayMode === "double" ? "双击" : "拖拽");
     const textsize = $("btn-settings-textsize");
     if (textsize) textsize.textContent = "文字：" + (app.textLarge ? "大" : "标准");
     const dim = $("settings-dim");
@@ -7587,6 +8669,7 @@ const tabs = $("deck-faction-tabs");
         app.lanSince = Math.max(app.lanSince, data.seq || 0);
         if (typeof data.hostOnline === "boolean") setOpponentOnline(player === 1 ? data.hostOnline : data.guestOnline);
         for (const msg of data.messages || []) {
+          if (msg.payload && msg.payload.type === "emote") { receiveEmote(msg.payload.emote, msg.from); continue; }
           if (player === 0) {
             if (msg.payload && msg.payload.type === "action") applyGuestAction(msg.payload.action);
           } else {
@@ -7601,6 +8684,81 @@ const tabs = $("deck-faction-tabs");
       }
     };
     app.lanPollTimer = setTimeout(poll, 200);
+  }
+
+  const EMOTE_LINES = [
+    { id: "tide", icon: "潮", text: "流脉会记住这一刻。", voice: "流脉会记住这一刻。" },
+    { id: "archive", icon: "档", text: "档案不会说谎。", voice: "档案不会说谎。" },
+    { id: "oath", icon: "誓", text: "这一局，写进档案。", voice: "这一局，写进档案。" },
+    { id: "frost", icon: "霜", text: "让潮声替我们作证。", voice: "让潮声替我们作证。" },
+    { id: "iron", icon: "铁", text: "牌桌从不撒谎。", voice: "牌桌从不撒谎。" },
+    { id: "vein", icon: "脉", text: "潮起潮落，牌局未定。", voice: "潮起潮落，牌局未定。" },
+    { id: "good", icon: "好", text: "这手漂亮。", voice: "这手漂亮。" },
+    { id: "gg", icon: "礼", text: "承让，下一局见。", voice: "承让，下一局见。" }
+  ];
+
+  function speakEmote(text) {
+    if (!app.emoteVoice || !window.speechSynthesis || !text) return;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(String(text).slice(0, 40));
+      u.lang = "zh-CN"; u.rate = 1.02; u.pitch = 1.06; u.volume = .78;
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+
+  function showEmote(emote, from) {
+    if (!emote) return;
+    const known = EMOTE_LINES.find(x => x.id === emote.id) || null;
+    const data = known || { icon: String(emote.icon || "档").slice(0, 2), text: String(emote.text || "").slice(0, 40) };
+    let layer = document.getElementById("emote-layer");
+    if (!layer) { layer = el("div", "emote-layer"); layer.id = "emote-layer"; document.body.appendChild(layer); }
+    const bubble = el("div", "emote-bubble");
+    bubble.appendChild(el("b", "emote-bubble-icon", data.icon));
+    const copy = el("div", "emote-bubble-copy");
+    copy.appendChild(el("small", null, (from === "you" || from === app.viewer) ? "你" : "对手"));
+    copy.appendChild(el("strong", null, data.text));
+    bubble.appendChild(copy);
+    layer.appendChild(bubble);
+    requestAnimationFrame(() => bubble.classList.add("show"));
+    setTimeout(() => { bubble.classList.remove("show"); setTimeout(() => bubble.remove(), 350); }, 3200);
+    speakEmote(data.voice || "");
+  }
+
+  function sendEmote(emote) {
+    if (!emote) return;
+    const payload = { id: emote.id, icon: emote.icon, text: emote.text, voice: emote.voice };
+    if (app.net && app.net.active) sendNet({ type: "emote", emote: payload });
+    showEmote(payload, "you");
+    AudioBox.play("select");
+  }
+
+  function receiveEmote(emote, from) {
+    showEmote(emote, from === app.net.player ? "you" : "opponent");
+    AudioBox.play("select");
+  }
+
+  function openEmotePanel() {
+    openModal((content) => {
+      content.classList.add("emote-panel-modal");
+      content.appendChild(el("div", "eyebrow", "CHANNEL / BATTLE LINES"));
+      content.appendChild(el("h3", null, "联机台词"));
+      content.appendChild(el("p", null, "选择一句发送给对手。语音台词用本机语音合成播放，不经过服务器。"));
+      const grid = el("div", "emote-grid");
+      for (const e of EMOTE_LINES) {
+        const b = el("button", "emote-choice");
+        b.appendChild(el("b", null, e.icon)); b.appendChild(el("strong", null, e.text));
+        b.onclick = () => { closeModal(true); sendEmote(e); };
+        grid.appendChild(b);
+      }
+      content.appendChild(grid);
+      const actions = el("div", "modal-actions");
+      const voice = el("button", "btn btn-small btn-ghost", "语音台词：" + (app.emoteVoice ? "开" : "关"));
+      voice.onclick = () => { app.emoteVoice = !app.emoteVoice; try { localStorage.setItem("gok_emote_voice", app.emoteVoice ? "1" : "0"); } catch (e) {} voice.textContent = "语音台词：" + (app.emoteVoice ? "开" : "关"); };
+      const close = el("button", "btn btn-small btn-primary", "关闭");
+      close.onclick = () => closeModal(true);
+      actions.appendChild(voice); actions.appendChild(close); content.appendChild(actions);
+    });
   }
 
   function sendNet(payload) {
@@ -7903,9 +9061,9 @@ const tabs = $("deck-faction-tabs");
     if (app.modalOpen) return;
     const preview = window.GOK_CHANNEL === "preview";
     openModal((content) => {
-      content.appendChild(el("div", "eyebrow", preview ? "PREVIEW / 抢先版" : "STABLE / 稳定版"));
-      content.appendChild(el("h3", null, preview ? "抢先体验版" : "稳定版更新"));
-      content.appendChild(el("p", null, preview ? "这个版本包含尚未完全平衡的新卡和实验机制，可能出现 bug。稳定版功能保持独立。" : "以下内容已经进入稳定版。"));
+      content.appendChild(el("div", "eyebrow", preview ? "EXPERIMENTAL / 实验版" : "STABLE / 稳定版"));
+      content.appendChild(el("h3", null, preview ? "实验构建" : "稳定版更新"));
+      content.appendChild(el("p", null, preview ? "本地/局域网预览是实验构建：卡牌仍在重做，可能出现数值、脚本或交互问题，不是稳定版。" : "以下内容已经进入稳定版。"));
       const notes = (data && data.notes) || [];
       if (notes.length) {
         const list = el("ul", "channel-notice-list");
@@ -7920,12 +9078,7 @@ const tabs = $("deck-faction-tabs");
         content.appendChild(known);
       }
       const actions = el("div", "modal-actions");
-      if (preview && window.GOK_CHANNEL_LINKS && window.GOK_CHANNEL_LINKS.stable) {
-        const stable = el("button", "btn btn-small btn-ghost", "返回稳定版");
-        stable.onclick = () => { location.href = window.GOK_CHANNEL_LINKS.stable; };
-        actions.appendChild(stable);
-      }
-      const ok = el("button", "btn btn-primary", preview ? "进入抢先版" : "继续");
+      const ok = el("button", "btn btn-primary", preview ? "进入实验版" : "继续");
       ok.onclick = () => closeModal(true);
       actions.appendChild(ok);
       content.appendChild(actions);
@@ -7945,9 +9098,9 @@ const tabs = $("deck-faction-tabs");
     const badge = $("channel-badge");
     if (badge) {
       badge.hidden = false;
-      badge.textContent = preview ? "抢先版 PREVIEW" : "稳定版 STABLE";
+      badge.textContent = preview ? "实验版 EXPERIMENTAL" : "稳定版 STABLE";
       badge.classList.toggle("preview", preview);
-      badge.title = preview ? window.GOK_BUILD + " · 可能包含未平衡内容" : window.GOK_BUILD + " · 稳定通道";
+      badge.title = preview ? window.GOK_BUILD + " · 实验构建，不是稳定版" : window.GOK_BUILD + " · 稳定通道";
       badge.onclick = () => {
         if (app.modalOpen) return;
         fetch("announcements.json", { cache: "no-store" })
@@ -8697,6 +9850,26 @@ const tabs = $("deck-faction-tabs");
     if ($("btn-content-home")) $("btn-content-home").onclick = () => { AudioBox.play("ui_open"); if (global.GokContent) global.GokContent.open(); };
     if ($("btn-home-account")) $("btn-home-account").onclick = () => { AudioBox.play("ui_open"); openAccountModal(); afterAccountUI(); };
     window.addEventListener("gok-content-changed", () => scheduleSaveBackup());
+    const updateOrientationLock = () => {
+      const lock = $("orientation-lock");
+      if (!lock) return;
+      const touchDevice = !!(window.matchMedia && (window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0));
+      document.documentElement.classList.toggle("touch-device", touchDevice);
+      const landscape = !!(window.matchMedia && window.matchMedia("(orientation: landscape)").matches);
+      const shortSide = Math.min(window.screen && window.screen.width || window.innerWidth, window.screen && window.screen.height || window.innerHeight);
+      const phoneLandscape = touchDevice && landscape && shortSide <= 950;
+      lock.hidden = !phoneLandscape;
+      document.body.classList.toggle("orientation-blocked", phoneLandscape);
+    };
+    window.addEventListener("resize", updateOrientationLock);
+    window.addEventListener("orientationchange", () => setTimeout(updateOrientationLock, 120));
+    updateOrientationLock();
+    document.addEventListener("click", (ev) => {
+      const target = ev.target && ev.target.closest ? ev.target.closest("button, [role=button], .home-nav-item, .deck-filter, .deck-faction-tab, .start-choice, .deck-card, .codex-card") : null;
+      if (!target || target.disabled) return;
+      const before = AudioBox.lastPlayedAt;
+      setTimeout(() => { if (AudioBox.lastPlayedAt === before) AudioBox.play("click", { gain: 0.42 }); }, 30);
+    });
     window.addEventListener("resize", () => { if (app.screen === "game") requestAnimationFrame(fitHandToWidth); });
     if ($("btn-tutorial")) $("btn-tutorial").onclick = () => { closeStartMenu(); AudioBox.play("ui_open"); showScreen("tutorial"); };
     $("btn-codex").onclick = () => { AudioBox.play("ui_open"); openCodex(); };
@@ -8799,7 +9972,11 @@ const tabs = $("deck-faction-tabs");
     if ($("btn-preset-competitive")) $("btn-preset-competitive").onclick = () => applyExperiencePreset("competitive");
     if ($("btn-preset-performance")) $("btn-preset-performance").onclick = () => applyExperiencePreset("performance");
     if ($("btn-settings-hand-mode")) $("btn-settings-hand-mode").onclick = () => {
-      toast("手机版固定为点击操作；电脑版固定为拖拽操作。");
+      if (isPhoneLayout()) { toast("手机版固定为点击操作。"); return; }
+      app.handPlayMode = app.handPlayMode === "double" ? "drag" : "double";
+      localStorage.setItem("gok_hand_play_mode", app.handPlayMode);
+      updateSettingsUI();
+      toast(app.handPlayMode === "double" ? "电脑操作：双击卡牌确认出牌。" : "电脑操作：拖到阵位或目标出牌。");
     };
     if ($("btn-settings-anim")) $("btn-settings-anim").onclick = () => {
       app.animSpeed = app.animSpeed <= 0.6 ? 0.7 : app.animSpeed <= 0.78 ? 0.9 : app.animSpeed <= 1.02 ? 1.2 : 0.55;
@@ -8858,17 +10035,87 @@ const tabs = $("deck-faction-tabs");
     if ($("btn-credits")) $("btn-credits").onclick = () => showCredits();
     if ($("btn-rules")) $("btn-rules").onclick = () => { AudioBox.play("ui_open"); openKeywordGlossary(); };
     if ($("btn-rank")) $("btn-rank").onclick = () => openRank("home");
-    if ($("btn-rank-home")) $("btn-rank-home").onclick = () => { AudioBox.play("ui_open"); openRank("home"); };
+    if ($("btn-customize-home")) $("btn-customize-home").onclick = () => { AudioBox.play("ui_open"); openProfileCustomization(); };
+    if ($("home-account-cardback")) { $("home-account-cardback").style.cursor = "pointer"; $("home-account-cardback").title = "当前卡背 · 点击打开自定义"; $("home-account-cardback").onclick = () => { AudioBox.play("ui_open"); openProfileCustomization(); }; }
+    if ($("btn-rank-multi")) $("btn-rank-multi").onclick = () => { closeStartMenu(); AudioBox.play("ui_open"); openRank("mode"); };
+    if ($("btn-rank-mode")) $("btn-rank-mode").onclick = () => { AudioBox.play("ui_open"); openRank("mode"); };
     if ($("btn-rank-back")) $("btn-rank-back").onclick = () => closeRank();
     if ($("btn-rank-game")) $("btn-rank-game").onclick = () => openRank("game");
     if ($("btn-concede")) $("btn-concede").onclick = () => confirmConcede();
     if ($("btn-game-settings")) $("btn-game-settings").onclick = () => { AudioBox.play("ui_open"); openGameMenu(); };
+    if (typeof app.emoteVoice !== "boolean") app.emoteVoice = localStorage.getItem("gok_emote_voice") !== "0";
+    if ($("btn-emote")) $("btn-emote").onclick = () => { AudioBox.play("ui_open"); openEmotePanel(); };
     if ($("btn-game-guide")) $("btn-game-guide").onclick = () => { AudioBox.play("ui_open"); app.tutorialReturn = app.screen === "game" ? "game" : "home"; showScreen("tutorial"); };
+    if ($("btn-lore-home")) $("btn-lore-home").onclick = () => { AudioBox.play("ui_open"); window.open("lore/index.html?v=20261022b", "_blank", "noopener"); };
+    window.addEventListener("resize", () => { document.querySelectorAll("#player-hero, #opponent-hero").forEach(centerHeroDeckBadge); });
     if ($("btn-sim-back")) $("btn-sim-back").onclick = () => showScreen("home");
     $("btn-setup-back").onclick = () => showModeSelect();
     $("btn-game-home").onclick = () => confirmExit();
     if ($("btn-toggle-log")) $("btn-toggle-log").onclick = () => toggleGameLog();
-    $("btn-log-close").onclick = () => { app.logOpen = false; $("log-panel").classList.remove("open"); };
+    if ($("btn-mobile-log")) $("btn-mobile-log").onclick = () => toggleGameLog();
+    if ($("turn-badge")) { $("turn-badge").onclick = () => toggleGameLog(); $("turn-badge").title = "点击展开推演日志"; }
+    if ($("btn-log-close")) $("btn-log-close").onclick = () => toggleGameLog(false);
+    if ($("log-backdrop")) $("log-backdrop").onclick = () => toggleGameLog(false);
+    if ($("btn-mobile-welcome-close")) $("btn-mobile-welcome-close").onclick = hideMobileWelcome;
+    const veinRow = $("vein-row");
+    if (veinRow) {
+      let veinTimer = null;
+      let veinStart = null;
+      let veinTip = null;
+      const hideVeinTip = () => { if (veinTip) veinTip.hidden = true; };
+      const cancelVeinPress = () => { if (veinTimer) clearTimeout(veinTimer); veinTimer = null; veinStart = null; };
+      const ensureVeinTip = () => {
+        if (veinTip) return veinTip;
+        veinTip = el("div", "vein-hover-tip");
+        veinTip.id = "vein-hover-tip";
+        veinTip.innerHTML = "<strong>流脉阈值</strong><span><b>4 震荡</b> 所有随从 1 伤害</span><span><b>7 裂隙</b> 双方领袖 2 伤害</span><span><b>10 魔物潮</b> 全场 3 伤害，领袖 5</span><span><b>12 回流</b> 流脉清空</span>";
+        document.body.appendChild(veinTip);
+        return veinTip;
+      };
+      veinRow.addEventListener("pointerdown", (ev) => {
+        if (ev.pointerType === "mouse" || (ev.target.closest && ev.target.closest("button,.end-turn-stack,.end-turn-btn"))) return;
+        veinStart = { x: ev.clientX, y: ev.clientY };
+        veinTimer = setTimeout(() => { veinTimer = null; if (veinStart) openVeinThresholdHelp(); }, 340);
+      });
+      veinRow.addEventListener("pointermove", (ev) => {
+        if (veinStart && (Math.abs(ev.clientX - veinStart.x) > 12 || Math.abs(ev.clientY - veinStart.y) > 12)) cancelVeinPress();
+        if (ev.pointerType === "mouse") {
+          if (ev.target.closest && ev.target.closest("button,.end-turn-stack,.end-turn-btn")) { hideVeinTip(); return; }
+          const tip = ensureVeinTip();
+          tip.hidden = false;
+          const w = tip.offsetWidth || 220, h = tip.offsetHeight || 104;
+          let x = ev.clientX + 14, y = ev.clientY - h - 12;
+          if (x + w > innerWidth - 8) x = innerWidth - w - 8;
+          if (y < 8) y = ev.clientY + 16;
+          tip.style.left = Math.max(8, x) + "px";
+          tip.style.top = Math.max(8, y) + "px";
+        }
+      });
+      veinRow.addEventListener("mouseleave", hideVeinTip);
+      veinRow.addEventListener("pointerup", cancelVeinPress);
+      veinRow.addEventListener("pointercancel", cancelVeinPress);
+      veinRow.addEventListener("pointerleave", cancelVeinPress);
+      const sigil = veinRow.querySelector(".vein-sigil");
+      if (sigil) {
+        sigil.style.cursor = "pointer";
+        sigil.title = "点击查看流脉阈值";
+        sigil.addEventListener("click", (ev) => { ev.stopPropagation(); cancelVeinPress(); hideVeinTip(); openVeinThresholdHelp(); });
+      }
+    }
+    const gameScreen = $("screen-game");
+    if (gameScreen) {
+      let pullStart = null;
+      gameScreen.addEventListener("pointerdown", (ev) => {
+        if (ev.pointerType === "mouse" || ev.clientY > 120 || (ev.target.closest && ev.target.closest("button"))) return;
+        pullStart = { y: ev.clientY };
+      });
+      gameScreen.addEventListener("pointermove", (ev) => {
+        if (!pullStart) return;
+        if (ev.clientY - pullStart.y > 58) { pullStart = null; toggleGameLog(true); }
+      });
+      gameScreen.addEventListener("pointerup", () => { pullStart = null; });
+      gameScreen.addEventListener("pointercancel", () => { pullStart = null; });
+    }
     const keyBtn = $("btn-keywords");
     if (keyBtn) keyBtn.onclick = () => openKeywordGlossary();
     if ($("btn-game-tutorial")) $("btn-game-tutorial").onclick = () => { AudioBox.play("ui_open"); app.tutorialReturn = "game"; openGameGuide(); };
@@ -8927,6 +10174,17 @@ const tabs = $("deck-faction-tabs");
       b.onclick = () => { AudioBox.play("ui_open"); runSimulation(Number(b.dataset.count)); };
     });
     initLanEvents();
+    function dismissUnusableCardPreview(ev) {
+      if (!isPhoneLayout() || !app.mobilePreviewUid || app.modalOpen) return;
+      if (app.mobileClickArmed) return; // 可打出的牌交给 releaseMobileArmed
+      const target = ev.target;
+      if (!target || !target.closest) return;
+      if (target.closest("#hand,.hand-card,#mobile-simple-preview,.mobile-card-sheet,.modal,.log-panel,#log-backdrop")) return;
+      hideSimpleCardPreview();
+      clearCardDropHints();
+    }
+    document.addEventListener("click", dismissUnusableCardPreview, true);
+    document.addEventListener("click", releaseMobileArmed, true);
     document.addEventListener("contextmenu", (e) => {
       if (app.screen === "game" && !app.modalOpen && (app.targetInfo || app.zoneSelect || app.attacker || app.selectedCard)) {
         e.preventDefault();
@@ -8970,13 +10228,17 @@ const tabs = $("deck-faction-tabs");
     renderTutorialRoute();
     renderHomeDash();
     runBootLoading("正在展开流脉档案", "校准地脉、阵位与关键词…", BOOT_ASSETS, null);
-    if (!localStorage.getItem("gok_welcome_v2")) {
-      localStorage.setItem("gok_welcome_v2", "1");
-      setTimeout(() => { if (app.screen === "home") toast("第一次推演？游戏教程里有规则、阵位与关键词。"); }, 2100);
-    }
+    if (!localStorage.getItem("gok_welcome_v2")) localStorage.setItem("gok_welcome_v2", "1");
     AudioBox.updateButton();
     autoReconnectOnLoad();
     initChannelUI();
+    if (isPhoneLayout()) {
+      const welcome = $("mobile-welcome");
+      if (welcome) document.body.appendChild(welcome);
+      const tryWelcome = () => { if (app.screen === "home" && !app.modalOpen) showMobileWelcome(); };
+      setTimeout(tryWelcome, 1200);
+      setTimeout(tryWelcome, 3200);
+    }
     startHostKeepAlive();
     initOnlineFromQuery();
     // 便于自动截图/调试
@@ -9013,7 +10275,7 @@ const tabs = $("deck-faction-tabs");
   setTimeout(reinforceHandCardText, 80);
 
 
-  global.GokUI = { init: init, app: app, startGame: startGame, showScreen: showScreen, runSimulation: runSimulation };
+  global.GokUI = { init: init, app: app, startGame: startGame, showScreen: showScreen, runSimulation: runSimulation, renderGame: renderGame };
 
 })(window);
 

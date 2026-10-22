@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>戈克世界 · 世界观</title>
+<style>
+  :root{
+    --bg:#080b10;
+    --bg2:#0d1218;
+    --panel:#111820;
+    --line:rgba(217,185,106,.22);
+    --gold:#d9b96a;
+    --gold2:#f0d9a0;
+    --text:#e8e2d4;
+    --muted:#8b9aa6;
+    --dim:#5c6a76;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);color:var(--text);
+    font-family:"Noto Serif SC","Source Han Serif SC","STSong","SimSun",serif;
+    line-height:1.9;overflow-x:hidden;
+  }
+  img{display:block;max-width:100%}
+  a{color:var(--gold);text-decoration:none}
+
+  /* ============ 通用 ============ */
+  .wrap{max-width:1180px;margin:0 auto;padding:0 32px}
+  .kicker{
+    font-size:12px;letter-spacing:5px;color:var(--gold);
+    text-transform:uppercase;margin-bottom:18px;
+    display:flex;align-items:center;gap:14px;
+  }
+  .kicker::before{content:"";width:40px;height:1px;background:var(--gold);opacity:.6}
+  h2.sec{
+    font-size:clamp(28px,4vw,44px);letter-spacing:3px;font-weight:600;
+    margin-bottom:14px;color:var(--gold2);
+  }
+  .sec-sub{color:var(--muted);font-size:14px;letter-spacing:1.5px;margin-bottom:44px}
+  .divider{height:1px;background:linear-gradient(90deg,transparent,var(--line),transparent);margin:0 auto}
+
+  /* ============ 封面 ============ */
+  .hero{position:relative;height:100vh;min-height:620px;overflow:hidden}
+  .hero-img{
+    position:absolute;inset:0;
+    background:url("assets/hero_cloud.webp") center/cover no-repeat;
+    transform:scale(1.05);
+  }
+  .hero::after{
+    content:"";position:absolute;inset:0;
+    background:
+      radial-gradient(ellipse at 50% 42%, rgba(8,11,16,.1) 0%, rgba(8,11,16,.72) 58%, rgba(8,11,16,.98) 100%),
+      linear-gradient(180deg, rgba(8,11,16,.45) 0%, transparent 30%, transparent 62%, var(--bg) 100%);
+  }
+  .hero-inner{
+    position:relative;z-index:2;height:100%;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:0 24px;
+  }
+  .hero-title{
+    font-size:clamp(54px,9vw,120px);letter-spacing:.22em;font-weight:600;
+    color:var(--gold2);text-indent:.22em;
+    text-shadow:0 0 60px rgba(217,185,106,.25);
+  }
+  .hero-line{width:min(460px,72vw);height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:26px 0}
+  .hero-sub{font-size:clamp(14px,1.7vw,18px);letter-spacing:.35em;color:var(--text);opacity:.88}
+  .hero-quote{margin-top:44px;font-size:13.5px;letter-spacing:.14em;color:var(--muted);max-width:620px;line-height:2}
+  .scroll-hint{
+    position:absolute;bottom:34px;left:50%;transform:translateX(-50%);
+    font-size:10px;letter-spacing:.3em;color:var(--dim);z-index:2;
+    animation:bob 2.6s ease-in-out infinite;
+  }
+  @keyframes bob{0%,100%{transform:translate(-50%,0);opacity:.5}50%{transform:translate(-50%,8px);opacity:1}}
+
+  /* ============ 序 ============ */
+  .intro{padding:120px 0 90px}
+  .intro p{
+    font-size:clamp(16px,2vw,21px);line-height:2.25;color:var(--text);
+    max-width:820px;margin:0 auto;text-align:center;
+  }
+  .intro .em{color:var(--gold2)}
+  .stats{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+    background:var(--line);border:1px solid var(--line);
+    margin-top:72px;
+  }
+  .stat{background:var(--bg2);padding:38px 22px;text-align:center}
+  .stat b{display:block;font-size:clamp(30px,4vw,46px);color:var(--gold);font-weight:600;letter-spacing:1px}
+  .stat span{display:block;margin-top:10px;font-size:12px;letter-spacing:.28em;color:var(--muted)}
+
+  /* ============ 世界底层 ============ */
+  .concepts{padding:100px 0}
+  .concept-hero{
+    display:grid;grid-template-columns:1.15fr .85fr;gap:56px;align-items:center;
+    margin-bottom:64px;
+  }
+  .concept-hero .pic{
+    border:1px solid var(--line);overflow:hidden;position:relative;
+  }
+  .concept-hero .pic img{width:100%;height:100%;object-fit:cover;aspect-ratio:16/10}
+  .concept-hero .pic::after{
+    content:"";position:absolute;inset:0;
+    box-shadow:inset 0 0 80px rgba(0,0,0,.5);
+  }
+  .concept-hero h3{font-size:clamp(22px,2.6vw,30px);color:var(--gold2);margin-bottom:18px;letter-spacing:2px}
+  .concept-hero p{color:var(--muted);font-size:15px;line-height:2.1}
+  .concept-hero .big{
+    margin-top:24px;padding:20px 24px;border-left:2px solid var(--gold);
+    background:linear-gradient(90deg,rgba(217,185,106,.06),transparent);
+    color:var(--text);font-size:15px;letter-spacing:.05em;
+  }
+  .cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .ccard{
+    border:1px solid var(--line);background:linear-gradient(160deg,var(--panel),var(--bg2));
+    padding:30px 26px;transition:.35s;
+  }
+  .ccard:hover{border-color:rgba(217,185,106,.5);transform:translateY(-4px)}
+  .ccard .num{font-size:11px;letter-spacing:.3em;color:var(--gold);opacity:.7}
+  .ccard h4{font-size:19px;letter-spacing:2px;color:var(--gold2);margin:12px 0 12px}
+  .ccard p{font-size:13.5px;color:var(--muted);line-height:2}
+  .ccard .q{margin-top:16px;font-size:13px;color:var(--gold);opacity:.85;font-style:italic}
+
+  /* ============ 规则 ============ */
+  .rules{padding:100px 0}
+  .rgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  .rcard{border:1px solid var(--line);background:var(--panel);padding:30px 28px;transition:.35s}
+  .rcard:hover{border-color:rgba(217,185,106,.45);transform:translateY(-3px)}
+  .rcard .rt{font-size:11px;letter-spacing:.3em;color:var(--gold);opacity:.75}
+  .rcard h4{font-size:19px;letter-spacing:2px;color:var(--gold2);margin:10px 0 12px}
+  .rcard p{font-size:13.5px;color:var(--muted);line-height:2}
+  .rcard .q{margin-top:14px;font-size:12.5px;color:var(--gold);opacity:.85;font-style:italic}
+
+  /* ============ 灰港五人 ============ */
+  .ghsec{padding:100px 0}
+  .ghgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  .ghcard{border:1px solid rgba(127,174,143,.25);background:linear-gradient(160deg,rgba(23,42,33,.75),rgba(13,18,24,.92));padding:0;overflow:hidden;transition:.35s}
+  .ghcard:hover{border-color:rgba(127,174,143,.6);transform:translateY(-4px)}
+  .ghcard .gph{aspect-ratio:3/4;overflow:hidden;background:#0b1016}
+  .ghcard .gph img{width:100%;height:100%;object-fit:cover;object-position:top center;transition:.6s}
+  .ghcard:hover .gph img{transform:scale(1.05)}
+  .ghcard .gbody{padding:16px 16px 20px}
+  .ghcard .gname{font-size:16px;letter-spacing:1px;color:#a8e0bc}
+  .ghcard .grow{font-size:10px;letter-spacing:.2em;color:rgba(127,174,143,.75);margin-top:5px}
+  .ghcard p{font-size:12px;color:var(--muted);line-height:1.9;margin-top:12px}
+  .ghcard .q{margin-top:10px;font-size:11.5px;color:rgba(168,224,188,.85);font-style:italic;line-height:1.8}
+
+  /* ============ IP 全貌 ============ */
+  .ipsec{padding:100px 0}
+  .ipgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .ipcard{border:1px solid var(--line);background:var(--panel);padding:30px 22px;position:relative;transition:.35s}
+  .ipcard:hover{transform:translateY(-4px);border-color:rgba(217,185,106,.5)}
+  .ipcard span{font-size:10px;letter-spacing:.3em;color:var(--gold);opacity:.7}
+  .ipcard h4{font-size:18px;color:var(--gold2);margin:10px 0 8px;letter-spacing:1px}
+  .ipcard p{font-size:12.5px;color:var(--muted);line-height:1.95}
+
+  /* 法典 */
+  .lawgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  .lawcard{border:1px solid var(--line);background:var(--panel);padding:22px 16px;transition:.35s}
+  .lawcard:hover{border-color:rgba(217,185,106,.5);transform:translateY(-3px)}
+  .lawcard span{font-size:10px;letter-spacing:.2em;color:var(--gold);opacity:.7}
+  .lawcard h4{font-size:16px;color:var(--gold2);margin:8px 0 8px;letter-spacing:2px}
+  .lawcard p{font-size:11.5px;color:var(--muted);line-height:1.9;min-height:52px}
+  .lawcard em{color:var(--gold);font-style:normal;font-size:11px;display:block;margin-top:10px;opacity:.8;border-top:1px dashed rgba(217,185,106,.2);padding-top:8px}
+
+  /* 诗歌 */
+  .poemgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:26px 34px}
+  .poem{border-left:2px solid rgba(217,185,106,.4);padding:4px 0 4px 20px}
+  .poem span{font-size:11px;letter-spacing:.18em;color:var(--gold);opacity:.75}
+  .poem p{font-size:13.5px;color:var(--muted);line-height:2.15;margin-top:10px;font-style:italic;letter-spacing:.04em}
+
+  /* 谜 */
+  .mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .mcard{border:1px solid var(--line);background:rgba(255,255,255,.015);padding:15px 18px;font-size:12.5px;color:var(--muted);transition:.3s;line-height:1.8}
+  .mcard:hover{border-color:rgba(217,185,106,.4);color:var(--text)}
+  .mcard b{color:var(--gold2);font-weight:400}
+
+  /* 通用信息卡 */
+  .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  .icard{border:1px solid var(--line);background:var(--panel);padding:26px 22px;transition:.35s}
+  .icard:hover{border-color:rgba(217,185,106,.5);transform:translateY(-3px)}
+  .icard span{font-size:10px;letter-spacing:.22em;color:var(--gold);opacity:.7}
+  .icard h4{font-size:16px;color:var(--gold2);margin:9px 0 12px;letter-spacing:1.5px}
+  .icard p{font-size:12px;color:var(--muted);line-height:1.95}
+  .icard ul{list-style:none;margin-top:8px;font-size:12px;color:var(--muted);line-height:1.9}
+  .icard li{border-bottom:1px dashed rgba(217,185,106,.1);padding:5px 0}
+  .icard li:last-child{border-bottom:none}
+  .icard li em{color:var(--gold);font-style:normal;margin-right:6px}
+
+  /* ============ 地图 ============ */
+  .mapsec{padding:100px 0;background:linear-gradient(180deg,transparent,rgba(217,185,106,.03),transparent)}
+  .mapframe{
+    border:1px solid var(--line);position:relative;background:var(--bg2);
+  }
+  .mapframe img{display:block;width:100%;height:auto}
+  .map-hero{border:1px solid var(--line);overflow:hidden;position:relative;margin-bottom:22px;background:#0b1016;
+    box-shadow:0 30px 70px rgba(0,0,0,.6),0 0 0 1px rgba(217,185,106,.12);
+    transition:transform .9s ease;transform-style:preserve-3d}
+  .map-hero:hover{transform:perspective(1600px) rotateX(2.5deg) scale(1.01)}
+  .map-hero img{display:block;width:100%;height:auto}
+  .map-hero::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 140px rgba(8,11,16,.45);pointer-events:none}
+  .map-hero .labels{position:absolute;inset:0;pointer-events:none}
+  .ml{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:5px;white-space:nowrap}
+  .ml i{width:7px;height:7px;border-radius:50%;background:#4a2f12;box-shadow:0 0 0 2px rgba(90,61,30,.22),0 1px 3px rgba(0,0,0,.45)}
+  .ml b{font-size:11.5px;color:#33200c;font-weight:600;letter-spacing:.5px;padding:1px 6px;background:rgba(247,238,215,.66);border-radius:2px}
+  .ml.small b{font-size:10px;opacity:.92;padding:1px 4px}
+  .ml.ruin i{background:none;border:1px dashed #4a2f12;box-shadow:none}
+  .mroute{position:absolute;transform:translate(-50%,-50%);font-size:9.5px;letter-spacing:2px;color:rgba(70,45,18,.58);white-space:nowrap;font-style:italic}
+  .mreg{position:absolute;transform:translate(-50%,-50%);font-size:15px;letter-spacing:5px;color:#3a2410;font-weight:700;white-space:nowrap;padding:3px 16px;background:rgba(247,238,215,.6);border-radius:2px}
+  .mreg.small{font-size:11px;letter-spacing:4px;color:#4a3018;background:rgba(247,238,215,.5)}
+  .mapnote{margin-top:14px;font-size:12px;color:var(--dim);letter-spacing:.12em;text-align:center}
+  .map-link{text-align:center;margin-top:14px}
+  .map-link a{font-size:13px;color:var(--gold);letter-spacing:1px;border-bottom:1px solid rgba(217,185,106,.4);padding-bottom:2px;transition:.25s}
+  .map-link a:hover{color:var(--gold2);border-color:var(--gold2)}
+
+  /* ============ 阵营 ============ */
+  .factions{padding:100px 0}
+  .fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .fcard{
+    position:relative;border:1px solid var(--line);overflow:hidden;
+    background:var(--panel);transition:.4s;
+  }
+  .fcard:hover{transform:translateY(-6px);border-color:rgba(217,185,106,.55)}
+  .fcard .top{display:flex;align-items:center;gap:14px;padding:22px 22px 0}
+  .fcard .emblem{width:44px;height:44px;flex:0 0 44px;opacity:.95}
+  .fcard .fname{font-size:19px;letter-spacing:2px;color:var(--gold2)}
+  .fcard .fsub{font-size:11px;letter-spacing:.22em;color:var(--dim);margin-top:4px}
+  .fcard .port{
+    margin:18px 22px 0;border:1px solid var(--line);overflow:hidden;
+    aspect-ratio:4/3;background:#0b1016;
+  }
+  .fcard .port img{width:100%;height:100%;object-fit:cover;object-position:top center;transition:.6s}
+  .fcard:hover .port img{transform:scale(1.06)}
+  .fcard .body{padding:18px 22px 24px}
+  .fcard .body p{font-size:13px;color:var(--muted);line-height:1.95}
+  .fcard .q{margin-top:12px;font-size:12.5px;color:var(--gold);opacity:.9;font-style:italic;line-height:1.8}
+
+  /* ============ 其他人物 ============ */
+  .pmore{padding:100px 0}
+  .pgroup{margin-bottom:54px}
+  .pgroup h3{
+    font-size:14px;letter-spacing:3px;color:var(--gold);margin-bottom:18px;
+    display:flex;align-items:center;gap:14px;font-weight:600;
+  }
+  .pgroup h3::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+  .pgrid-sm{display:grid;grid-template-columns:repeat(7,1fr);gap:12px}
+  .pcard-sm{border:1px solid var(--line);background:var(--panel);overflow:hidden;transition:.3s}
+  .pcard-sm:hover{transform:translateY(-3px);border-color:rgba(217,185,106,.5)}
+  .pcard-sm .ph{aspect-ratio:3/4;overflow:hidden;background:#0b1016}
+  .pcard-sm .ph img{width:100%;height:100%;object-fit:cover;object-position:top center;transition:.5s}
+  .pcard-sm:hover .ph img{transform:scale(1.05)}
+  .pcard-sm .pc{padding:10px 10px 12px}
+  .pcard-sm .pn{font-size:12px;color:var(--gold2);letter-spacing:.5px;line-height:1.4}
+  .pcard-sm .pd{font-size:10px;color:var(--muted);line-height:1.6;margin-top:5px}
+
+  /* ============ 六方图景 ============ */
+  .fsix{padding:100px 0}
+  .fsixgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  .fsixitem{position:relative;border:1px solid var(--line);overflow:hidden;background:#0b1016}
+  .fsixitem img{width:100%;display:block;aspect-ratio:16/9;object-fit:cover;transition:.7s}
+  .fsixitem:hover img{transform:scale(1.04)}
+  .fsixcap{
+    position:absolute;left:0;right:0;bottom:0;padding:46px 24px 16px;
+    background:linear-gradient(180deg,transparent,rgba(8,11,16,.94));
+    display:flex;justify-content:space-between;align-items:baseline;gap:14px;
+  }
+  .fsixcap b{font-size:17px;color:var(--gold2);letter-spacing:2px;font-weight:600}
+  .fsixcap span{font-size:11px;color:var(--muted);letter-spacing:.08em;text-align:right}
+
+  /* ============ 时间线 ============ */
+  .timeline{padding:110px 0}
+  .tl{position:relative;max-width:880px;margin:0 auto;padding-left:44px}
+  .tl::before{
+    content:"";position:absolute;left:9px;top:6px;bottom:6px;width:1px;
+    background:linear-gradient(180deg,transparent,var(--line) 8%,var(--line) 92%,transparent);
+  }
+  .tli{position:relative;padding:0 0 46px}
+  .tli::before{
+    content:"";position:absolute;left:-40px;top:9px;width:11px;height:11px;
+    border:1px solid var(--gold);background:var(--bg);transform:rotate(45deg);
+  }
+  .tli.hot::before{background:var(--gold);box-shadow:0 0 14px rgba(217,185,106,.6)}
+  .tli .t{font-size:12px;letter-spacing:.24em;color:var(--gold);margin-bottom:8px}
+  .tli h4{font-size:18px;letter-spacing:2px;color:var(--text);margin-bottom:8px}
+  .tli p{font-size:13.5px;color:var(--muted);line-height:2;max-width:700px}
+  .tl-pic{
+    margin-top:16px;border:1px solid var(--line);overflow:hidden;max-width:560px;
+  }
+  .tl-pic img{width:100%;object-fit:cover;aspect-ratio:16/9;transition:.6s}
+  .tl-pic:hover img{transform:scale(1.04)}
+
+  /* ============ 人物 ============ */
+  .people{padding:100px 0}
+  .pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  .pcard{
+    border:1px solid var(--line);background:var(--panel);
+    overflow:hidden;transition:.35s;position:relative;
+  }
+  .pcard:hover{transform:translateY(-5px);border-color:rgba(217,185,106,.5)}
+  .pcard .ph{aspect-ratio:3/4;overflow:hidden;background:#0b1016}
+  .pcard .ph img{width:100%;height:100%;object-fit:cover;object-position:top center;transition:.6s}
+  .pcard:hover .ph img{transform:scale(1.05)}
+  .pcard .pc{padding:16px 18px 18px}
+  .pcard .pn{font-size:16px;letter-spacing:1px;color:var(--gold2)}
+  .pcard .code{
+    display:inline-block;margin-top:6px;font-size:10px;letter-spacing:.2em;
+    color:var(--gold);border:1px solid rgba(217,185,106,.35);padding:2px 8px;
+  }
+  .pcard .pd{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.85}
+
+  /* ============ 大图段落 ============ */
+  .gallery{padding:90px 0}
+  .ggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .gitem{border:1px solid var(--line);overflow:hidden;position:relative}
+  .gitem img{width:100%;height:100%;object-fit:cover;aspect-ratio:16/10;transition:.7s}
+  .gitem:hover img{transform:scale(1.05)}
+  .gitem .cap{
+    position:absolute;left:0;right:0;bottom:0;padding:22px 18px 14px;
+    background:linear-gradient(180deg,transparent,rgba(8,11,16,.9));
+    font-size:12px;letter-spacing:.14em;color:var(--text);
+  }
+
+  /* ============ 页脚 ============ */
+  footer{
+    border-top:1px solid var(--line);padding:56px 0 70px;text-align:center;
+  }
+  footer .ft{font-size:13px;letter-spacing:.24em;color:var(--gold);margin-bottom:14px}
+  footer .fd{font-size:12px;color:var(--dim);line-height:2;letter-spacing:.1em}
+
+  /* ============ 响应式 ============ */
+  @media(max-width:980px){
+    .concept-hero{grid-template-columns:1fr;gap:32px}
+    .cards3{grid-template-columns:1fr}
+    .fgrid{grid-template-columns:repeat(2,1fr)}
+    .pgrid{grid-template-columns:repeat(2,1fr)}
+    .pgrid-sm{grid-template-columns:repeat(4,1fr)}
+    .ggrid{grid-template-columns:1fr}
+  }
+  @media(max-width:620px){
+    .wrap{padding:0 20px}
+    .fgrid,.pgrid{grid-template-columns:1fr}
+    .stats{grid-template-columns:1fr}
+    .intro{padding:80px 0 60px}
+    .tl{padding-left:34px}
+    .tli::before{left:-30px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= 封面 ================= -->
+<header class="hero">
+  <div class="hero-img"></div>
+  <div class="hero-inner">
+    <div class="hero-title">戈克世界</div>
+    <div class="hero-line"></div>
+    <div class="hero-sub">六 方 鼎 立 · 一 千 年 的 事 故 之 后</div>
+    <div class="hero-quote">
+      没有电视、广播、互联网的世界里——<br>
+      谁垄断信息传播，谁就垄断解释权。
+    </div>
+  </div>
+  <div class="scroll-hint">向 下 滚 动</div>
+</header>
+
+<!-- ================= 序 ================= -->
+<section class="intro">
+  <div class="wrap">
+    <p>
+      公元 2034 年，一场伽马射线暴抹掉了旧世界。<br>
+      人类退到南极，退到冰原，退到最后一炉不灭的暖灯下面。<br>
+      然后，<span class="em">戈克</span>从冰里涌出来。<br><br>
+      所有人都在使用它，没有人理解它。<br>
+      直到一个普通人，抬头问了第一句"为什么"。
+    </p>
+    <div class="stats">
+      <div class="stat"><b>2034</b><span>旧 世 界 的 终 点</span></div>
+      <div class="stat"><b>1000 年</b><span>沉 寂 与 城 邦 时 代</span></div>
+      <div class="stat"><b>6 方</b><span>当 代 格 局</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= 世界底层 ================= -->
+<section class="concepts">
+  <div class="wrap">
+    <div class="kicker">THE LAYERS OF THE WORLD</div>
+    <h2 class="sec">世界底层</h2>
+    <div class="sec-sub">一切误解，都从"它到底是什么"开始。</div>
+
+    <div class="concept-hero">
+      <div class="pic"><img src="assets/concept_gork_core.webp" alt="戈克芯体"></div>
+      <div>
+        <h3>戈克：不是能源，是规则投影</h3>
+        <p>
+          它总量无限、持续生成；但受「流脉」约束，所以任何特定时空能开采的量，永远有限。
+          各国为"储量"打仗，为"开采效率"立法——却没人问过，它为什么总能"回应"。
+        </p>
+        <div class="big">
+          无限的是规则本身，<br>
+          有限的是流脉流经处那一刻的富集。
+        </div>
+      </div>
+    </div>
+
+    <div class="cards3">
+      <div class="ccard">
+        <div class="num">01 / GORK</div>
+        <h4>戈克</h4>
+        <p>高阶文明投放的环境稳定器。它稳定的是这个世界本身，不是任何人的锅炉。</p>
+        <div class="q">"它不是坏了。它像是在……回应什么。"</div>
+      </div>
+      <div class="ccard">
+        <div class="num">02 / MAGIC</div>
+        <h4>魔法</h4>
+        <p>未被命名的规则接口——非最优、非安全、非完整。咒语只是低效的调用方式。</p>
+        <div class="q">"魔法是神的力量"——人类这么以为了一千年。</div>
+      </div>
+      <div class="ccard">
+        <div class="num">03 / VEIN</div>
+        <h4>流脉</h4>
+        <p>双方共享的风险轨。你推高它换来节奏，它到 4 / 7 / 10 时，世界替你们结算。</p>
+        <div class="q">"今晚流脉改道，北港的灯又暗了三分。"</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= 规则 ================= -->
+<section class="rules">
+  <div class="wrap">
+    <div class="kicker">THE RULES</div>
+    <h2 class="sec">世界的规则</h2>
+    <div class="sec-sub">没人解释过这些规则——但每个人都在用。</div>
+    <div class="rgrid">
+      <div class="rcard">
+        <div class="rt">01 / WHITE MAGIC</div>
+        <h4>白魔法：四类</h4>
+        <p>元素系（火冰风雷光暗）、治疗系（治愈与生命维持）、战斗／武技系（控制与防御）、环境控制系（高阶战场改造）。学院把它们分门别类，却没人问过它们为什么能被分类。</p>
+        <div class="q">"治疗精进到尽头，就会碰到「因果」。"</div>
+      </div>
+      <div class="rcard">
+        <div class="rt">02 / BLACK MAGIC</div>
+        <h4>黑魔法：有反噬</h4>
+        <p>诅咒、禁忌、召唤死者战斗。学院对它心照不宣地禁止——没有明文校规，只有默契。血族的血液魔法就是黑魔法的一种：可以无声息杀人，代价落在用的人身上。</p>
+        <div class="q">"学院不写它，因为写下来就等于承认它存在。"</div>
+      </div>
+      <div class="rcard">
+        <div class="rt">03 / TIME</div>
+        <h4>时间系：最深的禁区</h4>
+        <p>不是"学"出来的，是血脉层面的权限。倒转因果要付的代价，是自己的生命与因果。触碰它的人会听见一个「声音」——平静、无情绪、近乎程序化。它不解释自己是什么。</p>
+        <div class="q">"代价已记账。是否继续？"</div>
+      </div>
+      <div class="rcard">
+        <div class="rt">04 / EXPLANATION</div>
+        <h4>解释权：真正的权力</h4>
+        <p>没有电视、广播、互联网——纸质公告、口耳相传、吟游诗人。帝国买通吟游诗人把事故唱成天灾，共和国删掉一行记录，学院封存卷宗。谁垄断了信息的传播，谁就垄断了世界的解释权。</p>
+        <div class="q">"记录不是为了真相，是为了让明年还能运转。"</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= 地图 ================= -->
+<section class="mapsec">
+  <div class="wrap">
+    <div class="kicker">THE KNOWN WORLD</div>
+    <h2 class="sec">已知世界</h2>
+    <div class="sec-sub">西：汉瑟尔帝国 · 中：中央海域与小国 · 东：格洛克联邦共和国 · 南：灰港与群岛 · 底：南极冰原</div>
+    <div class="map-hero">
+      <img src="assets/worldmap_ai.webp" alt="戈克世界全貌">
+      <div class="labels">
+        <!-- 西方：帝国（西大陆） -->
+        <div class="mreg" style="left:20%;top:14%">汉 瑟 尔 帝 国</div>
+        <div class="ml" style="left:15%;top:32%"><i></i><b>铁序城</b></div>
+        <div class="ml" style="left:9%;top:10%"><i></i><b>黑脊脉</b></div>
+        <div class="ml small" style="left:26%;top:36%"><i></i><b>铁砧镇</b></div>
+        <div class="ml small" style="left:7%;top:5%"><i></i><b>北境诸部</b></div>
+        <!-- 中央：海域与小国 -->
+        <div class="mreg small" style="left:42%;top:16%">中 央 海 域</div>
+        <div class="ml small" style="left:40%;top:46%"><i></i><b>雾港城</b></div>
+        <div class="ml small" style="left:50%;top:28%"><i></i><b>白礁</b></div>
+        <div class="ml" style="left:46%;top:56%"><i></i><b>普卫岛</b></div>
+        <div class="ml small" style="left:46%;top:50%"><i></i><b>浮空学院</b></div>
+        <!-- 东方：共和国（东大陆） -->
+        <div class="mreg" style="left:76%;top:14%">格 洛 克 联 邦 共 和 国</div>
+        <div class="ml" style="left:76%;top:40%"><i></i><b>格洛克</b></div>
+        <div class="ml small" style="left:66%;top:25%"><i></i><b>雪镇</b></div>
+        <div class="ml small" style="left:88%;top:30%"><i></i><b>罗森边境</b></div>
+        <div class="ml small" style="left:60%;top:40%"><i></i><b>柳原城</b></div>
+        <!-- 南方 -->
+        <div class="mreg small" style="left:42%;top:68%">南 方 航 路</div>
+        <div class="ml" style="left:78%;top:59%"><i></i><b>灰港</b></div>
+        <div class="ml small" style="left:70%;top:65%"><i></i><b>悬赏榜广场</b></div>
+        <div class="ml small" style="left:85%;top:66%"><i></i><b>断线团营地</b></div>
+        <div class="ml" style="left:18%;top:62%"><i></i><b>西昭</b></div>
+        <div class="ml" style="left:56%;top:72%"><i></i><b>洛斯汰</b></div>
+        <div class="ml small" style="left:28%;top:58%"><i></i><b>鹿铃亭</b></div>
+        <div class="ml small" style="left:36%;top:66%"><i></i><b>怀川</b></div>
+        <!-- 南极 -->
+        <div class="mreg" style="left:50%;top:90%">南 极 冰 原</div>
+        <div class="ml" style="left:35%;top:88%"><i></i><b>雪都旧址</b></div>
+        <div class="ml" style="left:56%;top:92%"><i></i><b>西昭古堡旧址</b></div>
+        <div class="ml ruin" style="left:20%;top:88%"><i></i><b>遗民聚落</b></div>
+        <!-- 航路 -->
+        <div class="mroute" style="left:62%;top:58%">暗 航 路</div>
+        <div class="mroute" style="left:44%;top:36%">帝 国 压 力 线</div>
+        <div class="mroute" style="left:52%;top:44%">无 主 之 地</div>
+      </div>
+    </div>
+    <div class="mapnote">世界全貌 · 西：帝国 · 中：中央海域与小国 · 东：共和国 · 南：灰港与群岛 · 底：南极冰原</div>
+    <div class="map-link"><a href="戈克世界_专题地图.html">查看专题地图（地形 / 势力 / 航路 / 城市 / 历史 / 生物群系）→</a></div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= 阵营 ================= -->
+<section class="factions">
+  <div class="wrap">
+    <div class="kicker">SIX POWERS</div>
+    <h2 class="sec">六方鼎立</h2>
+    <div class="sec-sub">五个有账的人，和一个被记账的人。</div>
+
+    <div class="fgrid">
+      <div class="fcard">
+        <div class="top"><img class="emblem" src="assets/empire.svg" alt=""><div><div class="fname">汉瑟尔帝国</div><div class="fsub">北 方 · 军 工 · 缺 粮</div></div></div>
+        <div class="port"><img src="assets/p_otto.webp" alt="奥托"></div>
+        <div class="body"><p>北方寒带种不出粮，矿脉却密得过剩。"扩张"对帝国不是野心，是会计问题。</p>
+          <div class="q">"我不需要你忠诚。我只需要你的产出。"</div></div>
+      </div>
+      <div class="fcard">
+        <div class="top"><img class="emblem" src="assets/republic.svg" alt=""><div><div class="fname">格洛克联邦共和国</div><div class="fsub">中 部 · 贵 族 议 会 · 体 面</div></div></div>
+        <div class="port"><img src="assets/p_wolfram.webp" alt="沃尔夫拉姆"></div>
+        <div class="body"><p>七城邦打出来的联邦。"魔法解放"的果实，最后主要落在贵族手里。</p>
+          <div class="q">"秩序不是让所有人满意，是让所有人还能坐下。"</div></div>
+      </div>
+      <div class="fcard">
+        <div class="top"><img class="emblem" src="assets/greyharbor.svg" alt=""><div><div class="fname">灰港同盟</div><div class="fsub">南 方 · 交 易 立 国 · 账</div></div></div>
+        <div class="port"><img src="assets/p_monarch.webp" alt="莫纳克"></div>
+        <div class="body"><p>一个"以交易立国"的国家。国界不承认，账界承认——其他国家是"国家做生意"，它是"生意变成国家"。</p>
+          <div class="q">"守法公民，欠债必还。"</div></div>
+      </div>
+      <div class="fcard">
+        <div class="top"><img class="emblem" src="assets/pus.svg" alt=""><div><div class="fname">普卫岛 / 凯斯特</div><div class="fsub">中 立 · 六 部 门 · 裁 判</div></div></div>
+        <div class="port"><img src="assets/p_lain.webp" alt="莱恩"></div>
+        <div class="body"><p>浮空的中立学院。它不生产、不结盟，靠"没人敢打破它"活着。</p>
+          <div class="q">"我们这一代的任务不是让世界变好，而是让世界不要更坏。"</div></div>
+      </div>
+      <div class="fcard">
+        <div class="top"><img class="emblem" src="assets/xizhao.svg" alt=""><div><div class="fname">西昭</div><div class="fsub">南 方 · 血 族 × 部 落 · 钥 匙</div></div></div>
+        <div class="port"><img src="assets/p_karna.webp" alt="卡尔纳"></div>
+        <div class="body"><p>古堡没落了，势力和"钥匙"还在。血族、兽人、魔物三股力量各行其是。</p>
+          <div class="q">"我不是在威胁你。我只是在告诉你，账本上还差多少。"</div></div>
+      </div>
+      <div class="fcard">
+        <div class="top"><img class="emblem" src="assets/academy.svg" alt=""><div><div class="fname">洛斯汰</div><div class="fsub">边 缘 · 魔 物 · 镜 子</div></div></div>
+        <div class="port"><img src="assets/p_orlicas.webp" alt="欧莉卡斯"></div>
+        <div class="body"><p>文明边缘的魔物族群。极少数个体在异常戈克下"觉醒"——它是所有方的镜子。</p>
+          <div class="q">"数据不会说谎，也不会讲道理。"</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= 六方图景 ================= -->
+<section class="fsix">
+  <div class="wrap">
+    <div class="kicker">SIX POWERS IN ART</div>
+    <h2 class="sec">六方 · 图景</h2>
+    <div class="sec-sub">把每个阵营的第一眼，画下来。</div>
+    <div class="fsixgrid">
+      <div class="fsixitem"><img src="assets/faction_empire.webp" alt="汉瑟尔帝国">
+        <div class="fsixcap"><b>汉瑟尔帝国</b><span>铁序城 · 必须平账的机器</span></div></div>
+      <div class="fsixitem"><img src="assets/faction_republic.webp" alt="格洛克联邦共和国">
+        <div class="fsixcap"><b>格洛克联邦共和国</b><span>贵族议会 · 体面的联邦</span></div></div>
+      <div class="fsixitem"><img src="assets/faction_greyharbor.webp" alt="灰港同盟">
+        <div class="fsixcap"><b>灰港同盟</b><span>灯柱上的价格 · 账要平</span></div></div>
+      <div class="fsixitem"><img src="assets/faction_kset.webp" alt="普卫岛 / 凯斯特">
+        <div class="fsixcap"><b>普卫岛 / 凯斯特</b><span>浮空的中立 · 唯一的裁判</span></div></div>
+      <div class="fsixitem"><img src="assets/faction_xizhao.webp" alt="西昭">
+        <div class="fsixcap"><b>西昭</b><span>没落的古堡 · 未找回的钥匙</span></div></div>
+      <div class="fsixitem"><img src="assets/faction_losutai.webp" alt="洛斯汰">
+        <div class="fsixcap"><b>洛斯汰</b><span>边缘的聚落 · 所有方的镜子</span></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= 时间线 ================= -->
+<section class="timeline">
+  <div class="wrap">
+    <div class="kicker">CHRONICLE</div>
+    <h2 class="sec">一千年</h2>
+    <div class="sec-sub">从南极的冰墙，到浮空的学院。</div>
+
+    <div class="tl">
+      <div class="tli hot">
+        <div class="t">旧历 2034</div>
+        <h4>伽马射线暴</h4>
+        <p>旧地球的物理与因果环境被摧毁。幸存者退到南极，退到最后一炉暖灯下。</p>
+      </div>
+      <div class="tli">
+        <div class="t">南极时代</div>
+        <h4>雪都 vs 西昭古堡</h4>
+        <p>兽人的雪都、吸血鬼的古堡，隔着冰海争夺戈克。城墙是冰晶的，敌人是千年的。</p>
+        <div class="tl-pic"><img src="assets/snow_capital.webp" alt="雪都全景"></div>
+      </div>
+      <div class="tli hot">
+        <div class="t">雪都之战</div>
+        <h4>雪都陷落，领袖入舱</h4>
+        <p>雪都几乎所有人都死了。深雪重伤，躺进"只有领袖血脉才能开启"的神社——她以为睡一觉就能醒来。</p>
+        <div class="tl-pic"><img src="assets/snow_war.webp" alt="雪都之战"></div>
+      </div>
+      <div class="tli">
+        <div class="t">人类历 3123</div>
+        <h4>戈克历元年 · 古西昭时期</h4>
+        <p>人类向北扩散。千禧年里没有帝国，只有几十个城邦、部落、商团互相吞并——这是后来"很多小国"的由来。</p>
+      </div>
+      <div class="tli">
+        <div class="t">戈克历 761</div>
+        <h4>汉瑟尔帝国建立</h4>
+        <p>北方铁匠家族靠"铁序"和账本崛起，在旧矿坑上建起铁序城。从第一代皇帝起，帝国就是一台必须平账的机器。</p>
+        <div class="tl-pic"><img src="assets/hist_empire_birth.webp" alt="铁序城"></div>
+      </div>
+      <div class="tli hot">
+        <div class="t">帝国历 271 – 296</div>
+        <h4>共和国独立战争</h4>
+        <p>帝国"征调三百个孩子"，七城邦结成绿环同盟。二十五年后，《雾港和约》签下——格洛克联邦共和国诞生。</p>
+        <div class="tl-pic"><img src="assets/hist_independence.webp" alt="独立战争"></div>
+      </div>
+      <div class="tli">
+        <div class="t">帝国历 290</div>
+        <h4>灰港建国</h4>
+        <p>战争需要军械、情报、替身。灰港三样都有。五个行当在悬赏榜广场签下《账本宪法》——一个由交易组成的国家，就此立国。</p>
+        <div class="tl-pic"><img src="assets/hist_greyharbor_founding.webp" alt="灰港建国"></div>
+      </div>
+      <div class="tli">
+        <div class="t">共和国之后</div>
+        <h4>凯斯特浮空 · 深雪苏醒</h4>
+        <p>旧学院继承中立的理念，浮上云端。同一时代，南极冰原上那座神社里，绿色凝胶舱裂开了。</p>
+        <div class="tl-pic"><img src="assets/awake.webp" alt="苏醒"></div>
+      </div>
+      <div class="tli hot">
+        <div class="t">当代</div>
+        <h4>六方鼎立</h4>
+        <p>帝国、共和国、灰港、普卫岛、西昭、洛斯汰。故事从一个还没上任的高级协调者走进白烟开始。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= 人物 ================= -->
+<section class="people">
+  <div class="wrap">
+    <div class="kicker">THE PEOPLE</div>
+    <h2 class="sec">关键人物</h2>
+    <div class="sec-sub">他们都在这句话里活着：先问名字。</div>
+
+    <div class="pgrid">
+      <div class="pcard">
+        <div class="ph"><img src="assets/p_lain.webp" alt="莱恩"></div>
+        <div class="pc"><div class="pn">莱恩·科斯特</div><span class="code">序</span>
+          <div class="pd">第一个识破"魔法与戈克同源"的人。他不是强者，只是第一个抬头问"为什么"的人。</div></div>
+      </div>
+      <div class="pcard">
+        <div class="ph"><img src="assets/p_shextena.webp" alt="希斯蒂娜"></div>
+        <div class="pc"><div class="pn">希斯蒂娜</div><span class="code">镜</span>
+          <div class="pd">医疗部负责人。徒步七年走进凯斯特。黑签是标准，不是心情。</div></div>
+      </div>
+      <div class="pcard">
+        <div class="ph"><img src="assets/p_miyuki.webp" alt="深雪"></div>
+        <div class="pc"><div class="pn">一之濑深雪</div><span class="code">昭</span>
+          <div class="pd">雪都初代领袖，睡过整个时代的狐族。醒来时，故乡已经成了传说。</div></div>
+      </div>
+      <div class="pcard">
+        <div class="ph"><img src="assets/p_monarch.webp" alt="莫纳克"></div>
+        <div class="pc"><div class="pn">莫纳克</div><span class="code">引荐人</span>
+          <div class="pd">灰港的门。一个叫"君主"的人，在一座没有王的港口，做名单最上面那行。</div></div>
+      </div>
+      <div class="pcard">
+        <div class="ph"><img src="assets/p_timon.webp" alt="提蒙"></div>
+        <div class="pc"><div class="pn">提蒙·克若诺</div><span class="code">瞬</span>
+          <div class="pd">协调部负责人。"正确不能救人。只有提前，可以。"</div></div>
+      </div>
+      <div class="pcard">
+        <div class="ph"><img src="assets/p_aidric.webp" alt="艾德里克"></div>
+        <div class="pc"><div class="pn">艾德里克</div><span class="code">衡</span>
+          <div class="pd">保卫部负责人，灰誓骑士团末裔。"它的意思是——现在。"</div></div>
+      </div>
+      <div class="pcard">
+        <div class="ph"><img src="assets/p_orlicas.webp" alt="欧莉卡斯"></div>
+        <div class="pc"><div class="pn">欧莉卡斯</div><span class="code">慧</span>
+          <div class="pd">科研部负责人，洛斯汰第一个走出去的觉醒者。只信数据。</div></div>
+      </div>
+      <div class="pcard">
+        <div class="ph"><img src="assets/p_verious.webp" alt="维里欧斯"></div>
+        <div class="pc"><div class="pn">维里欧斯</div><span class="code">锲</span>
+          <div class="pd">学院部负责人。潜伏千年的血族，在雪都之战里"没有出手"的那个人。</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= 其他人物 ================= -->
+<section class="pmore">
+  <div class="wrap">
+    <div class="kicker">THE FULL CAST</div>
+    <h2 class="sec">其他重要人物</h2>
+    <div class="sec-sub">36 位角色，每一位都有自己的账。</div>
+
+    <div class="pgroup">
+      <h3>汉 瑟 尔 帝 国</h3>
+      <div class="pgrid-sm">
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_gunther.webp" alt="京特"></div><div class="pc"><div class="pn">京特·冯·艾森瓦尔德</div><div class="pd">"陛下算的是账，我算的是时间。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_klaus.webp" alt="克劳斯"></div><div class="pc"><div class="pn">克劳斯·莱茵哈特</div><div class="pd">"我不是来谈判的。我是来记录的。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_mia.webp" alt="米娅"></div><div class="pc"><div class="pn">米娅·科尔贝</div><div class="pd">"我把他们变成可复现的数据。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_elsa.webp" alt="艾尔莎"></div><div class="pc"><div class="pn">艾尔莎·汉瑟尔</div><div class="pd">"账要平，但不必年年平。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_karl_schwarz.webp" alt="施瓦茨"></div><div class="pc"><div class="pn">卡尔·冯·施瓦茨</div><div class="pd">"陛下算粮食，我算炉子。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_walter.webp" alt="克鲁格"></div><div class="pc"><div class="pn">瓦尔特·克鲁格</div><div class="pd">"魔法不需要被理解，需要被登记。"</div></div></div>
+      </div>
+    </div>
+
+    <div class="pgroup">
+      <h3>格 洛 克 联 邦 共 和 国</h3>
+      <div class="pgrid-sm">
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_konrad.webp" alt="康拉德"></div><div class="pc"><div class="pn">康拉德·威廉莱斯</div><div class="pd">"总要有人不合适。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_erhardt.webp" alt="埃尔哈特"></div><div class="pc"><div class="pn">埃尔哈特·冯·罗森</div><div class="pd">"我怪我自己。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_beatrix.webp" alt="贝娅特丽克丝"></div><div class="pc"><div class="pn">贝娅特丽克丝</div><div class="pd">"体面，是我买得起的东西。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_elena.webp" alt="伊莲娜"></div><div class="pc"><div class="pn">伊莲娜·索菲</div><div class="pd">"神迹，也许有别的解释。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_hans.webp" alt="汉斯"></div><div class="pc"><div class="pn">汉斯·冯·霍尔姆</div><div class="pd">"明年，还有这条线。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_cedric.webp" alt="塞德里克"></div><div class="pc"><div class="pn">塞德里克·威廉莱斯</div><div class="pd">"我们错了。"</div></div></div>
+      </div>
+    </div>
+
+    <div class="pgroup">
+      <h3>西 昭</h3>
+      <div class="pgrid-sm">
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_karna.webp" alt="卡尔纳"></div><div class="pc"><div class="pn">卡尔纳「血爵」</div><div class="pd">"账本上还差多少。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_tiega.webp" alt="铁牙"></div><div class="pc"><div class="pn">铁牙·阿古</div><div class="pd">"力量就该正面用。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_lanxi.webp" alt="澜汐"></div><div class="pc"><div class="pn">澜汐「潮主」</div><div class="pd">"至少我的族人还活着。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_lize.webp" alt="莉泽"></div><div class="pc"><div class="pn">莉泽</div><div class="pd">"我们在这里，替你过着日子。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_grayfeather.webp" alt="灰羽"></div><div class="pc"><div class="pn">灰羽·乌恩</div><div class="pd">"火是拿来听的。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_lanzhou.webp" alt="澜舟"></div><div class="pc"><div class="pn">澜舟</div><div class="pd">"姐姐，别去了。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_molan.webp" alt="墨兰"></div><div class="pc"><div class="pn">墨兰</div><div class="pd">"您别当真——也别不当真。"</div></div></div>
+      </div>
+    </div>
+
+    <div class="pgroup">
+      <h3>凯 斯 特 学 院</h3>
+      <div class="pgrid-sm">
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_marta.webp" alt="玛尔塔"></div><div class="pc"><div class="pn">玛尔塔·冯·艾森</div><div class="pd">"你要赔上多少人的余生？"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_karl_desmond.webp" alt="卡尔"></div><div class="pc"><div class="pn">卡尔·德斯蒙德</div><div class="pd">"反战，但不怕战。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_justus.webp" alt="尤斯图斯"></div><div class="pc"><div class="pn">尤斯图斯·维尔纳</div><div class="pd">"我见过一次无法解释的事。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_cassian.webp" alt="卡西安"></div><div class="pc"><div class="pn">卡西安·维尔</div><div class="pd">"技术要自主，对外要强硬。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_samuel.webp" alt="奎因"></div><div class="pc"><div class="pn">塞缪尔·奎因</div><div class="pd">"记录不是为真相，是为明年。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_nina.webp" alt="妮娜"></div><div class="pc"><div class="pn">妮娜·索雷尔</div><div class="pd">"我们等您回来。"</div></div></div>
+        <div class="pcard-sm"><div class="ph"><img src="assets/p_doorman.webp" alt="老门房"></div><div class="pc"><div class="pn">老门房</div><div class="pd">"三十年来，每一个人。"</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= 灰港五人 ================= -->
+<section class="ghsec">
+  <div class="wrap">
+    <div class="kicker">THE GREY HARBOR FIVE</div>
+    <h2 class="sec">灰港五人行</h2>
+    <div class="sec-sub">一个国家，五本账。账要平。</div>
+    <div class="ghgrid">
+      <div class="ghcard">
+        <div class="gph"><img src="assets/gh_seran.webp" alt="瑟兰"></div>
+        <div class="gbody">
+          <div class="gname">「账房」瑟兰</div>
+          <div class="grow">悬 赏 行</div>
+          <p>原帝国审计院的账房，因记了一笔不该记的账逃到灰港。不拿刀，只拿笔——灰港每一根灯柱上的告示，都是她钉的。</p>
+          <div class="q">"她不写你什么时候死。她只写，你值多少。"</div>
+        </div>
+      </div>
+      <div class="ghcard">
+        <div class="gph"><img src="assets/gh_vera.webp" alt="薇拉"></div>
+        <div class="gbody">
+          <div class="gname">「替身」薇拉</div>
+          <div class="grow">契 约 行</div>
+          <p>被通缉的狐族伪造师。能让任何人变成另一个人，也能让另一个人变成你。她欠莫纳克一个人情——所以替他先死一次。</p>
+          <div class="q">"合同背面写着：替死一次，价另算。"</div>
+        </div>
+      </div>
+      <div class="ghcard">
+        <div class="gph"><img src="assets/gh_xiu.webp" alt="修"></div>
+        <div class="gbody">
+          <div class="gname">「哑巴」修</div>
+          <div class="grow">封 口 行</div>
+          <p>灰港的"删除键"。他从不杀人，只让死人安静——让一件不该发生的事，从所有人的记忆和记录里消失。</p>
+          <div class="q">"整条街突然安静下来，说明生意谈成了。"</div>
+        </div>
+      </div>
+      <div class="ghcard">
+        <div class="gph"><img src="assets/gh_kulv.webp" alt="苦绿"></div>
+        <div class="gbody">
+          <div class="gname">「苦绿」</div>
+          <div class="grow">毒 行</div>
+          <p>把毒当调味料的炼毒师。他卖的毒分两种：见血的，和不见血的。买第二种的人，通常付不了第二笔钱。</p>
+          <div class="q">"毒要抹在刀刃不反光的那一面。"</div>
+        </div>
+      </div>
+      <div class="ghcard">
+        <div class="gph"><img src="assets/gh_karan.webp" alt="卡兰"></div>
+        <div class="gbody">
+          <div class="gname">「断线」卡兰</div>
+          <div class="grow">护 幕 行</div>
+          <p>灰港最大佣兵团"断线团"的团长。他自己不上阵，只负责接单和交账——莫纳克到灰港的第一单，就是他给的。</p>
+          <div class="q">"名单越长，活越少，钱越多。"</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= 法 ================= -->
+<section class="lawsec">
+  <div class="wrap">
+    <div class="kicker">THE LAW</div>
+    <h2 class="sec">五部法典，五个漏洞</h2>
+    <div class="sec-sub">谁"解释"，谁"说了算"。</div>
+    <div class="lawgrid">
+      <div class="lawcard">
+        <span>帝国</span><h4>铁序法典</h4>
+        <p>每件事都要"入账"。入账的，才算"发生"。</p>
+        <em>漏洞：账是谁写的——账房</em>
+      </div>
+      <div class="lawcard">
+        <span>共和国</span><h4>绿环宪章</h4>
+        <p>魔法是神赐的自由，不得登记、不得征税。</p>
+        <em>漏洞："贵族先征"，可以买替身</em>
+      </div>
+      <div class="lawcard">
+        <span>凯斯特</span><h4>学院规程</h4>
+        <p>记录一切。红区一句话：我说撤，就撤。</p>
+        <em>漏洞："私换"没有界定</em>
+      </div>
+      <div class="lawcard">
+        <span>灰港</span><h4>账本宪法</h4>
+        <p>国界不承认，账界承认。契约即法律。</p>
+        <em>漏洞："消失"没有界定</em>
+      </div>
+      <div class="lawcard">
+        <span>西昭</span><h4>部落公约</h4>
+        <p>不杀降、不抢粮、不断根。</p>
+        <em>漏洞：解释权在萨满</em>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= 谣 ================= -->
+<section class="poemsec">
+  <div class="wrap">
+    <div class="kicker">THE SONGS</div>
+    <h2 class="sec">四首歌</h2>
+    <div class="sec-sub">流脉改道，北港的灯又暗了三分。</div>
+    <div class="poemgrid">
+      <div class="poem">
+        <span>《流脉之歌》· 全境流传</span>
+        <p>流脉改道，北港的灯又暗了三分。<br>铁匠的炉子凉了，孩子的碗也凉了。<br>别问灯为什么灭——<br>问一问，谁在挖。</p>
+      </div>
+      <div class="poem">
+        <span>《雪都谣》· 帝国禁唱</span>
+        <p>雪落尽了，雪都就醒了。<br>狐狸的耳朵里，有一个声音。<br>别听，别听——<br>听了，就回不去了。</p>
+      </div>
+      <div class="poem">
+        <span>《灰港账调》· 灰港的国歌</span>
+        <p>灯柱上钉着的，都是价钱。<br>刀快的人怕账房，账房怕账平。<br>账平了，天就亮了——<br>或者，人就没了。</p>
+      </div>
+      <div class="poem">
+        <span>《数到一百》· 雪都童谣</span>
+        <p>一、二、三，雪落在屋檐。<br>十、二十、三十，炉火别熄。<br>……<br>九十九、一百——妈妈，我数完了。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= 谜 ================= -->
+<section class="mysterysec">
+  <div class="wrap">
+    <div class="kicker">THE MYSTERIES</div>
+    <h2 class="sec">十五个谜</h2>
+    <div class="sec-sub">答案都在世界里，只是没人找得到。</div>
+    <div class="mgrid">
+      <div class="mcard"><b>戈克</b> 为什么"会回应"？</div>
+      <div class="mcard"><b>雪都血脉</b> 为什么能开时间系？</div>
+      <div class="mcard"><b>灰港账本</b> 第一页写着什么？</div>
+      <div class="mcard"><b>莫纳克</b> 为什么不称王？</div>
+      <div class="mcard"><b>维里欧斯</b> 的资历，为什么没人查？</div>
+      <div class="mcard"><b>老门房</b> 为什么记得每个人？</div>
+      <div class="mcard"><b>克鲁格</b> 身上的印记，是什么？</div>
+      <div class="mcard"><b>旧地球</b> 到底发生了什么？</div>
+      <div class="mcard"><b>地球</b> 是"活"的吗？</div>
+      <div class="mcard"><b>深雪</b> 和希斯蒂娜，谁先发现对方？</div>
+      <div class="mcard"><b>时间系</b> 的代价，到底是什么？</div>
+      <div class="mcard"><b>雪都之战</b>，深雪是怎么"进舱"的？</div>
+      <div class="mcard"><b>灰港的"债"</b>，是谁欠的？</div>
+      <div class="mcard"><b>高阶文明</b>，存在吗？</div>
+      <div class="mcard"><b>戈克</b> 真的"无限"吗？</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= 谱 ================= -->
+<section class="sec-pad">
+  <div class="wrap">
+    <div class="kicker">THE LINEAGE</div>
+    <h2 class="sec">历代谱系</h2>
+    <div class="sec-sub">每个阵营，都有"前任"。</div>
+    <div class="grid5">
+      <div class="icard">
+        <span>帝国</span><h4>皇位按"账"继承</h4>
+        <ul>
+          <li><em>开国</em>康拉德·汉瑟尔</li>
+          <li><em>中期</em>海因里希二世</li>
+          <li><em>当代</em>奥托·汉瑟尔</li>
+        </ul>
+      </div>
+      <div class="icard">
+        <span>共和国</span><h4>七城邦 → 四大家系</h4>
+        <ul>
+          <li><em>施泰因</em>议长家系</li>
+          <li><em>威廉莱斯</em>治疗家系</li>
+          <li><em>罗森</em>边境家系</li>
+          <li><em>艾森胡特</em>贸易家系</li>
+          <li><em>空置</em>三家（站错队被废）</li>
+        </ul>
+      </div>
+      <div class="icard">
+        <span>凯斯特</span><h4>六部门的前任</h4>
+        <ul>
+          <li><em>协调部</em>陆铭 → 提蒙</li>
+          <li><em>保卫部</em>老部长 → 艾德里克</li>
+          <li><em>科研部</em>伊莱亚斯 → 欧莉卡斯</li>
+          <li><em>医疗部</em>约翰·布兰 → 希斯蒂娜</li>
+        </ul>
+      </div>
+      <div class="icard">
+        <span>西昭</span><h4>打出来 / 听出来</h4>
+        <ul>
+          <li><em>战帅</em>铁骨的阿古 → 铁牙</li>
+          <li><em>萨满</em>听风的乌恩 → 灰羽</li>
+          <li><em>血爵</em>父辈 → 卡尔纳</li>
+        </ul>
+      </div>
+      <div class="icard">
+        <span>灰港</span><h4>"顶"出来的</h4>
+        <ul>
+          <li><em>账房</em>第一代无名 → 瑟兰</li>
+          <li><em>契约行</em>薇拉</li>
+          <li><em>封口行</em>修</li>
+          <li><em>毒行</em>苦绿</li>
+          <li><em>护幕行</em>卡兰</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= 战 ================= -->
+<section class="sec-pad">
+  <div class="wrap">
+    <div class="kicker">THE BATTLES</div>
+    <h2 class="sec">三场战役</h2>
+    <div class="sec-sub">每一场，都有"转折点"和"代价"。</div>
+    <div class="grid3">
+      <div class="icard">
+        <span>南极时代</span><h4>雪都之战</h4>
+        <p>古堡五万南下 → 玄冥要塞守三月 → 血族炸塌血池 → 领袖陨落 → 裂冰死守七天 → 深雪进舱。</p>
+        <ul>
+          <li><em>转折</em>血池被炸，戈克断供</li>
+          <li><em>代价</em>雪都陷落，血脉只剩末裔</li>
+          <li><em>结局</em>没有赢家，只有幸存者</li>
+        </ul>
+      </div>
+      <div class="icard">
+        <span>帝国历 271–296</span><h4>独立战争</h4>
+        <p>雾港城保卫战 → 绿环结盟 → 格洛克围城两年 → 柳原镰刀战 → 帝国粮崩。</p>
+        <ul>
+          <li><em>转折</em>"粮"——共和国的粮在家门口</li>
+          <li><em>代价</em>二十五年，七城邦成四家系</li>
+          <li><em>结局</em>《雾港和约》，共和国立国</li>
+        </ul>
+      </div>
+      <div class="icard">
+        <span>帝国历 290</span><h4>灰港建国</h4>
+        <p>烂泥地上立一根灯柱，钉一张纸："此处收账，账清即走。"</p>
+        <ul>
+          <li><em>转折</em>账本第一页，只写一个"债"</li>
+          <li><em>代价</em>旧账，第一代账房自己背</li>
+          <li><em>结局</em>国界不承认，账界承认</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= 工 ================= -->
+<section class="sec-pad">
+  <div class="wrap">
+    <div class="kicker">THE CRAFT</div>
+    <h2 class="sec">技术工艺</h2>
+    <div class="sec-sub">这个世界的每一样技术，都标了价。</div>
+    <div class="grid4">
+      <div class="icard">
+        <span>开采</span><h4>戈克三步</h4>
+        <ul>
+          <li><em>探脉</em>戈克罗盘，针转越急戈克越多</li>
+          <li><em>开脉</em>戈克镐，普通镐挖不动</li>
+          <li><em>提脉</em>三层熔炉：烧 / 滤 / 凝</li>
+          <li><em>代价</em>流脉会衰，矿工会短命</li>
+        </ul>
+      </div>
+      <div class="icard">
+        <span>魔法</span><h4>咒语三步</h4>
+        <ul>
+          <li><em>立意</em>想不清楚，魔法就散</li>
+          <li><em>发音</em>古语，发音准了魔力才聚</li>
+          <li><em>落手</em>手一抖，魔法就失</li>
+          <li><em>代价</em>体力 / 生命 / 流脉</li>
+        </ul>
+      </div>
+      <div class="icard">
+        <span>药剂</span><h4>两味关键药</h4>
+        <ul>
+          <li><em>止血凝胶</em>止血草三 + 戈克苔一</li>
+          <li><em>稳定剂</em>戈克苔三 + 安神花一</li>
+          <li><em>副作用</em>稳定剂有依赖</li>
+          <li><em>黑签</em>"我们承认救不了你"</li>
+        </ul>
+      </div>
+      <div class="icard">
+        <span>造物</span><h4>戈克四造</h4>
+        <ul>
+          <li><em>戈克灯</em>一盏亮十年</li>
+          <li><em>戈克义肢</em>能打，但短命</li>
+          <li><em>稳定器</em>一座浮空岛一天吃一百锭</li>
+          <li><em>武器</em>铁序炮 / 干涉弹 / 毒囊</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= 网 ================= -->
+<section class="sec-pad">
+  <div class="wrap">
+    <div class="kicker">THE WEB</div>
+    <h2 class="sec">谁欠谁，谁恨谁</h2>
+    <div class="sec-sub">这个世界的关系，一半是债，一半是仇。</div>
+    <div class="grid2">
+      <div class="icard">
+        <span>欠债表</span><h4>欠的，都要还</h4>
+        <ul>
+          <li><em>薇拉 → 莫纳克</em>一条命（替他死过一次）</li>
+          <li><em>卡兰 → 莫纳克</em>一笔老账</li>
+          <li><em>希斯蒂娜 → 莱恩</em>"记住他的手"</li>
+          <li><em>莱恩 → 艾拉</em>"你有没有问过名字"</li>
+          <li><em>提蒙 → 陆铭</em>十四秒</li>
+          <li><em>深雪 → 莫纳克</em>一条命（他捡回来的）</li>
+          <li><em>欧莉卡斯 → 老周</em>一份"没写"的记录</li>
+          <li><em>艾德里克 → 老团长 / 维奥拉</em>"守誓" + "别等"</li>
+        </ul>
+      </div>
+      <div class="icard">
+        <span>仇恨表</span><h4>恨的，都记得</h4>
+        <ul>
+          <li><em>莉泽 → 维里欧斯</em>他"不救"她</li>
+          <li><em>铁牙 → 卡尔纳</em>血族"用"部落送死</li>
+          <li><em>克劳斯 → 克鲁格</em>禁咒院"不通报"</li>
+          <li><em>米娅 → 莱恩</em>"他证明了我错了"</li>
+          <li><em>罗森 → 艾德里克</em>"你没救她"</li>
+          <li><em>卡尔纳 → 深雪</em>"雪都的血，是钥匙"</li>
+          <li><em>维里欧斯 → 卡尔纳</em>被控制十年</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= 言 ================= -->
+<section class="sec-pad">
+  <div class="wrap">
+    <div class="kicker">THE WORDS</div>
+    <h2 class="sec">语言与文字</h2>
+    <div class="sec-sub">听一句话，就知道是谁。</div>
+    <div class="grid3">
+      <div class="icard">
+        <span>六方口音</span><h4>说话的样子</h4>
+        <ul>
+          <li><em>帝国</em>硬、短、像命令："走。"</li>
+          <li><em>共和国</em>软、长、绕："您看，这事儿吧……"</li>
+          <li><em>西昭</em>喉音重："打。或者滚。"</li>
+          <li><em>灰港</em>带黑话："这单，账怎么算？"</li>
+          <li><em>凯斯特</em>爱用术语："根据规程第三款——"</li>
+          <li><em>洛斯汰</em>拟声："咕噜。"</li>
+        </ul>
+      </div>
+      <div class="icard">
+        <span>五种文字</span><h4>写下来的样子</h4>
+        <ul>
+          <li><em>铁序文</em>直角方块，像齿轮</li>
+          <li><em>绿环文</em>圆润连笔，像藤蔓</li>
+          <li><em>账文</em>极简刻痕，不怕湿</li>
+          <li><em>血文</em>弯曲繁复，像血管</li>
+          <li><em>符文</em>刻在法器上，最多三个</li>
+        </ul>
+      </div>
+      <div class="icard">
+        <span>骂人速查</span><h4>骂人的样子</h4>
+        <ul>
+          <li><em>帝国</em>"你这笔账，平不了。"</li>
+          <li><em>共和国</em>"真是不体面。"</li>
+          <li><em>灰港</em>"你挂上了。"</li>
+          <li><em>凯斯特</em>"你的记录，会很难看。"</li>
+          <li><em>西昭</em>"断骨的东西。"</li>
+          <li><em>洛斯汰</em>"咕唧！"</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= 神 ================= -->
+<section class="sec-pad">
+  <div class="wrap">
+    <div class="kicker">THE FAITH</div>
+    <h2 class="sec">宗教与神话</h2>
+    <div class="sec-sub">每个阵营的"神"，都是"他们自己"的投影。</div>
+    <div class="grid2">
+      <div class="icard">
+        <span>五方信仰</span><h4>他们信什么</h4>
+        <ul>
+          <li><em>帝国</em>信"铁序"——"神不会给你饭吃，炉子会。"</li>
+          <li><em>共和国</em>信"神赐的自由"——魔法是神给的</li>
+          <li><em>灰港</em>信"账"——"这世上没有神，只有还没结清的账。"</li>
+          <li><em>西昭</em>信"火与血"——"火是拿来听的。"</li>
+          <li><em>凯斯特</em>信"知识"——"我们不问神，我们问为什么。"</li>
+          <li><em>洛斯汰</em>信"潮"——"潮来了，就活。"</li>
+        </ul>
+      </div>
+      <div class="icard">
+        <span>四种创世神话</span><h4>世界怎么来的</h4>
+        <ul>
+          <li><em>帝国版</em>世界是"烧"出来的</li>
+          <li><em>共和国版</em>世界是"赐"出来的</li>
+          <li><em>灰港版</em>世界是"账"出来的</li>
+          <li><em>西昭版</em>世界是"潮"出来的</li>
+          <li><em>雪都神话</em>狐狸的耳朵里有一个声音</li>
+          <li><em>血族创世</em>第一批血族从血池里走出来</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= 商 ================= -->
+<section class="sec-pad">
+  <div class="wrap">
+    <div class="kicker">THE TRADE</div>
+    <h2 class="sec">经济与贸易</h2>
+    <div class="sec-sub">经济，是一切冲突的底。</div>
+    <div class="grid3">
+      <div class="icard">
+        <span>三大支柱</span><h4>钱从哪来</h4>
+        <ul>
+          <li><em>戈克经济</em>四成（开采/提炼/贸易）</li>
+          <li><em>农业经济</em>三成（粮/棉/药）</li>
+          <li><em>工业经济</em>三成（铁/军械/造物）</li>
+        </ul>
+      </div>
+      <div class="icard">
+        <span>六方产业</span><h4>谁靠什么活</h4>
+        <ul>
+          <li><em>帝国</em>矿工 + 铁匠（缺粮 −25%）</li>
+          <li><em>共和国</em>农夫 + 商人</li>
+          <li><em>灰港</em>掮客（贸易/走私/悬赏）</li>
+          <li><em>西昭</em>猎人</li>
+          <li><em>洛斯汰</em>潮（海产）</li>
+          <li><em>凯斯特</em>卖脑子</li>
+        </ul>
+      </div>
+      <div class="icard">
+        <span>贸易与冲突</span><h4>打的是什么</h4>
+        <ul>
+          <li><em>南方航路</em>雾港 → 灰港（七天）</li>
+          <li><em>暗航路</em>普卫 → 灰港（走私）</li>
+          <li><em>粮食战争</em>帝国缺口 −25%</li>
+          <li><em>戈克走私</em>一锭赚三倍</li>
+          <li><em>灰港的账</em>是"带刀"的经济</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= IP 全貌 ================= -->
+<section class="ipsec">
+  <div class="wrap">
+    <div class="kicker">THE IP</div>
+    <h2 class="sec">这个 IP 的全貌</h2>
+    <div class="sec-sub">小说、地图、设定集——同一个世界，不同的入口。</div>
+    <div class="ipgrid">
+      <div class="ipcard">
+        <span>NOVEL</span>
+        <h4>《戈克降临》</h4>
+        <p>三章正篇《规程之外》《一百秒》《结案》+ 镜/瞬/锲/昭四组人物篇。</p>
+      </div>
+      <div class="ipcard">
+        <span>NOVEL</span>
+        <h4>人物篇九章</h4>
+        <p>莱恩《名字》《余数》《第一百零一次》· 艾德里克《灰誓》《执事》《衡》· 欧莉卡斯《觉醒》《记录》《慧》。</p>
+      </div>
+      <div class="ipcard">
+        <span>MAP</span>
+        <h4>世界地图</h4>
+        <p>羊皮纸世界地图 + 专题地图（地形/势力/航路/城市/历史/生物群系六层切换）。</p>
+      </div>
+      <div class="ipcard">
+        <span>CODEX</span>
+        <h4>设定集</h4>
+        <p>41 位角色、六方阵营、千年编年史、26 份设定文档（含血肉篇 33 部分）。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= 大图 ================= -->
+<section class="gallery">
+  <div class="wrap">
+    <div class="kicker">SCENES</div>
+    <h2 class="sec">一些场景</h2>
+    <div class="sec-sub">从南极的雪，到港口上的白烟。</div>
+    <div class="ggrid">
+      <div class="gitem"><img src="assets/triage.webp" alt="镜之分诊"><div class="cap">蓝区分诊 · 红黄绿黑</div></div>
+      <div class="gitem"><img src="assets/breakout.webp" alt="百秒冲出"><div class="cap">一百秒 · 白烟里的第十一个人</div></div>
+      <div class="gitem"><img src="assets/dispatch.webp" alt="调度台"><div class="cap">协调部 · 以后你的每一秒都归我管</div></div>
+      <div class="gitem"><img src="assets/code_zhao.webp" alt="授代号昭"><div class="cap">授代号「昭」· 昭，是光</div></div>
+      <div class="gitem"><img src="assets/arrive.webp" alt="登岛"><div class="cap">登岛 · 一座岛，一所学院，在场而不属</div></div>
+      <div class="gitem"><img src="assets/north_rescue.webp" alt="北境救援"><div class="cap">北境前线 · 止血凝胶只够一个人</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 页脚 ================= -->
+<footer>
+  <div class="wrap">
+    <div class="ft">戈 克 世 界 · 六 方 鼎 立</div>
+    <div class="fd">
+      正史口径以《世界观总纲 v2.8》《续写圣经 v1.1》《世界历史编年 v1.1》为准<br>
+      《戈克降临》· 长篇小说 IP 展示页 · 2026
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

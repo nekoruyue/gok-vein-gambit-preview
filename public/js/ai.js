@@ -414,8 +414,7 @@
   function enumerateActions(state, p) {
     const actions = [];
     const seen = new Set();
-    const debt = (p.hand || []).find(c => c.isDebt);
-    if (debt) actions.push({ type: "repayDebt", cardUid: debt.uid });
+
     const push = (a) => {
       const key = JSON.stringify(a);
       if (seen.has(key)) return;
@@ -424,7 +423,7 @@
     };
     for (const c of p.hand) {
       const def = D.CARDS[c.cardId];
-      if (!def) continue;
+      if (!def || c.isDebt) continue;
       const opt = E.getPlayOptions(state, p.index, c.uid);
       if (!opt.ok) continue;
       const targets = targetChoices(state, p, def, opt);

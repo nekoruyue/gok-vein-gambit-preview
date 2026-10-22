@@ -8,7 +8,10 @@
   const injected = window.__GOK_CHANNEL_VALUE__ || window.__GOK_CHANNEL__;
   const host = String(location.hostname || "").toLowerCase();
   const hostPreview = /(^|[.-])(preview|canary|staging)([.-]|$)/.test(host);
-  let channel = hostPreview ? "preview" : "stable";
+  const localTest = host === "localhost" || host === "127.0.0.1" || host === "::1" ||
+    /^192\.168\./.test(host) || /^10\./.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host) || /\.local$/.test(host);
+  let channel = (hostPreview || localTest) ? "preview" : "stable";
   if (injected === "preview" || injected === "stable") channel = injected;
   if (params.get("channel") === "preview" || params.get("preview") === "1") channel = "preview";
   if (params.get("channel") === "stable" || params.get("preview") === "0") channel = "stable";

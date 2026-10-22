@@ -2,14 +2,14 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, user-scalable=yes">
   <title>戈克世界：流脉牌局</title>
   <link rel="icon" href="favicon.ico">
-  <link rel="stylesheet" href="css/style.css?v=20261020e57">
-  <link rel="stylesheet" href="css/hs-layout.css?v=20261020e57">
-  <link rel="stylesheet" href="css/art-fixes.css?v=20261020e57">
-  <link rel="stylesheet" href="css/mobile.css?v=20261020e57">
-  <link rel="stylesheet" href="css/vfx.css?v=20261020e57">
+  <link rel="stylesheet" href="css/style.css?v=20261022ux12">
+  <link rel="stylesheet" href="css/hs-layout.css?v=20261022ux12">
+  <link rel="stylesheet" href="css/art-fixes.css?v=20261022ux12">
+  <link rel="stylesheet" href="css/mobile.css?v=20261022ux12">
+  <link rel="stylesheet" href="css/vfx.css?v=20261022ux12">
 </head>
 <body data-screen="home">
   <div id="channel-badge" class="channel-badge" hidden></div>
@@ -39,12 +39,12 @@
         <div class="home-hero">
           <div class="home-kicker-row">
             <div class="brand-mark">GK</div>
-            <div class="home-kicker">凯斯特档案 / 推演 00</div>
+            <div class="home-kicker">凯斯特学院内部绝密档案</div>
             <div class="home-kicker-line"></div>
           </div>
           <h1>戈克世界<span>流脉牌局</span></h1>
           <div class="brand-en">戈克世界 · 流脉牌局</div>
-          <p class="brand-copy">流脉会自然回流。采掘戈克会加速它。<br>当它涨到 4 / 7 / 10，世界会替你们结算。</p>
+          <p class="brand-copy">双人卡牌对战游戏。<br>用随从、战术、阵型与装备，在流脉牌桌上推演八阵营的命运。</p>
           <div class="home-factions" aria-label="八个阵营">
             <span data-faction-chip="pus"><i></i>普卫岛</span>
             <span data-faction-chip="academy"><i></i>学院</span>
@@ -78,24 +78,26 @@
             <div class="home-legendary-shade"></div>
           </div>
           <div class="home-legendary-meta">
-            <span class="eyebrow">传奇档案</span>
+            <span class="eyebrow">随机卡牌档案</span>
             <strong id="home-legendary-name">—</strong>
             <span id="home-legendary-faction">—</span>
           </div>
         </aside>
         <aside class="home-account-dock" aria-label="账号与存档">
           <div id="home-account-avatar" class="home-account-avatar">GK</div>
-          <div class="home-account-copy"><span>本地账号 / 存档</span><strong id="home-account-name">档案员</strong><small id="home-account-title">档案员</small><small id="home-account-meta">自动备份已就绪</small></div>
+          <div id="home-account-cardback" class="home-account-cardback" aria-label="当前卡背"></div>
+          <div class="home-account-copy"><span>本地账号 / 存档</span><strong id="home-account-name">档案员</strong><small id="home-account-title">档案员</small><small id="home-account-signature" class="home-account-signature"></small><small id="home-account-meta">自动备份已就绪</small><div id="home-account-badges" class="home-account-badges"></div></div>
           <button id="btn-home-account" class="home-account-btn">账号与存档</button>
         </aside>
         <nav class="home-nav" aria-label="档案功能">
           <button id="btn-deck-home" class="home-nav-item"><span class="home-nav-no">01</span><strong>构筑牌组</strong><small>手动 / 自动构筑</small></button>
-          <button id="btn-codex" class="home-nav-item"><span class="home-nav-no">02</span><strong>图鉴</strong><small>584 张卡牌档案</small></button>
+          <button id="btn-codex" class="home-nav-item"><span class="home-nav-no">02</span><strong>图鉴</strong><small>主卡 + 衍生卡全收录</small></button>
           <button id="btn-achievements" class="home-nav-item"><span class="home-nav-no">03</span><strong>成就</strong><small>档案记录与解锁</small></button>
-          <button id="btn-rank-home" class="home-nav-item"><span class="home-nav-no">04</span><strong>排位</strong><small>段位 · 积分 · 战绩</small></button>
+          <button id="btn-customize-home" class="home-nav-item"><span class="home-nav-no">04</span><strong>自定义</strong><small>头像 · 称号 · 卡背</small></button>
           <button id="btn-settings" class="home-nav-item"><span class="home-nav-no">05</span><strong>设置</strong><small>画面 · 音效 · 操作</small></button>
+          <button id="btn-lore-home" class="home-nav-item"><span class="home-nav-no">06</span><strong>世界观</strong><small>大陆 · 阵营 · 历史</small></button>
         </nav>
-        <div class="home-quote">“这不是历史。这是一次被允许的推演。”</div>
+        <div class="home-quote" id="home-quote">每个阵位最多放 3 个随从，全场最多 6 个。</div>
       </div>
         <div id="start-menu" class="start-menu" hidden>
           <div class="start-menu-backdrop"></div>
@@ -134,6 +136,7 @@
                 <span class="start-choice-copy"><strong>在线房间</strong><small>跨网 · 房间码邀请</small></span>
                 <span class="start-choice-arrow">→</span>
               </button>
+              <button id="btn-rank-multi" class="start-menu-link" type="button">排位档案 · 段位 / 积分 / 战绩</button>
             </div>
             <div class="start-menu-foot">经典模式 · 单人推演 / 联机推演；联机对局会计入排位。</div>
           </div>
@@ -198,6 +201,7 @@
               </span>
             </button>
           </div>
+          <button id="btn-rank-mode" class="mode-rank-link" type="button">查看排位档案 · 段位 / 战绩</button>
         </div>
 
         <div id="mode-lan-panel" class="mode-multi-page" hidden>
@@ -452,7 +456,7 @@
               <article class="tutorial-card">
                 <span class="manual-tag">装备卡</span>
                 <h4>永久效果</h4>
-                <p>给领袖一个永久的增益；需要从牌库抽到并打出，同一时间只能装备一件。</p>
+                <p>给领袖一个永久的增益；需要从牌库抽到并打出，最多可同时装备两件。</p>
               </article>
             </div>
             <div class="manual-callout">
@@ -576,8 +580,8 @@
         <header class="page-head">
           <button id="btn-codex-back" class="btn btn-small btn-ghost">← 返回档案处</button>
           <div>
-            <div class="eyebrow">档案 / 卡牌图鉴</div>
-            <h2>图鉴</h2>
+            <div class="eyebrow">档案 / 全卡检索</div>
+            <h2>卡牌图鉴</h2>
           </div>
           <div class="head-spacer"></div>
           <div class="codex-count" id="codex-count"></div>
@@ -585,7 +589,7 @@
         <div class="codex-toolbar">
           <div id="codex-faction-tabs" class="deck-faction-tabs"></div>
           <div class="codex-search-row">
-            <input id="codex-search" class="codex-search" type="search" placeholder="搜索卡名 / 文本 / 关键词" autocomplete="off" />
+            <input id="codex-search" class="codex-search" type="search" placeholder="搜索卡名、规则文本或关键词…" autocomplete="off" />
             <select id="codex-cost" class="codex-select" aria-label="费用筛选">
               <option value="all">全部费用</option>
               <option value="low">0–1 费</option>
@@ -596,7 +600,7 @@
             <select id="codex-keyword" class="codex-select" aria-label="关键词筛选">
               <option value="all">全部关键词</option>
             </select>
-            <select id="codex-rarity" class="codex-select" aria-label="稀有度筛选"><option value="all">全部稀有度</option><option value="common">普通</option><option value="rare">稀有</option><option value="epic">史诗</option><option value="legendary">传说</option></select>
+            <select id="codex-rarity" class="codex-select" aria-label="稀有度筛选"><option value="all">全部稀有度</option><option value="common">普通</option><option value="rare">稀有</option><option value="epic">史诗</option><option value="legendary">传说</option><option value="token">衍生卡</option></select>
             <select id="codex-sort" class="codex-select" aria-label="排序方式">
               <option value="faction">按阵营</option>
               <option value="cost">按费用</option>
@@ -613,10 +617,17 @@
             <button class="deck-filter" data-codex-filter="spell">战术</button>
             <button class="deck-filter" data-codex-filter="formation">阵型</button>
             <button class="deck-filter" data-codex-filter="equipment">装备</button>
-            <button class="deck-filter" data-codex-filter="debt">债务</button>
+            <button class="deck-filter" data-codex-filter="debt">债务卡</button>
+            <button id="codex-token-quick" class="deck-filter codex-token-quick">衍生卡</button>
+          </div>
+          <div class="codex-color-legend">
+            <span><i class="legend-faction"></i>边框：阵营</span>
+            <span><i class="legend-rarity"></i>顶部：稀有度</span>
+            <span><i class="legend-keyword"></i>标签：关键词</span>
+            <small>颜色越亮，信息越重要。悬停关键词可查看完整说明。</small>
           </div>
         </div>
-        <div id="codex-empty" class="codex-empty" hidden>没有匹配的卡牌。试试放宽筛选条件，或重置过滤。</div>
+        <div id="codex-empty" class="codex-empty" hidden>没有命中。换个关键词、放宽费用，或点「重置」回到全档案。</div>
         <div id="codex-grid" class="codex-grid"></div>
         <button id="codex-more" class="btn btn-small btn-ghost codex-more" hidden>加载更多</button>
       </div>
@@ -651,6 +662,15 @@
         <div class="rank-hero-panel">
           <div class="rank-hero-glow"></div>
           <div class="rank-hero-top"><span class="eyebrow">赛季 <span id="rank-season">1</span> · 本地排行 / LOCAL LADDER</span><span class="rank-hero-status">仅统计多人排位</span></div>
+          <div id="rank-identity" class="rank-identity">
+            <div id="rank-identity-avatar" class="home-account-avatar"></div>
+            <div class="rank-identity-copy">
+              <strong id="rank-identity-name">档案员</strong>
+              <small id="rank-identity-title">档案员</small>
+              <p id="rank-identity-signature"></p>
+              <div id="rank-identity-badges" class="home-account-badges"></div>
+            </div>
+          </div>
           <div class="rank-hero-main">
             <div class="rank-emblem" id="rank-emblem">青</div>
             <div class="rank-hero-copy">
@@ -735,8 +755,8 @@
           </div>
           <div class="panel settings-panel settings-controls-panel">
             <div class="panel-label">操作 / CONTROLS</div>
-            <div class="settings-row"><div><strong>手牌操作</strong><span>手机版点击预览与摆放；电脑版固定拖拽</span></div><button id="btn-settings-hand-mode" class="btn btn-small btn-ghost">出牌：拖拽</button><span id="settings-hand-fixed" class="settings-badge" hidden>点击</span></div>
-            <div class="settings-row"><div><strong>拖拽</strong><span>拖到高亮阵位或目标出牌</span></div><span class="settings-badge">拖拽</span></div>
+            <div class="settings-row"><div><strong>手牌操作</strong><span>手机版固定点击；电脑版可切换拖拽/双击</span></div><button id="btn-settings-hand-mode" class="btn btn-small btn-ghost">出牌：拖拽</button><span id="settings-hand-fixed" class="settings-badge" hidden>点击</span></div>
+            <div class="settings-row"><div><strong>拖拽</strong><span>拖到高亮阵位或目标出牌</span></div><span class="settings-badge">拖拽 / 双击</span></div>
             <div class="settings-row"><div><strong>取消</strong><span>右键或 Esc 取消选牌 / 目标</span></div><span class="settings-badge">右键 / ESC</span></div>
             <div class="settings-row"><div><strong>信息</strong><span>右上角「日志」查看事件记录</span></div><span class="settings-badge">日志</span></div>
           </div>
@@ -750,7 +770,7 @@
           <div class="panel settings-panel settings-about-panel">
             <div class="panel-label">关于 / ABOUT</div>
             <p class="settings-about">《戈克世界：流脉牌局》经典模式 2.0。八阵营、500 张主卡 + 60 件装备，支持起手调度、编成、单人 AI 与在线组队码房间。</p>
-            <p class="settings-about">当前构建：20261020e57</p>
+            <p class="settings-about">当前构建：20261022ux12</p>
             <button id="btn-settings-credits" class="btn btn-small btn-ghost">制作与素材说明</button>
           </div>
         </div>
@@ -799,7 +819,7 @@
               <button class="deck-filter" data-deck-filter="spell">战术</button>
               <button class="deck-filter" data-deck-filter="formation">阵型</button>
               <button class="deck-filter" data-deck-filter="equipment">装备</button>
-              <button class="deck-filter" data-deck-filter="debt">债务</button>
+              <button class="deck-filter" data-deck-filter="debt">债务卡</button>
               <span class="deck-pool-count" id="deck-pool-count"></span>
             </div>
             <div class="deck-scope-row">
@@ -1150,8 +1170,10 @@
             <button id="btn-sound" class="btn btn-small btn-ghost">声音：开</button>
           </div>
           <div class="game-help-actions" aria-label="帮助">
+            <button id="btn-emote" class="btn btn-small btn-ghost" hidden>台词</button>
             <button id="btn-keywords" class="btn btn-small btn-ghost" title="查看全部关键词">关键词</button>
             <button id="btn-game-tutorial" class="btn btn-small btn-ghost">教程</button>
+            <button id="btn-mobile-log" class="btn btn-small btn-ghost" title="查看推演日志">日志</button>
           </div>
           <button id="btn-game-settings" class="btn btn-small btn-ghost">菜单</button>
         </header>
@@ -1177,7 +1199,7 @@
             </div>
           </div>
 
-          <div class="vein-row" id="vein-row" title="流脉阈值：4 震荡，所有随从受到 1 点伤害；7 裂隙，双方领袖受到 2 点伤害；10 魔物潮，所有随从受到 3 点伤害、双方领袖受到 5 点伤害；达到 12 时流脉回流清空。">
+          <div class="vein-row" id="vein-row">
             <div class="vein-title">
               <div class="vein-sigil" aria-hidden="true">∿</div>
               <div class="vein-title-copy">
@@ -1255,11 +1277,22 @@
         <div class="mana-corner" id="mana-corner">
           <div class="mana-display" id="mana-display">行动力 0 / 0</div>
         </div>
+        <div id="mobile-mana-hud" aria-label="双方行动力">
+          <span class="mobile-mana-pill player" id="mobile-mana-player"></span>
+          <span class="mobile-mana-pill enemy" id="mobile-mana-enemy"></span>
+        </div>
 
+        <div id="log-backdrop" class="log-backdrop" hidden></div>
         <aside class="log-panel" id="log-panel">
-          <div class="log-head"><span>推演日志</span><button id="btn-log-close" class="link-btn">×</button></div>
+          <div class="log-head"><span>推演日志</span><button id="btn-log-close" class="log-close-btn" aria-label="关闭日志">×</button></div>
           <div id="log-list" class="log-list"></div>
         </aside>
+        <div id="mobile-welcome" class="mobile-welcome" hidden>
+          <div class="mobile-welcome-head"><strong>实验版手机提示</strong><button id="btn-mobile-welcome-close" class="mobile-welcome-close" aria-label="关闭提示">×</button></div>
+          <p><b>已自动缩放至 70%</b>；如果觉得小，可以双指放大。</p>
+          <p>手机为点击出牌：点手牌 → 点目标或阵位，不需要拖拽；长按卡牌可看详情。</p>
+          <p class="mobile-welcome-foot">本页是实验构建，不是稳定版。</p>
+        </div>
       </div>
     </section>
   </div>
@@ -1269,20 +1302,27 @@
   <div id="keyword-tip" class="keyword-tip" hidden></div>
   <div id="modal-root"></div>
   <div id="reconnect-overlay" class="reconnect-overlay" hidden><div class="reconnect-box"><div class="reconnect-spinner"></div><strong>正在重连对局…</strong><span id="reconnect-text">正在恢复房间与手牌，请稍候。</span></div></div>
+  <div id="orientation-lock" class="orientation-lock" hidden>
+    <div class="orientation-lock-card">
+      <div class="orientation-lock-icon">↻</div>
+      <strong>请转回竖屏</strong>
+      <p>本作已关闭横屏模式，请把手机竖过来继续游戏。</p>
+    </div>
+  </div>
   <div id="toast" class="toast"></div>
 
   <script>window.__GOK_CHANNEL_VALUE__ = "__GOK_CHANNEL__";</script>
-  <script src="js/channel.js?v=20261020e57"></script>
-  <script src="js/data.js?v=20261020e57"></script>
-  <script src="js/engine.js?v=20261020e57"></script>
-  <script src="js/ai.js?v=20261020e57"></script>
-  <script src="js/cinematic.js?v=20261020e57"></script>
-  <script src="js/vfx.js?v=20261020e57"></script>
-  <script src="js/ui.js?v=20261020e57"></script>
-  <script src="js/content.js?v=20261020e57"></script>
-  <script src="js/battler.js?v=20261020e57"></script>
-  <script src="js/arcade.js?v=20261020e57"></script>
-  <script src="js/main.js?v=20261020e57"></script>
+  <script src="js/channel.js?v=20261022ux12"></script>
+  <script src="js/data.js?v=20261022ux12"></script>
+  <script src="js/engine.js?v=20261022ux12"></script>
+  <script src="js/ai.js?v=20261022ux12"></script>
+  <script src="js/cinematic.js?v=20261022ux12"></script>
+  <script src="js/vfx.js?v=20261022ux12"></script>
+  <script src="js/ui.js?v=20261022ux12"></script>
+  <script src="js/content.js?v=20261022ux12"></script>
+  <script src="js/battler.js?v=20261022ux12"></script>
+  <script src="js/arcade.js?v=20261022ux12"></script>
+  <script src="js/main.js?v=20261022ux12"></script>
 </body>
 </html>
 
