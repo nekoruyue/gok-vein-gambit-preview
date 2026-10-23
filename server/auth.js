@@ -23,6 +23,16 @@ function safeEqual(a, b) {
   const bb = Buffer.from(String(b), "hex");
   return ba.length === bb.length && crypto.timingSafeEqual(ba, bb);
 }
+function recoveryCode() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = crypto.randomBytes(16);
+  let out = "";
+  for (let i = 0; i < 16; i++) out += alphabet[bytes[i] % alphabet.length];
+  return out.match(/.{4}/g).join("-");
+}
+function recoveryDigest(code, salt) {
+  return crypto.scryptSync("recovery:" + String(code || "").replace(/-/g, "").toUpperCase(), salt, 64).toString("hex");
+}
 function parseCookies(req) {
   const out = {};
   for (const part of String(req.headers.cookie || "").split(";")) {
@@ -73,6 +83,9 @@ function createAuth(opts) {
     );
     CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
   `);
+  const userCols = db.prepare("PRAGMA table_info(users)").all().map(c => c.name);
+  if (!userCols.includes("recovery_hash")) db.exec("ALTER TABLE users ADD COLUMN recovery_hash TEXT");
+  if (!userCols.includes("recovery_salt")) db.exec("ALTER TABLE users ADD COLUMN recovery_salt TEXT");
   const loginAttempts = new Map();
   function rateLimited(key) {
     const t = now();
@@ -142,13 +155,16 @@ function createAuth(opts) {
       const hash = passwordHash(password, salt);
       const t = now();
       let info;
+      const recovery = recoveryCode();
+      const recoverySalt = crypto.randomBytes(16).toString("hex");
+      const recoveryHash = recoveryDigest(recovery, recoverySalt);
       try {
-        info = db.prepare("INSERT INTO users(username,username_lower,display_name,password_hash,password_salt,created_at,last_login_at) VALUES (?,?,?,?,?,?,?)")
-          .run(username, username.toLowerCase(), displayName, hash, salt, t, t);
+        info = db.prepare("INSERT INTO users(username,username_lower,display_name,password_hash,password_salt,created_at,last_login_at,recovery_hash,recovery_salt) VALUES (?,?,?,?,?,?,?,?,?)")
+          .run(username, username.toLowerCase(), displayName, hash, salt, t, t, recoveryHash, recoverySalt);
       } catch (e) { json(res, 409, { ok: false, error: "这个用户名已经被使用。" }); return true; }
       const userId = Number(info.lastInsertRowid);
       createSession(res, req, userId);
-      json(res, 200, { ok: true, user: publicUser(db.prepare("SELECT * FROM users WHERE id=?").get(userId)), save: getSave(userId) });
+      json(res, 200, { ok: true, user: publicUser(db.prepare("SELECT * FROM users WHERE id=?").get(userId)), save: getSave(userId), recoveryCode: recovery });
       return true;
     }
     if (p === "/api/auth/login" && req.method === "POST") {
@@ -167,6 +183,29 @@ function createAuth(opts) {
       db.prepare("UPDATE users SET last_login_at=? WHERE id=?").run(now(), row.id);
       createSession(res, req, row.id);
       json(res, 200, { ok: true, user: publicUser(row), save: getSave(row.id) });
+      return true;
+    }
+    if (p === "/api/auth/recover" && req.method === "POST") {
+      const body = JSON.parse((await readBody(req)) || "{}");
+      const username = String(body.username || "").trim();
+      const code = String(body.recoveryCode || "").trim().toUpperCase();
+      const password = String(body.password || "");
+      const ipKey = "recover:" + (req.socket.remoteAddress || "");
+      if (rateLimited(ipKey)) { json(res, 429, { ok: false, error: "尝试过于频繁，请稍后再试。" }); return true; }
+      if (password.length < 8) { json(res, 400, { ok: false, error: "新密码至少 8 位。" }); return true; }
+      const row = db.prepare("SELECT * FROM users WHERE username_lower=?").get(username.toLowerCase());
+      if (!row || !row.recovery_hash || !row.recovery_salt || !safeEqual(recoveryDigest(code, row.recovery_salt), row.recovery_hash)) {
+        noteFailure(ipKey);
+        json(res, 401, { ok: false, error: "用户名或恢复码不正确。" });
+        return true;
+      }
+      clearFailures(ipKey);
+      const salt = crypto.randomBytes(16).toString("hex");
+      db.prepare("UPDATE users SET password_hash=?,password_salt=?,recovery_hash=NULL,recovery_salt=NULL WHERE id=?")
+        .run(passwordHash(password, salt), salt, row.id);
+      db.prepare("DELETE FROM sessions WHERE user_id=?").run(row.id);
+      createSession(res, req, row.id);
+      json(res, 200, { ok: true, user: publicUser(db.prepare("SELECT * FROM users WHERE id=?").get(row.id)), save: getSave(row.id) });
       return true;
     }
     if (p === "/api/auth/logout" && req.method === "POST") {
@@ -205,6 +244,15 @@ function createAuth(opts) {
       json(res, 200, { ok: true, version, updatedAt: t });
       return true;
     }
+    if (p === "/api/account/recovery-code" && req.method === "POST") {
+      const user = userFromReq(req);
+      if (!user) { json(res, 401, { ok: false, error: "未登录" }); return true; }
+      const code = recoveryCode();
+      const salt = crypto.randomBytes(16).toString("hex");
+      db.prepare("UPDATE users SET recovery_hash=?,recovery_salt=? WHERE id=?").run(recoveryDigest(code, salt), salt, user.id);
+      json(res, 200, { ok: true, recoveryCode: code });
+      return true;
+    }
     if (p === "/api/account/change-password" && req.method === "POST") {
       const user = userFromReq(req);
       if (!user) { json(res, 401, { ok: false, error: "未登录" }); return true; }
@@ -221,6 +269,11 @@ function createAuth(opts) {
     if (p === "/api/account" && req.method === "DELETE") {
       const user = userFromReq(req);
       if (!user) { json(res, 401, { ok: false, error: "未登录" }); return true; }
+      const body = JSON.parse((await readBody(req)) || "{}");
+      const row = db.prepare("SELECT password_hash,password_salt FROM users WHERE id=?").get(user.id);
+      if (!row || !safeEqual(passwordHash(String(body.password || ""), row.password_salt), row.password_hash)) {
+        json(res, 403, { ok: false, error: "密码不正确，账号未删除。" }); return true;
+      }
       db.prepare("DELETE FROM users WHERE id=?").run(user.id);
       clearCookie(res);
       json(res, 200, { ok: true });

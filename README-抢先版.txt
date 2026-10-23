@@ -1,6 +1,6 @@
 # 抢先版 / Preview — 在线部署
 
-构建：20261022e61
+构建：20261022e61（数值平衡 Phase 3）
 通道：PREVIEW / 抢先版
 
 部署根目录就是本目录：
@@ -26,7 +26,18 @@ Environment:
 
 不需要 Render 持久化磁盘。账号数据在免费云数据库里，Render 免费实例休眠重启不会丢账号。
 
+账号后端包含：
+
+```text
+server/auth.js     SQLite 本地模式
+server/auth_pg.js Postgres 线上模式
+```
+
+本地或离线启动不要设置 `DATABASE_URL`，会使用 SQLite。
+
 在线包：`戈克世界-抢先版-在线部署-e61.zip`
+
+数值表：`戈克世界-抢先版-数值表-e61-平衡改版-2026-10-23.xlsx`
 
 上线地址：
 https://gok-vein-gambit-preview.onrender.com

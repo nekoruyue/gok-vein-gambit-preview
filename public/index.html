@@ -56,6 +56,7 @@
             <span data-faction-chip="losutai"><i></i>洛斯汰</span>
             <span data-faction-chip="snow"><i></i>雪都</span>
           </div>
+          <button id="btn-home-tasks" class="home-task-strip" type="button"><span class="home-task-kicker">主线任务 · 下一步</span><strong id="home-task-next">完成第一场推演</strong><span class="home-task-arrow">查看任务 →</span></button>
           <div class="home-start-wrap home-dual">
             <button id="home-classic" class="home-start-button mode-home-classic" type="button">
               <span class="home-start-kicker">01 / 经典</span>
@@ -70,8 +71,6 @@
               <span class="home-start-cta">进入其他 <i>→</i></span>
             </button>
           </div>
-          <button id="btn-home-tasks" class="home-task-strip" type="button"><span class="home-task-kicker">任务 / 主线</span><strong id="home-task-next">下一步：完成第一场推演</strong><span class="home-task-arrow">查看 →</span></button>
-          <button id="btn-game-guide" class="home-guide"><span class="home-guide-icon">?</span><span class="home-guide-copy"><strong>规则与教程</strong><small>阵位 · 流脉 · 关键词 · 六步训练</small></span><span class="home-guide-arrow">→</span></button>
           <div class="home-version" id="home-version-line">八阵营 · 613 张卡牌 · 571 可收藏</div>
         </div>
         <aside class="home-legendary" id="home-legendary">
@@ -235,6 +234,18 @@
                 <em>进入局域网 →</em>
               </span>
             </button>
+          </div>
+        </div>
+        <div id="mode-guide-box" class="mode-guide-box">
+          <button id="mode-guide-toggle" class="mode-guide-toggle" type="button">
+            <span><strong>规则与教程</strong><small>先看两分钟，少走两局弯路</small></span>
+            <em id="mode-guide-state">展开 ↓</em>
+          </button>
+          <div id="mode-guide-body" class="mode-guide-body" hidden>
+            <button type="button" data-mode-guide="rules"><strong>游戏规则</strong><span>目标 / 行动力 / 阵位 / 流脉</span></button>
+            <button type="button" data-mode-guide="deck"><strong>组卡课堂</strong><span>30 张 / 曲线 / 品级 / 命名</span></button>
+            <button type="button" data-mode-guide="tutorial"><strong>新手教程</strong><span>跟着六步训练打一局</span></button>
+            <button type="button" data-mode-guide="keywords"><strong>关键词速查</strong><span>守备 / 先遣 / 引脉 / 悬赏</span></button>
           </div>
         </div>
       </div>
@@ -572,11 +583,16 @@
           <article class="tutorial-card"><div class="tutorial-icon">02</div><h4>回合流程</h4><p>回合开始：行动力 +1（上限 10）、抽 1 张牌。之后可以出牌、攻击、使用领袖技能，最后结束回合交给对手。</p></article>
           <article class="tutorial-card"><div class="tutorial-icon">03</div><h4>行动力</h4><p>第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张，并额外获得「采掘许可」（本回合 +2 点行动力）。</p></article>
           <article class="tutorial-card"><div class="tutorial-icon">04</div><h4>流脉</h4><p>双方共享 0→12，每次完整轮次（双方各行动一次）自然 +1。达到 4 震荡、7 裂隙、10 魔物潮时触发世界事件；12 回流清空。引脉是达到阈值后的额外效果；采掘会同时抽牌并加速流脉。</p></article>
+        </div>
+        <details class="rules-more">
+          <summary>展开详细规则：卡牌类型、阵位、关键词与模式</summary>
+          <div class="tutorial-grid tutorial-grid-seven">
           <article class="tutorial-card"><div class="tutorial-icon">05</div><h4>阵位与对位</h4><p>左翼 / 中枢 / 右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。同阵位会触发协同数值；双方同一列互为对位。</p></article>
           <article class="tutorial-card"><div class="tutorial-icon">06</div><h4>卡牌与牌组</h4><p>随从站场，战术一次性结算，阵型挂在某个阵位持续生效，装备装备在领袖身上。牌组为 30 张卡（随从 + 战术 + 阵型 + 装备自由混编）；领袖开局单独选择，不占牌组。</p></article>
           <article class="tutorial-card"><div class="tutorial-icon">07</div><h4>关键词</h4><p>登场、余响、守备、先遣、冻结、沉默、引脉、预兆、采掘、血祭、镇脉、压脉、悬赏等关键词会在卡牌标签上标明；把鼠标移到标签上可查看说明。</p></article>
           <article class="tutorial-card"><div class="tutorial-icon">08</div><h4>胜负与模式</h4><p>支持单人 AI、局域网与在线房间。领袖生命归零即败；双方同时归零为平局。对局中可认输，起手阶段可调度手牌。</p></article>
-        </div>
+          </div>
+        </details>
         <div class="panel rules-deck-class">
           <div class="panel-label">组卡课堂 / DECK BASICS</div>
           <div class="rules-deck-grid">
@@ -596,6 +612,7 @@
           <button id="btn-rules-tutorial" class="btn btn-primary">打开游戏教程</button>
           <button id="btn-rules-back2" class="btn btn-ghost">返回</button>
         </div>
+
       </div>
     </section>
 
@@ -719,6 +736,17 @@
       </div>
     </section>
 
+    <section id="screen-recovery" class="screen">
+      <div class="page-shell recovery-page-shell">
+        <header class="page-head">
+          <button id="btn-recovery-back" class="btn btn-small btn-ghost">← 返回账号</button>
+          <div><div class="eyebrow">档案 / 恢复码</div><h2>账号恢复码</h2></div>
+          <div class="head-spacer"></div>
+        </header>
+        <div id="recovery-page-root"></div>
+      </div>
+    </section>
+
     <section id="screen-tasks" class="screen">
       <div class="page-shell tasks-page-shell">
         <header class="page-head">
@@ -728,6 +756,17 @@
           <div id="tasks-level-chip" class="tasks-level-chip">Lv.1</div>
         </header>
         <div id="tasks-page-root"></div>
+      </div>
+    </section>
+
+    <section id="screen-lesson" class="screen">
+      <div class="page-shell lesson-page-shell">
+        <header class="page-head">
+          <button id="btn-lesson-back" class="btn btn-small btn-ghost">← 返回教程库</button>
+          <div><div class="eyebrow">档案 / 教程</div><h2 id="lesson-title">教程</h2></div>
+          <div class="head-spacer"></div>
+        </header>
+        <div id="lesson-page-root"></div>
       </div>
     </section>
 
@@ -940,6 +979,7 @@
               <div id="deck-readonly-note" class="deck-readonly-note" hidden>官方预设只读 · Lv.5 后可复制为自定义牌组</div>
               <select id="deck-library-select" class="deck-library-select"></select>
               <input id="deck-name-input" class="deck-name-input" maxlength="18" placeholder="牌组名称" />
+              <select id="deck-tag-select" class="deck-library-select deck-tag-select"><option value="">流派标签</option><option value="快攻">快攻</option><option value="中速">中速</option><option value="控制">控制</option><option value="组合">组合</option><option value="娱乐">娱乐</option></select>
               <div class="deck-library-actions">
                 <button id="btn-deck-copy-preset" class="btn btn-small btn-primary" type="button">复制预设为自定义</button>
                 <button id="btn-deck-new" class="btn btn-small btn-ghost" type="button">新建</button>

@@ -7879,3 +7879,65 @@ body[data-screen="home"] .toast.show { transform: translateY(0); }
 .levelup-empty{padding:22px;text-align:center;color:#91a7a0;font-size:11px}
 @keyframes rewardFlip{from{opacity:0;transform:translateY(24px) rotateY(-12deg)}to{opacity:1;transform:translateY(0) rotateY(0)}}
 @media(max-width:760px){.levelup-page-shell{padding:18px 12px 44px}.levelup-factions{grid-template-columns:repeat(2,minmax(0,1fr))}.reward-card{width:145px;height:218px}.reward-face img{height:154px}.reward-face strong{font-size:14px}.levelup-hero h3{font-size:23px}}
+
+/* 更醒目的主线任务入口 */
+#screen-home .home-task-strip{background:linear-gradient(100deg,rgba(242,198,109,.34),rgba(190,137,52,.22) 45%,rgba(8,18,21,.9));border:2px solid rgba(255,222,147,.8);box-shadow:0 0 0 1px rgba(255,226,164,.18),0 0 26px rgba(242,198,109,.18),0 14px 32px rgba(0,0,0,.35);padding:14px 18px;margin:14px auto 16px}
+#screen-home .home-task-strip:hover{background:linear-gradient(100deg,rgba(255,219,138,.48),rgba(205,148,55,.32) 45%,rgba(8,18,21,.94));box-shadow:0 0 32px rgba(242,198,109,.3),0 16px 36px rgba(0,0,0,.4)}
+#screen-home .home-task-kicker{color:#fff0c8;font-size:10px;font-weight:700}
+#screen-home .home-task-strip strong{font-size:18px;color:#fffaf0}
+#screen-home .home-task-arrow{background:#f2c66d;color:#1a1105;padding:6px 10px;font-weight:700;border-radius:2px}
+#screen-home .home-task-strip::before{content:"!";display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#f2c66d;color:#1a1105;font-weight:800;font-family:var(--font-display)}
+#screen-home .home-task-strip{grid-template-columns:auto auto 1fr auto}
+.mode-guide-box{margin-top:18px;border:1px solid rgba(242,198,109,.3);background:linear-gradient(135deg,rgba(242,198,109,.12),rgba(5,14,17,.9));position:relative;z-index:3}
+.mode-guide-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 16px;border:0;background:transparent;color:#f5ead1;text-align:left;cursor:pointer}
+.mode-guide-toggle strong{display:block;font-family:var(--serif);font-size:20px;font-weight:500}
+.mode-guide-toggle small{display:block;color:#b9c9c3;font-size:10px;margin-top:2px}
+.mode-guide-toggle em{color:#f2c66d;font-style:normal;font-size:10px;white-space:nowrap}
+.mode-guide-body{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:0 12px 12px}
+.mode-guide-body[hidden]{display:none}
+.mode-guide-body button{display:flex;flex-direction:column;gap:3px;padding:11px;border:1px solid rgba(159,207,196,.18);background:rgba(0,0,0,.16);color:#dce8e3;text-align:left;cursor:pointer}
+.mode-guide-body button:hover{border-color:rgba(242,198,109,.6);background:rgba(242,198,109,.08)}
+.mode-guide-body strong{font-size:11px;color:#f0e8d6;font-weight:500}
+.mode-guide-body span{font-size:9px;color:#91a7a0;line-height:1.5}
+@media(max-width:760px){#screen-home .home-task-strip{grid-template-columns:auto 1fr auto;padding:12px}.mode-guide-body{grid-template-columns:1fr 1fr}.mode-guide-toggle strong{font-size:18px}}
+
+.lesson-page-shell{max-width:900px;margin:0 auto;padding:30px 24px 60px}
+.lesson-card{padding:24px;border:1px solid rgba(242,198,109,.28);background:linear-gradient(135deg,rgba(17,29,32,.96),rgba(5,12,14,.96))}
+.lesson-card h3{font-family:var(--serif);font-size:30px;color:#f7eedb;margin:0 0 4px;font-weight:500}
+.lesson-card .lesson-kicker{color:#f2c66d;font-size:9px;letter-spacing:.16em}
+.lesson-copy{margin:16px 0;color:#c3d2cc;font-size:12px;line-height:1.9}
+.lesson-copy p{margin:0 0 10px}
+.lesson-copy strong{color:#f2c66d;font-weight:500}
+.lesson-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.lesson-progress{margin-left:auto;color:#91a7a0;font-size:10px}
+.lesson-objectives{display:grid;gap:7px;margin:14px 0}
+.lesson-objectives div{padding:9px 11px;border-left:2px solid rgba(242,198,109,.5);background:rgba(255,255,255,.025);color:#b9d1ca;font-size:11px}
+@media(max-width:640px){.lesson-page-shell{padding:18px 12px 44px}.lesson-card{padding:16px}.lesson-card h3{font-size:23px}}
+
+/* 云存档状态与危险操作 */
+#home-account-status[data-sync="conflict"],#home-account-status[data-sync="error"]{color:#f0a58c}
+#home-account-status[data-sync="syncing"]{color:#f2c66d}
+.profile-danger-zone{margin-top:20px;padding:14px;border:1px solid rgba(190,88,68,.35);background:rgba(120,35,30,.1)}
+.profile-danger-zone strong{display:block;color:#efb09e;font-size:12px;margin-bottom:4px}
+.profile-danger-zone p{color:#a99088;font-size:10px;line-height:1.6;margin:0 0 9px}
+.profile-danger-zone input{width:100%;max-width:280px;margin-right:8px;margin-bottom:8px;padding:8px 10px;border:1px solid rgba(190,88,68,.3);background:rgba(0,0,0,.2);color:#eee;font-size:11px}
+.btn-danger{background:rgba(130,38,30,.65);border-color:rgba(220,110,85,.5);color:#ffe3d9}
+.btn-danger:hover{background:rgba(160,46,34,.8)}
+.sync-conflict-box{margin:10px 0;padding:11px;border:1px solid rgba(242,198,109,.3);background:rgba(242,198,109,.06)}
+.sync-conflict-box strong{display:block;color:#f2c66d;font-size:11px;margin-bottom:3px}
+.sync-conflict-box p{margin:0;color:#b9c9c3;font-size:10px;line-height:1.6}
+
+.recovery-page-shell{max-width:760px;margin:0 auto;padding:30px 24px 60px}
+.recovery-card{padding:26px;border:1px solid rgba(242,198,109,.35);background:linear-gradient(135deg,rgba(20,33,34,.97),rgba(5,12,14,.97));text-align:center}
+.recovery-card .eyebrow{justify-content:center}
+.recovery-code{font-family:Consolas,monospace;font-size:clamp(22px,4vw,36px);letter-spacing:.08em;color:#fff1c9;padding:18px 10px;margin:16px 0;border:1px dashed rgba(242,198,109,.55);background:rgba(242,198,109,.07);word-break:break-all}
+.recovery-warning{color:#e0b08c;font-size:10px;line-height:1.7;margin:10px 0 18px}
+.recovery-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.login-forgot{display:block;margin:6px auto 0;border:0;background:none;color:#c5b185;font-size:10px;text-decoration:underline;cursor:pointer}
+@media(max-width:640px){.recovery-page-shell{padding:18px 12px 44px}.recovery-card{padding:16px}}
+.rules-more{margin:12px 0 16px;border:1px solid rgba(159,207,196,.18);background:rgba(0,0,0,.12)}
+.rules-more>summary{cursor:pointer;padding:12px 14px;color:#cfe0d8;font-size:11px;list-style:none}
+.rules-more>summary::-webkit-details-marker{display:none}
+.rules-more>summary::before{content:"+";display:inline-block;width:16px;color:#f2c66d}
+.rules-more[open]>summary::before{content:"−"}
+.rules-more .tutorial-grid{padding:0 12px 12px;margin-top:0}

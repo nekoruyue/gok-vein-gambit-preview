@@ -18,6 +18,16 @@ function safeEqual(a, b) {
   const bb = Buffer.from(String(b), "hex");
   return ba.length === bb.length && crypto.timingSafeEqual(ba, bb);
 }
+function recoveryCode() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = crypto.randomBytes(16);
+  let out = "";
+  for (let i = 0; i < 16; i++) out += alphabet[bytes[i] % alphabet.length];
+  return out.match(/.{4}/g).join("-");
+}
+function recoveryDigest(code, salt) {
+  return crypto.scryptSync("recovery:" + String(code || "").replace(/-/g, "").toUpperCase(), salt, 64).toString("hex");
+}
 function parseCookies(req) {
   const out = {};
   for (const part of String(req.headers.cookie || "").split(";")) {
@@ -75,6 +85,8 @@ function createAuth(opts) {
       last_seen_at BIGINT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS recovery_hash TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS recovery_salt TEXT;
   `).catch((e) => { console.error("[auth_pg] schema init failed", e); throw e; });
 
   const loginAttempts = new Map();
@@ -150,15 +162,18 @@ function createAuth(opts) {
       if (rateLimited(ipKey)) { json(res, 429, { ok: false, error: "尝试过于频繁，请稍后再试。" }); return true; }
       const salt = crypto.randomBytes(16).toString("hex");
       const hash = passwordHash(password, salt);
+      const recovery = recoveryCode();
+      const recoverySalt = crypto.randomBytes(16).toString("hex");
+      const recoveryHash = recoveryDigest(recovery, recoverySalt);
       try {
         await ready;
         const r = await pool.query(
-          "INSERT INTO users(username,username_lower,display_name,password_hash,password_salt,created_at,last_login_at) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *",
-          [username, username.toLowerCase(), displayName, hash, salt, Date.now(), Date.now()]
+          "INSERT INTO users(username,username_lower,display_name,password_hash,password_salt,created_at,last_login_at,recovery_hash,recovery_salt) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *",
+          [username, username.toLowerCase(), displayName, hash, salt, Date.now(), Date.now(), recoveryHash, recoverySalt]
         );
         const user = publicUser(r.rows[0]);
         await createSession(req, res, user.id);
-        json(res, 200, { ok: true, user, save: await getSave(user.id) });
+        json(res, 200, { ok: true, user, save: await getSave(user.id), recoveryCode: recovery });
       } catch (e) {
         if (e && e.code === "23505") json(res, 409, { ok: false, error: "这个用户名已经被使用。" });
         else { console.error("[auth_pg] register", e); json(res, 500, { ok: false, error: "注册失败，请稍后再试。" }); }
@@ -180,6 +195,30 @@ function createAuth(opts) {
         return true;
       }
       await pool.query("UPDATE users SET last_login_at=$1 WHERE id=$2", [Date.now(), row.id]);
+      await createSession(req, res, row.id);
+      json(res, 200, { ok: true, user: publicUser(row), save: await getSave(row.id) });
+      return true;
+    }
+    if (p === "/api/auth/recover" && req.method === "POST") {
+      const body = JSON.parse((await readBody(req)) || "{}");
+      const username = String(body.username || "").trim();
+      const code = String(body.recoveryCode || "").trim().toUpperCase();
+      const password = String(body.password || "");
+      const ipKey = "recover:" + (req.socket.remoteAddress || "");
+      if (rateLimited(ipKey)) { json(res, 429, { ok: false, error: "尝试过于频繁，请稍后再试。" }); return true; }
+      if (password.length < 8) { json(res, 400, { ok: false, error: "新密码至少 8 位。" }); return true; }
+      await ready;
+      const r = await pool.query("SELECT * FROM users WHERE username_lower=$1", [username.toLowerCase()]);
+      const row = r.rows[0];
+      if (!row || !row.recovery_hash || !row.recovery_salt || !safeEqual(recoveryDigest(code, row.recovery_salt), row.recovery_hash)) {
+        noteFailure(ipKey);
+        json(res, 401, { ok: false, error: "用户名或恢复码不正确。" });
+        return true;
+      }
+      clearFailures(ipKey);
+      const salt = crypto.randomBytes(16).toString("hex");
+      await pool.query("UPDATE users SET password_hash=$1,password_salt=$2,recovery_hash=NULL,recovery_salt=NULL WHERE id=$3", [passwordHash(password, salt), salt, row.id]);
+      await pool.query("DELETE FROM sessions WHERE user_id=$1", [row.id]);
       await createSession(req, res, row.id);
       json(res, 200, { ok: true, user: publicUser(row), save: await getSave(row.id) });
       return true;
@@ -222,6 +261,16 @@ function createAuth(opts) {
       json(res, 200, { ok: true, version, updatedAt: t });
       return true;
     }
+    if (p === "/api/account/recovery-code" && req.method === "POST") {
+      const user = await sessionUser(req);
+      if (!user) { json(res, 401, { ok: false, error: "未登录" }); return true; }
+      const code = recoveryCode();
+      const salt = crypto.randomBytes(16).toString("hex");
+      await ready;
+      await pool.query("UPDATE users SET recovery_hash=$1,recovery_salt=$2 WHERE id=$3", [recoveryDigest(code, salt), salt, user.id]);
+      json(res, 200, { ok: true, recoveryCode: code });
+      return true;
+    }
     if (p === "/api/account/change-password" && req.method === "POST") {
       const user = await sessionUser(req);
       if (!user) { json(res, 401, { ok: false, error: "未登录" }); return true; }
@@ -239,7 +288,13 @@ function createAuth(opts) {
     if (p === "/api/account" && req.method === "DELETE") {
       const user = await sessionUser(req);
       if (!user) { json(res, 401, { ok: false, error: "未登录" }); return true; }
+      const body = JSON.parse((await readBody(req)) || "{}");
       await ready;
+      const r = await pool.query("SELECT password_hash,password_salt FROM users WHERE id=$1", [user.id]);
+      const row = r.rows[0];
+      if (!row || !safeEqual(passwordHash(String(body.password || ""), row.password_salt), row.password_hash)) {
+        json(res, 403, { ok: false, error: "密码不正确，账号未删除。" }); return true;
+      }
       await pool.query("DELETE FROM users WHERE id=$1", [user.id]);
       clearCookie(res);
       json(res, 200, { ok: true });

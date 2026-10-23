@@ -3062,7 +3062,7 @@
     player.mana = Math.max(0, player.maxMana - (player.overload || 0)) + (player.nextTurnManaBonus || 0);
     player.nextTurnManaBonus = 0;
     player.overload = 0;
-    if (player.heroId === "marta") player.spellCostReduction = 1;
+    if (player.heroId === "marta") player.spellCostReduction = 2;
             if (hasEquipment(player, "armor_forge")) { player.armor += 1; log(state, player.name + " 的帝国锻炉提供 1 点护甲。", player, "armor"); }
     const auraArmor = equipmentAura(player, "armorTurn"), auraHeal = equipmentAura(player, "healTurn"), auraDamage = equipmentAura(player, "turnDamage");
     if (auraArmor) { player.armor += auraArmor; log(state, "装备：获得 " + auraArmor + " 点护甲。", player, "armor"); }
@@ -3520,3 +3520,4 @@
     grantDeathrattle: grantDeathrattle
   };
 });
+

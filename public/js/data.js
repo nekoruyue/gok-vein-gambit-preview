@@ -14641,6 +14641,238 @@
     c.cost = Math.max(1, c.attack || 0, c.health || 0);
   }
 
+  // ===== 2026-10-23 数值平衡整体改版 Phase 1 =====
+  // 先修数据缺陷，再用预组结构、英雄生命与少量卡牌数值拉平八阵营。
+  (() => {
+    const set = (id, fn) => { const c = CARDS[id]; if (c) fn(c); };
+    const remove = (f, id, n = 99) => { const d = DECKS[f]; for (let k = 0; k < n; k++) { const i = d.lastIndexOf(id); if (i < 0) break; d.splice(i, 1); } };
+    const add = (f, id, n = 1) => { const d = DECKS[f]; const max = maxCopies(CARDS[id]); for (let k = 0; k < n; k++) { if (!CARDS[id] || d.filter(x => x === id).length >= max) break; d.push(id); } };
+
+    // 数据缺陷：装备没有效果、文本与效果不一致、target 误挂敌方。
+    set('formation_standard', c => { c.equipAura = { health: 1 }; c.text = '装备（持续生效）：你的所有友方随从获得 +1 生命。'; });
+    set('forge_technician', c => { c.keywords = ['battlecry', 'deathrattle']; c.text = '登场：获得 3 点护甲。余响：获得 3 点护甲。'; });
+    set('siege_captain', c => { c.keywords = ['battlecry', 'deathrattle', 'taunt']; c.text = '守备。登场：对所有敌方随从造成 1 点伤害。余响：获得 4 点护甲。'; });
+    set('grain_convoy', c => { c.keywords = ['battlecry', 'deathrattle']; c.text = '登场：恢复你的领袖 2 点生命。余响：获得 5 点护甲。'; });
+    set('empire_guard', c => { c.keywords = ['battlecry']; c.battlecry = { type: 'armor', amount: 1 }; c.text = '登场：获得 1 点护甲。'; });
+    set('iron_artillery', c => { c.keywords = ['battlecry', 'deathrattle', 'taunt']; c.text = '守备。登场：对一个敌方随从造成等同于你护甲的伤害。余响：获得 1 点护甲。'; });
+    set('gh_silence_expert', c => { c.keywords = ['battlecry', 'deathrattle']; c.text = '登场：若目标已在悬赏名单上，沉默它并抽 1 张牌。余响：对随机敌方目标造成 3 点伤害。'; });
+    set('gh_silencer', c => { c.keywords = ['battlecry', 'deathrattle']; c.deathrattle = { type: 'armor', amount: 6 }; c.text = '登场：沉默一个敌方随从。余响：获得 6 点护甲。'; });
+    set('forge_engineer', c => { c.text = '登场：获得 2 点护甲。余响：获得 2 点护甲。'; });
+    for (const id of ['arcane_scribe', 'reflux_apprentice', 'ac_grand_library', 'levy', 'frost_line_guard', 'gok_lamp']) set(id, c => { c.target = 'none'; });
+    set('ac_grand_library', c => { c.spell = { type: 'drawIfSpellPlayed', draw: 4, bonus: 1 }; });
+    set('smoke_screen', c => { c.spell = { type: 'drawIfSpellPlayed', draw: 3, bonus: 1 }; });
+    set('ac_knowledge_burst', c => { c.spell = { type: 'drawIfSpellPlayed', draw: 1, bonus: 2 }; });
+    set('ac_spell_copy', c => { c.name = '法术残响'; c.cost = 3; c.spell = { type: 'healHeroDraw', amount: 3, draw: 1 }; c.text = '恢复你的领袖 3 点生命；抽 1 张牌。'; });
+    set('doorman', c => { c.text = '登场：抽 1 张牌。'; });
+    set('levy', c => { c.cost = 1; c.spell = { type: 'rampSpell', amount: 2 }; c.text = '本回合获得 2 点行动力。'; });
+
+    // 学院：高费陷阱拉低费用，补充低费站场。
+    set('ac_absolute_theory', c => { c.cost = 6; });
+    set('pure_theorist', c => { c.cost = 6; });
+    set('magic_lecturer', c => { c.cost = 5; });
+    set('ac_grand_library', c => { c.cost = 6; });
+    set('ac_knowledge_burst', c => { c.cost = 5; });
+
+    // 英雄生命：西昭、灰港、雪境降温；学院、帝国补足。
+    HEROES[FACTIONS.xizhao.hero].hp = 22;
+    HEROES[FACTIONS.academy.hero].hp = 40;
+    HEROES[FACTIONS.empire.hero].hp = 35;
+    HEROES[FACTIONS.greyharbor.hero].hp = 25;
+    HEROES[FACTIONS.pus.hero].hp = 35;
+    HEROES[FACTIONS.snow.hero].hp = 38;
+    HEROES[FACTIONS.losutai.hero].hp = 35;
+
+    // 学院：撤掉 7–9 费终端，补 1–3 费站场。
+    remove('academy', 'pure_theorist', 2);
+    remove('academy', 'magic_lecturer', 2);
+    remove('academy', 'ac_grand_library', 1);
+    remove('academy', 'ac_knowledge_burst', 1);
+    remove('academy', 'ac_absolute_theory', 1);
+    add('academy', 'snow_medic', 1);
+    add('academy', 'anvil_town_miner', 2);
+    add('academy', 'mist_scout', 2);
+    add('academy', 'neutral_wayfarer', 1);
+    add('academy', 'mist_harbor_city', 1);
+    remove('academy', 'magic_lecturer', 1);
+    remove('academy', 'ac_spell_copy', 1);
+    add('academy', 'snow_medic', 1);
+
+    remove('academy', 'spell_apprentice', 1);
+    remove('academy', 'white_reef_keeper', 1);
+    add('academy', 'ac_absolute_theory', 1);
+    add('academy', 'ac_absolute_theory', 1);
+
+    // 西昭：降低中立占比，补阵营站场。
+    remove('xizhao', 'snow_medic', 2);
+    remove('xizhao', 'archive_guard', 2);
+    remove('xizhao', 'mist_scout', 2);
+    add('xizhao', 'bloodroad_guide', 1);
+    add('xizhao', 'xh_blood_steward', 1);
+    add('xizhao', 'blood_executor', 1);
+    add('xizhao', 'xh_blood_mist', 1);
+    add('xizhao', 'bloodroad_guide', 1);
+    add('xizhao', 'xh_blood_steward', 1);
+
+    remove('xizhao', 'mist_hound', 2);
+    add('xizhao', 'broken_bone_warlord', 1);
+    add('xizhao', 'blood_priestess', 1);
+
+    // 共和国：减少中立，补守备与中坚。
+    remove('republic', 'snow_medic', 2);
+    remove('republic', 'archive_guard', 1);
+    remove('republic', 'mist_scout', 1);
+    remove('republic', 'anvil_town_miner', 1);
+    add('republic', 'seven_cities_envoy', 1);
+    add('republic', 'republic_guard', 2);
+    add('republic', 'reborn_sentry', 1);
+    add('republic', 'williams_healer', 1);
+
+    // 洛斯汰：把无效债务卡换成早期站场；保留少量债务身份。
+    remove('losutai', 'lt_hatch', 2);
+    remove('losutai', 'lt_tide_spawn', 2);
+    remove('losutai', 'lt_venom_larva', 1);
+    remove('losutai', 'lt_venom_fang', 1);
+    remove('losutai', 'lt_hatch_guard', 2);
+    remove('losutai', 'lt_brood_attendant', 2);
+    add('losutai', 'snow_medic', 1);
+    add('losutai', 'anvil_town_miner', 2);
+    add('losutai', 'archive_guard', 2);
+    add('losutai', 'mist_scout', 2);
+    add('losutai', 'wandering_guard', 1);
+    add('losutai', 'caravan_guard', 1);
+    add('losutai', 'neutral_wayfarer', 1);
+    add('losutai', 'white_reef_keeper', 1);
+    remove('losutai', 'lt_reborn_spawn', 2);
+    add('losutai', 'snow_medic', 1);
+    add('losutai', 'caravan_guard', 1);
+
+    // 雪境：降低高费终端密度，补低费站场。
+    remove('snow', 'snow_time_echo', 1);
+    remove('snow', 'snow_blizzard_elemental', 1);
+    remove('snow', 'snow_rin', 1);
+    remove('snow', 'snow_frost_dragon', 1);
+    add('snow', 'snow_medic', 2);
+    add('snow', 'archive_guard', 2);
+
+    // 帝国：补两张低费守备，替代 1/1 火药小工。
+    remove('empire', 'powder_boy', 2);
+    add('empire', 'archive_guard', 2);
+
+    // 文本清理：去掉调试后缀，统一“先遣 / 连携”。
+    for (const c of Object.values(CARDS)) {
+      if (!c.text) continue;
+      c.text = c.text
+        .replace(/（余响 \d+）/g, '')
+        .replace(/（变体 \d+）/g, '')
+        .replace(/（低攻版）/g, '')
+        .replace(/（觉醒版）/g, '')
+        .replace(/冲锋/g, '先遣')
+        .replace(/连击/g, '连携');
+    }
+
+    // 预组自检：补齐意外掉到 29 张的情况，保持 30 张与 2 件装备。
+    for (const f of FACTION_IDS) {
+      const d = DECKS[f];
+      const equip = d.filter(id => CARDS[id] && (CARDS[id].type === 'equipment' || CARDS[id].type === 'relic')).length;
+      if (d.length < 30) {
+        const filler = ['archive_guard', 'anvil_town_miner', 'mist_scout', 'snow_medic'].find(id => (d.filter(x => x === id).length) < maxCopies(CARDS[id]));
+        if (filler) add(f, filler, 30 - d.length);
+      }
+      if (d.length > 30) d.length = 30;
+      if (equip > 2) {
+        let extra = equip - 2;
+        for (let i = d.length - 1; i >= 0 && extra > 0; i--) {
+          const c = CARDS[d[i]];
+          if (c && (c.type === 'equipment' || c.type === 'relic')) { d.splice(i, 1); extra--; }
+        }
+      }
+    }
+  })();
+
+  // ===== 2026-10-23 数值平衡 Phase 2：英雄血量收束、中立削弱、弱阵营加强 =====
+  (() => {
+    const set = (id, fn) => { const c = CARDS[id]; if (c) fn(c); };
+
+    // 英雄生命全部收束到 25–35。
+    HEROES[FACTIONS.pus.hero].hp = 35;
+    HEROES[FACTIONS.academy.hero].hp = 35;
+    HEROES[FACTIONS.academy.hero].power.text = '被动：每回合第一张战术牌行动力消耗 -2。';
+    HEROES[FACTIONS.xizhao.hero].hp = 25;
+    HEROES[FACTIONS.republic.hero].hp = 28;
+    HEROES[FACTIONS.empire.hero].hp = 35;
+    HEROES[FACTIONS.greyharbor.hero].hp = 25;
+    HEROES[FACTIONS.losutai.hero].hp = 35;
+    HEROES[FACTIONS.snow.hero].hp = 35;
+
+    // 中立高使用率卡继续削弱。
+    set('snow_medic', c => { c.deathrattle = { type: 'draw', amount: 1 }; c.text = '余响：抽 1 张牌。'; });
+    set('losutai_refugee', c => { c.attack = 1; c.health = 2; delete c.battlecry; c.keywords = ['taunt']; c.text = '守备。'; });
+    set('mist_scout', c => { c.deathrattle = { type: 'armor', amount: 2 }; c.text = '先遣。引脉 4：获得 1 点护甲。余响：获得 2 点护甲。'; });
+    set('archive_guard', c => { c.health = 3; c.text = '守备。余响：抽 1 张牌。'; });
+    set('caravan_guard', c => { c.health = 5; c.deathrattle = { type: 'armor', amount: 3 }; c.text = '守备。余响：获得 3 点护甲。'; });
+    set('neutral_wayfarer', c => { c.health = 5; c.deathrattle = { type: 'armor', amount: 6 }; c.text = '先遣。余响：获得 6 点护甲。'; });
+    set('anvil_town_miner', c => { c.health = 4; c.text = '登场：获得 1 点护甲。余响：获得 2 点护甲。'; });
+    set('wandering_guard', c => { c.health = 4; c.text = '守备。登场：恢复你的领袖 1 点生命。'; });
+    set('mist_harbor_city', c => { c.deathrattle = { type: 'armor', amount: 4 }; c.text = '登场：获得 2 点护甲。余响：获得 4 点护甲。'; });
+    set('white_reef_keeper', c => { c.health = 4; c.deathrattle = { type: 'draw', amount: 2 }; c.text = '守备。余响：抽 2 张牌。'; });
+    set('mist_hound', c => { c.health = 3; c.text = '先遣。回潮。'; });
+    set('fog_sailor', c => { c.attack = 3; c.health = 2; });
+
+    // 学院：补前期质量，降低关键战术费用；演算被动从 -1 调到 -2。
+    set('record_clerk', c => { c.attack = 1; c.health = 3; });
+    set('spell_novice', c => { c.cost = 4; });
+    set('lecturer', c => { c.cost = 7; });
+    set('magic_lecturer', c => { c.attack = 5; c.health = 6; });
+    set('pure_theorist', c => { c.attack = 6; c.health = 7; });
+    set('ac_grand_library', c => { c.cost = 5; });
+    set('ac_knowledge_burst', c => { c.cost = 4; });
+    set('ac_absolute_theory', c => { c.cost = 5; });
+
+    // 帝国：补护甲体系随从质量。
+    set('empire_guard', c => { c.cost = 4; c.attack = 3; c.health = 6; });
+    set('iron_artillery', c => { c.cost = 5; c.attack = 3; c.health = 5; });
+    set('grain_convoy', c => { c.attack = 4; c.health = 5; });
+    set('forge_technician', c => { c.attack = 3; });
+    set('powder_marshal', c => { c.attack = 4; c.health = 5; });
+
+    // 雪都：冻结/召唤体系补身材，降低两个 7 费终端费用。
+    set('snow_priest', c => { c.attack = 2; });
+    set('snow_guard_captain', c => { c.attack = 3; c.health = 4; });
+    set('snow_rin', c => { c.cost = 6; c.attack = 3; c.health = 5; });
+    set('snow_blizzard_elemental', c => { c.cost = 7; });
+    set('snow_time_echo', c => { c.cost = 7; });
+    set('snow_windweaver', c => { c.health = 5; });
+  })();
+
+
+  // ===== 2026-10-23 数值平衡 Phase 3：中立再削、强者降温、弱者补强 =====
+  (() => {
+    const set = (id, fn) => { const c = CARDS[id]; if (c) fn(c); };
+
+    // 强势阵营降温：普卫岛英雄 35→30；西昭的两张关键卡小幅削弱。
+    HEROES[FACTIONS.pus.hero].hp = 30;
+    set('tiega', c => { c.attack = 4; c.health = 4; });
+    set('grayfeather', c => { c.attack = 2; c.health = 3; c.text = '登场：抽 1 张牌。余响：对随机敌方目标造成伤害。'; });
+    set('grayfeather', c => { if (c.battlecry) c.battlecry.amount = 1; });
+
+    // 继续削中立：压低高使用率的功能牌与身材。
+    // 只保留 Phase 2 的五个高使用率中立削弱，避免把所有中立一起砍死。
+
+    // 弱阵营加强：学院继续降费，补早期质量。
+    set('record_clerk', c => { c.attack = 2; c.health = 3; });
+    set('lecturer', c => { c.cost = 6; });
+    set('ac_grand_library', c => { c.cost = 4; });
+    set('ac_knowledge_burst', c => { c.cost = 3; });
+    set('ac_absolute_theory', c => { c.cost = 4; });
+
+    // 帝国补极早期与中坚质量。
+    set('ironclad', c => { c.attack = 2; });
+    set('forge_technician', c => { c.attack = 3; c.health = 4; });
+    set('siege_captain', c => { c.attack = 5; c.health = 7; });
+    set('grain_convoy', c => { c.attack = 4; c.health = 5; });
+    set('powder_marshal', c => { c.attack = 4; c.health = 5; });
+  })();
+
   return { FACTIONS, FACTION_IDS, nextFaction, HEROES, CARDS, DECKS, NEUTRAL_DECK, KEYWORDS, DECK_STRATEGIES, DECK_SPECIALS, DECK_TRIM, DECK_RARITY_LIMITS, cardPool, deckRarityCounts, isExactPreset, validateDeck, autoBuildDeck, maxCopies };
 });
 
