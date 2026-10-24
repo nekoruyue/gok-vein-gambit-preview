@@ -14873,6 +14873,359 @@
     set('powder_marshal', c => { c.attack = 4; c.health = 5; });
   })();
 
+  // ===== 2026-10-24 平衡补丁 Phase 4：数值修订 + 新卡 =====
+  (() => {
+    const STATS = [{"id":"reflux_physician","cost":8,"attack":6,"health":6},{"id":"pulse_banner","cost":8,"attack":5,"health":7},{"id":"spring_watcher","cost":8,"attack":5,"health":6},{"id":"reflux_apprentice","cost":7,"attack":4,"health":6},{"id":"spell_echo","cost":8,"attack":5,"health":6},{"id":"debate","cost":2,"attack":null,"health":null},{"id":"arcane_surge","cost":3,"attack":null,"health":null},{"id":"ac_archive_eruption","cost":6,"attack":null,"health":null},{"id":"formula_fix","cost":6,"attack":null,"health":null},{"id":"ac_final_proof","cost":5,"attack":null,"health":null},{"id":"spell_codex","cost":4,"attack":null,"health":null},{"id":"whitefrost_bell","cost":4,"attack":null,"health":null},{"id":"blood_pact","cost":2,"attack":null,"health":null},{"id":"beast_hide_armor","cost":4,"attack":null,"health":null},{"id":"blood_scythe","cost":4,"attack":null,"health":null},{"id":"line_spearman","cost":8,"attack":5,"health":7},{"id":"border_lance","cost":3,"attack":null,"health":null},{"id":"iron_banner","cost":3,"attack":null,"health":null},{"id":"rush_lancer","cost":3,"attack":4,"health":4},{"id":"siege_captain","cost":4,"attack":4,"health":6},{"id":"iron_order_hammer","cost":4,"attack":null,"health":null},{"id":"gh_rush_archer","cost":2,"attack":2,"health":3},{"id":"broken_line_merc","cost":3,"attack":4,"health":4},{"id":"execution_supervisor","cost":4,"attack":4,"health":4},{"id":"gh_legend_assassin","cost":4,"attack":4,"health":5},{"id":"gh_bounty_collector","cost":4,"attack":5,"health":5},{"id":"ledger_paperknife","cost":4,"attack":null,"health":null},{"id":"blackmarket_bracer","cost":4,"attack":null,"health":null},{"id":"lt_venom_behemoth","cost":7,"attack":6,"health":7},{"id":"tide_colossus","cost":7,"attack":4,"health":4},{"id":"lt_tide_colossus","cost":5,"attack":null,"health":null},{"id":"lt_brood_armor","cost":4,"attack":null,"health":null},{"id":"lt_venom_pouch","cost":3,"attack":null,"health":null},{"id":"snow_last_stand","cost":8,"attack":5,"health":6},{"id":"snow_time_stop","cost":5,"attack":null,"health":null},{"id":"snow_aurora","cost":6,"attack":null,"health":null},{"id":"northern_nomad","cost":2,"attack":2,"health":3},{"id":"north_hunter","cost":2,"attack":2,"health":3},{"id":"wandering_blade","cost":2,"attack":2,"health":3},{"id":"neutral_wayfarer","cost":3,"attack":3,"health":4},{"id":"gh_shield_mercenary","cost":3,"attack":3,"health":4},{"id":"chrono_archivist","cost":7,"attack":4,"health":5},{"id":"astral_gate","cost":6,"attack":null,"health":null},{"id":"last_ledger","cost":5,"attack":null,"health":null}];
+    for (const s of STATS) { const c = CARDS[s.id]; if (!c) continue; if (Number.isFinite(s.cost)) c.cost = s.cost; if (Number.isFinite(s.attack)) c.attack = s.attack; if (Number.isFinite(s.health)) c.health = s.health; }
+    const NEW_CARDS = [
+  {
+    "id": "mirror_regent",
+    "name": "镜界执政官",
+    "faction": "neutral",
+    "type": "minion",
+    "rarity": "legendary",
+    "cost": 6,
+    "attack": 4,
+    "health": 5,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "enemy",
+    "text": "登场：选择一个敌方随从，召唤它的 1/1 复制。复制体保留关键词和卡牌效果，但不会触发登场效果。",
+    "battlecry": {
+      "type": "copyEnemyMinion1of1"
+    }
+  },
+  {
+    "id": "time_debt_emperor",
+    "name": "时债君王",
+    "faction": "academy",
+    "type": "minion",
+    "rarity": "legendary",
+    "cost": 7,
+    "attack": 4,
+    "health": 6,
+    "keywords": [
+      "passive"
+    ],
+    "target": "none",
+    "text": "被动：你的回合结束时，使你手牌中的所有卡费用减少 1（最低为 0）。",
+    "passive": {
+      "type": "reduceHandCosts",
+      "amount": 1
+    }
+  },
+  {
+    "id": "cinder_arbiter",
+    "name": "灰烬仲裁者",
+    "faction": "empire",
+    "type": "minion",
+    "rarity": "legendary",
+    "cost": 7,
+    "attack": 5,
+    "health": 6,
+    "keywords": [
+      "passive"
+    ],
+    "target": "none",
+    "text": "被动：你的回合结束时，对所有其他随从造成 2 点伤害。",
+    "passive": {
+      "type": "endTurnDamageAllOther",
+      "amount": 2
+    }
+  },
+  {
+    "id": "unquiet_dowager",
+    "name": "夺魂女侯",
+    "faction": "greyharbor",
+    "type": "minion",
+    "rarity": "legendary",
+    "cost": 7,
+    "attack": 5,
+    "health": 5,
+    "keywords": [
+      "deathrattle"
+    ],
+    "target": "none",
+    "text": "余响：随机控制一个费用不高于 4 的敌方随从。",
+    "deathrattle": {
+      "type": "takeControlRandomEnemyUnder4"
+    }
+  },
+  {
+    "id": "stone_alchemist",
+    "name": "石化术师",
+    "faction": "xizhao",
+    "type": "minion",
+    "rarity": "legendary",
+    "cost": 6,
+    "attack": 3,
+    "health": 5,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "enemy",
+    "text": "登场：将一个敌方随从变成 1/1 石像衍生物，移除其关键词和卡牌效果。",
+    "battlecry": {
+      "type": "transformEnemy1of1"
+    }
+  },
+  {
+    "id": "puwei_dawn_mender",
+    "name": "白岛愈辉者",
+    "faction": "pus",
+    "type": "minion",
+    "rarity": "rare",
+    "cost": 3,
+    "attack": 2,
+    "health": 4,
+    "keywords": [
+      "passive"
+    ],
+    "target": "none",
+    "text": "被动：你每回合第一次实际恢复领袖生命时，随机一个受伤的友方随从恢复 2 点生命。",
+    "passive": {
+      "type": "heroHealAllyOnce",
+      "amount": 2
+    }
+  },
+  {
+    "id": "puwei_overflow_saint",
+    "name": "晨潮圣使",
+    "faction": "pus",
+    "type": "minion",
+    "rarity": "legendary",
+    "cost": 5,
+    "attack": 4,
+    "health": 5,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：恢复你的领袖 4 点生命；这次恢复溢出的数值转为等量护甲。",
+    "battlecry": {
+      "type": "healOverflowArmor",
+      "amount": 4
+    }
+  },
+  {
+    "id": "academy_arcane_transcriber",
+    "name": "秘仪誊写员",
+    "faction": "academy",
+    "type": "minion",
+    "rarity": "epic",
+    "cost": 5,
+    "attack": 3,
+    "health": 5,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：复制你本局最近使用的一张战术牌置入手牌；该牌费用增加 1（最高为 10）。若本局尚未使用战术牌，抽 1 张牌。",
+    "battlecry": {
+      "type": "copyLastTacticPlus1"
+    }
+  },
+  {
+    "id": "xizhao_blood_vow",
+    "name": "血誓赌徒",
+    "faction": "xizhao",
+    "type": "minion",
+    "rarity": "epic",
+    "cost": 4,
+    "attack": 3,
+    "health": 4,
+    "keywords": [
+      "battlecry",
+      "blood"
+    ],
+    "target": "enemy",
+    "text": "血祭 3：对一个敌方随从造成 4 点伤害；若它被消灭，抽 1 张牌。",
+    "bloodCost": 3,
+    "battlecry": {
+      "type": "damageDrawIfKill",
+      "amount": 4
+    }
+  },
+  {
+    "id": "republic_bastion_mentor",
+    "name": "壁垒教官",
+    "faction": "republic",
+    "type": "minion",
+    "rarity": "rare",
+    "cost": 3,
+    "attack": 2,
+    "health": 4,
+    "keywords": [
+      "passive"
+    ],
+    "target": "none",
+    "text": "被动：你每回合第一次获得护甲时，使一个随机友方随从获得 +0/+1。",
+    "passive": {
+      "type": "firstArmorBuffAllyHealth"
+    }
+  },
+  {
+    "id": "republic_ironwall_marshal",
+    "name": "铁壁元帅",
+    "faction": "republic",
+    "type": "minion",
+    "rarity": "legendary",
+    "cost": 6,
+    "attack": 4,
+    "health": 6,
+    "keywords": [
+      "taunt",
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "守备。登场：获得 4 点护甲；若你在此效果前已有护甲，自身获得格挡。",
+    "battlecry": {
+      "type": "armorConditionalBlock",
+      "amount": 4
+    }
+  },
+  {
+    "id": "empire_veinblade_savant",
+    "name": "脉刃策士",
+    "faction": "empire",
+    "type": "minion",
+    "rarity": "epic",
+    "cost": 4,
+    "attack": 3,
+    "health": 4,
+    "keywords": [
+      "battlecry",
+      "passive"
+    ],
+    "target": "none",
+    "text": "登场：共享流脉 +1。你每回合第一次消耗共享流脉时，本随从获得 +2 攻击。",
+    "battlecry": {
+      "type": "veinOnly",
+      "amount": 1
+    },
+    "passive": {
+      "type": "veinSpendAttackOnce",
+      "attack": 2
+    }
+  },
+  {
+    "id": "grayharbor_bounty_chaser",
+    "name": "悬赏追猎者",
+    "faction": "greyharbor",
+    "type": "minion",
+    "rarity": "rare",
+    "cost": 3,
+    "attack": 2,
+    "health": 4,
+    "keywords": [
+      "passive"
+    ],
+    "target": "none",
+    "text": "被动：你每回合第一次消灭悬赏目标时，抽 1 张牌并获得 2 点护甲。",
+    "passive": {
+      "type": "firstBountyKillDrawArmor",
+      "draw": 1,
+      "armor": 2
+    }
+  },
+  {
+    "id": "losutai_spore_pathfinder",
+    "name": "孢子引路人",
+    "faction": "losutai",
+    "type": "minion",
+    "rarity": "rare",
+    "cost": 3,
+    "attack": 2,
+    "health": 4,
+    "keywords": [
+      "passive"
+    ],
+    "target": "none",
+    "text": "被动：每回合第一次友方洛斯汰魔物死亡时，召唤一个 1/1 洛斯汰魔物。",
+    "passive": {
+      "type": "firstImpDeathSummon"
+    }
+  },
+  {
+    "id": "losutai_hive_ancestor",
+    "name": "巢群先祖",
+    "faction": "losutai",
+    "type": "minion",
+    "rarity": "legendary",
+    "cost": 7,
+    "attack": 5,
+    "health": 6,
+    "keywords": [
+      "passive"
+    ],
+    "target": "none",
+    "text": "被动：你的回合结束时，若你本回合召唤过至少 3 个洛斯汰魔物，召唤一个 3/3 洛斯汰巨兽。",
+    "passive": {
+      "type": "endTurnThreeImpsSummon"
+    }
+  },
+  {
+    "id": "snow_frost_hunter",
+    "name": "凝霜猎手",
+    "faction": "snow",
+    "type": "minion",
+    "rarity": "rare",
+    "cost": 3,
+    "attack": 2,
+    "health": 4,
+    "keywords": [
+      "passive"
+    ],
+    "target": "none",
+    "text": "被动：你每回合第一次冻结敌方随从时，本随从获得 +1 攻击；第二次冻结时再获得 +1 攻击。",
+    "passive": {
+      "type": "freezeGrowthTwice",
+      "attack": 1
+    }
+  },
+  {
+    "id": "snow_shatter_judge",
+    "name": "碎冰审判官",
+    "faction": "snow",
+    "type": "minion",
+    "rarity": "legendary",
+    "cost": 6,
+    "attack": 4,
+    "health": 5,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "text": "登场：对所有被冻结的敌方随从造成 3 点伤害；若至少消灭一个，抽 1 张牌。",
+    "battlecry": {
+      "type": "damageFrozenEnemiesDrawIfKill",
+      "amount": 3
+    }
+  },
+  {
+    "id": "neutral_copyist_luomi",
+    "name": "复写术师·洛弥",
+    "faction": "neutral",
+    "type": "minion",
+    "rarity": "epic",
+    "cost": 4,
+    "attack": 2,
+    "health": 3,
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "friendly",
+    "text": "登场：将一个友方随从的复制置入你的手牌；其费用与原卡相同。",
+    "battlecry": {
+      "type": "copyFriendlyToHandSameCost"
+    }
+  }
+];
+    for (const c of NEW_CARDS) { c.keywords = (c.keywords || []).filter(k => k !== "passive" && k !== "blood"); c.noArtwork = true; CARDS[c.id] = c; }
+    if (CARDS.empire_veinblade_savant) CARDS.empire_veinblade_savant.text = "登场：共享流脉 +1。被动：你每回合第一次消耗共享流脉时，本随从获得 +2 攻击。";
+  })();
+
   return { FACTIONS, FACTION_IDS, nextFaction, HEROES, CARDS, DECKS, NEUTRAL_DECK, KEYWORDS, DECK_STRATEGIES, DECK_SPECIALS, DECK_TRIM, DECK_RARITY_LIMITS, cardPool, deckRarityCounts, isExactPreset, validateDeck, autoBuildDeck, maxCopies };
 });
 

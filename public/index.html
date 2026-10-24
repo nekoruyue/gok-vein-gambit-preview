@@ -56,7 +56,6 @@
             <span data-faction-chip="losutai"><i></i>洛斯汰</span>
             <span data-faction-chip="snow"><i></i>雪都</span>
           </div>
-          <button id="btn-home-tasks" class="home-task-strip" type="button"><span class="home-task-kicker">主线任务 · 下一步</span><strong id="home-task-next">完成第一场推演</strong><span class="home-task-arrow">查看任务 →</span></button>
           <div class="home-start-wrap home-dual">
             <button id="home-classic" class="home-start-button mode-home-classic" type="button">
               <span class="home-start-kicker">01 / 经典</span>
@@ -71,7 +70,7 @@
               <span class="home-start-cta">进入其他 <i>→</i></span>
             </button>
           </div>
-          <div class="home-version" id="home-version-line">八阵营 · 613 张卡牌 · 571 可收藏</div>
+          <div class="home-version" id="home-version-line">八阵营 · 631 张卡牌 · 589 可收藏</div>
         </div>
         <aside class="home-legendary" id="home-legendary">
           <div class="home-legendary-art" id="home-legendary-art">
@@ -98,10 +97,11 @@
         <nav class="home-nav" aria-label="档案功能">
           <button id="btn-deck-home" class="home-nav-item"><span class="home-nav-no">01</span><strong>构筑卡组</strong><small>手动 / 自动构筑</small></button>
           <button id="btn-codex" class="home-nav-item"><span class="home-nav-no">02</span><strong>卡牌图鉴</strong><small>主卡 + 衍生卡全收录</small></button>
-          <button id="btn-achievements" class="home-nav-item"><span class="home-nav-no">03</span><strong>推演记录</strong><small>战绩 · 成就 · 任务</small></button>
-          <button id="btn-customize-home" class="home-nav-item"><span class="home-nav-no">04</span><strong>档案外观</strong><small>头像 · 称号 · 卡背</small></button>
-          <button id="btn-settings" class="home-nav-item"><span class="home-nav-no">05</span><strong>推演设置</strong><small>画面 · 音效 · 操作</small></button>
-          <button id="btn-lore-home" class="home-nav-item"><span class="home-nav-no">06</span><strong>游戏背景</strong><small>大陆 · 阵营 · 历史</small></button>
+          <button id="btn-tasks-home" class="home-nav-item"><span class="home-nav-no">03</span><strong>任务</strong><small>主线 · 每日 · 每周</small></button>
+          <button id="btn-achievements" class="home-nav-item"><span class="home-nav-no">04</span><strong>推演记录</strong><small>战绩 · 成就</small></button>
+          <button id="btn-customize-home" class="home-nav-item"><span class="home-nav-no">05</span><strong>档案外观</strong><small>头像 · 称号 · 卡背</small></button>
+          <button id="btn-settings" class="home-nav-item"><span class="home-nav-no">06</span><strong>推演设置</strong><small>画面 · 音效 · 操作</small></button>
+          <button id="btn-lore-home" class="home-nav-item"><span class="home-nav-no">07</span><strong>游戏背景</strong><small>大陆 · 阵营 · 历史</small></button>
         </nav>
         <div class="home-quote" id="home-quote">每个阵位最多放 3 个随从，全场最多 6 个。</div>
       </div>
@@ -242,10 +242,10 @@
             <em id="mode-guide-state">展开 ↓</em>
           </button>
           <div id="mode-guide-body" class="mode-guide-body" hidden>
-            <button type="button" data-mode-guide="rules"><strong>游戏规则</strong><span>目标 / 行动力 / 阵位 / 流脉</span></button>
-            <button type="button" data-mode-guide="deck"><strong>组卡课堂</strong><span>30 张 / 曲线 / 品级 / 命名</span></button>
-            <button type="button" data-mode-guide="tutorial"><strong>新手教程</strong><span>跟着六步训练打一局</span></button>
-            <button type="button" data-mode-guide="keywords"><strong>关键词速查</strong><span>守备 / 先遣 / 引脉 / 悬赏</span></button>
+            <button type="button" data-mode-guide="basics"><strong>游戏基本规则</strong><span>对局核心 · 阵位 · 流脉</span></button>
+            <button type="button" data-mode-guide="advanced"><strong>游戏进阶规则</strong><span>五类卡牌 · 关键词 · 事件</span></button>
+            <button type="button" data-mode-guide="deck"><strong>组卡教学</strong><span>30 张 · 曲线 · 品级 · 标签</span></button>
+            <button type="button" data-mode-guide="drill"><strong>实战演练</strong><span>起手 · 守备 · 流脉 · 斩杀</span></button>
           </div>
         </div>
       </div>
@@ -350,7 +350,7 @@
     <section id="screen-tutorial" class="screen">
       <div class="tutorial-shell">
         <header class="page-head">
-          <button id="btn-tutorial-back" class="btn btn-small btn-ghost">← 返回档案处</button>
+          <button id="btn-tutorial-back" class="btn btn-small btn-ghost">← 返回上一层</button>
           <div>
             <div class="eyebrow">新手入门 / 实战手册</div>
             <h2>游戏教程</h2>
@@ -358,22 +358,10 @@
           <div class="head-spacer"></div>
         </header>
         <div class="tutorial-intro">
-          <div class="eyebrow">欢迎来到档案室 · 实战手册</div>
+          <div class="eyebrow">欢迎来到档案室 · 四堂必修课</div>
           <h3>从规则到第一局。</h3>
-          <p>《戈克世界：流脉牌局》是一款双人对战卡牌游戏。在随从与领袖的基础玩法上，加入了阵位、流脉、装备等新机制。下面按对局基础、卡牌类型、实战流程与关键词，把规则一次讲清。</p>
+          <p>《戈克世界：流脉牌局》是一款双人对战卡牌游戏。在随从与领袖的基础玩法上，加入了阵位、流脉、装备、债务卡等新机制。下面按对局基础、卡牌类型、实战流程与关键词，把规则一次讲清。<br><br>如果你没玩过卡牌游戏，先记住一句话：每回合获得行动力，用行动力出牌，把对方领袖的生命打到 0。其他规则都是围绕这句话展开的。看不懂的词先不用死记，教程里会反复出现。</p>
         </div>
-        <div class="tutorial-route">
-          <div class="tutorial-route-head"><span class="panel-label">TRAINING ROUTE / 六步训练</span><small>先选一课，再进入实战演练。</small></div>
-          <div class="tutorial-route-grid">
-            <button class="tutorial-route-step" data-tutorial-jump="tutorial-core"><b>01</b><strong>基础规则</strong><small>目标 · 行动力 · 抽牌</small></button>
-            <button class="tutorial-route-step" data-tutorial-jump="tutorial-zones"><b>02</b><strong>阵位与攻击</strong><small>站位 · 互殴 · 守备</small></button>
-            <button class="tutorial-route-step" data-tutorial-jump="tutorial-cards"><b>03</b><strong>卡牌与牌组</strong><small>四类卡 · 30 张</small></button>
-            <button class="tutorial-route-step" data-tutorial-jump="tutorial-flow"><b>04</b><strong>实战流程</strong><small>铺场 · 交换 · 斩杀</small></button>
-            <button class="tutorial-route-step" data-tutorial-jump="tutorial-glossary"><b>05</b><strong>关键词</strong><small>24 个核心词条</small></button>
-            <button class="tutorial-route-step tutorial-route-drill" data-tutorial-drill="1"><b>06</b><strong>进入演练</strong><small>带着目标打一局</small></button>
-          </div>
-        </div>
-
         <div class="tutorial-manual">
           <section class="manual-section" id="tutorial-core">
             <div class="manual-head">
@@ -386,34 +374,35 @@
             <div class="manual-grid">
               <article class="tutorial-card">
                 <h4>目标</h4>
-                <p>双方领袖拥有不同数量的起始生命。率先将对方领袖的生命降至 0 的一方获胜。</p>
+                <p>双方领袖拥有不同数量的起始生命，当前版本大约在 25–35 之间；谁的领袖先降到 0，谁就输。你不需要消灭对方所有随从，也不需要打空对方牌库，所有行动最终都服务于“把领袖生命打低”。</p>
               </article>
               <article class="tutorial-card">
                 <h4>行动力</h4>
-                <p>第 1 回合 1 点，每回合 +1，上限 10 点；每回合开始回满，不能留到下一回合。</p>
+                <p>第 1 回合有 1 点行动力，之后每个自己的回合 +1，最多 10 点。行动力每回合开始回满，不能存到下一回合，所以“这回合省一点”通常等于浪费。先手第一回合只有 1 点，后手第一回合会更舒服一些。</p>
               </article>
               <article class="tutorial-card">
                 <h4>先后手</h4>
-                <p>先手抽 3 张；后手抽 4 张，并额外获得「采掘许可」（本回合临时 +2 点行动力）。</p>
+                <p>先手开局抽 3 张；后手抽 4 张，并获得一次「采掘许可」：后手第一回合临时 +2 点行动力。这个补偿是为了让后手不至于一上来就落后，所以后手第一回合往往能比先手多做一件事。</p>
               </article>
               <article class="tutorial-card">
                 <h4>抽牌</h4>
-                <p>每回合开始自动抽 1 张；手牌超过上限时，超出的牌会被销毁。</p>
+                <p>每回合开始自动抽 1 张；<strong>手牌上限是 8 张</strong>。手牌已经 8 张时，再抽到的牌会被直接烧掉并进入弃牌堆，不会留在手里。抽牌、预兆、复制和回潮都可能让你多拿牌，手牌快满时先打掉一张低费牌，别让关键牌被烧。</p>
               </article>
               <article class="tutorial-card">
                 <h4>随从攻击</h4>
-                <p>当回合打出的随从不能立即攻击，需要等到下一回合；随从互殴时双方同时受到等于对方攻击力的伤害，生命归零离场。具有先遣等关键词的随从除外；先遣当回合只能攻击随从，不能攻击领袖。</p>
+                <p>当回合打出的随从不能立即攻击，需要等到下一回合。随从互殴时双方同时受到等于对方攻击力的伤害，生命归零就离场；不是“谁先打谁就赢”。先遣随从是例外：登场当回合就能攻击随从，但不能直接攻击敌方领袖。攻击前先算一遍双方血量，能白吃再上，别用大随从换小随从。</p>
               </article>
               <article class="tutorial-card">
                 <h4>阵位</h4>
-                <p>左翼 / 中枢 / 右翼三个阵位，每个阵位最多 3 个随从，但全场最多 6 个。阵位会影响部分卡牌的范围与固定效果。</p>
+                <p>牌桌分左翼、中枢、右翼三个阵位，每个阵位最多 3 个随从，但全场最多 6 个。阵位会影响卡牌的范围、固定增益、守备保护和部分对位效果；放错位置，卡牌可能只发挥一半价值。新手先记住：需要保护的随从放后排，需要触发同阵位效果的随从放在一起。</p>
               </article>
               <article class="tutorial-card">
                 <h4>流脉</h4>
-                <p>双方共享 0 → 12，每次完整轮次（双方各行动一次）自然 +1。达到 4 震荡、7 裂隙、10 魔物潮时触发世界事件；达到 12 回流清空。</p>
+                <p>流脉是双方共享的 0 → 12 风险条，不是谁一个人的资源。每次完整轮次（双方各行动一次）自然 +1；采掘等效果会额外加速。达到 4 震荡、7 裂隙、10 魔物潮时触发世界事件；达到 12 回流清空并重新积累。流脉越高，世界事件越危险，但它也能被引脉、镇脉、压脉等卡牌利用。</p>
               </article>
             </div>
-            <p class="manual-note">4 震荡：所有随从受到 1 点伤害；7 裂隙：双方领袖受到 2 点伤害；10 魔物潮：所有随从受到 3 点伤害，双方领袖受到 5 点伤害。</p>
+            <p class="manual-note">4 震荡：所有随从受到 1 点伤害；7 裂隙：双方领袖受到 2 点伤害；10 魔物潮：所有随从受到 3 点伤害，双方领袖受到 5 点伤害。注意这是“双方一起承受”，不是只打对手；低血量时推进流脉可能先把自己送走。</p>
+            <div class="manual-callout"><strong>手牌上限：8 张</strong><p>手牌已经有 8 张时，再抽到的牌会被直接烧掉，不会留在手里。抽牌、预兆、复制和回潮都要先看手牌空间；手牌快满时，优先打出低费牌或选择不抽，别让关键牌被烧。</p></div>
           </section>
 
           <section class="manual-section" id="tutorial-zones">
@@ -426,10 +415,10 @@
             </div>
             <div class="position-manual">
               <div class="position-copy">
-                <p><strong>阵位</strong>：左翼、中枢、右翼三个位置。每个阵位最多 3 个随从，全场最多 6 个。</p>
-                <p><strong>同阵位</strong>：同一个阵位里的友方随从。下图我方 A 与 B、C 与 D、E 与 F 同阵位。</p>
-                <p><strong>对位</strong>：同一列、分属双方的阵位。我方左翼 A/B 的对位是敌方左翼 G/H；中枢 C/D 对 I/J；右翼 E/F 对 K/L。</p>
-                <p><strong>阵型</strong>：只是“阵型卡”这个卡牌类型，不是关键词，也不是一条额外的线。卡名里的“阵线”只是名字，不构成额外规则。</p>
+                <p><strong>阵位</strong>：左翼、中枢、右翼三个位置。每个阵位最多 3 个随从，全场最多 6 个。不要把所有随从堆在一个阵位，否则其他阵位空了，对手可以更安全地展开。</p>
+                <p><strong>同阵位</strong>：同一个阵位里的友方随从。下图我方 A 与 B、C 与 D、E 与 F 同阵位。连携、部分被动、阵型固定效果都看同阵位；两只随从不在同一格，就不能互相配合。</p>
+                <p><strong>对位</strong>：同一列、分属双方的阵位。我方左翼 A/B 的对位是敌方左翼 G/H；中枢 C/D 对 I/J；右翼 E/F 对 K/L。对位不是“攻击目标”，只是位置关系；部分卡牌会因为对位有敌人而获得加成。</p>
+                <p><strong>阵型</strong>：只是“阵型卡”这个卡牌类型，不是关键词，也不是一条额外的线。卡名里的“阵线”只是名字，不构成额外规则。阵型挂在某个阵位上，之后进入该阵位的随从会获得它的固定效果。</p>
               </div>
               <div class="position-board" aria-label="阵位与对位示例">
                 <div class="position-row">
@@ -448,51 +437,77 @@
               </div>
             </div>
             <div class="position-aura">
-              <p><strong>阵位 / 对位效果按光环结算。</strong>条件满足时即时生效，条件消失就消失；敌方攻击结算后，如果对位随从死亡，加成立刻移除。</p>
+              <p><strong>阵位 / 对位效果按光环结算。</strong>条件满足时即时生效，条件消失就消失；敌方攻击结算后，如果对位随从死亡，加成立刻移除。它不是永久 buff，所以不要只看当前站场，也要想下一回合随从交换后效果还在不在。</p>
               <p>写法示例：<em>被动：该随从在场时，同阵位其他友方随从固定获得 +1/+1。</em></p>
               <p>写法示例：<em>该随从对位有敌方随从时，本随从固定获得 +1/+1。</em></p>
             </div>
           </section>
 
-          <section class="manual-section" id="tutorial-cards">
+          <section class="manual-section" id="tutorial-vein">
             <div class="manual-head">
               <span class="manual-index">03</span>
               <div>
-                <h3>四类卡牌</h3>
+                <h3>流脉：共享的风险条</h3>
+                <p>它既是资源，也是倒计时；看懂了，才知道什么时候该停手。</p>
+              </div>
+            </div>
+            <div class="manual-grid">
+              <article class="tutorial-card"><h4>怎么涨</h4><p>双方每完整轮次自然 +1；采掘等效果会额外加速。流脉属于双方共享，不是某一方的资源。你采掘抽牌，对手也能享受流脉上涨带来的世界事件，所以“多抽”不一定等于“赚”。</p></article>
+              <article class="tutorial-card"><h4>4 震荡</h4><p>所有随从受到 1 点伤害。小随从可能被清掉，铺场卡组要提前留血；如果对手靠 1 血随从站场，推到 4 可能帮你清场，也可能先清掉自己的。</p></article>
+              <article class="tutorial-card"><h4>7 裂隙</h4><p>双方领袖受到 2 点伤害。低血量时这可能直接决定胜负，别只看场面；斩杀前先算这 2 点会不会先打到自己的领袖。</p></article>
+              <article class="tutorial-card"><h4>10 魔物潮</h4><p>所有随从受到 3 点伤害，双方领袖受到 5 点伤害。这是大转折，通常要提前准备返场或斩杀；如果你的场面顶不住 3 点群体伤害，就不要主动把流脉推得太快。</p></article>
+              <article class="tutorial-card"><h4>12 回流</h4><p>流脉清空并重新积累。不要把 12 当成终点，它只是下一轮循环的开始；已经到 11 时，任何一点流脉增长都可能提前触发回流，斩杀计算要把它算进去。</p></article>
+              <article class="tutorial-card"><h4>引脉与采掘</h4><p>引脉在达到卡面标注的数字时触发；采掘抽牌并加速流脉。抽得越多，世界事件越快，是一把双刃剑。需要抢资源时采掘，需要拖回合时先别采。</p></article>
+            </div>
+            <div class="manual-callout"><strong>实战判断</strong><p>斩杀前先看流脉：如果你这一回合会把流脉推到 7 或 10，先算世界事件会不会先打死自己。需要拖回合时，避免无意义的采掘；需要清场时，流脉事件也可以当成一张“双方都吃”的额外法术。</p></div>
+          </section>
+
+          <section class="manual-section" id="tutorial-cards">
+            <div class="manual-head">
+              <span class="manual-index">04</span>
+              <div>
+                <h3>五类卡牌</h3>
                 <p>看清卡框和定位，再决定这张牌什么时候出。</p>
               </div>
             </div>
-            <div class="manual-grid manual-grid-4">
+            <div class="manual-grid manual-grid-5">
               <article class="tutorial-card">
                 <span class="manual-tag">随从卡</span>
                 <h4>核心输出与场面单位</h4>
-                <p>拥有攻击与生命，常驻战场；部分带有登场、余响等关键词效果。</p>
+                <p>拥有攻击和生命，打出后留在场上，是铺场、交换和攻击领袖的主要单位。随从当回合不能攻击（先遣除外），下一回合才能动。带登场、余响的随从还要注意：效果触发一次后不会无限重复。</p>
               </article>
               <article class="tutorial-card">
                 <span class="manual-tag">战术卡</span>
                 <h4>即时效果</h4>
-                <p>打出后立刻结算并进入弃牌堆；用于解场、治疗、抽牌等。</p>
+                <p>打出后立刻结算并进入弃牌堆，不会留在场上。战术牌用来解场、抽牌、治疗、冻结或斩杀；它不占场面，但会消耗一张手牌和行动力，打之前先想“这张牌现在能改变什么”。</p>
               </article>
               <article class="tutorial-card">
                 <span class="manual-tag">阵型卡</span>
                 <h4>阵位效果</h4>
-                <p>部署在一个阵位后持续生效，使该阵位的随从固定获得效果。</p>
+                <p>部署在一个阵位后持续生效，使该阵位的随从固定获得效果。阵型只影响一个阵位，不保护领袖；如果那个阵位被清空，收益就会暂时中断。最多带 3 张，不要为了阵型牺牲太多低费随从。</p>
               </article>
               <article class="tutorial-card">
                 <span class="manual-tag">装备卡</span>
                 <h4>永久效果</h4>
-                <p>给领袖一个永久的增益；需要从牌库抽到并打出，最多可同时装备两件。</p>
+                <p>给领袖一个持续的全局增益，打出后不占场面，最多同时装备两件。装备通常提供攻击、生命、护甲、治疗或抽牌等长期价值；它怕拆装备效果，也不能只看单回合爆发。</p>
+              </article>
+              <article class="tutorial-card">
+                <span class="manual-tag">债务卡</span>
+                <h4>塞给对手的任务</h4>
+                <p>打出后会洗进对手牌库。对手抽到并主动打出时，才开始本回合的债务任务；任务没完成，会在回合结束受到伤害。对手不打出，它就只是占一张手牌，所以债务卡更像干扰，不是稳定直伤。对手也可以选择硬吃伤害保节奏。</p>
               </article>
             </div>
             <div class="manual-callout">
               <strong>牌组结构</strong>
-              <p>30 张卡（随从 + 战术 + 阵型 + 装备自由混编）。领袖在开局单独选择，不占牌组，也不进入牌库。新手前期不用自己组卡，系统提供预设基础牌组。</p>
+              <p>30 张卡（28 张主牌 + 2 件装备；阵型最多 3 张，装备最多 2 件）。领袖在开局单独选择，不占牌组，也不进入牌库。新手前期不用自己组卡，系统提供预设基础牌组。</p>
             </div>
+            <div class="manual-callout"><strong>五类卡怎么分工</strong><p>随从负责站场和交换，战术负责解场/抽牌/治疗，阵型给一个阵位长期加成，装备给领袖全局增益，债务卡干扰对手手牌与节奏。它们共用同一份行动力和同一个 30 张牌库，不能每类都塞满。</p></div>
+            <div class="manual-callout"><strong>九种阵营玩法速览</strong><p>普卫岛靠治疗续航并把溢出治疗转成护甲；学院围绕连续施放战术和降费；西昭用血祭换解场、用变形处理高价值目标；共和国靠护甲、守备和格挡站住阵位；帝国消耗共享流脉换攻击，再用大随从控场；灰港先标记悬赏再兑现击杀回报；洛斯汰铺魔物、用死亡补位并召唤巨兽；雪都先冻结再由碎冰惩罚；中立提供复制、抽牌和通用资源。</p></div>
           </section>
 
           <section class="manual-section" id="tutorial-flow">
             <div class="manual-head">
-              <span class="manual-index">04</span>
+              <span class="manual-index">05</span>
               <div>
                 <h3>标准对局流程</h3>
                 <p>从起手到结束回合，按这个顺序走。</p>
@@ -502,25 +517,26 @@
               <div class="manual-step">
                 <span>01</span>
                 <h4>开始推演</h4>
-                <p>选择领袖与牌组，进入对战。</p>
+                <p>选择领袖与牌组，进入对战。先确认牌组是 30 张、装备 2 件、没有未拥有传说；准备阶段看到的牌组名和标签，就是你这局要用的那套。</p>
               </div>
               <div class="manual-step">
                 <span>02</span>
                 <h4>起手换牌</h4>
-                <p>建议换掉 4 行动力以上的高费卡，保留 1–3 行动力的随从或战术，保证前 3 回合有牌可出。</p>
+                <p>起手换牌建议换掉 4 行动力以上的高费卡，保留 1–3 行动力的随从或战术，保证前 3 回合有牌可出。先手只有 3 张，尽量换顺；后手多 1 张，也别留一手 6 费等翻盘。</p>
               </div>
               <div class="manual-step">
                 <span>03</span>
                 <h4>己方回合</h4>
-                <p>优先低费随从铺场 → 用战术解场或增幅 → 随从攻击 → 使用领袖技能 → 结束回合。</p>
+                <p>优先低费随从铺场 → 用战术解场或增幅 → 随从攻击 → 使用领袖技能 → 结束回合。攻击前先看对方守备和攻击力；能白吃就交换，不能白吃就用法术，不要为了打脸把场面全放掉。</p>
               </div>
             </div>
-            <p class="manual-note">双方交替行动，直到一方领袖生命归零。领袖本身不进行普通攻击，主要依靠技能、装备与卡牌影响战局。</p>
+            <p class="manual-note">双方交替行动，直到一方领袖生命归零。领袖本身不进行普通攻击，主要依靠技能、装备与卡牌影响战局。每回合结束前检查：有没有忘记攻击、忘记领袖技能、忘记手牌上限。</p>
+            <div class="manual-callout"><strong>回合里最容易忘的三件事</strong><p>一是手牌上限 8 张，抽牌前先看手牌空间；二是先遣随从当回合只能打随从，不能直接打领袖，别把先遣当成冲锋；三是行动力每回合回满、不累积，结束回合前尽量把能做的事做完。</p></div>
           </section>
 
           <section class="manual-section" id="tutorial-practice">
             <div class="manual-head">
-              <span class="manual-index">05</span>
+              <span class="manual-index">06</span>
               <div>
                 <h3>实战基础细节</h3>
                 <p>先站住，再交换，最后找斩杀。</p>
@@ -529,25 +545,66 @@
             <div class="manual-grid">
               <article class="tutorial-card">
                 <h4>前期</h4>
-                <p>稳住场面，低费随从优先下场；不要随意空交战术，留牌应对对手铺场。</p>
+                <p>稳住场面，低费随从优先下场；不要随意空交战术，留牌应对对手铺场。前期目标是“每回合都有事做”，不是一回合打光所有手牌。</p>
               </article>
               <article class="tutorial-card">
                 <h4>中期</h4>
-                <p>优先用低价值随从交换敌方高威胁随从，保留核心输出。</p>
+                <p>优先用低价值随从交换敌方高威胁随从，保留核心输出。能白吃就白吃，不能白吃再考虑法术；交换前先看对方守备、格挡和流脉阈值。</p>
               </article>
               <article class="tutorial-card">
                 <h4>后期</h4>
-                <p>集中资源爆发斩杀；同时留意流脉阈值和对手的守备随从。</p>
+                <p>集中资源爆发斩杀；同时留意流脉阈值和对手的守备随从。斩杀前先算手牌上限、行动力、流脉事件和对方可能有的格挡，不要只看当前场面攻击。</p>
               </article>
             </div>
           </section>
 
+          <section class="manual-section" id="tutorial-deck">
+            <div class="manual-head">
+              <span class="manual-index">07</span>
+              <div>
+                <h3>组卡教学</h3>
+                <p>不是把所有强卡塞进去，而是让 30 张牌能按计划运转。</p>
+              </div>
+            </div>
+            <div class="manual-grid">
+              <article class="tutorial-card"><h4>先定方向</h4><p>快攻、中速、控制、组合。先想清楚靠什么赢：抢血、站场、解场，还是组合技收尾。方向不确定时，先选“中速”：低费站场、按曲线出牌、用一两张高质量牌收尾。</p></article>
+              <article class="tutorial-card"><h4>30 张结构</h4><p>28 张主牌 + 2 件装备；阵型最多 3 张，装备最多 2 件。同名卡数量受品级和卡牌规则限制；装备和阵型是“结构卡”，不是越多越好，先保证主牌有足够的随从和战术。</p></article>
+              <article class="tutorial-card"><h4>费用曲线</h4><p>2–3 费 8–12 张，4–5 费 8–10 张，6 费以上别太多。前 3 回合有牌可出，比单卡强度更重要；如果你的 1–2 费只有三四张，实战很容易连续空过。</p></article>
+              <article class="tutorial-card"><h4>品级上限</h4><p>传说最多 2 张，史诗最多 6 张，稀有最多 10 张；未拥有的传说不能加入自定义牌组。品级限制不是“越贵越强”，而是防止一套牌全是高稀有度终端、没有低费骨架。</p></article>
+              <article class="tutorial-card"><h4>新手做法</h4><p>先用预设或自动构筑生成 30 张，再手动替换 3–5 张；不要从零硬凑，也不要反复推翻整套牌。替换时一次只改一个方向：先补低费，再调解场，最后才考虑加终端。</p></article>
+              <article class="tutorial-card"><h4>命名与标签</h4><p>保存前起名字，并加流派标签：流脉、快攻、中速、控制、组合、娱乐。准备阶段按名字和标签选择；同名同标签的牌组不要留太多，否则自己都分不清哪套是控制哪套是快攻。</p></article>
+              <article class="tutorial-card"><h4>常见错误</h4><p>全是高费、装备太多、低费随从不够、只看单卡强度不看曲线。新手最常见的输法不是卡不强，而是前三回合没牌出；其次是手牌满了还在抽牌，把关键牌烧掉。</p></article>
+              <article class="tutorial-card"><h4>替换示例</h4><p>先用自动构筑生成 30 张，再替换 3–5 张：去掉一张卡手的 6+ 费，补一张 2–3 费站场；如果总是被快攻打死，再加一张低费解牌。不要一次换掉半套牌，否则你无法判断哪张改动有效。</p></article>
+              <article class="tutorial-card"><h4>流派模板</h4><p>快攻：低费多、直伤多；中速：曲线顺、站场稳；控制：解牌多、后期厚；组合：围绕核心牌，别把组件拆太散。新手先用中速，学会站场和交换，再尝试快攻或控制。</p></article>
+            </div>
+            <div class="manual-callout"><strong>组卡检查表</strong><p>30 张、2 件装备、阵型合法、没有未拥有传说、曲线不空、同名不超限。六项都过，再拿去实战。</p></div>
+          </section>
+
+          <section class="manual-section" id="tutorial-drills">
+            <div class="manual-head">
+              <span class="manual-index">09</span>
+              <div>
+                <h3>实战演练</h3>
+                <p>规则看懂不等于会打。挑一个局面，只练一个目标。</p>
+              </div>
+            </div>
+            <div class="manual-grid">
+              <article class="tutorial-card tutorial-drill-card"><h4>起手换牌</h4><p>只练换牌，目标是留下 1–3 费能打出的牌，最多留一张 5 费以上。演练时先看起手，再决定换哪几张；不要全换，也不要一手高费硬留。</p><button class="btn btn-small btn-primary" data-drill-scenario="mulligan">进入演练</button></article>
+              <article class="tutorial-card tutorial-drill-card"><h4>守备突破</h4><p>对面有守备，先处理守备再打后排。演练时先用法术或先遣换掉守备，再考虑打脸；不要把所有伤害都砸在守备上，后面没资源收尾。</p><button class="btn btn-small btn-primary" data-drill-scenario="guard">进入演练</button></article>
+              <article class="tutorial-card tutorial-drill-card"><h4>流脉事件</h4><p>把流脉推到阈值附近，观察世界事件什么时候来。演练时注意：4/7/10 是双方一起结算，先算自己会不会被事件打死，再决定要不要继续采掘。</p><button class="btn btn-small btn-primary" data-drill-scenario="vein">进入演练</button></article>
+              <article class="tutorial-card tutorial-drill-card"><h4>斩杀计算</h4><p>对方生命不高，先算清场上攻击、手牌伤害、行动力和流脉事件，再决定怎么打。演练时不要看到血低就直接冲，先确认对方守备和格挡。</p><button class="btn btn-small btn-primary" data-drill-scenario="lethal">进入演练</button></article>
+            </div>
+            <div class="manual-callout"><strong>一次只练一个目标</strong><p>打完回教程，换下一个局面。四场都试过，你对节奏和交换的理解会比只看文字深很多。</p></div>
+            <div class="manual-callout"><strong>复盘问题</strong><p>每场只问三句：我前三回合有牌出吗？我有没有用大随从换小随从？我斩杀前有没有先算手牌上限和流脉事件？</p></div>
+          </section>
+
           <section class="manual-section" id="tutorial-glossary">
             <div class="manual-head">
-              <span class="manual-index">06</span>
+              <span class="manual-index">08</span>
               <div>
                 <h3>关键词解析</h3>
-                <p>关键词的规则说明如下。</p>
+                <p>关键词是卡牌上的能力标签。下面每一条都按“它做什么、什么时候触发、容易误解什么”来讲。不要只背名字，最好拿一张对应卡牌对照着看。</p>
+                <p>游戏内点关键词按钮会显示短说明；这里是完整版，适合系统学习。看完整页后再回卡牌，你会发现很多效果其实是同一套规则。</p>
               </div>
             </div>
             <div id="tutorial-keywords" class="keyword-glossary tutorial-keywords"></div>
@@ -562,6 +619,7 @@
       </div>
     </section>
 
+
     <section id="screen-rules" class="screen">
       <div class="tutorial-shell rules-shell">
         <header class="page-head">
@@ -571,7 +629,6 @@
             <h2>游戏规则</h2>
           </div>
           <div class="head-spacer"></div>
-          <button id="btn-rules-keywords-top" class="btn btn-small btn-ghost">关键词说明</button>
         </header>
         <div class="tutorial-intro">
           <div class="eyebrow">戈克世界 · 流脉牌局</div>
@@ -589,8 +646,7 @@
           <div class="tutorial-grid tutorial-grid-seven">
           <article class="tutorial-card"><div class="tutorial-icon">05</div><h4>阵位与对位</h4><p>左翼 / 中枢 / 右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。同阵位会触发协同数值；双方同一列互为对位。</p></article>
           <article class="tutorial-card"><div class="tutorial-icon">06</div><h4>卡牌与牌组</h4><p>随从站场，战术一次性结算，阵型挂在某个阵位持续生效，装备装备在领袖身上。牌组为 30 张卡（随从 + 战术 + 阵型 + 装备自由混编）；领袖开局单独选择，不占牌组。</p></article>
-          <article class="tutorial-card"><div class="tutorial-icon">07</div><h4>关键词</h4><p>登场、余响、守备、先遣、冻结、沉默、引脉、预兆、采掘、血祭、镇脉、压脉、悬赏等关键词会在卡牌标签上标明；把鼠标移到标签上可查看说明。</p></article>
-          <article class="tutorial-card"><div class="tutorial-icon">08</div><h4>胜负与模式</h4><p>支持单人 AI、局域网与在线房间。领袖生命归零即败；双方同时归零为平局。对局中可认输，起手阶段可调度手牌。</p></article>
+          <article class="tutorial-card"><div class="tutorial-icon">07</div><h4>胜负与模式</h4><p>支持单人 AI、局域网与在线房间。领袖生命归零即败；双方同时归零为平局。对局中可认输，起手阶段可调度手牌。</p></article>
           </div>
         </details>
         <div class="panel rules-deck-class">
@@ -603,10 +659,6 @@
             <div><strong>拥有筛选</strong><span>先用「已拥有」，未拥有传说会显示灰色印章。</span></div>
             <div><strong>命名牌组</strong><span>Lv.5 解锁命名，Lv.7 可保存多套不同流派。</span></div>
           </div>
-        </div>
-        <div class="panel rules-keyword-panel">
-          <div class="panel-label">KEYWORDS / 关键词速查</div>
-          <div id="rules-keywords" class="keyword-glossary"></div>
         </div>
         <div class="tutorial-actions">
           <button id="btn-rules-tutorial" class="btn btn-primary">打开游戏教程</button>
@@ -979,7 +1031,7 @@
               <div id="deck-readonly-note" class="deck-readonly-note" hidden>官方预设只读 · Lv.5 后可复制为自定义牌组</div>
               <select id="deck-library-select" class="deck-library-select"></select>
               <input id="deck-name-input" class="deck-name-input" maxlength="18" placeholder="牌组名称" />
-              <select id="deck-tag-select" class="deck-library-select deck-tag-select"><option value="">流派标签</option><option value="快攻">快攻</option><option value="中速">中速</option><option value="控制">控制</option><option value="组合">组合</option><option value="娱乐">娱乐</option></select>
+              <select id="deck-tag-select" class="deck-library-select deck-tag-select"><option value="">流派标签</option><option value="流脉">流脉</option><option value="快攻">快攻</option><option value="中速">中速</option><option value="控制">控制</option><option value="组合">组合</option><option value="娱乐">娱乐</option></select>
               <div class="deck-library-actions">
                 <button id="btn-deck-copy-preset" class="btn btn-small btn-primary" type="button">复制预设为自定义</button>
                 <button id="btn-deck-new" class="btn btn-small btn-ghost" type="button">新建</button>

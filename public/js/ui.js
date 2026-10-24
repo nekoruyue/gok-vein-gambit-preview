@@ -187,6 +187,7 @@
     deckEditingId: null,
     deckReadOnly: false,
     deckDraftName: "",
+    deckDraftTag: "",
     customCardArt: null,
     activeRelics: {},
     tutorial: false,
@@ -606,6 +607,7 @@
     if (name === "tasks") renderTasksPage();
     if (name === "levelup") renderLevelRewardPage();
     if (name === "lesson") renderLessonPage();
+    if (name === "tutorial") showTutorialTab(app.tutorialTab || "basics");
     if (name === "rules") renderRulesKeywords();
     if (name === "other") renderOtherModes();
     applyVideoPrefs();
@@ -652,6 +654,12 @@
       }
       case "tutorial": returnFromTutorial(); return;
       case "codex": showScreen("home"); return;
+      case "profile": showScreen("home"); return;
+      case "appearance": showScreen("home"); return;
+      case "other": showScreen("home"); return;
+      case "tasks": showScreen("home"); return;
+      case "lesson": showScreen(app.lessonReturn || "tasks"); return;
+      case "levelup": showScreen("tasks"); return;
       case "achievements": showScreen("home"); return;
       case "content": showScreen("home"); return;
       case "rank": showScreen("home"); return;
@@ -783,6 +791,10 @@
     intro.appendChild(el("div", "eyebrow", "OTHER / 其他桌线"));
     intro.appendChild(el("h2", null, "其他模式"));
     intro.appendChild(el("p", null, "八人战棋、旧街机档案，以及灰港账牌桌。三条桌线，各算各的账。"));
+    const exp = el("div", "experimental-tip");
+    exp.appendChild(el("strong", null, "实验功能提示"));
+    exp.appendChild(el("span", null, "其他模式仍在实验当中，部分流程和数值待修复；遇到卡住或空白页请直接返回档案处。"));
+    intro.appendChild(exp);
     box.appendChild(intro);
     const grid = el("div", "mode-grid start-mode-grid");
     const modes = [
@@ -1868,8 +1880,8 @@
     handIcon.src = cardBackUrl();
     handMeta.appendChild(handIcon);
     handMeta.appendChild(el("small", null, "手牌"));
-    handMeta.appendChild(el("b", null, String(player.hand.length)));
-    handMeta.title = "手牌 " + player.hand.length + " 张";
+    handMeta.appendChild(el("b", null, player.hand.length + "/8"));
+    handMeta.title = "手牌 " + player.hand.length + " / 8 张（上限 8）";
     meta.appendChild(handMeta);
     vitals.appendChild(meta);
     body.appendChild(vitals);
@@ -3015,17 +3027,53 @@
     "镇脉": "消耗流脉换等量护甲；不足时只获得剩余部分。",
     "压脉": "消耗流脉对敌方领袖造成等量伤害；不足时整张无效。",
     "悬赏": "将一个目标标记为悬赏名单；该标记本身不触发死亡效果。",
-    "装备": "持续生效；最多可同时装备两件。"
+    "装备": "持续生效；最多可同时装备两件。",
+    "复制": "复制体默认继承目标当前攻击、最大生命、关键词和效果，不复制已受伤；复制体进场通常不触发登场。",
+    "恢复溢出": "治疗超过生命上限的部分默认消失；卡面写明“溢出转护甲”时，未恢复的点数改为护甲。",
+    "变形": "用新随从或衍生物替换目标；被替换的随从不视为死亡，不触发余响。",
+    "获得控制权": "把敌方随从移到自己的空阵位；没有空阵位时无法获得。"
+  };
+  const KEYWORD_TUTORIAL = {
+    "格挡": "格挡会先替你挡下下一次伤害 2 点，然后消失。它适合保护关键随从或领袖，但不是永久免疫；连续的小伤害会先磨掉格挡，再用真实伤害打进来。",
+    "守备": "守备随从像一堵门，会挡在同阵位其他友方随从前面。想攻击后面的目标，必须先处理守备；守备自己仍然可以被攻击，也会受到法术和效果伤害。",
+    "先遣": "先遣随从登场当回合就能攻击，但只能打随从，不能直接打敌方领袖。它适合抢节奏、换掉对方小随从，不要把它当成冲锋斩杀。",
+    "连携": "连携要求同阵位有另一个友方随从。满足时，本回合第一次攻击额外 +1 攻击，但不会增加攻击次数；孤零零站一个随从时不会触发。",
+    "血偿": "血偿会把溢出的伤害转化成护甲。比如 5 点攻击打 3 血随从，多出的 2 点会变成你的护甲，适合用大随从清理小随从。",
+    "蚀毒": "蚀毒随从造成伤害时，目标会被直接消灭，不管目标还剩多少生命。它对高血量大随从特别有效，但打领袖不会直接获胜，别把毒伤浪费在脸上。",
+    "隐匿": "隐匿让敌方无法选中这个随从。它适合安全铺场、等待增益或躲开解牌；一旦主动攻击或造成伤害，隐匿就会解除。",
+    "回潮": "回潮是第一次死亡后的返场：随从会以 1 点生命重新回到场上。第二次死亡才真正离场，适合拖节奏和反复触发余响。",
+    "冻结": "冻结让目标失去下一次攻击。它不会直接造成伤害，但能拖住敌方攻击节奏；连续冻结同一个目标可以继续压制，对付大随从很有效。",
+    "沉默": "沉默会移除随从的强化、关键词和卡牌效果，但不会直接消灭它。适合处理守备、回潮、连携等关键效果；沉默后再攻击就按普通随从结算。",
+    "登场": "登场是打出随从时触发一次的效果。它只在从手牌打出时触发；召唤、回潮或复制进场通常不会再触发，所以别把召唤当成第二次登场。",
+    "余响": "余响是随从死亡时触发一次的效果。它可以被回潮再次利用；注意沉默会移除余响，某些复活也会影响触发次数。",
+    "引脉": "引脉会在双方共享流脉达到标注数字时触发。多个阈值同时满足时，通常只结算最高那一档；所以不要只盯着 4，10 魔物潮才是更大的转折。",
+    "采掘": "采掘会抽取指定数量的牌，同时让共享流脉增加同样的点数。抽得越多，流脉事件来得越快；它既能补资源，也会加速世界事件，是一把双刃剑。",
+    "血祭": "血祭需要支付生命来触发。它不消耗行动力，但会让自己更接近危险线；适合需要抢节奏或补资源的卡组，血量低时要谨慎。",
+    "预兆": "预兆会从牌库顶的三张牌中选择一张加入手牌。它比直接抽牌更可控，但不会减少牌库总数，也不能保证一定拿到你想要的牌。",
+    "吞噬": "吞噬会消灭一个友方随从，并把它的攻击和生命加到吞噬者身上。适合把小随从转化成一个大威胁；注意被吞噬的随从会触发死亡效果。",
+    "逆流": "逆流需要消耗流脉来触发。流脉不足时会把流脉消耗到 0，但效果可能仍然触发；具体看卡面写的数值，别在流脉空的时候误判。",
+    "镇脉": "镇脉会消耗流脉，换取等量护甲。流脉不足时只获得剩余部分；它适合把快要溢出的流脉转成防御，避免世界事件过快到来。",
+    "压脉": "压脉会消耗流脉，对敌方领袖造成等量伤害。流脉不足时整张效果可能无效；使用前先看当前流脉，确认这一下能不能压到斩杀线。",
+    "悬赏": "悬赏会把一个敌方随从列入名单。完成悬赏通常能触发抽牌或成长；名单本身不会直接杀死目标，需要后续攻击或效果来兑现。",
+    "固定": "固定效果不会随条件消失，之后进入该阵位的随从也会获得。它适合提前布置长期阵位优势；和临时光环不同，固定效果更值得围绕它组牌。",
+    "装备": "装备会持续生效，最多同时装备两件。装备不占手牌，但会被拆装备效果克制；同名装备通常不重复叠加，先看清卡面说明。",
+    "被动": "被动不需要主动使用，满足条件时自动生效。它可能影响出牌、攻击、抽牌或阵位，读卡时要优先确认触发条件；没有满足条件时就不生效。",
+    "复制": "复制会生成一张与目标相同或相近的卡。复制体通常继承目标当前攻击、最大生命、关键词和效果，但不复制已经受到的伤害；复制体进场不会触发登场。复制进手牌时，按目标卡牌的基础数值生成，卡面标注的费用调整优先。",
+    "恢复溢出": "治疗会先把生命补到上限，多出的部分默认消失。若卡面写明“溢出转护甲”，未实际恢复的点数会变成等量护甲；满血时使用也能拿到护甲，但不会超过卡面数值。",
+    "变形": "变形会用新的随从或衍生物替换目标。被替换的随从不算死亡，不会触发余响；新单位留在原阵位，并替换原卡的关键词、攻击和生命。",
+    "获得控制权": "获得控制权会把敌方随从移到你的场上；目标必须有一个空的阵位，否则无法获得。控制权转移不是复制，原随从不会留在敌方场上。",
   };
   const KEYWORD_ICONS = {
     "登场": "battlecry", "余响": "deathrattle", "守备": "taunt", "先遣": "charge",
     "被动": "passive", "冻结": "freeze", "沉默": "silence", "隐匿": "stealth",
+    "复制": "passive", "恢复溢出": "heal", "变形": "damage", "获得控制权": "damage",
     "引脉": "vein", "预兆": "discover", "采掘": "excavate", "血祭": "blood",
     "吞噬": "damage", "格挡": "armor", "连携": "charge", "蚀毒": "deathrattle",
     "血偿": "heal", "回潮": "passive", "固定": "passive", "逆流": "vein",
     "镇脉": "armor", "压脉": "damage", "悬赏": "damage", "装备": "passive"
   };
   const KEYWORD_COLORS = {
+    "复制": "#b7d8ff", "恢复溢出": "#8ee8c8", "变形": "#d7a7ff", "获得控制权": "#ffb0a0",
     "登场": "#f2c66d", "余响": "#c49bff", "守备": "#82b7ff", "先遣": "#ff9b5e",
     "被动": "#8fd9cd", "冻结": "#8de8ff", "沉默": "#b6c0cc", "隐匿": "#d1a1ff",
     "引脉": "#4fe0c0", "预兆": "#9cc7ff", "采掘": "#ffc86b", "血祭": "#ff7a7a",
@@ -3054,18 +3102,18 @@
 
   const TUTORIAL_KEYWORD_ORDER = [
     "格挡", "守备", "先遣", "连携", "血偿", "蚀毒", "隐匿", "回潮", "冻结", "沉默",
-    "登场", "余响", "引脉", "采掘", "血祭", "预兆", "吞噬",
+    "登场", "余响", "引脉", "采掘", "血祭", "预兆", "吞噬", "复制", "恢复溢出", "变形", "获得控制权",
     "逆流", "镇脉", "压脉", "悬赏", "固定", "装备", "被动"
   ];
   const CARD_TAG_ALLOWLIST = new Set(TUTORIAL_KEYWORD_ORDER);
   const TUTORIAL_KEYWORD_ALIASES = {};
 
-  function renderTutorialKeywords() {
-    const host = $("tutorial-keywords");
+  function renderTutorialKeywords(hostEl) {
+    const host = hostEl || $("tutorial-keywords");
     if (!host) return;
     clear(host);
     for (const label of TUTORIAL_KEYWORD_ORDER) {
-      const desc = KEYWORD_HELP[label];
+      const desc = KEYWORD_TUTORIAL[label] || KEYWORD_HELP[label];
       if (!desc) continue;
       const item = el("div", "keyword-glossary-item");
       const iconName = KEYWORD_ICONS[label];
@@ -3984,6 +4032,13 @@
     card.appendChild(effect);
     box.appendChild(card);
     document.body.appendChild(box);
+    // 出牌预览放在共享流脉的中央，而不是手牌区或画面正中。
+    const veinRow = $("vein-row");
+    if (veinRow) {
+      const vr = veinRow.getBoundingClientRect();
+      box.style.left = (vr.left + vr.width / 2) + "px";
+      box.style.top = (vr.top + vr.height / 2) + "px";
+    }
     setTimeout(() => { if (effect.parentNode) effect.classList.add("show"); }, 430);
     setTimeout(() => { if (box.parentNode) box.classList.add("out"); }, 2800);
     setTimeout(() => { if (box.parentNode) box.parentNode.removeChild(box); }, 3400);
@@ -5543,7 +5598,7 @@
 
   function showDeckHover(def, anchor) {
     const tip = $("deck-hover-tip");
-    if (!tip || !anchor) return;
+    if (!tip || !anchor || !def) return;
     clear(tip);
     tip.appendChild(el("strong", null, def.name));
     tip.appendChild(el("small", null, typeLine(def) + " · " + def.cost + " 行动力" + (def.type === "minion" ? " · " + def.attack + "/" + def.health : "") + " · " + factionName(def.faction)));
@@ -5573,7 +5628,7 @@
 
   function showPreview(def, minion) {
     const box = $("card-preview");
-    if (!box) return;
+    if (!box || !def) return;
     clearTimeout(previewHideTimer);
     box.hidden = false;
     clear(box);
@@ -6158,7 +6213,7 @@
   }
 
   const ONBOARDING_STEPS = [
-    { target: "#btn-home-tasks", title: "先看任务", text: "按这里查看任务。主线任务会告诉你下一步做什么。" },
+    { target: "#btn-tasks-home", title: "先看任务", text: "按这里查看任务。主线任务会告诉你下一步做什么。" },
     { target: "#btn-deck-home", title: "查看卡组", text: "按这里查看构筑的卡组。1–4 级先用预组，5 级开始教你手动组卡。" },
     { target: "#btn-settings", title: "调整设置", text: "按这里调整设置。音量、画面和手牌操作都在这里。" },
     { target: "#home-classic", title: "开始推演", text: "从这里进入开始推演。规则与教程已经收进这里，进去后可以展开查看。" }
@@ -6226,19 +6281,147 @@
   }
 
   const TUTORIAL_LESSONS = [
-    { id: "navigation", level: 1, title: "主页导航", desc: "认识任务、卡组、设置和教程。", xp: 60, body: ["先看任务：主线任务会告诉你下一步做什么。", "构筑卡组在 5 级前先使用官方预组；5 级后再手动编辑。", "推演设置里可以调整音量、画面与手牌操作。"] },
-    { id: "zones", level: 2, title: "阵位与守备", desc: "每个阵位最多 3 个随从，全场最多 6 个。", xp: 70, body: ["守备随从会挡住同阵位的其他友方随从。", "先处理守备，才能直接攻击后面的随从或领袖。", "连携需要同阵位有另一个友方随从。"] },
-    { id: "vein", level: 3, title: "流脉阈值", desc: "流脉是双方共享的风险条。", xp: 80, body: ["4 震荡、7 裂隙、10 魔物潮、12 回流。", "引脉只在流脉达到标注数字时触发。", "采掘会抽牌并同时加速流脉。"] },
-    { id: "gear", level: 4, title: "装备与阵型", desc: "30 张牌里的特殊卡。", xp: 80, body: ["装备最多 2 件，装备后持续生效。", "阵型最多 3 张，挂在阵位上持续提供效果。", "先看牌组曲线，再决定装备和阵型的数量。"] },
-    { id: "deck", level: 5, title: "组卡入门", desc: "30 张、曲线、品级与命名。", xp: 120, body: ["固定 30 张：主牌 + 2 件装备 + 最多 3 张阵型。", "2–3 费 8–12 张，4–5 费 8–10 张，6+ 费别太多。", "先自动构筑，再手动替换 3–5 张。", "用「已拥有」筛选，未拥有的传说不能加入。", "保存前给牌组起名字，准备阶段按名字选择。"] },
-    { id: "curve", level: 6, title: "曲线与节奏", desc: "费用曲线决定你能不能每回合做点事。", xp: 90, body: ["低费太多会缺后期，高费太多会卡手。", "先保证 2–3 费有牌可出，再补高质量高费。", "不要只看单卡强度，先看整套牌能不能顺起来。"] },
-    { id: "archetypes", level: 7, title: "流派与多牌组", desc: "每个阵营可以保存不同流派。", xp: 100, body: ["快攻、中速、控制、组合是四种基本方向。", "同一阵营可以保存多套牌组，按流派命名。", "准备阶段按牌组名选择，不要只留一个「自定义牌组」。"] },
-    { id: "online", level: 10, title: "在线匹配与排位", desc: "登录账号后才能参加排位。", xp: 100, body: ["游客可以打休闲；排位需要登录账号。", "在线匹配页右侧显示当前段位和最近战绩。", "匹配成功后进入准备与对局，超时会进入 AI 替补。"] }
+    { id: "basics", level: 1, title: "游戏基本规则", desc: "对局目标 · 行动力 · 阵位 · 流脉", xp: 100, body: [
+      "先把一局游戏想象成两个人抢同一张桌子：每回合你获得行动力，用行动力把牌打到桌上，目标是把对方领袖的生命打到 0。",
+      "行动力每回合开始回满，第 1 回合 1 点，之后每回合 +1，最多 10 点；不用不会存到下一回合，所以每回合尽量把行动力花在有价值的地方。",
+      "牌桌分左翼、中枢、右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。守备随从会保护同阵位的其他友方随从，想打后排先处理守备。",
+      "同阵位是同一侧同一个位置，连携等效果需要同阵位有另一个友方随从；对位是同一列、分属双方的阵位，别把两个概念混在一起。",
+      "流脉是双方共享的 0→12 风险条：每完整轮次自然 +1，4 震荡、7 裂隙、10 魔物潮会触发世界事件，12 回流清空。它既是资源也是倒计时，采掘会抽牌并加速流脉。",
+      "先手抽 3 张，后手抽 4 张并获得本回合临时行动力；每回合开始自动抽 1 张，手牌超过上限会销毁多余的牌，抽牌前先看手牌空间。",
+      "随从当回合不能攻击，下一回合才可以；先遣随从登场当回合能攻击随从，但不能攻击领袖。随从互殴双方同时受伤，生命归零离场。",
+      "记住一个最稳的新手顺序：低费随从站场 → 用战术处理威胁 → 随从交换 → 领袖技能 → 结束回合。先站住，再谈斩杀。"
+    ] },
+    { id: "advanced", level: 1, title: "游戏进阶规则", desc: "五类卡牌 · 关键词 · 流脉事件", xp: 120, keywords: true, body: [
+      "卡牌现在分五类：随从、战术、阵型、装备、债务卡。随从站场，战术一次性结算，阵型挂在一个阵位上持续生效，装备给领袖持续增益。",
+      "债务卡打出后会洗进对手牌库；对手抽到并打出时才开始任务，完不成会在回合结束受到伤害。它更像干扰，不是稳定直伤。",
+      "装备最多同时两件，阵型最多三张；阵型只影响一个阵位，装备影响全局，价值不能直接对比。",
+      "流脉阈值不是背景数字：4 震荡会伤所有随从，7 裂隙会伤双方领袖，10 魔物潮伤害更高，12 回流清空并重新积累。斩杀前先看流脉会不会先把你送走。",
+      "关键词是卡牌的能力标签：登场、余响、守备、先遣、连携、血偿、冻结、沉默、引脉、悬赏等。下面有完整解释，先扫一遍，再回卡牌里对照。",
+      "对局模式分单人 AI、在线匹配、组队码房间和局域网。游客可以休闲和房间，排位必须登录账号；其他模式仍在实验，遇到问题直接返回。",
+      "进阶的目标不是背规则，而是每回合问自己：场面站住了吗？关键威胁解掉了吗？下回合对手最可能做什么？"
+    ] },
+    { id: "deck", level: 1, title: "组卡教学", desc: "30 张 · 曲线 · 品级 · 标签", xp: 120, body: [
+      "先定方向：快攻、中速、控制、组合。先想清楚这套牌靠什么赢，再决定带哪些卡；不要把所有强卡塞在一起。",
+      "固定 30 张：28 张主牌 + 2 件装备；阵型最多 3 张，装备最多 2 件；同名卡数量受品级和卡牌规则限制。",
+      "曲线参考：2–3 费 8–12 张，4–5 费 8–10 张，6 费以上别太多。前 3 回合有牌可出，比单卡强度更重要。",
+      "品级上限：传说最多 2 张，史诗最多 6 张，稀有最多 10 张；未拥有的传说不能加入自定义牌组，官方预组可以试玩。",
+      "新手先用预设或自动构筑生成 30 张，再手动替换 3–5 张；不要从零硬凑，也不要为了“完美”反复推翻整套牌。",
+      "牌组保存前要起名字，并加流派标签：流脉、快攻、中速、控制、组合、娱乐。准备阶段按名字和标签选择，别只留一个默认牌组。",
+      "检查清单：30 张、2 件装备、阵型合法、没有未拥有传说、曲线不空、同名不超限。满足这些，才算一套能上桌的牌。"
+    ] },
+    { id: "drill", level: 1, title: "实战演练", desc: "起手 · 守备 · 流脉 · 斩杀", xp: 100, drill: true, body: [
+      "规则看懂不等于会打。下面准备了几种小局面，挑一个进入牌桌，只练一个目标，不要急着赢。",
+      "起手演练：只练换牌，目标是留下 1–3 费能打出的牌；守备演练：对面有守备，先想办法处理守备再打后排。",
+      "流脉演练：把流脉推到阈值附近，观察世界事件什么时候来；斩杀演练：对方生命不高，先算清楚伤害再动手。",
+      "每次演练只看一个目标，打完回到教程，换下一个局面。四场都试过，你对节奏和交换的理解会比只看文字深很多。"
+    ] }
   ];
 
+  const DECK_CLASS_LESSON = {
+    id: "deck_class", level: 1, title: "组卡课堂", desc: "30 张 · 曲线 · 品级 · 流派标签", textOnly: true,
+    body: [
+      "先定方向：快攻、中速、控制、组合。先想清楚这套牌靠什么赢，再往里面塞卡。",
+      "固定 30 张：28 张主牌 + 2 件装备；阵型最多 3 张，装备最多 2 件。",
+      "曲线参考：2–3 费 8–12 张，4–5 费 8–10 张，6 费以上不要太多；先保证每回合有事做。",
+      "品级上限：传说最多 2 张，史诗最多 6 张，稀有最多 10 张；未拥有的传说不能加入自定义牌组。",
+      "先用「预设牌组」试玩；Lv.5 后可以复制为自定义牌组，再改名、加流派标签、手动替换。",
+      "流派标签建议：快攻、中速、控制、组合、娱乐、流脉。标签只帮你整理牌组，不改变对局规则。",
+      "自动构筑适合新手：先生成 30 张，再手动替换 3–5 张，不要从零硬凑。",
+      "保存前检查：数量 30、装备 2、阵型合法、没有未拥有传说。准备阶段按牌组名和标签选择。",
+    ]
+  };
   function lessonCompleted(id) {
     const p = ensureAccount().progress;
     return !!(p.tutorials && p.tutorials[id]);
+  }
+
+  const TUTORIAL_TABS = {
+    basics: ["tutorial-core", "tutorial-zones", "tutorial-vein"],
+    advanced: ["tutorial-cards", "tutorial-flow", "tutorial-glossary"],
+    deck: ["tutorial-deck"],
+    drill: ["tutorial-practice", "tutorial-drills"]
+  };
+
+  function showTutorialTab(tab) {
+    tab = TUTORIAL_TABS[tab] ? tab : "basics";
+    app.tutorialTab = tab;
+    document.querySelectorAll(".tutorial-tab").forEach((b) => b.classList.toggle("active", b.dataset.tutorialTab === tab));
+    document.querySelectorAll("#screen-tutorial .manual-section").forEach((sec) => {
+      sec.hidden = !(TUTORIAL_TABS[tab] || []).includes(sec.id);
+    });
+    const actions = document.querySelector("#screen-tutorial .tutorial-actions");
+    if (actions) actions.hidden = tab !== "drill";
+  }
+
+  function openTutorialTab(tab, back) {
+    app.tutorialTab = TUTORIAL_TABS[tab] ? tab : "basics";
+    if (back) app.tutorialReturn = back;
+    AudioBox.play("ui_open");
+    showScreen("tutorial");
+  }
+
+  function startDrill(kind) {
+    const base = { mode: "ai", faction: "pus", opponent: "xizhao", first: 0, mulligan: false };
+    let goal = "";
+    if (kind === "mulligan") {
+      base.mulligan = true;
+      goal = "起手演练：换掉高费牌，留下 1–3 费能打出的牌。";
+    } else if (kind === "guard") {
+      goal = "守备演练：先处理敌方守备，再攻击后排。";
+      base.setup = (s) => {
+        const E = global.GokEngine; if (!E) return;
+        const enemy = E.summonMinion(s, s.players[1], "shield_recruit", "left", null);
+        if (enemy) enemy.attacksLeft = 0;
+        const a = E.summonMinion(s, s.players[0], "mist_scout", "left", null);
+        const b = E.summonMinion(s, s.players[0], "mist_scout", "center", null);
+        if (a) a.justPlayed = true; if (b) b.justPlayed = true;
+        s.players[0].mana = 5;
+      };
+    } else if (kind === "vein") {
+      goal = "流脉演练：观察 4 震荡前的变化，决定要不要继续采掘。";
+      base.setup = (s) => { s.vein = 3; s.stats.veinPeak = 3; };
+    } else if (kind === "lethal") {
+      goal = "斩杀演练：先算清场上攻击和手牌伤害，再决定怎么打。";
+      base.setup = (s) => {
+        const E = global.GokEngine; if (!E) return;
+        const a = E.summonMinion(s, s.players[0], "tiega", "left", null);
+        const b = E.summonMinion(s, s.players[0], "blood_executor", "center", null);
+        if (a) a.attacksLeft = 1; if (b) b.attacksLeft = 1;
+        s.players[0].mana = 8;
+        s.players[1].hero.hp = 6;
+        s.players[1].hero.maxHp = 6;
+      };
+    }
+    AudioBox.play("ui_open");
+    startGame(base);
+    setTimeout(() => toast(goal), 1100);
+  }
+
+  function renderTutorialHub() {
+    const root = $("tutorial-hub-root");
+    if (!root) return;
+    clear(root);
+    const intro = el("div", "tutorial-intro");
+    intro.appendChild(el("div", "eyebrow", "TRAINING / 四堂必修课"));
+    intro.appendChild(el("h3", null, "先学四课，再上牌桌"));
+    intro.appendChild(el("p", null, "不按顺序也可以，但建议先看基本规则。进阶、组卡和实战演练会反复用到前面的概念。"));
+    const done = TUTORIAL_LESSONS.filter(x => lessonCompleted(x.id)).length;
+    intro.appendChild(el("p", "tutorial-hub-progress", "已完成 " + done + " / " + TUTORIAL_LESSONS.length + " 课"));
+    root.appendChild(intro);
+    const grid = el("div", "tutorial-hub-grid");
+    for (const lesson of TUTORIAL_LESSONS) {
+      const card = el("article", "tutorial-module" + (lessonCompleted(lesson.id) ? " done" : ""));
+      card.appendChild(el("span", "manual-index", String(TUTORIAL_LESSONS.indexOf(lesson) + 1).padStart(2, "0")));
+      card.appendChild(el("div", "tutorial-module-kicker", lesson.drill ? "PRACTICE / 实战" : "TUTORIAL / 教程"));
+      card.appendChild(el("h3", null, lesson.title));
+      card.appendChild(el("p", null, lesson.desc));
+      card.appendChild(el("small", null, lesson.drill ? "四种局面 · 一个目标一次" : "文字阅读 · 完成给经验"));
+      const btn = el("button", "btn btn-primary", lessonCompleted(lesson.id) ? "重看" : "进入教程");
+      btn.onclick = () => openLessonPage(lesson.id, "tutorial");
+      card.appendChild(btn);
+      grid.appendChild(card);
+    }
+    root.appendChild(grid);
   }
 
   function openLessonPage(id, back) {
@@ -6258,7 +6441,7 @@
     const card = el("div", "lesson-card");
     card.appendChild(el("div", "lesson-kicker", "LEVEL " + lesson.level + " · " + lesson.desc));
     card.appendChild(el("h3", null, lesson.title));
-    if (level < lesson.level) {
+    if (!lesson.textOnly && level < lesson.level) {
       card.appendChild(el("p", "lesson-copy", "本课将在 Lv." + lesson.level + " 开放。当前 Lv." + level + "。"));
       const actions = el("div", "lesson-actions");
       const back = el("button", "btn btn-primary", "返回教程库"); back.onclick = () => showScreen("tasks");
@@ -6267,12 +6450,41 @@
     const objectives = el("div", "lesson-objectives");
     for (const line of lesson.body) objectives.appendChild(el("div", null, line));
     card.appendChild(objectives);
-    const done = lessonCompleted(lesson.id);
-    const actions = el("div", "lesson-actions");
-    actions.appendChild(el("span", "lesson-progress", done ? "已完成 · +" + lesson.xp + " XP" : "完成奖励 +" + lesson.xp + " XP"));
-    if (lesson.id === "deck") {
-      const go = el("button", "btn btn-small btn-ghost", "去组卡"); go.onclick = () => openDeckBuilder(app.faction, "mode"); actions.appendChild(go);
+    if (lesson.keywords) {
+      const kwHead = el("div", "lesson-kicker", "关键词完整解析");
+      card.appendChild(kwHead);
+      const kwHost = el("div", "keyword-glossary tutorial-keywords");
+      card.appendChild(kwHost);
+      renderTutorialKeywords(kwHost);
     }
+    if (lesson.drill) {
+      const drills = [
+        { id: "mulligan", title: "起手换牌", desc: "只练开局换牌，先保证前三回合有牌可出。" },
+        { id: "guard", title: "守备突破", desc: "对面有守备，先处理守备再打后排。" },
+        { id: "vein", title: "流脉事件", desc: "把流脉推到阈值附近，观察世界事件。" },
+        { id: "lethal", title: "斩杀计算", desc: "对方生命不高，先算伤害再动手。" }
+      ];
+      const grid = el("div", "lesson-drills");
+      for (const drill of drills) {
+        const b = el("button", "lesson-drill", "");
+        b.appendChild(el("strong", null, drill.title));
+        b.appendChild(el("span", null, drill.desc));
+        b.onclick = () => startDrill(drill.id);
+        grid.appendChild(b);
+      }
+      card.appendChild(grid);
+      const full = el("button", "btn btn-small btn-ghost", "进入完整六步训练");
+      full.onclick = () => startTutorial();
+      card.appendChild(full);
+    }
+    const done = !lesson.textOnly && lessonCompleted(lesson.id);
+    const actions = el("div", "lesson-actions");
+    if (lesson.textOnly) {
+      const back = el("button", "btn btn-primary", "返回开始推演");
+      back.onclick = () => showScreen(app.lessonReturn || "mode");
+      actions.appendChild(back); card.appendChild(actions); root.appendChild(card); return;
+    }
+    actions.appendChild(el("span", "lesson-progress", done ? "已完成 · +" + lesson.xp + " XP" : "完成奖励 +" + lesson.xp + " XP"));
     const finish = el("button", "btn btn-primary " + (done ? "btn-ghost" : ""), done ? "已完成" : "完成本课");
     finish.disabled = done;
     finish.onclick = () => {
@@ -6606,14 +6818,14 @@
       row.appendChild(copy);
       row.appendChild(el("span", "task-xp", done ? "已完成" : "+" + lesson.xp + " XP"));
       const b = el("button", "btn btn-small btn-ghost", done ? "重看" : unlocked ? "开始" : "未开放");
-      b.onclick = () => { if (!unlocked) { toast("Lv." + lesson.level + " 开放。"); return; } openLessonPage(lesson.id, "tasks"); };
+      b.onclick = () => { if (!unlocked) { toast("Lv." + lesson.level + " 开放。"); return; } openTutorialTab(lesson.id, "tasks"); };
       row.appendChild(b);
       box.appendChild(row);
     }
     const drill = el("div", "task-chapter-foot");
     drill.appendChild(el("span", null, "六步训练：实战演练一局"));
     const start = el("button", "btn btn-small btn-primary", "进入六步训练");
-    start.onclick = () => { app.tutorialReturn = "tasks"; showScreen("tutorial"); };
+    start.onclick = () => openTutorialTab("drill", "tasks");
     drill.appendChild(start); box.appendChild(drill);
     root.appendChild(box);
   }
@@ -6717,6 +6929,18 @@
       }
       updateHomeAccount();
     } catch (e) {}
+  }
+
+  function applyCloudSavePayload(payload) {
+    if (!payload) return false;
+    const inner = payload && payload.save && typeof payload.save === "object" ? payload.save : payload;
+    if (payload && payload.version != null) {
+      app.cloudSaveVersion = Number(payload.version) || app.cloudSaveVersion;
+      app.cloudSaveAt = Number(payload.updatedAt) || Date.now();
+    }
+    applySaveBundle(inner);
+    app.cloudSyncState = "synced";
+    return true;
   }
 
   function encodeSaveCode(bundle) {
@@ -6970,6 +7194,7 @@
     app.deckBuildList = (saved && D.validateDeck(faction, saved).ok ? saved : D.DECKS[faction]).slice();
     app.deckEditingId = active ? active.id : null;
     app.deckDraftName = active ? active.name : "";
+    app.deckDraftTag = active && active.tags && active.tags[0] || "";
     app.deckReadOnly = !active;
     app.deckSource = saved && D.validateDeck(faction, saved).ok ? "custom" : "preset";
     app.lastAutoStrategy = null;
@@ -7024,16 +7249,25 @@
     const readonlyNote = $("deck-readonly-note"); if (readonlyNote) readonlyNote.hidden = !readonly;
     select.onchange = () => {
       const id = select.value;
-      if (!id) { app.deckEditingId = null; app.deckBuildList = D.DECKS[f].slice(); app.deckSource = "preset"; app.deckDraftName = ""; app.deckReadOnly = true; renderDeckBuilder(); return; }
+      if (!id) { app.deckEditingId = null; app.deckBuildList = D.DECKS[f].slice(); app.deckSource = "preset"; app.deckDraftName = ""; app.deckDraftTag = ""; app.deckReadOnly = true; renderDeckBuilder(); return; }
       const d = lib.find(x => x.id === id);
       if (!d) return;
-      app.deckEditingId = d.id; app.deckBuildList = d.cards.slice(); app.deckDraftName = d.name; app.deckSource = "custom"; app.deckReadOnly = false; app.activeDeckId[f] = d.id; app.customDecks[f] = d.cards.slice(); persistDeckLibrary(); renderDeckBuilder();
+      app.deckEditingId = d.id; app.deckBuildList = d.cards.slice(); app.deckDraftName = d.name; app.deckDraftTag = d.tags && d.tags[0] || ""; app.deckSource = "custom"; app.deckReadOnly = false; app.activeDeckId[f] = d.id; app.customDecks[f] = d.cards.slice(); persistDeckLibrary(); renderDeckBuilder();
     };
     input.value = app.deckDraftName || "";
     input.disabled = readonly; input.oninput = () => { app.deckDraftName = input.value; };
     const tagSel = $("deck-tag-select");
     const activeDeck = lib.find(x => x.id === app.deckEditingId);
-    if (tagSel) { tagSel.value = activeDeck && activeDeck.tags && activeDeck.tags[0] || ""; tagSel.disabled = readonly || !activeDeck; tagSel.onchange = () => { if (!activeDeck) return; activeDeck.tags = tagSel.value ? [tagSel.value] : []; activeDeck.updatedAt = Date.now(); persistDeckLibrary(); renderDeckLibraryBar(); }; }
+    if (tagSel) {
+      tagSel.value = app.deckDraftTag || "";
+      tagSel.disabled = readonly;
+      tagSel.onchange = () => {
+        app.deckDraftTag = tagSel.value || "";
+        const d = lib.find(x => x.id === app.deckEditingId);
+        if (d) { d.tags = app.deckDraftTag ? [app.deckDraftTag] : []; d.updatedAt = Date.now(); persistDeckLibrary(); }
+        renderDeckLibraryBar();
+      };
+    }
     const copyPreset = $("btn-deck-copy-preset");
     if (copyPreset) {
       copyPreset.disabled = !levelUnlocked("deckedit");
@@ -7042,12 +7276,12 @@
         const built = D.autoBuildDeck(f, "midrange", Array.from(ownedLegendarySet()));
         if (!D.validateDeck(f, built).ok) { toast("复制失败，请稍后再试。"); return; }
         const deck = { id: newDeckId(), name: (D.FACTIONS[f] ? D.FACTIONS[f].name : "自定义") + " · 自定义", tags: ["中速"], cards: built.slice(), updatedAt: Date.now(), games: 0, wins: 0, losses: 0 };
-        lib.push(deck); app.activeDeckId[f] = deck.id; app.deckEditingId = deck.id; app.customDecks[f] = built.slice(); app.deckBuildList = built.slice(); app.deckDraftName = deck.name; app.deckReadOnly = false; persistDeckLibrary(); renderDeckBuilder(); toast("已复制为可编辑的自定义牌组。");
+        lib.push(deck); app.activeDeckId[f] = deck.id; app.deckEditingId = deck.id; app.customDecks[f] = built.slice(); app.deckBuildList = built.slice(); app.deckDraftName = deck.name; app.deckDraftTag = "中速"; app.deckReadOnly = false; persistDeckLibrary(); renderDeckBuilder(); toast("已复制为可编辑的自定义牌组。");
       };
     }
     const multiple = levelUnlocked("multideck");
     const add = $("btn-deck-new"), dup = $("btn-deck-duplicate"), del = $("btn-deck-delete");
-    if (add) { add.disabled = readonly || (!multiple && lib.length > 0); add.title = multiple ? "" : "Lv.7 开放多套牌组"; add.onclick = () => { if (!multiple && lib.length) { toast("Lv.7 开放多套牌组。"); return; } app.deckEditingId = null; app.deckDraftName = "新牌组"; app.deckBuildList = D.DECKS[f].slice(); app.deckSource = "draft"; renderDeckBuilder(); }; }
+    if (add) { add.disabled = readonly || (!multiple && lib.length > 0); add.title = multiple ? "" : "Lv.7 开放多套牌组"; add.onclick = () => { if (!multiple && lib.length) { toast("Lv.7 开放多套牌组。"); return; } app.deckEditingId = null; app.deckDraftName = "新牌组"; app.deckDraftTag = ""; app.deckBuildList = D.DECKS[f].slice(); app.deckSource = "draft"; renderDeckBuilder(); }; }
     if (dup) { dup.disabled = readonly || !multiple || !app.deckEditingId; dup.onclick = () => { if (!multiple) { toast("Lv.7 开放多套牌组。"); return; } const d = lib.find(x => x.id === app.deckEditingId); if (!d) return; const copy = { id: newDeckId(), name: d.name + " 副本", tags: (d.tags || []).slice(), cards: d.cards.slice(), updatedAt: Date.now() }; lib.push(copy); app.activeDeckId[f] = copy.id; app.deckEditingId = copy.id; app.customDecks[f] = copy.cards.slice(); persistDeckLibrary(); app.deckBuildList = copy.cards.slice(); app.deckDraftName = copy.name; renderDeckBuilder(); toast("已复制牌组。"); }; }
     if (del) { del.disabled = readonly || !app.deckEditingId; del.onclick = () => { if (!app.deckEditingId) return; const i = lib.findIndex(x => x.id === app.deckEditingId); if (i < 0) return; lib.splice(i, 1); delete app.customDecks[f]; app.deckEditingId = lib[0] ? lib[0].id : null; app.deckDraftName = lib[0] ? lib[0].name : ""; app.deckBuildList = lib[0] ? lib[0].cards.slice() : D.DECKS[f].slice(); app.activeDeckId[f] = lib[0] ? lib[0].id : null; persistDeckLibrary(); renderDeckBuilder(); toast("牌组已删除。"); }; }
     const note = el("span", "deck-library-locked", readonly ? "官方预设只读" : (multiple ? "可保存多套牌组" : "Lv.7 开放多套牌组"));
@@ -7301,7 +7535,7 @@ const tabs = $("deck-faction-tabs");
     const lib = deckLibraryFor(f);
     let deck = app.deckEditingId ? lib.find(d => d.id === app.deckEditingId) : null;
     if (!deck) { deck = { id: newDeckId(), name, tags: [], cards: [], updatedAt: Date.now() }; lib.push(deck); }
-    deck.name = name; deck.cards = app.deckBuildList.slice(); deck.updatedAt = Date.now();
+    deck.name = name; deck.cards = app.deckBuildList.slice(); deck.tags = app.deckDraftTag ? [app.deckDraftTag] : (deck.tags || []); deck.updatedAt = Date.now();
     app.deckEditingId = deck.id; app.activeDeckId[f] = deck.id; app.customDecks[f] = deck.cards.slice();
     app.deckSource = "custom";
     persistDeckLibrary();
@@ -7934,7 +8168,7 @@ const tabs = $("deck-faction-tabs");
     }
     const actions = el("div", "profile-actions");
     const logout = el("button", "btn btn-small btn-ghost", "退出登录");
-    logout.onclick = async () => { try { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); } catch (e) {} app.auth = { user: null }; app.cloudSyncState = "idle"; app.cloudConflict = null; renderProfilePage(); updateHomeAccount(); toast("已退出账号，本地档案仍保留。"); };
+    logout.onclick = async () => { try { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); } catch (e) {} app.auth = { user: null }; app.cloudSyncState = "idle"; app.cloudConflict = null; app.cloudSaveVersion = 0; app.cloudSaveAt = 0; renderProfilePage(); updateHomeAccount(); toast("已退出账号，本地档案仍保留。"); };
     actions.appendChild(logout);
     const pwd = el("button", "btn btn-small btn-ghost", "修改密码"); pwd.onclick = () => openLoginPage("password"); actions.appendChild(pwd);
     const rec = el("button", "btn btn-small btn-ghost", "生成恢复码");
@@ -8111,7 +8345,7 @@ const tabs = $("deck-faction-tabs");
           const data = await authJson("/api/auth/register", { username: user.value.trim(), password: pass.value, displayName: nick.value.trim() });
           app.auth = { user: data.user };
           app.authGate = false;
-          if (data.save) applySaveBundle(data.save);
+          if (data.save) applyCloudSavePayload(data.save);
           await syncCloudSave(true);
           updateHomeAccount();
           if (data.recoveryCode) { openRecoveryPage(data.recoveryCode, "home"); return; }
@@ -8121,7 +8355,7 @@ const tabs = $("deck-faction-tabs");
           const data = await authJson("/api/auth/recover", { username: user.value.trim(), recoveryCode: recovery.value.trim(), password: pass.value });
           app.auth = { user: data.user };
           app.authGate = false;
-          if (data.save) applySaveBundle(data.save);
+          if (data.save) applyCloudSavePayload(data.save);
           app.cloudSyncState = "synced";
           updateHomeAccount();
           toast("密码已重置并登录。");
@@ -8134,7 +8368,8 @@ const tabs = $("deck-faction-tabs");
         } else {
           const data = await authJson("/api/auth/login", { username: user.value.trim(), password: pass.value });
           app.auth = { user: data.user };
-          if (data.save) applySaveBundle(data.save);
+          if (data.save) applyCloudSavePayload(data.save);
+          app.cloudSyncState = "synced";
           toast("登录成功。");
         }
         updateHomeAccount();
@@ -11398,7 +11633,7 @@ const tabs = $("deck-faction-tabs");
     if ($("btn-other-back")) $("btn-other-back").onclick = () => { AudioBox.play("cancel"); showScreen("home"); };
     if ($("btn-mode-home")) $("btn-mode-home").onclick = () => { AudioBox.play("cancel"); showScreen("home"); };
     if ($("mode-guide-toggle")) $("mode-guide-toggle").onclick = () => { const body = $("mode-guide-body"); const state = $("mode-guide-state"); if (!body) return; const open = body.hidden; body.hidden = !open; if (state) state.textContent = open ? "收起 ↑" : "展开 ↓"; AudioBox.play(open ? "ui_open" : "cancel"); };
-    document.querySelectorAll("[data-mode-guide]").forEach((b) => { b.onclick = () => { const kind = b.dataset.modeGuide; AudioBox.play("ui_open"); if (kind === "rules") openRulesScreen("mode"); else if (kind === "deck") { openDeckBuilder(app.faction, "mode"); } else if (kind === "tutorial") { app.tutorialReturn = "mode"; showScreen("tutorial"); } else if (kind === "keywords") openKeywordGlossary(); }; });
+    document.querySelectorAll("[data-mode-guide]").forEach((b) => { b.onclick = () => { const kind = b.dataset.modeGuide; AudioBox.play("ui_open"); if (["basics","advanced","deck","drill"].includes(kind)) openTutorialTab(kind, "mode"); }; });
     if ($("mode-solo")) $("mode-solo").onclick = () => { AudioBox.play("ui_open"); showScreen("setup"); setupState(); };
     if ($("mode-multi")) $("mode-multi").onclick = () => showModeMulti(true);
     if ($("mode-multi-back")) $("mode-multi-back").onclick = () => showModeMulti(false);
@@ -11536,6 +11771,7 @@ const tabs = $("deck-faction-tabs");
       showKeywordTip(e, label, true);
     }, true);
     $("btn-achievements").onclick = () => { AudioBox.play("ui_open"); openAchievements(); };
+    if ($("btn-tasks-home")) $("btn-tasks-home").onclick = () => { AudioBox.play("ui_open"); openTasks(); };
     if ($("btn-tasks")) $("btn-tasks").onclick = () => { AudioBox.play("ui_open"); openTasks(); };
     if ($("btn-home-tasks")) $("btn-home-tasks").onclick = () => { AudioBox.play("ui_open"); openTasks(); };
     $("btn-settings").onclick = () => { AudioBox.play("ui_open"); openSettings("home"); };
@@ -11613,8 +11849,10 @@ const tabs = $("deck-faction-tabs");
     if ($("btn-rules-keywords-top")) $("btn-rules-keywords-top").onclick = () => { AudioBox.play("ui_open"); openKeywordGlossary(); };
     if ($("btn-rules-tutorial")) $("btn-rules-tutorial").onclick = () => { if (app.rulesReturn === "game" && app.game) { toast("对局中不能跳转新手教程。"); return; } AudioBox.play("ui_open"); showScreen("tutorial"); };
     const startTutorialFlow = () => { markTutorialSeen("drill"); runBootLoading("正在准备新手演练", "载入教学牌桌…", BOOT_ASSETS, () => startTutorial()); };
-    $("btn-tutorial-start").onclick = startTutorialFlow;
+    if ($("btn-tutorial-start")) $("btn-tutorial-start").onclick = startTutorialFlow;
+    document.querySelectorAll("[data-drill-scenario]").forEach((b) => { b.onclick = () => startDrill(b.dataset.drillScenario); });
     document.querySelectorAll("[data-tutorial-drill]").forEach((b) => { b.onclick = startTutorialFlow; });
+    document.querySelectorAll("[data-tutorial-tab]").forEach((b) => { b.onclick = () => showTutorialTab(b.dataset.tutorialTab); });
     document.querySelectorAll("[data-tutorial-jump]").forEach((b) => {
       b.onclick = () => {
         markTutorialSeen(b.dataset.tutorialJump);

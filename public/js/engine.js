@@ -329,6 +329,7 @@
     bumpDebtProgress(state, player, "summon", 1);
     bumpDebtTaskProgress(state, player, "summon", 1);
     if (cardId === "republic_recruit") player.recruitsSummonedThisTurn = (player.recruitsSummonedThisTurn || 0) + 1;
+    if (cardId === "losutai_imp") player.impsSummonedThisTurn = (player.impsSummonedThisTurn || 0) + 1;
     if (m.taunt) {
       for (const ally of aliveMinions(player)) {
         if (ally.passive && ally.passive.type === "tauntAura" && !ally.silenced) {
@@ -435,6 +436,7 @@
     const id = typeof cardIdOrCard === "string" ? cardIdOrCard : cardIdOrCard.cardId;
     const def = card(id);
     const handDiscount = cardIdOrCard && typeof cardIdOrCard === "object" ? Math.max(0, cardIdOrCard.discount || 0) : 0;
+    const surcharge = cardIdOrCard && typeof cardIdOrCard === "object" ? Math.max(0, cardIdOrCard.surcharge || 0) : 0;
     let firstCardDiscount = 0;
     if (player && (player.cardsPlayedThisTurn || 0) === 0) {
       for (const m of aliveMinions(player)) {
@@ -445,7 +447,7 @@
     }
     if (def.type === "spell" && player.freeSpellTurn) return 0;
     const spellReduction = def.type === "spell" ? (player.spellCostReduction || 0) + (player.nextSpellReduction || 0) : 0;
-    return Math.max(0, def.cost - (player.nextCostReduction || 0) - spellReduction - handDiscount - firstCardDiscount);
+    return Math.max(0, def.cost + surcharge - (player.nextCostReduction || 0) - spellReduction - handDiscount - firstCardDiscount);
   }
 
   // 逆流 N：消耗 N 点流脉触发。流脉不足 N 时消耗到 0 仍触发；流脉为 0 时效果无效。
@@ -649,7 +651,21 @@
     if (player.healBlockTurn) amount = 0;
     const before = player.hp;
     player.hp = Math.min(player.maxHp, player.hp + amount);
-    if (player.hp > before) { state.events.push({ structured: true, kind: "heal", targetUid: "hero:" + player.index, amount: player.hp - before, player: player.index }); log(state, player.name + " 恢复 " + (player.hp - before) + " 点生命。", player, "heal"); }
+    if (player.hp > before) {
+      const healed = player.hp - before;
+      state.events.push({ structured: true, kind: "heal", targetUid: "hero:" + player.index, amount: healed, player: player.index });
+      log(state, player.name + " 恢复 " + healed + " 点生命。", player, "heal");
+      for (const m of aliveMinions(player)) {
+        if (m.silenced || !m.passive || m.passive.type !== "heroHealAllyOnce" || player.dawnMenderTurn === state.turnNumber) continue;
+        const wounded = aliveMinions(player).filter(x => x.health < x.maxHealth);
+        if (wounded.length) {
+          const pick = wounded[randomInt(state, wounded.length)];
+          healMinion(state, pick, m.passive.amount || 2);
+          player.dawnMenderTurn = state.turnNumber;
+          log(state, m.name + " 触发愈辉：治疗 " + pick.name + "。", player, "heal");
+        }
+      }
+    }
   }
 
   function silenceMinion(state, m) {
@@ -735,6 +751,13 @@
         state.stats.minionsDied++;
         state.deathsThisTurn = (state.deathsThisTurn || 0) + 1;
         p.friendlyDeathsThisTurn = (p.friendlyDeathsThisTurn || 0) + 1;
+        if (m.cardId === "losutai_imp") {
+          const spore = aliveMinions(p).find(x => x.passive && x.passive.type === "firstImpDeathSummon" && !x.silenced);
+          if (spore && p.sporePathfinderTurn !== state.turnNumber) {
+            const z = openZones(p)[0];
+            if (z) { p.sporePathfinderTurn = state.turnNumber; summonMinion(state, p, "losutai_imp", z, null); log(state, spore.name + "：魔物死亡后留下新的魔物。", p, "summon"); }
+          }
+        }
       }
       // 先让离场光环失效，再结算亡语与死亡触发。
       recomputeAuras(state);
@@ -899,6 +922,17 @@
         summonMinion(state, player, pick, openZones(player)[0], null);
         log(state, "余响：" + m.name + " 孵化了 " + D.CARDS[pick].name + "。", player, "deathrattle");
       }
+    } else if (d.type === "takeControlRandomEnemyUnder4") {
+      const candidates = aliveMinions(opponentOf(state, player)).filter(x => (card(x.cardId).cost || 0) <= 4);
+      const z = openZones(player)[0];
+      if (candidates.length && z) {
+        const pick = candidates[randomInt(state, candidates.length)];
+        const foe = ownerOf(state, pick);
+        foe.board[pick.zone] = foe.board[pick.zone].filter(x => x.uid !== pick.uid);
+        pick.zone = z; pick.justPlayed = true; pick.attacksLeft = 0;
+        player.board[z].push(pick);
+        log(state, "夺魂：控制了 " + pick.name + "。", player, "deathrattle");
+      } else log(state, "夺魂：没有可控制的目标或空阵位。", player, "deathrattle");
     }
   }
 
@@ -949,6 +983,16 @@
     } else {
       state.vein = Math.max(0, state.vein + amount);
       log(state, "流脉 " + before + " → " + state.vein + (source ? "（" + source + "）" : "") + "。", null, "vein");
+      const spender = state.players && state.players[state.current];
+      if (spender) {
+        for (const m of aliveMinions(spender)) {
+          if (!m.silenced && m.passive && m.passive.type === "veinSpendAttackOnce" && m.veinSpendTurn !== state.turnNumber) {
+            buffMinion(state, m, m.passive.attack || 2, 0, "脉刃", true);
+            m.veinSpendTurn = state.turnNumber;
+            log(state, m.name + "：流脉被消耗，获得攻击。", spender, "buff");
+          }
+        }
+      }
     }
   }
 
@@ -2086,6 +2130,66 @@
       if (pick >= enemies.length) damageHero(state, enemy, b.amount || 3, null, "命运赌徒", true);
       else damageMinion(state, enemies[pick], b.amount || 3, minion, "命运赌徒");
       log(state, "命运赌徒：随机对敌方单位造成 " + (b.amount || 3) + " 点伤害。", player, "damage");
+    } else if (b.type === "copyEnemyMinion1of1") {
+      if (target && !target.dead) {
+        const z = openZones(player)[0];
+        if (z) {
+          const copy = summonMinion(state, player, target.cardId, z, null);
+          if (copy) {
+            copyMinionStats(target, copy);
+            copy.attack = 1; copy.health = 1; copy.maxHealth = 1; copy.baseAttack = 1; copy.baseHealth = 1;
+            copy.justPlayed = true;
+            log(state, "镜界：复制了 " + target.name + " 的 1/1 复制体。", player, "copy");
+          }
+        }
+      }
+    } else if (b.type === "transformEnemy1of1") {
+      if (target && !target.dead) {
+        target.silenced = true;
+        target.attack = 1; target.health = 1; target.maxHealth = 1; target.baseAttack = 1; target.baseHealth = 1;
+        target.keywords = []; target.passive = null; target.deathrattle = null; target.deathrattles = [];
+        target.name = "石像";
+        recomputeAuras(state);
+        processDeaths(state);
+        log(state, "石化：目标变成了 1/1 石像。", player, "transform");
+      }
+    } else if (b.type === "healOverflowArmor") {
+      const before = player.hp;
+      healHero(state, player, b.amount || 4);
+      const healed = player.hp - before;
+      const overflow = Math.max(0, (b.amount || 4) - healed);
+      if (overflow > 0) { player.armor += overflow; log(state, "治疗溢出转为 " + overflow + " 点护甲。", player, "armor"); }
+    } else if (b.type === "copyLastTacticPlus1") {
+      const last = player.lastSpell;
+      if (last && last.cardId) {
+        const copy = addCardToHand(state, player, last.cardId, {});
+        if (copy) { copy.surcharge = 1; log(state, "抄写：复制上一张战术牌，费用 +1。", player, "copy"); }
+      } else {
+        drawCard(state, player, 1);
+      }
+    } else if (b.type === "damageDrawIfKill") {
+      if (target && !target.dead) {
+        damageMinion(state, target, b.amount || 4, minion, "血誓");
+        if (target.dead) drawCard(state, player, 1);
+        processDeaths(state);
+      }
+    } else if (b.type === "armorConditionalBlock") {
+      const hadArmor = (player.armor || 0) > 0;
+      player.armor += b.amount || 4;
+      if (hadArmor) grantDivineShield(state, minion);
+      log(state, "铁壁元帅：获得 " + (b.amount || 4) + " 点护甲" + (hadArmor ? "，并获得格挡。" : "。"), player, "armor");
+    } else if (b.type === "damageFrozenEnemiesDrawIfKill") {
+      const frozen = aliveMinions(opponentOf(state, player)).filter(x => x.frozenTurns > 0);
+      for (const x of frozen) damageMinion(state, x, b.amount || 3, minion, "碎冰");
+      const killed = frozen.some(x => x.dead);
+      if (killed) drawCard(state, player, 1);
+      processDeaths(state);
+      log(state, "碎冰：对 " + frozen.length + " 个冻结随从造成伤害" + (killed ? "，抽 1 张牌。" : "。"), player, "damage");
+    } else if (b.type === "copyFriendlyToHandSameCost") {
+      if (target && !target.dead) {
+        const copy = addCardToHand(state, player, target.cardId, {});
+        if (copy) log(state, "复写：将 " + target.name + " 的复制置入手牌。", player, "copy");
+      }
     }
   }
 
@@ -2627,6 +2731,14 @@
           buffMinion(state, ally, ally.passive.attack || 0, ally.passive.health || 1, "霜线", true);
           log(state, ally.name + " 因冻结敌方随从获得成长。", p, "buff");
         }
+        if (ally.passive && ally.passive.type === "freezeGrowthTwice" && !ally.silenced) {
+          if (ally.freezeGrowthTurn !== state.turnNumber) { ally.freezeGrowthTurn = state.turnNumber; ally.freezeGrowthCount = 0; }
+          if (ally.freezeGrowthCount < 2) {
+            ally.freezeGrowthCount = (ally.freezeGrowthCount || 0) + 1;
+            buffMinion(state, ally, ally.passive.attack || 1, 0, "凝霜", true);
+            log(state, ally.name + " 因冻结获得 +" + (ally.passive.attack || 1) + " 攻击。", p, "buff");
+          }
+        }
       }
     }
   }
@@ -2709,6 +2821,12 @@
       if (ally.passive.type === "bountyClaimHeal") {
         healHero(state, owner, ally.passive.heal || 2);
         log(state, ally.name + " 完成悬赏：恢复 2 点生命。", owner, "heal");
+      }
+      if (ally.passive.type === "firstBountyKillDrawArmor" && owner.bountyChaserTurn !== state.turnNumber) {
+        drawCard(state, owner, ally.passive.draw || 1);
+        owner.armor += ally.passive.armor || 2;
+        owner.bountyChaserTurn = state.turnNumber;
+        log(state, ally.name + "：首次完成悬赏，抽牌并获得护甲。", owner, "bounty");
       }
     }
     checkGameOver(state);
@@ -3054,6 +3172,7 @@
     player.minionsPlayedThisTurn = 0;
     player.tauntMinionsPlayedThisTurn = 0;
     player.recruitsSummonedThisTurn = 0;
+    player.impsSummonedThisTurn = 0;
     player.bountiesClaimedThisTurn = 0;
     state.deathsThisTurn = 0;
     for (const p of state.players) p.friendlyDeathsThisTurn = 0;
@@ -3080,6 +3199,9 @@
         log(state, m.name + " 的被动提供 " + armorGain + " 点护甲。", player, "armor");
       }
       if (m.passive && m.passive.type === "turnGrowth" && !m.silenced) buffMinion(state, m, m.passive.attack || 1, m.passive.health || 1, "生长", true);
+      if (m.passive && m.passive.type === "firstArmorBuffAllyHealth" && !m.silenced && player.armor > 0 && m.armorBuffTurn !== state.turnNumber) {
+        const allies = aliveMinions(player); if (allies.length) { const pick = allies[randomInt(state, allies.length)]; buffMinion(state, pick, 0, 1, "壁垒", true); m.armorBuffTurn = state.turnNumber; log(state, m.name + " 触发护甲成长。", player, "buff"); }
+      }
       m.attacksLeft = 1;
       m.windfuryExtraUsed = false;
       m.attacksUsedThisTurn = 0;
@@ -3155,6 +3277,18 @@
     for (const m of aliveMinions(player)) {
       if (m.passive && m.passive.type === "endTurnGrowth" && !m.silenced) {
         buffMinion(state, m, m.passive.attack || 1, m.passive.health || 0, "节肢生长", true);
+      }
+      if (m.passive && m.passive.type === "reduceHandCosts" && !m.silenced) {
+        for (const h of player.hand) h.discount = (h.discount || 0) + (m.passive.amount || 1);
+        log(state, m.name + "：手牌费用降低。", player, "buff");
+      }
+      if (m.passive && m.passive.type === "endTurnDamageAllOther" && !m.silenced) {
+        for (const p of state.players) for (const other of aliveMinions(p)) if (other.uid !== m.uid) damageMinion(state, other, m.passive.amount || 2, null, "灰烬");
+        processDeaths(state);
+      }
+      if (m.passive && m.passive.type === "endTurnThreeImpsSummon" && !m.silenced && (player.impsSummonedThisTurn || 0) >= 3) {
+        const z = openZones(player)[0]; if (z) summonMinion(state, player, "losutai_beast", z, null);
+        player.impsSummonedThisTurn = 0;
       }
     }
     resolveDebtForTurn(state, playerIndex);

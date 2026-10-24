@@ -7941,3 +7941,86 @@ body[data-screen="home"] .toast.show { transform: translateY(0); }
 .rules-more>summary::before{content:"+";display:inline-block;width:16px;color:#f2c66d}
 .rules-more[open]>summary::before{content:"−"}
 .rules-more .tutorial-grid{padding:0 12px 12px;margin-top:0}
+
+#card-preview:empty,.deck-hover-tip:empty{display:none!important}
+.deck-tag-select{margin-top:6px}
+
+/* 2026-10-24 UI fixes */
+#screen-home .home-nav{grid-template-columns:repeat(7,1fr)!important}
+@media(max-width:1100px){#screen-home .home-nav{grid-template-columns:repeat(4,1fr)!important}}
+@media(max-width:720px){#screen-home .home-nav{grid-template-columns:repeat(2,1fr)!important}}
+#btn-tasks-home .home-nav-no{color:#f2c66d}
+.experimental-tip{display:flex;gap:10px;align-items:flex-start;margin:12px 0 16px;padding:10px 12px;border:1px solid rgba(242,198,109,.35);background:rgba(242,198,109,.07);color:#d9cba8;font-size:11px;line-height:1.65}
+.experimental-tip strong{flex:0 0 auto;color:#f2c66d;font-size:10px;letter-spacing:.08em}
+/* 打出卡牌：右下角中央的小字提示，不再用左侧大卡 */
+.play-reveal,.play-reveal.enemy{left:50%;right:auto;top:auto;bottom:86px;width:min(370px,72vw);transform:translateX(-50%);animation:playRevealCenterIn .42s cubic-bezier(.18,.82,.3,1) both;filter:drop-shadow(0 12px 24px rgba(0,0,0,.5))}
+.play-reveal-label{display:none}
+.play-reveal-card{min-height:0;padding:9px 13px;display:block;border-radius:5px}
+.play-reveal-art,.play-reveal-stats{display:none}
+.play-reveal-name{font-size:14px;line-height:1.3}
+.play-reveal-type{margin-top:2px;font-size:8px}
+.play-reveal-effect{opacity:1;transform:none;margin-top:4px;padding-top:4px}
+.play-reveal-effect-label{font-size:8px;margin-bottom:2px}
+.play-reveal-effect p{font-size:10px;line-height:1.6;max-height:32px}
+.play-reveal::after{display:none}
+.play-reveal.out{animation:playRevealCenterOut .35s ease-in both}
+@keyframes playRevealCenterIn{from{opacity:0;transform:translate(-50%,14px) scale(.96)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+@keyframes playRevealCenterOut{to{opacity:0;transform:translate(-50%,8px) scale(.98)}}
+@media(max-width:720px){.play-reveal,.play-reveal.enemy{bottom:72px;width:86vw;left:50%}.play-reveal-card{padding:8px 10px}.play-reveal-name{font-size:13px}.play-reveal-effect p{font-size:9px;max-height:28px}}
+
+/* 出牌预览固定在画面正中间，避开手牌区 */
+.play-reveal,.play-reveal.enemy{left:50%;right:auto;top:50%;bottom:auto;width:min(350px,66vw);transform:translate(-50%,-50%);animation:playRevealCenter2 .38s cubic-bezier(.18,.82,.3,1) both}
+.play-reveal.out{animation:playRevealCenterOut2 .32s ease-in both}
+@keyframes playRevealCenter2{from{opacity:0;transform:translate(-50%,-44%) scale(.96)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes playRevealCenterOut2{to{opacity:0;transform:translate(-50%,-44%) scale(.98)}}
+@media(max-width:720px){.play-reveal,.play-reveal.enemy{top:50%;bottom:auto;width:84vw}}
+
+.tutorial-advanced-link{display:inline-flex;margin-top:4px;padding:5px 0;color:#f2c66d;font-size:11px;text-decoration:none;border-bottom:1px solid rgba(242,198,109,.3)}
+.tutorial-advanced-link:hover{color:#fff1c9;border-color:#f2c66d}
+
+/* 出牌预览：共享流脉中央 + 半透明 */
+.play-reveal,.play-reveal.enemy{left:50%;top:50%;right:auto;bottom:auto;opacity:.78;transform:translate(-50%,-50%);animation:playRevealVeinIn .36s cubic-bezier(.18,.82,.3,1) both}
+.play-reveal.out{animation:playRevealVeinOut .3s ease-in both}
+.play-reveal-card{background:linear-gradient(155deg,rgba(17,42,40,.68),rgba(3,10,12,.64));border-color:rgba(242,198,109,.36);box-shadow:inset 0 0 0 2px rgba(0,0,0,.18),0 0 16px rgba(242,198,109,.08);backdrop-filter:blur(6px)}
+.play-reveal-name{color:#f4e8c7;font-size:13px}
+.play-reveal-type{color:#a5c5bc}
+.play-reveal-effect p{color:#d0ddd8;font-size:10px;line-height:1.6}
+.play-reveal-effect-label{color:#a9d8ce}
+@keyframes playRevealVeinIn{from{opacity:0;transform:translate(-50%,-42%) scale(.96)}to{opacity:.78;transform:translate(-50%,-50%) scale(1)}}
+@keyframes playRevealVeinOut{to{opacity:0;transform:translate(-50%,-43%) scale(.98)}}
+@media(max-width:720px){.play-reveal,.play-reveal.enemy{width:min(330px,84vw);opacity:.8}}
+
+/* 四堂教程主页 */
+.tutorial-hub-shell{max-width:1120px}
+.tutorial-hub-progress{margin-top:8px;color:#f2c66d;font-size:11px}
+.tutorial-hub-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
+.tutorial-module{position:relative;padding:20px;border:1px solid rgba(242,198,109,.24);background:linear-gradient(145deg,rgba(17,31,34,.96),rgba(5,12,14,.96));display:flex;flex-direction:column;gap:8px;min-height:210px}
+.tutorial-module .manual-index{position:absolute;right:16px;top:14px;color:rgba(242,198,109,.45);font:22px/1 var(--serif)}
+.tutorial-module-kicker{color:#8fb3aa;font-size:8px;letter-spacing:.16em}
+.tutorial-module h3{margin:0;color:#f7eedb;font:500 25px/1.25 var(--serif)}
+.tutorial-module p{margin:0;color:#b8cbc5;font-size:11px;line-height:1.75;flex:1}
+.tutorial-module small{color:#839b95;font-size:9px}
+.tutorial-module .btn{align-self:flex-start;margin-top:4px}
+.tutorial-module.done{border-color:rgba(127,224,214,.42)}
+.tutorial-module.done::after{content:"已完成";position:absolute;right:14px;bottom:14px;color:#8de0d0;font-size:9px}
+.lesson-drills{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0 4px}
+.lesson-drill{display:flex;flex-direction:column;gap:3px;padding:12px;border:1px solid rgba(242,198,109,.22);background:rgba(242,198,109,.04);text-align:left;cursor:pointer;color:#e8f0eb}
+.lesson-drill:hover{border-color:rgba(242,198,109,.65);background:rgba(242,198,109,.1)}
+.lesson-drill strong{color:#f1dfb0;font-size:12px;font-weight:500}
+.lesson-drill span{color:#93a9a2;font-size:9px;line-height:1.55}
+@media(max-width:720px){.tutorial-hub-grid{grid-template-columns:1fr}.tutorial-module{min-height:0;padding:16px}.lesson-drills{grid-template-columns:1fr}}
+
+/* 教程四页签：保留原大教程内容，只拆成四类 */
+.tutorial-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 0 6px}
+.tutorial-tab{display:flex;flex-direction:column;gap:3px;padding:11px 13px;border:1px solid rgba(159,207,196,.2);background:rgba(4,13,16,.6);text-align:left;color:#dce8e3;cursor:pointer}
+.tutorial-tab:hover{border-color:rgba(242,198,109,.55);background:rgba(242,198,109,.06)}
+.tutorial-tab.active{border-color:rgba(242,198,109,.75);background:linear-gradient(135deg,rgba(242,198,109,.14),rgba(4,13,16,.7))}
+.tutorial-tab b{color:#f2c66d;font:10px/1 var(--font-display);letter-spacing:.12em}
+.tutorial-tab strong{color:#f3ead7;font:500 15px/1.3 var(--serif)}
+.tutorial-tab small{color:#8fa49e;font-size:8px;line-height:1.5}
+#screen-tutorial .manual-section[hidden]{display:none!important}
+#screen-tutorial .manual-grid-5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.tutorial-drill-card{display:flex;flex-direction:column;gap:7px}
+.tutorial-drill-card .btn{margin-top:auto;align-self:flex-start}
+@media(max-width:1000px){#screen-tutorial .manual-grid-5{grid-template-columns:repeat(3,minmax(0,1fr))}.tutorial-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){#screen-tutorial .manual-grid-5{grid-template-columns:1fr}.tutorial-tab{padding:9px 10px}.tutorial-tab strong{font-size:13px}}
