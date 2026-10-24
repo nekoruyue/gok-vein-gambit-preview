@@ -13,10 +13,12 @@
     republic: { name: "共和国", short: "共和国", color: "#d6b25f", dark: "#2b2518", icon: "律", emblem: "/assets/emblems/republic.svg", hero: "wolfram" },
     empire: { name: "帝国", short: "帝国", color: "#b08a5a", dark: "#2a2118", icon: "冠", emblem: "/assets/emblems/empire.svg", hero: "otto" },
     greyharbor: { name: "灰港同盟", short: "灰港", color: "#7fae8f", dark: "#1b2a23", icon: "匕", emblem: "/assets/emblems/greyharbor.svg", hero: "monarch" },
+    losutai: { name: "洛斯汰聚落", short: "洛斯汰", color: "#36b8b0", dark: "#08262b", icon: "潮", emblem: "/assets/emblems/losutai.svg", hero: "balaena" },
+    snow: { name: "雪都", short: "雪都", color: "#9bd8ff", dark: "#17283b", icon: "雪", emblem: "/assets/emblems/snow.svg", hero: "sernach" },
     neutral: { name: "中立", short: "中立", color: "#c9a86a", dark: "#2c271f", icon: "旅", emblem: "/assets/emblems/neutral.svg", hero: null }
   };
 
-  const FACTION_IDS = ["pus", "academy", "xizhao", "republic", "empire", "greyharbor"];
+  const FACTION_IDS = ["pus", "academy", "xizhao", "republic", "empire", "greyharbor", "losutai", "snow"];
 
   function nextFaction(faction) {
     const i = FACTION_IDS.indexOf(faction);
@@ -12349,44 +12351,7 @@
     DECKS[f] = rest.slice(0, 28).concat(formations, equips);
   }
 
-  DECKS.greyharbor = ["gh_cutthroat","gh_cutthroat","gh_venom_apprentice","gh_venom_apprentice","gh_contract_squire","gh_silencer","gh_silencer","gh_poison_thrower","gh_poison_thrower","gh_rush_archer","gh_rush_archer","gh_bounty_hunter","gh_bounty_hunter","gh_quick_strike","gh_quick_strike","gh_venom_shield","gh_venom_shield","gh_silence_expert","gh_silence_expert","gh_shield_broker","gh_shield_broker","gh_bounty_collector","gh_bounty_collector","gh_ledger","gh_ledger","gh_scorpion","gh_scorpion","seran","vera","xiu","karan","gh_bounty_king"].concat(["gh_formation", "gh_formation", "gh_bounty_board", "gh_venom_vial"]);
-
-  DECKS.greyharbor = ["gh_cutthroat","gh_venom_apprentice","gh_venom_apprentice","gh_silencer","gh_silencer","gh_poison_thrower","gh_poison_thrower","gh_rush_archer","gh_rush_archer","gh_bounty_hunter","gh_bounty_hunter","gh_quick_strike","gh_quick_strike","gh_venom_shield","gh_venom_shield","gh_silence_expert","gh_silence_expert","gh_shield_broker","gh_shield_broker","gh_bounty_collector","gh_bounty_collector","gh_scorpion","gh_scorpion","seran","vera","xiu","karan","gh_bounty_king"].concat(["gh_formation", "gh_formation", "gh_bounty_board", "gh_venom_vial"]);
-
-  if (HEROES.otto) { HEROES.otto.hp = 28; HEROES.otto.power.cost = 4; }
-
-  const EMPIRE_NERF = { iron_order_wall: { attack: 4, health: 5 }, powder_marshal: { attack: 4, health: 5 }, eisenwald_marshal: { attack: 4, health: 5 }, walter: { attack: 5, health: 5 }, gunther: { attack: 4, health: 6 } };
-  for (const [id, patch] of Object.entries(EMPIRE_NERF)) if (CARDS[id]) Object.assign(CARDS[id], patch);
-
-  for (const id of ["powder_apprentice","powder_martyr","execution_supervisor","broken_bone_warlord","northern_nomad","north_hunter"]) {
-    if (CARDS[id] && CARDS[id].keywords && CARDS[id].keywords.indexOf("rush") >= 0) CARDS[id].text = String(CARDS[id].text || "").replace(/^先遣。/, "先遣。");
-  }
-
-  Object.assign(FACTIONS, {
-    losutai: { name: "洛斯汰聚落", short: "洛斯汰", color: "#36b8b0", dark: "#08262b", icon: "潮", emblem: "/assets/emblems/losutai.svg", hero: "balaena" },
-    snow: { name: "雪都", short: "雪都", color: "#9bd8ff", dark: "#17283b", icon: "雪", emblem: "/assets/emblems/snow.svg", hero: "sernach" }
-  });
-  for (const id of ["losutai", "snow"]) if (FACTION_IDS.indexOf(id) < 0) FACTION_IDS.push(id);
-  Object.assign(HEROES, {
-    balaena: {
-      id: "balaena", name: "贝莱娜", short: "贝莱娜", faction: "losutai", hp: 32, armor: 0, art: "orlicas",
-      quote: "潮来了，聚落就活；潮走了，就等。",
-      power: { name: "潮生", cost: 2, target: "none", text: "召唤一个 1/1 洛斯汰魔物；若你控制其他魔物，抽 1 张牌。" }
-    },
-    sernach: {
-      id: "sernach", name: "熙尔娜·张", short: "熙尔娜", faction: "snow", hp: 30, armor: 0, art: "miyuki",
-      quote: "雪落尽了，雪都就醒了。",
-      power: { name: "凝时", cost: 2, target: "enemy", text: "冻结一个敌方随从；若它已经被冻结，抽 1 张牌。" }
-    }
-  });
-  Object.assign(KEYWORDS, { ward: { name: "筑防", icon: "▣", color: "#e0c27a" } });
-
-  for (const id of ["lanxi","lanzhou","losutai_hunter","monster_summon","losutai_matriarch","venom_fang","blood_altar","tide_colossus","devourer","brood_matron","blood_pool","monster_overseer","pressure_warlock","tribal_shaman","reborn_rite","monster_command","losutai_awakened","monster_nest","blood_servant","blood_corpse_collector"]) if (CARDS[id]) CARDS[id].faction = "losutai";
-  for (const id of ["samuel","nina","frost_seal","frost_professor","frost_scribe","frost_line_guard","frost_archivist","frost_page","white_frost_hall","echo_adept"]) if (CARDS[id]) CARDS[id].faction = "snow";
-  if (CARDS.gh_venom_vial) CARDS.gh_venom_vial.faction = "losutai";
-  if (CARDS.frost_prism) CARDS.frost_prism.faction = "snow";
-
-  for (const id of ["snow_ice_crystal_guard","snow_tundra_ranger","snow_ice_wolf","snow_firekeeper","snow_ice_scholar","snow_blizzard_warden","snow_frost_warden","snow_frost_giant","snow_whiteout","snow_temporal_shift","snow_frost_armor","snow_wind_eye","snow_gale_force"]) delete CARDS[id];
+  DECKS.greyharbor = ["gh_bounty_notice","gh_formation","ledger_paperknife","gh_ledger_chain","venom_attendant","venom_attendant","gh_venom_apprentice","gh_venom_apprentice","gh_poison_thrower","gh_poison_thrower","bounty_accountant","bounty_accountant","gh_venom_shield","gh_venom_shield","gh_legend_assassin","gh_legend_assassin","gh_bounty_collector","gh_bounty_collector","kugreen","gh_scorpion","gh_scorpion","gh_bounty_hunter","gh_bounty_hunter","bounty_clerk","bounty_clerk","seran","toll_account","gh_ledger","fog_sailor","gh_contract_squire"];
   CARDS.lt_tide_warden = { id: "lt_tide_warden", name: "潮汐守卫", faction: "losutai", type: "minion", cost: 4, attack: 3, health: 5, rarity: "rare", art: null, noGeneratedArt: false, noArtwork: true, keywords: ["taunt"], target: "none", text: "守备。", flavor: "潮水退去，它还在守。", copyLimit: 2 };
 
   Object.assign(CARDS, {
@@ -13191,7 +13156,7 @@
     lize: { cost: 4, attack: 4, health: 4, battlecry: { type: "damageHero", amount: 2 }, text: "登场：对敌方领袖造成 2 点伤害。核心：压脉。" },
     shextena: { cost: 5, attack: 4, health: 5, battlecry: { type: "healHeroSelfBuff", amount: 4 }, text: "登场：恢复你的领袖 4 点生命；每实际恢复 1 点，获得 +1/+1。核心：治疗。" },
     orlicas: { cost: 4, attack: 3, health: 4, battlecry: { type: "draw", amount: 2 }, text: "登场：抽 2 张牌。核心：资源。" },
-    spellstorm: { cost: 7, spell: { type: "damageAllEnemyUnitsPerGameSpell", amount: 1 }, text: "对所有敌方单位造成等同于本局已使用战术牌数量的伤害（最高 10 点）。核心：法术洪流。" },
+    spellstorm: { cost: 7, spell: { type: "damageAllEnemyUnitsPerGameSpell", amount: 1 }, text: "对所有敌方单位造成等同于本局已使用战术牌数量的伤害（每张 1 点，最高 10 点）。核心：法术洪流。" },
     cassian: { cost: 6, attack: 4, health: 6, passive: { type: "repeatLastSpell" }, text: "被动：你的回合结束时，重复你最后使用的一张战术牌。核心：法术复写。" }
   };
   for (const [id, patch] of Object.entries(V6_CORE)) { const c = CARDS[id]; if (!c) continue; if (id === "konrad" || id === "beatrix") delete c.passive; Object.assign(c, patch); }
@@ -14673,6 +14638,14 @@
     set('ac_grand_library', c => { c.cost = 6; });
     set('ac_knowledge_burst', c => { c.cost = 5; });
 
+  Object.assign(HEROES, {
+    balaena: { id: "balaena", name: "贝莱娜", short: "贝莱娜", faction: "losutai", hp: 32, armor: 0, art: "orlicas", quote: "潮来了，聚落就活；潮走了，就等。", power: { name: "潮生", cost: 2, target: "none", text: "召唤一个 1/1 洛斯汰魔物；若你控制其他魔物，抽 1 张牌。" } },
+    sernach: { id: "sernach", name: "熙尔娜·张", short: "熙尔娜", faction: "snow", hp: 30, armor: 0, art: "miyuki", quote: "雪落尽了，雪都就醒了。", power: { name: "凝时", cost: 2, target: "enemy", text: "冻结一个敌方随从；若它已经被冻结，抽 1 张牌。" } }
+  });
+  for (const id of ["lanxi","lanzhou","losutai_hunter","monster_summon","losutai_matriarch","venom_fang","blood_altar","tide_colossus","devourer","brood_matron","blood_pool","monster_overseer","pressure_warlock","tribal_shaman","reborn_rite","monster_command","losutai_awakened","monster_nest","blood_servant","blood_corpse_collector"]) if (CARDS[id]) CARDS[id].faction = "losutai";
+  for (const id of ["samuel","nina","frost_seal","frost_professor","frost_scribe","frost_line_guard","frost_archivist","frost_page","white_frost_hall","echo_adept"]) if (CARDS[id]) CARDS[id].faction = "snow";
+  if (CARDS.gh_venom_vial) CARDS.gh_venom_vial.faction = "losutai";
+  if (CARDS.frost_prism) CARDS.frost_prism.faction = "snow";
     // 英雄生命：西昭、灰港、雪境降温；学院、帝国补足。
     HEROES[FACTIONS.xizhao.hero].hp = 22;
     HEROES[FACTIONS.academy.hero].hp = 40;
@@ -15226,6 +15199,1146 @@
     if (CARDS.empire_veinblade_savant) CARDS.empire_veinblade_savant.text = "登场：共享流脉 +1。被动：你每回合第一次消耗共享流脉时，本随从获得 +2 攻击。";
   })();
 
+  // ===== 2026-10-24 传说卡牌设计：90 张传说定稿 =====
+  (() => {
+    const DESIGN = [{"id":"orlicas","name":"欧莉卡斯","cost":3,"attack":1,"health":6,"type":"minion","rarity":"legendary","text":"每当同阵位另一个友方随从攻击时，将其生命值变为与本随从相同。"},{"id":"shextena","name":"希斯蒂娜","cost":4,"attack":4,"health":4,"type":"minion","rarity":"legendary","text":"登场：恢复你的领袖 4 点生命，引脉8：恢复你的领袖3点生命；每实际恢复 1 点生命值，获得 +1/+1。"},{"id":"timon","name":"提蒙","cost":6,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"登场：复活你在本局对战中死亡的行动力消耗最高的随从。"},{"id":"puwei_overflow_saint","name":"晨潮圣使","cost":5,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"登场：恢复你的领袖 4 点生命；这次恢复溢出的数值转为等量护甲。"},{"id":"aidric","name":"艾德里克","cost":7,"attack":7,"health":1,"type":"minion","rarity":"legendary","text":"守备， 登场：消灭一个随从并获得其生命值"},{"id":"verious","name":"维里欧斯","cost":7,"attack":5,"health":7,"type":"minion","rarity":"legendary","text":"登场：你使用的下一张战术牌会施放三次  被动：每使用一张战术牌，预兆1"},{"id":"miyuki","name":"深雪","cost":7,"attack":6,"health":6,"type":"minion","rarity":"legendary","text":"登场：冻结深雪所在阵位以阵位外的所有随从（包括友方）被动：深雪在场时本阵位随从不会被冻结"},{"id":"vein_heart","name":"地脉之心","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：你的回合开始时恢复 2 点生命。"},{"id":"justus","name":"尤斯图斯·维尔纳","cost":5,"attack":5,"health":5,"type":"minion","rarity":"legendary","text":"登场：在本局对战中，在你施放一个战术后，随机召唤一个行动力消耗相同的随从。"},{"id":"quin_records","name":"记录官奎因","cost":4,"attack":2,"health":4,"type":"minion","rarity":"legendary","text":"你的召唤随从的卡牌召唤数量翻倍。"},{"id":"cassian","name":"卡西安·维尔","cost":6,"attack":4,"health":6,"type":"minion","rarity":"legendary","text":"被动：你的回合结束时，重复你最后使用的一张战术牌。"},{"id":"karl_desmond","name":"卡尔·德斯蒙德","cost":7,"attack":7,"health":7,"type":"minion","rarity":"legendary","text":"每当你施放一个法术，将一张“火球术”法术牌置入你的手牌。（3费火球术：对一个敌方随从造成4点伤害）"},{"id":"time_debt_emperor","name":"时债君王","cost":7,"attack":4,"health":6,"type":"minion","rarity":"legendary","text":"被动：你的回合结束时，使你手牌中的所有卡费用减少 1（最低为 1）。"},{"id":"ac_absolute_theory","name":"绝对理论","cost":3,"attack":null,"health":null,"type":"spell","rarity":"legendary","text":"对所有敌方随从造成 2 点伤害。"},{"id":"ac_final_proof","name":"最终证明","cost":3,"attack":null,"health":null,"type":"spell","rarity":"legendary","text":"对一个敌方随从造成 3 点伤害，并冻结它。"},{"id":"spell_codex","name":"留存法典","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：每当你施放战术牌，抽 1 张牌。"},{"id":"molan","name":"墨兰","cost":3,"attack":2,"health":4,"type":"minion","rarity":"legendary","text":"获得敌方一个随机随从的控制权"},{"id":"grayfeather","name":"灰羽·乌恩","cost":6,"attack":4,"health":4,"type":"minion","rarity":"legendary","text":"登场：你使用的下一张牌会消耗对手的生命值而非法力值（最高不超过10点）。"},{"id":"lize","name":"莉泽","cost":4,"attack":7,"health":7,"type":"minion","rarity":"legendary","text":"登场：随机弃掉一张手牌。引脉8：改为弃对手的一张手牌。"},{"id":"blood_elder","name":"血族长老","cost":4,"attack":5,"health":5,"type":"minion","rarity":"legendary","text":"使你手牌和牌库中的随从牌行动力消耗减少（1）点，战术牌的行动力消耗增加（1）点。"},{"id":"tiega","name":"铁牙·阿古","cost":6,"attack":6,"health":7,"type":"minion","rarity":"legendary","text":"你抽取你行动力消耗最高的两张牌，你的对手抽取你行动力最低的两张牌。"},{"id":"stone_alchemist","name":"石化术师","cost":6,"attack":3,"health":5,"type":"minion","rarity":"legendary","text":"登场：将一个敌方随从变成 1/1 石像衍生物，移除其关键词和卡牌效果。"},{"id":"xh_castle_consul","name":"古堡执政官","cost":7,"attack":7,"health":7,"type":"minion","rarity":"legendary","text":"在你弃掉一张随从牌后，召唤一个该随从的复制。"},{"id":"blood_scythe","name":"血潮镰","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：回合开始时，所有友方随从获得 +1 攻击。"},{"id":"hans","name":"汉斯·冯·霍尔姆","cost":2,"attack":1,"health":3,"type":"minion","rarity":"legendary","text":"格挡。 余响：获得2点护甲。"},{"id":"elena","name":"伊莲娜·索菲","cost":6,"attack":5,"health":7,"type":"minion","rarity":"legendary","text":"登场：召唤你受伤的随从的复制，使复制获得突袭。"},{"id":"erhardt","name":"埃尔哈特·冯·罗森","cost":4,"attack":3,"health":3,"type":"minion","rarity":"legendary","text":"守备。如果在你的某个回合中有四个友方角色受到伤害，从手牌或牌库中召唤本随从。"},{"id":"konrad","name":"康拉德·威廉莱斯","cost":5,"attack":4,"health":6,"type":"minion","rarity":"legendary","text":"登场：消灭你的对手上回合使用的 所有随从。"},{"id":"beatrix","name":"贝娅特丽克丝·冯·艾森胡特","cost":6,"attack":5,"health":6,"type":"minion","rarity":"legendary","text":"登场：将你牌库底的五张牌的法力值消耗变为（1）点。"},{"id":"republic_ironwall_marshal","name":"铁壁元帅","cost":6,"attack":4,"health":6,"type":"minion","rarity":"legendary","text":"守备。登场：获得 4 点护甲；若你在此效果前已有护甲，自身获得格挡。"},{"id":"stein_speaker","name":"施泰因议长","cost":9,"attack":6,"health":7,"type":"minion","rarity":"legendary","text":"使你的其他随从获得“亡语：召唤一个法力值消耗与本随从相同的随从”。"},{"id":"iron_banner","name":"铁壁军旗","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：回合开始时，使一名友方随从获得格挡。"},{"id":"mia","name":"米娅·科尔贝","cost":2,"attack":2,"health":1,"type":"minion","rarity":"legendary","text":"登场：将你的手牌替换为你的起始手牌。在你的回合结束时换回。"},{"id":"klaus","name":"克劳斯·莱茵哈特","cost":3,"attack":3,"health":4,"type":"minion","rarity":"legendary","text":"先遣。登场：场上每有一个其他随从（不分敌我），获得 +1/+1。"},{"id":"elsa","name":"艾尔莎·汉瑟尔","cost":3,"attack":2,"health":2,"type":"minion","rarity":"legendary","text":"在你的回合结束时，使你的随从获得格挡，已有格挡的随从改为获得+3/+3。"},{"id":"eisenwald_marshal","name":"艾森瓦尔德元帅","cost":5,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"将你牌库底的五张牌的法力值消耗变为（1）点。"},{"id":"gunther","name":"京特·冯·艾森瓦尔德","cost":6,"attack":5,"health":7,"type":"minion","rarity":"legendary","text":"连携。登场：获得 6 点护甲。引脉6：获得 4 点护甲。"},{"id":"karl_schwarz","name":"卡尔·冯·施瓦茨","cost":6,"attack":4,"health":6,"type":"minion","rarity":"legendary","text":"登场：对一个敌方随从造成等同于你护甲的伤害。。"},{"id":"cinder_arbiter","name":"灰烬仲裁者","cost":7,"attack":5,"health":6,"type":"minion","rarity":"legendary","text":"战吼：使你的领袖获得回潮"},{"id":"powder_engine","name":"火药引擎","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：回合开始时，获得2点护甲"},{"id":"kugreen","name":"「苦绿」","cost":4,"attack":3,"health":3,"type":"minion","rarity":"legendary","text":"被动：每完成一次悬赏，对敌方领袖造成 2 点伤害。"},{"id":"xiu","name":"「哑巴」修","cost":3,"attack":3,"health":4,"type":"minion","rarity":"legendary","text":"此牌在你的手牌中时，会变成你的对手使用的上一张随从牌的3/4的复制。"},{"id":"vera","name":"「替身」薇拉","cost":5,"attack":6,"health":6,"type":"minion","rarity":"legendary","text":"隐匿。每当一个隐匿的友方随从攻击，随机使你手牌中一张牌的行动力消耗减少（3）点。"},{"id":"seran","name":"「账房」瑟兰","cost":5,"attack":4,"health":4,"type":"minion","rarity":"legendary","text":"登场：将所有低于本随从生命值的随从列入悬赏名单。"},{"id":"karan","name":"「断线」卡兰","cost":6,"attack":6,"health":6,"type":"minion","rarity":"legendary","text":"被动：此随从在场时，所有友方随从攻击无视守备。"},{"id":"unquiet_dowager","name":"夺魂女侯","cost":7,"attack":5,"health":5,"type":"minion","rarity":"legendary","text":"余响：随机控制一个费用不高于 4 的敌方随从。"},{"id":"gh_bounty_king","name":"赏金王","cost":7,"attack":7,"health":7,"type":"minion","rarity":"legendary","text":"登场：消灭所有悬赏名单上的敌方随从；每消灭一个，对敌方领袖造成 4 点伤害。若没有悬赏目标，对敌方领袖造成 8 点伤害。"},{"id":"gh_bounty_board","name":"悬赏榜","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：回合开始时，将一个随机敌方随从列入悬赏名单"},{"id":"lanzhou","name":"澜舟","cost":1,"attack":1,"health":1,"type":"minion","rarity":"legendary","text":"隐匿。登场：召唤一个 1/1 洛斯汰魔物。"},{"id":"lt_awakened","name":"觉醒者","cost":5,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"本随从以及同阵位的其他随从攻击后，获得一张闪电箭。（闪电箭，2费，对敌方所有随从造成1点伤害）"},{"id":"lt_brood_mother","name":"巢母","cost":6,"attack":4,"health":6,"type":"minion","rarity":"legendary","text":"将你上回合使用的所有战术牌移回你的手牌。"},{"id":"lanxi","name":"澜汐","cost":4,"attack":5,"health":5,"type":"minion","rarity":"legendary","text":"被动：场上每有一个洛斯汰魔物，获得 +1/+1。"},{"id":"losutai_hive_ancestor","name":"巢群先祖","cost":7,"attack":5,"health":6,"type":"minion","rarity":"legendary","text":"被动：你的回合结束时，若你本回合召唤过至少 2 个洛斯汰魔物，召唤一个 3/3 洛斯汰巨兽。"},{"id":"lt_tide_mother","name":"潮母","cost":3,"attack":3,"health":4,"type":"minion","rarity":"legendary","text":"登场：召唤2个 1/1 洛斯汰魔物。引脉6：在召唤2个1/1 洛斯汰魔物。"},{"id":"lt_venom_lord","name":"毒潮领主","cost":9,"attack":8,"health":7,"type":"minion","rarity":"legendary","text":"在你的回合结束时，使用你牌库顶的3张牌"},{"id":"lt_deep_eye","name":"深海之眼","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：你的回合开始时，召唤一个 1/1 洛斯汰魔物。"},{"id":"samuel","name":"塞缪尔·奎因","cost":1,"attack":2,"health":2,"type":"minion","rarity":"legendary","text":"登场：检索1 余响：召唤一个雪狐哨兵。"},{"id":"snow_rin","name":"凛","cost":6,"attack":3,"health":5,"type":"minion","rarity":"legendary","text":"将你牌库中的所有战术牌移至牌库顶。每回合你可以选择从牌库顶或牌库底抽牌。"},{"id":"nina","name":"妮娜·索雷尔","cost":6,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"登场：冻结目标所在阵位的所有敌方随从。"},{"id":"snow_shatter_judge","name":"碎冰审判官","cost":6,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"登场：对所有被冻结的敌方随从造成 3 点伤害；每消灭一个随从，获得+1/+1"},{"id":"snow_time_shade","name":"时间残影","cost":8,"attack":4,"health":7,"type":"minion","rarity":"legendary","text":"将你手牌中的所有随从牌送入2回合后的未来。这些牌返回时会具有+5/+5。"},{"id":"snow_frost_dragon","name":"白霜龙","cost":8,"attack":7,"health":7,"type":"minion","rarity":"legendary","text":"登场：冻结目标所在阵位的所有敌方随从。"},{"id":"snow_last_stand","name":"雪都之战·终局","cost":8,"attack":5,"health":6,"type":"minion","rarity":"legendary","text":"被动：在你使用你的英雄技能后，随机对一个敌人造成5点伤害。"},{"id":"snow_ember","name":"雪都火种","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：回合开始时，随机冻结一名敌方随从"},{"id":"jasmine_bai","name":"茉莉白","cost":1,"attack":1,"health":2,"type":"minion","rarity":"legendary","text":"彩蛋卡。登场：召唤一个1/1的共和国新兵。"},{"id":"xiuyue_iceflower","name":"修玥冰花","cost":2,"attack":3,"health":3,"type":"minion","rarity":"legendary","text":"彩蛋卡。登场：随机冻结一个敌方随从。"},{"id":"zhouha_wangjimi","name":"周哈王姬米","cost":2,"attack":2,"health":2,"type":"minion","rarity":"legendary","text":"彩蛋卡。守备。登场：消灭场上除自己以外的所有其他守备单位。"},{"id":"goodnight_logout","name":"晚安下线","cost":3,"attack":1,"health":4,"type":"minion","rarity":"legendary","text":"彩蛋卡。守备。登场：领袖每有 1 点护甲，获得 +1/+1。"},{"id":"kisaragi_cat","name":"如月猫","cost":4,"attack":4,"health":4,"type":"minion","rarity":"legendary","text":"彩蛋卡。格挡。守备。先遣。连携。蚀毒。隐匿。回潮。"},{"id":"monarch","name":"莫纳克","cost":4,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"登场：预兆：从牌库顶 3 张中选 1 张任意阵营的可收集牌。"},{"id":"dugu_mai","name":"独孤迈","cost":5,"attack":5,"health":4,"type":"minion","rarity":"legendary","text":"彩蛋卡。登场：下回合回合开始时获得 3 点行动力，抽 2 张牌。"},{"id":"mirror_regent","name":"镜界执政官","cost":6,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"登场：选择一个敌方随从，召唤它的 1/1 复制。复制体保留关键词和卡牌效果，但不会触发登场效果。"},{"id":"break_attachment","name":"断舍离","cost":7,"attack":6,"health":6,"type":"minion","rarity":"legendary","text":"彩蛋卡。登场：引脉 3：获得 +1/+1。"},{"id":"xingchuan_sun","name":"星川日照","cost":7,"attack":4,"health":4,"type":"minion","rarity":"legendary","text":"彩蛋卡。登场：在自身阵位用随机节肢伙伴填满空位；同阵位有节肢伙伴时，获得隐匿与 +1/+1。每当一个节肢伙伴死亡，获得 +1/+1。"},{"id":"grave_titan","name":"墓钟泰坦","cost":7,"attack":8,"health":8,"type":"minion","rarity":"legendary","text":"余响：召唤一个 5/5 的墓钟守卫。"},{"id":"faceless_king","name":"无面君王","cost":9,"attack":7,"health":7,"type":"minion","rarity":"legendary","text":"登场：复制一个友方随从。"},{"id":"vein_leviathan","name":"流脉利维坦","cost":9,"attack":8,"health":8,"type":"minion","rarity":"legendary","text":"战吼：触发本局对战中死亡的3个友方随从的亡语。"},{"id":"obsidian_colossus","name":"黑曜巨像","cost":9,"attack":5,"health":11,"type":"minion","rarity":"legendary","text":"守备。余响：召唤一个 3/3 的黑曜碎片。"},{"id":"world_serpent","name":"世界之蛇","cost":10,"attack":9,"health":9,"type":"minion","rarity":"legendary","text":"亡语：随机召唤一个传说随从。"},{"id":"void_titan","name":"虚空泰坦","cost":10,"attack":9,"health":9,"type":"minion","rarity":"legendary","text":"登场：消灭所有敌方随从。"},{"id":"hope_fades","name":"希望的消逝","cost":3,"attack":null,"health":null,"type":"spell","rarity":"legendary","text":"彩蛋卡。将场上所有随从移回手牌。"},{"id":"muyumu","name":"muyumu","cost":5,"attack":null,"health":null,"type":"spell","rarity":"legendary","text":"彩蛋卡。消灭场上所有攻击力 3 或以下的随从。"},{"id":"last_ledger","name":"最后一笔账","cost":5,"attack":null,"health":null,"type":"spell","rarity":"legendary","text":"检索一张法战术牌，并使其法力值消耗减少（8）点。如果减少的溢出量还有剩余，重复此效果。"},{"id":"world_edge","name":"世界边缘","cost":8,"attack":null,"health":null,"type":"spell","rarity":"legendary","text":"为所有友方角色恢复 8点生命值。随机召唤两个法力值消耗为（8）的随从。"},{"id":"final_bell","name":"终末钟声","cost":10,"attack":null,"health":null,"type":"spell","rarity":"legendary","text":"再次使用在本回合中使用的所有其他牌（尽可能以敌人为目标）。结束你的回合。"},{"id":"no_mans_camp","name":"无主营地","cost":3,"attack":null,"health":null,"type":"formation","rarity":"legendary","text":"该阵位友方随从固定获得 +2 攻击。"},{"id":"grey_ledger_post","name":"灰港账站","cost":6,"attack":null,"health":null,"type":"formation","rarity":"legendary","text":"该阵位友方随从固定获得+2生命值"},{"id":"forgotten_gate","name":"遗忘之门","cost":8,"attack":null,"health":null,"type":"formation","rarity":"legendary","text":"该阵位友方随从固定获得格挡和先遣。"},{"id":"dusk_inn_key","name":"黄昏旅店钥匙","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：回合开始时，获得+1生命上限"},{"id":"smuggler_anchor","name":"走私船锚","cost":8,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：你的回合开始时对所有敌方随从造成 2 点伤害。"}];
+    for (const d of DESIGN) { const c = CARDS[d.id]; if (!c) continue; c.cost = d.cost; if (Number.isFinite(d.attack)) c.attack = d.attack; if (Number.isFinite(d.health)) c.health = d.health; c.type = d.type; c.rarity = d.rarity; c.text = d.text; }
+  })();
+
+  // ===== 传说卡牌设计：效果重写 =====
+  (() => {
+    const EFX = {
+  "orlicas": {
+    "keywords": [],
+    "passive": {
+      "type": "allyAttackSetHealth"
+    }
+  },
+  "shextena": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "healHeroSelfBuffVein",
+      "amount": 4,
+      "vein": 8,
+      "bonus": 3
+    }
+  },
+  "timon": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "reviveHighestCost"
+    }
+  },
+  "aidric": {
+    "keywords": [
+      "taunt",
+      "battlecry"
+    ],
+    "target": "enemy",
+    "battlecry": {
+      "type": "destroyGainHealth"
+    }
+  },
+  "verious": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "nextSpellTriple"
+    },
+    "passive": {
+      "type": "spellDiscoverOnce"
+    }
+  },
+  "miyuki": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "freezeAllExceptOwnZone"
+    },
+    "passive": {
+      "type": "zoneFreezeImmune"
+    }
+  },
+  "justus": {
+    "keywords": [],
+    "target": "none",
+    "passive": {
+      "type": "spellSummonSameCost"
+    }
+  },
+  "quin_records": {
+    "keywords": [],
+    "target": "none",
+    "passive": {
+      "type": "summonCountDouble"
+    }
+  },
+  "cassian": {
+    "keywords": [],
+    "target": "none",
+    "passive": {
+      "type": "repeatLastSpell"
+    }
+  },
+  "karl_desmond": {
+    "keywords": [],
+    "target": "none",
+    "passive": {
+      "type": "spellAddFireball"
+    }
+  },
+  "time_debt_emperor": {
+    "keywords": [],
+    "target": "none",
+    "passive": {
+      "type": "reduceHandCosts",
+      "amount": 1,
+      "floor": 1
+    }
+  },
+  "molan": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "takeControlRandomEnemy"
+    }
+  },
+  "grayfeather": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "nextCardHealthCost"
+    }
+  },
+  "lize": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "discardRandomVeinOpponent"
+    }
+  },
+  "blood_elder": {
+    "keywords": [],
+    "target": "none",
+    "passive": {
+      "type": "costSplitMinionSpell"
+    }
+  },
+  "tiega": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "drawHighLow"
+    }
+  },
+  "xh_castle_consul": {
+    "keywords": [],
+    "target": "none",
+    "passive": {
+      "type": "discardMinionSummonCopy"
+    }
+  },
+  "hans": {
+    "keywords": [
+      "divineShield",
+      "deathrattle"
+    ],
+    "target": "none",
+    "deathrattle": {
+      "type": "armor",
+      "amount": 2
+    }
+  },
+  "elena": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "summonDamagedCopiesRush"
+    }
+  },
+  "erhardt": {
+    "keywords": [
+      "taunt"
+    ],
+    "target": "none",
+    "passive": {
+      "type": "summonSelfOnFourDamage"
+    }
+  },
+  "konrad": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "destroyLastTurnMinions"
+    }
+  },
+  "beatrix": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "bottomDeckCostOne"
+    }
+  },
+  "stein_speaker": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "grantDeathrattleSameCost"
+    }
+  },
+  "mia": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "swapStartingHand"
+    }
+  },
+  "elsa": {
+    "keywords": [],
+    "target": "none",
+    "passive": {
+      "type": "endTurnShieldOrBuff"
+    }
+  },
+  "eisenwald_marshal": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "bottomDeckCostOne"
+    }
+  },
+  "gunther": {
+    "keywords": [
+      "windfury",
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "armorVein",
+      "amount": 6,
+      "vein": 6,
+      "bonus": 4
+    }
+  },
+  "karl_schwarz": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "enemy",
+    "battlecry": {
+      "type": "armorDamage"
+    }
+  },
+  "cinder_arbiter": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "heroReborn"
+    }
+  },
+  "xiu": {
+    "keywords": [],
+    "target": "none",
+    "passive": {
+      "type": "handCopyLastEnemyMinion"
+    }
+  },
+  "vera": {
+    "keywords": [
+      "stealth"
+    ],
+    "target": "none",
+    "passive": {
+      "type": "stealthAttackDiscount"
+    }
+  },
+  "seran": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "markLowHealthBounties"
+    }
+  },
+  "karan": {
+    "keywords": [],
+    "target": "none",
+    "passive": {
+      "type": "ignoreTauntAura"
+    }
+  },
+  "lt_awakened": {
+    "keywords": [],
+    "target": "none",
+    "passive": {
+      "type": "attackAddLightning"
+    }
+  },
+  "lt_brood_mother": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "returnLastTurnSpells"
+    }
+  },
+  "losutai_hive_ancestor": {
+    "keywords": [],
+    "target": "none",
+    "passive": {
+      "type": "endTurnImpsSummon",
+      "threshold": 2
+    }
+  },
+  "lt_tide_mother": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "summonImpsVein6"
+    }
+  },
+  "lt_venom_lord": {
+    "keywords": [],
+    "target": "none",
+    "passive": {
+      "type": "endTurnUseTop3"
+    }
+  },
+  "samuel": {
+    "keywords": [
+      "battlecry",
+      "deathrattle"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "discover",
+      "pool": "any"
+    },
+    "deathrattle": {
+      "type": "summon",
+      "token": "snow_fox_sentry"
+    }
+  },
+  "snow_rin": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "spellsToTopDrawChoice"
+    }
+  },
+  "nina": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "freezeZone"
+    }
+  },
+  "snow_shatter_judge": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "damageFrozenGrow"
+    }
+  },
+  "snow_time_shade": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "delayHandMinions"
+    }
+  },
+  "snow_frost_dragon": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "freezeZone"
+    }
+  },
+  "snow_last_stand": {
+    "keywords": [],
+    "target": "none",
+    "passive": {
+      "type": "heroPowerDamage",
+      "amount": 5
+    }
+  },
+  "vein_leviathan": {
+    "keywords": [
+      "battlecry"
+    ],
+    "target": "none",
+    "battlecry": {
+      "type": "triggerDeadDeathrattles3"
+    }
+  },
+  "world_serpent": {
+    "keywords": [
+      "deathrattle"
+    ],
+    "target": "none",
+    "deathrattle": {
+      "type": "summonRandomLegendary"
+    }
+  },
+  "last_ledger": {
+    "keywords": [],
+    "target": "none",
+    "spell": {
+      "type": "discoverTacticCost8Repeat"
+    }
+  },
+  "world_edge": {
+    "keywords": [],
+    "target": "none",
+    "spell": {
+      "type": "healAllSummon8"
+    }
+  },
+  "final_bell": {
+    "keywords": [],
+    "target": "none",
+    "spell": {
+      "type": "replayTurnEnd"
+    }
+  }
+};
+    for (const id of Object.keys(EFX)) {
+      const c = CARDS[id]; if (!c) continue;
+      delete c.battlecry; delete c.deathrattle; delete c.passive; delete c.spell; delete c.target;
+      Object.assign(c, EFX[id]);
+    }
+    // 装备/阵型定稿
+    if (CARDS.blood_scythe) CARDS.blood_scythe.equipAura = { attack: 1 };
+    if (CARDS.powder_engine) CARDS.powder_engine.equipAura = { armorTurn: 2 };
+    if (CARDS.iron_banner) CARDS.iron_banner.equipAura = {};
+    if (CARDS.gh_bounty_board) CARDS.gh_bounty_board.equipAura = {};
+    if (CARDS.lt_deep_eye) CARDS.lt_deep_eye.equipAura = { armorTurn: 0 };
+    if (CARDS.snow_ember) CARDS.snow_ember.equipAura = { healTurn: 0 };
+    if (CARDS.dusk_inn_key) CARDS.dusk_inn_key.equipAura = { maxHp: 0 };
+    if (CARDS.forgotten_gate) CARDS.forgotten_gate.formation = { divineShield: true, rush: true };
+    if (CARDS.karl_schwarz) CARDS.karl_schwarz.text = CARDS.karl_schwarz.text.replace(/。。/g, '。');
+    CARDS.fireball = { id:"fireball", name:"火球术", faction:"neutral", type:"spell", rarity:"token", cost:3, target:"enemy", token:true, noArtwork:true, keywords:[], text:"对一个敌方随从造成 4 点伤害。", spell:{ type:"damage", amount:4 } };
+    CARDS.lightning_bolt = { id:"lightning_bolt", name:"闪电箭", faction:"neutral", type:"spell", rarity:"token", cost:2, target:"none", token:true, noArtwork:true, keywords:[], text:"对敌方所有随从造成 1 点伤害。", spell:{ type:"damageAllEnemies", amount:1 } };
+    for (const id of Object.keys(EFX)) { const c = CARDS[id]; if (c && c.passive && c.text && c.text.indexOf("被动") < 0) c.text = "被动：" + c.text; }
+    if (CARDS.world_serpent) CARDS.world_serpent.text = "余响：随机召唤一个传说随从。";
+    if (CARDS.justus) CARDS.justus.text = "登场：在本局对战中，在你施放一个战术后，随机召唤一个行动力消耗相同的随从。被动：该效果持续到本局结束。";
+    if (CARDS.vera) CARDS.vera.text = "隐匿。被动：每当一个隐匿的友方随从攻击，随机使你手牌中一张牌的行动力消耗减少（3）点。";
+  })();
+
+  // ===== 传说设计版预组：每阵营 2 张传说 =====
+  Object.assign(DECKS, {
+  "pus": [
+    "formation_vein",
+    "formation_vein",
+    "vein_heart",
+    "formation_standard",
+    "shextena",
+    "medic_apprentice",
+    "vein_siphon",
+    "vein_scout",
+    "zone_keeper",
+    "coordination",
+    "emergency",
+    "emergency",
+    "resonance",
+    "resonance",
+    "neutral_wayfarer",
+    "gok_digger",
+    "gok_digger",
+    "fog_sailor",
+    "snow_medic",
+    "snow_medic",
+    "mist_scout",
+    "mist_scout",
+    "caravan_guard",
+    "caravan_guard",
+    "coordination",
+    "courier",
+    "fog_sailor",
+    "ley_surveyor",
+    "losutai_refugee",
+    "anvil_town_miner"
+  ],
+  "academy": [
+    "formation_script",
+    "formation_script",
+    "spell_codex",
+    "academy_inkwell",
+    "doorman",
+    "doorman",
+    "white_reef_keeper",
+    "archive_guard",
+    "archive_guard",
+    "wandering_guard",
+    "wandering_guard",
+    "caravan_guard",
+    "caravan_guard",
+    "sky_ship",
+    "sky_ship",
+    "record_clerk",
+    "spell_novice",
+    "ac_arcane_flood",
+    "ac_field_notes",
+    "ac_arcane_insight",
+    "debate",
+    "snow_medic",
+    "anvil_town_miner",
+    "anvil_town_miner",
+    "mist_scout",
+    "mist_scout",
+    "neutral_wayfarer",
+    "mist_harbor_city",
+    "snow_medic",
+    "karl_desmond"
+  ],
+  "xizhao": [
+    "formation_tide",
+    "formation_tide",
+    "blood_scythe",
+    "blood_censer",
+    "blood_imp",
+    "blood_path",
+    "shadow_raid",
+    "xh_blood_guard",
+    "tribal_warrior",
+    "blood_duelist",
+    "blood_duelist",
+    "wandering_guard",
+    "wandering_guard",
+    "mercenary",
+    "mercenary",
+    "mist_harbor_city",
+    "mist_harbor_city",
+    "north_beast_tamer",
+    "xh_tribe_headhunter",
+    "xh_tribe_headhunter",
+    "grayfeather",
+    "caravan_guard",
+    "bloodroad_guide",
+    "xh_blood_steward",
+    "blood_executor",
+    "xh_blood_mist",
+    "bloodroad_guide",
+    "xh_blood_steward",
+    "broken_bone_warlord",
+    "blood_priestess"
+  ],
+  "republic": [
+    "phalanx_warden",
+    "fortify",
+    "iron_banner",
+    "republic_seal",
+    "erhardt",
+    "cedric",
+    "aegis_guard",
+    "shield_bearer",
+    "shield_recruit",
+    "shield_sergeant",
+    "levy",
+    "zone_banner",
+    "neutral_wayfarer",
+    "gok_digger",
+    "gok_digger",
+    "fog_sailor",
+    "mist_scout",
+    "caravan_guard",
+    "caravan_guard",
+    "fog_sailor",
+    "line_rotation",
+    "losutai_refugee",
+    "shield_recruit",
+    "wall_recruit",
+    "anvil_town_smith",
+    "seven_cities_envoy",
+    "republic_guard",
+    "republic_guard",
+    "reborn_sentry",
+    "williams_healer"
+  ],
+  "empire": [
+    "zone_barrage",
+    "formation_cannon",
+    "powder_engine",
+    "armor_forge",
+    "klaus",
+    "walter",
+    "iron_artillery",
+    "ironclad",
+    "ironclad",
+    "barrage",
+    "wind_cannon",
+    "mobilize",
+    "mobilize",
+    "fortress",
+    "martial_court",
+    "powder_marshal",
+    "neutral_wayfarer",
+    "gok_digger",
+    "gok_digger",
+    "fog_sailor",
+    "snow_medic",
+    "snow_medic",
+    "mist_scout",
+    "mist_scout",
+    "caravan_guard",
+    "barrage",
+    "fog_sailor",
+    "losutai_refugee",
+    "archive_guard",
+    "archive_guard"
+  ],
+  "greyharbor": [
+    "gh_bounty_notice",
+    "gh_formation",
+    "gh_bounty_board",
+    "gh_ledger_chain",
+    "venom_attendant",
+    "venom_attendant",
+    "gh_venom_apprentice",
+    "gh_venom_apprentice",
+    "gh_poison_thrower",
+    "gh_poison_thrower",
+    "bounty_accountant",
+    "bounty_accountant",
+    "gh_venom_shield",
+    "gh_venom_shield",
+    "gh_legend_assassin",
+    "gh_legend_assassin",
+    "gh_bounty_collector",
+    "gh_bounty_collector",
+    "seran",
+    "gh_scorpion",
+    "gh_scorpion",
+    "gh_bounty_hunter",
+    "gh_bounty_hunter",
+    "bounty_clerk",
+    "bounty_clerk",
+    "gh_bounty_verdict",
+    "toll_account",
+    "gh_ledger",
+    "fog_sailor",
+    "gh_contract_squire"
+  ],
+  "losutai": [
+    "blood_pool",
+    "monster_nest",
+    "gh_venom_vial",
+    "lt_tide_totem",
+    "brood_matron",
+    "brood_matron",
+    "monster_overseer",
+    "monster_overseer",
+    "tribal_shaman",
+    "lanxi",
+    "lt_tide_mother",
+    "lt_venom_behemoth",
+    "lt_tide_birth",
+    "lt_tide_birth",
+    "lt_venom_mist",
+    "fog_sailor",
+    "losutai_refugee",
+    "snow_medic",
+    "snow_medic",
+    "anvil_town_miner",
+    "anvil_town_miner",
+    "archive_guard",
+    "archive_guard",
+    "mist_scout",
+    "mist_scout",
+    "wandering_guard",
+    "caravan_guard",
+    "neutral_wayfarer",
+    "white_reef_keeper",
+    "caravan_guard"
+  ],
+  "snow": [
+    "snow_icewall_formation",
+    "snow_windwall",
+    "white_frost_hall",
+    "frost_prism",
+    "snow_hourglass",
+    "snow_storm_hunter",
+    "snow_storm_hunter",
+    "snow_icewall_guard",
+    "snow_icewall_guard",
+    "snow_priest",
+    "snow_priest",
+    "snow_guard_captain",
+    "snow_guard_captain",
+    "snow_frostclaw",
+    "snow_frostclaw",
+    "snow_coldwind_assassin",
+    "snow_coldwind_assassin",
+    "snow_frozen_oracle",
+    "snow_frozen_oracle",
+    "snow_windweaver",
+    "snow_windweaver",
+    "snow_freeze_touch",
+    "snow_freeze_touch",
+    "snow_wind_strike",
+    "snow_blizzard",
+    "fog_sailor",
+    "snow_medic",
+    "archive_guard",
+    "nina",
+    "snow_shatter_judge"
+  ]
+});
+
+
+  // ===== 传说预组实战定稿：每阵营 2 张传说 =====
+  Object.assign(DECKS, {
+  "pus": [
+    "formation_vein",
+    "formation_vein",
+    "vein_heart",
+    "formation_standard",
+    "shextena",
+    "medic_apprentice",
+    "vein_siphon",
+    "vein_scout",
+    "zone_keeper",
+    "coordination",
+    "emergency",
+    "emergency",
+    "resonance",
+    "resonance",
+    "neutral_wayfarer",
+    "gok_digger",
+    "gok_digger",
+    "fog_sailor",
+    "snow_medic",
+    "snow_medic",
+    "mist_scout",
+    "mist_scout",
+    "caravan_guard",
+    "caravan_guard",
+    "coordination",
+    "courier",
+    "fog_sailor",
+    "ley_surveyor",
+    "losutai_refugee",
+    "anvil_town_miner"
+  ],
+  "academy": [
+    "formation_script",
+    "formation_script",
+    "spell_codex",
+    "academy_inkwell",
+    "doorman",
+    "doorman",
+    "white_reef_keeper",
+    "archive_guard",
+    "archive_guard",
+    "wandering_guard",
+    "wandering_guard",
+    "caravan_guard",
+    "caravan_guard",
+    "sky_ship",
+    "sky_ship",
+    "record_clerk",
+    "spell_novice",
+    "ac_arcane_flood",
+    "ac_field_notes",
+    "ac_arcane_insight",
+    "debate",
+    "snow_medic",
+    "anvil_town_miner",
+    "anvil_town_miner",
+    "mist_scout",
+    "mist_scout",
+    "neutral_wayfarer",
+    "mist_harbor_city",
+    "snow_medic",
+    "karl_desmond"
+  ],
+  "xizhao": [
+    "formation_tide",
+    "formation_tide",
+    "blood_scythe",
+    "blood_censer",
+    "blood_imp",
+    "blood_path",
+    "shadow_raid",
+    "xh_blood_guard",
+    "tribal_warrior",
+    "blood_duelist",
+    "blood_duelist",
+    "wandering_guard",
+    "wandering_guard",
+    "mercenary",
+    "mercenary",
+    "mist_harbor_city",
+    "mist_harbor_city",
+    "north_beast_tamer",
+    "xh_tribe_headhunter",
+    "xh_tribe_headhunter",
+    "grayfeather",
+    "caravan_guard",
+    "bloodroad_guide",
+    "xh_blood_steward",
+    "blood_executor",
+    "xh_blood_mist",
+    "bloodroad_guide",
+    "xh_blood_steward",
+    "broken_bone_warlord",
+    "blood_priestess"
+  ],
+  "republic": [
+    "phalanx_warden",
+    "fortify",
+    "iron_banner",
+    "republic_seal",
+    "konrad",
+    "cedric",
+    "aegis_guard",
+    "shield_bearer",
+    "shield_recruit",
+    "shield_sergeant",
+    "levy",
+    "zone_banner",
+    "neutral_wayfarer",
+    "gok_digger",
+    "gok_digger",
+    "fog_sailor",
+    "mist_scout",
+    "caravan_guard",
+    "caravan_guard",
+    "fog_sailor",
+    "line_rotation",
+    "losutai_refugee",
+    "shield_recruit",
+    "wall_recruit",
+    "anvil_town_smith",
+    "seven_cities_envoy",
+    "republic_guard",
+    "republic_guard",
+    "reborn_sentry",
+    "williams_healer"
+  ],
+  "empire": [
+    "zone_barrage",
+    "formation_cannon",
+    "powder_engine",
+    "armor_forge",
+    "klaus",
+    "walter",
+    "iron_artillery",
+    "ironclad",
+    "ironclad",
+    "barrage",
+    "wind_cannon",
+    "mobilize",
+    "mobilize",
+    "fortress",
+    "martial_court",
+    "powder_marshal",
+    "neutral_wayfarer",
+    "gok_digger",
+    "gok_digger",
+    "fog_sailor",
+    "snow_medic",
+    "snow_medic",
+    "mist_scout",
+    "mist_scout",
+    "caravan_guard",
+    "barrage",
+    "fog_sailor",
+    "losutai_refugee",
+    "archive_guard",
+    "archive_guard"
+  ],
+  "greyharbor": [
+    "gh_bounty_notice",
+    "gh_formation",
+    "ledger_paperknife",
+    "gh_ledger_chain",
+    "venom_attendant",
+    "venom_attendant",
+    "gh_venom_apprentice",
+    "gh_venom_apprentice",
+    "gh_poison_thrower",
+    "gh_poison_thrower",
+    "bounty_accountant",
+    "bounty_accountant",
+    "gh_venom_shield",
+    "gh_venom_shield",
+    "gh_legend_assassin",
+    "gh_legend_assassin",
+    "gh_bounty_collector",
+    "gh_bounty_collector",
+    "kugreen",
+    "gh_scorpion",
+    "gh_scorpion",
+    "gh_bounty_hunter",
+    "gh_bounty_hunter",
+    "bounty_clerk",
+    "bounty_clerk",
+    "seran",
+    "toll_account",
+    "gh_ledger",
+    "fog_sailor",
+    "gh_contract_squire"
+  ],
+  "losutai": [
+    "blood_pool",
+    "monster_nest",
+    "gh_venom_vial",
+    "lt_tide_totem",
+    "brood_matron",
+    "brood_matron",
+    "monster_overseer",
+    "monster_overseer",
+    "tribal_shaman",
+    "lanxi",
+    "lanzhou",
+    "lt_venom_behemoth",
+    "lt_tide_birth",
+    "lt_tide_birth",
+    "lt_venom_mist",
+    "fog_sailor",
+    "losutai_refugee",
+    "snow_medic",
+    "snow_medic",
+    "anvil_town_miner",
+    "anvil_town_miner",
+    "archive_guard",
+    "archive_guard",
+    "mist_scout",
+    "mist_scout",
+    "wandering_guard",
+    "caravan_guard",
+    "neutral_wayfarer",
+    "white_reef_keeper",
+    "caravan_guard"
+  ],
+  "snow": [
+    "snow_icewall_formation",
+    "snow_windwall",
+    "white_frost_hall",
+    "frost_prism",
+    "snow_hourglass",
+    "snow_storm_hunter",
+    "snow_storm_hunter",
+    "snow_icewall_guard",
+    "snow_icewall_guard",
+    "snow_priest",
+    "snow_priest",
+    "snow_guard_captain",
+    "snow_guard_captain",
+    "snow_frostclaw",
+    "snow_frostclaw",
+    "snow_coldwind_assassin",
+    "snow_coldwind_assassin",
+    "snow_frozen_oracle",
+    "snow_frozen_oracle",
+    "snow_windweaver",
+    "snow_windweaver",
+    "snow_freeze_touch",
+    "snow_freeze_touch",
+    "snow_wind_strike",
+    "snow_blizzard",
+    "fog_sailor",
+    "snow_medic",
+    "archive_guard",
+    "nina",
+    "snow_shatter_judge"
+  ]
+});
+  for (const id of ["snow_ice_crystal_guard","snow_tundra_ranger","snow_ice_wolf","snow_firekeeper","snow_ice_scholar","snow_blizzard_warden","snow_frost_warden","snow_frost_giant","snow_whiteout","snow_temporal_shift","snow_frost_armor","snow_wind_eye","snow_gale_force"]) delete CARDS[id];
+  for (const id of ["spell_novice","frost_archivist","tide_scout","magic_lecturer","xh_blood_knight","xh_blood_priest"]) if (CARDS[id]) { delete CARDS[id].passive; CARDS[id].keywords = (CARDS[id].keywords || []).filter(k => k !== "passive"); }
+  for (const id of ["lanxi","lanzhou","council_elder","pure_theorist","broken_bone_warlord","xh_blood_colossus"]) if (CARDS[id]) { delete CARDS[id].deathrattle; CARDS[id].keywords = (CARDS[id].keywords || []).filter(k => k !== "deathrattle"); }
+
+  // ===== 卡牌文案统一：行动力 / 先遣 / 登场 / 余响 =====
+  for (const c of Object.values(CARDS)) {
+    if (!c.text) continue;
+    let t = c.text;
+    t = t.replace(/法力值/g, "行动力").replace(/法力/g, "行动力");
+    t = t.replace(/费用/g, "行动力");
+    t = t.replace(/突袭/g, "先遣");
+    t = t.replace(/战吼/g, "登场");
+    t = t.replace(/亡语/g, "余响");
+    t = t.replace(/嘲讽/g, "守备");
+    t = t.replace(/圣盾/g, "格挡");
+    t = t.replace(/潜行/g, "隐匿");
+    t = t.replace(/冲锋/g, "先遣");
+    t = t.replace(/法战术牌/g, "战术牌");
+    t = t.replace(/法术牌/g, "战术牌");
+    t = t.replace(/施放法术/g, "施放战术牌");
+    t = t.replace(/法术效果/g, "战术效果");
+    t = t.replace(/在召唤/g, "再召唤");
+    t = t.replace(/阵位以阵位外/g, "阵位以外");
+    t = t.replace(/检索1/g, "检索 1");
+    t = t.replace(/(\d)点/g, "$1 点");
+    t = t.replace(/被动：(守备|格挡|先遣|连携|蚀毒|隐匿|回潮)/g, "$1。被动：");
+    t = t.replace(/(守备|格挡|先遣|连携|蚀毒|隐匿|回潮)，\s*登场/g, "$1。登场");
+    t = t.replace(/(包括友方)被动/g, "$1。被动");
+    t = t.replace(/\)\s*余响/g, "）。余响");
+    t = t.replace(/\s{2,}/g, " ");
+    t = t.replace(/。\s+/g, "。");
+    c.text = t.trim();
+  }
+
+  // ===== 卡牌文案最终校正 =====
+  const TEXT_FINAL = {
+    justus: "被动：在本局对战中，在你施放一张战术牌后，随机召唤一个行动力消耗相同的随从。",
+    stein_speaker: "登场：使你的其他随从获得“余响：召唤一个行动力消耗与本随从相同的随从”。",
+    cinder_arbiter: "登场：使你的领袖获得回潮。",
+    miyuki: "登场：冻结深雪所在阵位以外的所有随从（包括友方）。被动：深雪在场时本阵位随从不会被冻结。",
+    erhardt: "守备。被动：如果在你的某个回合中有四个友方角色受到伤害，从手牌或牌库中召唤本随从。",
+    lt_tide_mother: "登场：召唤 2 个 1/1 洛斯汰魔物。引脉 6：再召唤 2 个 1/1 洛斯汰魔物。",
+    grayfeather: "登场：你使用的下一张牌会消耗对手的生命值而非行动力（最高不超过 10 点）。",
+    shextena: "登场：恢复你的领袖 4 点生命；引脉 8：恢复你的领袖 3 点生命；每实际恢复 1 点生命，获得 +1/+1。",
+    lize: "登场：随机弃掉一张手牌；引脉 8：改为弃对手的一张手牌。",
+    gunther: "连携。登场：获得 6 点护甲；引脉 6：再获得 4 点护甲。",
+    world_edge: "为所有友方角色恢复 8 点生命；随机召唤两个行动力消耗为 8 的随从。",
+    hans: "格挡。余响：获得 2 点护甲。",
+    karl_desmond: "被动：每当你施放一张战术牌，将一张“火球术”置入你的手牌。（3 行动力「火球术」：对一个敌方随从造成 4 点伤害）",
+    spellstorm: "对所有敌方单位造成等同于本局已使用战术牌数量的伤害（最高 10 点）。",
+    snow_last_snow: "冻结所有敌方随从；抽 4 张牌。",
+    samuel: "登场：检索 1 张牌。余响：召唤一个雪狐哨兵。"
+  };
+  for (const id of Object.keys(TEXT_FINAL)) if (CARDS[id]) CARDS[id].text = TEXT_FINAL[id];
+
+  // ===== 文案与字段一致性修正 =====
+  if (CARDS.lanxi) { delete CARDS.lanxi.battlecry; CARDS.lanxi.passive = { type: "impGrowth", attack: 1, health: 1 }; CARDS.lanxi.keywords = []; }
+  for (const id of ["lanzhou","mist_hound","mist_scout","sky_ship","klaus"]) if (CARDS[id]) { CARDS[id].rush = true; CARDS[id].keywords = Array.from(new Set([...(CARDS[id].keywords || []), "rush"])); }
+  for (const id of ["fog_sailor","bounty_hunter"]) if (CARDS[id]) CARDS[id].zoneBonus = { attack: 1, health: 0 };
+  if (CARDS.losutai_awakened) { CARDS.losutai_awakened.battlecry = { type: "summonCount", token: "losutai_imp", count: 1 }; CARDS.losutai_awakened.keywords = Array.from(new Set([...(CARDS.losutai_awakened.keywords || []), "battlecry"])); }
+
+  if (CARDS.lanzhou) { CARDS.lanzhou.battlecry = { type: "summonCount", token: "losutai_imp", count: 1 }; CARDS.lanzhou.rush = false; CARDS.lanzhou.stealth = true; CARDS.lanzhou.keywords = (CARDS.lanzhou.keywords || []).filter(k => k !== "rush" && k !== "charge"); CARDS.lanzhou.keywords = Array.from(new Set([...CARDS.lanzhou.keywords, "battlecry", "stealth"])); }
+  for (const id of ["klaus","mist_hound","mist_scout","sky_ship"]) if (CARDS[id]) CARDS[id].keywords = (CARDS[id].keywords || []).filter(k => k !== "charge");
+
+  // ===== 统一“战术”术语：卡名 / 文案 / 风味 =====
+  for (const c of Object.values(CARDS)) {
+    if (c.name) c.name = c.name.replace(/法术/g, "战术");
+    if (c.text) c.text = c.text.replace(/法术/g, "战术");
+    if (c.flavor) c.flavor = c.flavor.replace(/法术/g, "战术");
+  }
+
+  // ===== 卡牌文案排版统一 =====
+  function tidyCardText(t) {
+    t = String(t || "").replace(/\s+/g, " ").trim();
+    t = t.replace(/被动：(守备|格挡|先遣|连携|蚀毒|隐匿|回潮)/g, "$1。被动：");
+    t = t.replace(/(守备|格挡|先遣|连携|蚀毒|隐匿|回潮)，\s*登场/g, "$1。登场");
+    t = t.replace(/\)\s*被动/g, "）。被动");
+    t = t.replace(/\s+被动/g, "。被动");
+    t = t.replace(/(\d)(点|个|张|回合|费)/g, "$1 $2");
+    t = t.replace(/(\d)费/g, "$1 行动力");
+    t = t.replace(/(引脉|预兆|检索|采掘|镇脉|逆流|压脉|血祭|吞噬)(\d)/g, "$1 $2");
+    t = t.replace(/获得\+(?=\d)/g, "获得 +");
+    t = t.replace(/获得\s+(\d)/g, "获得 $1");
+    t = t.replace(/\s+([，。；：])/g, "$1");
+    t = t.replace(/([，。；：])\1+/g, "$1");
+    t = t.replace(/。\s+/g, "。");
+    if (!/[。！？]$/.test(t)) t += "。";
+    return t;
+  }
+  for (const c of Object.values(CARDS)) if (c.text) c.text = tidyCardText(c.text);
+
+  const TEXT_FINAL_2 = {
+    powder_engine: "装备（持续生效）：回合开始时，获得 2 点护甲。",
+    lt_awakened: "被动：本随从以及同阵位的其他随从攻击后，获得一张闪电箭。（闪电箭，2 行动力：对敌方所有随从造成 1 点伤害）",
+    lt_venom_lord: "被动：在你的回合结束时，使用你牌库顶的 3 张牌。",
+    snow_time_shade: "将你手牌中的所有随从牌送入 2 回合后的未来。这些牌返回时会具有 +5/+5。",
+    jasmine_bai: "彩蛋卡。登场：召唤一个 1/1 的共和国新兵。",
+    grey_ledger_post: "该阵位友方随从固定获得 +2 生命值。",
+    dusk_inn_key: "装备（持续生效）：回合开始时，获得 +1 生命上限。",
+    vein_leviathan: "登场：触发本局对战中死亡的 3 个友方随从的死亡效果。",
+    konrad: "登场：消灭你的对手上回合使用的所有随从。"
+  };
+  for (const id of Object.keys(TEXT_FINAL_2)) if (CARDS[id]) CARDS[id].text = TEXT_FINAL_2[id];
+
+  const TEXT_FINAL_3 = {
+    tiega: "登场：你抽取你行动力消耗最高的两张牌，你的对手抽取你行动力最低的两张牌。",
+    molan: "登场：获得敌方一个随机随从的控制权。",
+    spell_echo: "登场：对一个敌方随从造成 2 点伤害。被动：每当你施放一张战术牌，获得 +2 攻击。",
+    arcane_conduit: "守备。登场：对一个敌方随从造成 1 点伤害。",
+    blood_priestess: "先遣。登场：对一个敌方随从造成 2 点伤害。",
+    arcane_theorist: "登场：预兆：从牌库顶 3 张中选 1 张战术牌。被动：每当你施放一张战术牌，获得 +0/+1。",
+    brood_matron: "守备。登场：召唤三个 1/1 洛斯汰魔物。",
+    reflux_apprentice: "守备。登场：获得 6 点护甲。",
+    echo_observer: "登场：对一个敌方随从造成 1 点伤害。余响：对随机敌方目标造成 2 点伤害。",
+    frost_line_guard: "守备。登场：获得 5 点护甲。",
+    frost_page: "登场：预兆：从牌库顶 3 张中选 1 张战术牌。被动：每当你施放战术牌，获得 +2 攻击。",
+    blackmarket_bodyguard: "格挡。余响：对随机敌方目标造成 3 点伤害。",
+    archive_keeper: "登场：抽 1 张牌。被动：每当你施放一张战术牌，获得 +1 攻击。",
+    losutai_awakened: "先遣。登场：召唤一个 1/1 洛斯汰魔物。余响：获得 1 点护甲。",
+    ancient_fortress_scion: "登场：抽 1 张牌。余响：对随机敌方目标造成 5 点伤害。",
+    eisenwald_marshal: "登场：将你牌库底的五张牌的行动力消耗变为（1）点。",
+    iron_order_wall: "守备。余响：获得 4 点护甲。",
+    xh_tribe_headhunter: "守备。被动：每当你施放战术牌，获得 +2 攻击。",
+    xh_pressure_master: "登场：获得 3 点护甲。被动：每当你施放战术牌，获得 +0/+1。",
+    lt_brood_mother: "登场：将你上回合使用的所有战术牌移回你的手牌。",
+    snow_rin: "登场：将你牌库中的所有战术牌移至牌库顶。每回合你可以选择从牌库顶或牌库底抽牌。",
+    snow_time_shade: "登场：将你手牌中的所有随从牌送入 2 回合后的未来。这些牌返回时会具有 +5/+5。",
+    shield_recruit: "守备。登场：获得 2 点护甲。余响：获得 1 点护甲。",
+    tide_colossus: "登场：获得 3 点护甲。余响：对随机敌方目标造成 1 点伤害。",
+    blood_acolyte: "登场：对一个敌方随从造成 1 点伤害。余响：对随机敌方目标造成 2 点伤害。",
+    blood_pact_collector: "守备。登场：对一个敌方随从造成 1 点伤害。余响：对随机敌方目标造成 2 点伤害。",
+    shield_instructor: "登场：恢复你的领袖 2 点生命。余响：获得 1 点护甲。"
+  };
+  TEXT_FINAL_3.spellstorm = "对所有敌方单位造成等同于本局已使用战术牌数量的伤害（每张 1 点，最高 10 点）。";
+  for (const id of Object.keys(TEXT_FINAL_3)) if (CARDS[id]) CARDS[id].text = TEXT_FINAL_3[id];
+  if (CARDS.venom_attendant && CARDS.venom_attendant.deathrattle) CARDS.venom_attendant.deathrattle.amount = 7;
+  if (CARDS.ac_absolute_theory) CARDS.ac_absolute_theory.spell = { type: "damageAllEnemies", amount: 2 };
+
+  // 引脉字段补齐：自定义效果只补触发标记，标准效果补实际数值
+  if (CARDS.shextena) CARDS.shextena.veinBonus = { vein: 8 };
+  if (CARDS.lize) CARDS.lize.veinBonus = { vein: 8 };
+  if (CARDS.gunther) CARDS.gunther.veinBonus = { vein: 6 };
+  if (CARDS.lt_tide_mother) CARDS.lt_tide_mother.veinBonus = { vein: 6 };
+  if (CARDS.vein_behemoth) CARDS.vein_behemoth.veinBonus = { vein: 10 };
+  if (CARDS.break_attachment) CARDS.break_attachment.veinBonus = { vein: 3 };
+  if (CARDS.gok_digger) { CARDS.gok_digger.excavate = 1; CARDS.gok_digger.veinBonus = { vein: 4, armor: 2 }; }
+  if (CARDS.mist_scout) CARDS.mist_scout.veinBonus = { vein: 4, armor: 1 };
+  if (CARDS.astral_colossus) CARDS.astral_colossus.veinBonus = { vein: 6, armor: 2 };
   return { FACTIONS, FACTION_IDS, nextFaction, HEROES, CARDS, DECKS, NEUTRAL_DECK, KEYWORDS, DECK_STRATEGIES, DECK_SPECIALS, DECK_TRIM, DECK_RARITY_LIMITS, cardPool, deckRarityCounts, isExactPreset, validateDeck, autoBuildDeck, maxCopies };
 });
 

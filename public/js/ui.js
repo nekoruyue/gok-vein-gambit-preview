@@ -2858,6 +2858,11 @@
         const pt = ev.zone ? zonePoint(ev.player, ev.zone) : eventPoint(ev.targetUid);
         showKeywordPop("余响", pt.x, pt.y - 24, "death");
         chooseSound("deathrattle");
+      } else if (ev.kind === "effect") {
+        const pt = eventPoint(ev.targetUid || ("hero:" + ev.player));
+        showKeywordPop(ev.label || "效果", pt.x, pt.y - 26, ev.tone || "effect");
+        if (ev.tone === "damage" || ev.tone === "freeze") flashScreen(ev.tone === "freeze" ? "freeze" : "damage");
+        chooseSound(ev.tone === "heal" ? "heal" : ev.tone === "freeze" ? "freeze" : "summon");
       } else if (ev.kind === "draw") {
         chooseSound("draw");
         AudioBox.play("select");
@@ -3035,8 +3040,8 @@
   };
   const KEYWORD_TUTORIAL = {
     "格挡": "格挡会先替你挡下下一次伤害 2 点，然后消失。它适合保护关键随从或领袖，但不是永久免疫；连续的小伤害会先磨掉格挡，再用真实伤害打进来。",
-    "守备": "守备随从像一堵门，会挡在同阵位其他友方随从前面。想攻击后面的目标，必须先处理守备；守备自己仍然可以被攻击，也会受到法术和效果伤害。",
-    "先遣": "先遣随从登场当回合就能攻击，但只能打随从，不能直接打敌方领袖。它适合抢节奏、换掉对方小随从，不要把它当成冲锋斩杀。",
+    "守备": "守备随从像一堵门，会挡在同阵位其他友方随从前面。想攻击后面的目标，必须先处理守备；守备自己仍然可以被攻击，也会受到战术牌和效果伤害。",
+    "先遣": "先遣随从登场当回合就能攻击，但只能打随从，不能直接打敌方领袖。它适合抢节奏、换掉对方小随从，不要把它当成直接斩杀。",
     "连携": "连携要求同阵位有另一个友方随从。满足时，本回合第一次攻击额外 +1 攻击，但不会增加攻击次数；孤零零站一个随从时不会触发。",
     "血偿": "血偿会把溢出的伤害转化成护甲。比如 5 点攻击打 3 血随从，多出的 2 点会变成你的护甲，适合用大随从清理小随从。",
     "蚀毒": "蚀毒随从造成伤害时，目标会被直接消灭，不管目标还剩多少生命。它对高血量大随从特别有效，但打领袖不会直接获胜，别把毒伤浪费在脸上。",
@@ -3058,7 +3063,7 @@
     "固定": "固定效果不会随条件消失，之后进入该阵位的随从也会获得。它适合提前布置长期阵位优势；和临时光环不同，固定效果更值得围绕它组牌。",
     "装备": "装备会持续生效，最多同时装备两件。装备不占手牌，但会被拆装备效果克制；同名装备通常不重复叠加，先看清卡面说明。",
     "被动": "被动不需要主动使用，满足条件时自动生效。它可能影响出牌、攻击、抽牌或阵位，读卡时要优先确认触发条件；没有满足条件时就不生效。",
-    "复制": "复制会生成一张与目标相同或相近的卡。复制体通常继承目标当前攻击、最大生命、关键词和效果，但不复制已经受到的伤害；复制体进场不会触发登场。复制进手牌时，按目标卡牌的基础数值生成，卡面标注的费用调整优先。",
+    "复制": "复制会生成一张与目标相同或相近的卡。复制体通常继承目标当前攻击、最大生命、关键词和效果，但不复制已经受到的伤害；复制体进场不会触发登场。复制进手牌时，按目标卡牌的基础数值生成，卡面标注的行动力调整优先。",
     "恢复溢出": "治疗会先把生命补到上限，多出的部分默认消失。若卡面写明“溢出转护甲”，未实际恢复的点数会变成等量护甲；满血时使用也能拿到护甲，但不会超过卡面数值。",
     "变形": "变形会用新的随从或衍生物替换目标。被替换的随从不算死亡，不会触发余响；新单位留在原阵位，并替换原卡的关键词、攻击和生命。",
     "获得控制权": "获得控制权会把敌方随从移到你的场上；目标必须有一个空的阵位，否则无法获得。控制权转移不是复制，原随从不会留在敌方场上。",
@@ -3200,11 +3205,7 @@
     if (tip) tip.hidden = true;
   }
 
-  const KEYWORD_ALIASES = {
-    "战吼": "登场", "亡语": "余响", "嘲讽": "守备", "冲锋": "先遣",
-    "潜行": "隐匿", "发现": "预兆", "圣盾": "格挡", "风怒": "连携",
-    "剧毒": "蚀毒", "吸血": "血偿", "突袭": "先遣", "复生": "回潮",
-  };
+  const KEYWORD_ALIASES = {};
   function keywordLabelFromTarget(target) {
     if (!target || !target.closest) return null;
     const node = target.closest(".kw, .preview-keyword, .keyword-tag");
@@ -3855,7 +3856,7 @@
     clear(list);
     const privateTypes = ["draw", "discover", "burn", "mulligan"];
     const icons = { turn: "◈", play: "▸", summon: "▣", buff: "↑", attack: "⚔", damage: "✸", heal: "✚", armor: "◈", death: "✝", deathrattle: "◌", trigger: "◇", vein: "≈", draw: "▤", discover: "◇", mulligan: "↻", burn: "✕", blood: "♨", heroPower: "✦", spell: "✦" };
-    const entries = s.log.slice(-20).map((entry) => {
+    const entries = s.log.slice(-100).map((entry) => {
       const hidden = entry.player != null && entry.player !== app.viewer && privateTypes.indexOf(entry.type) >= 0;
       if (!hidden) return entry;
       const hiddenText = entry.type === "draw" ? "对手抽了一张牌。"
@@ -6284,7 +6285,7 @@
     { id: "basics", level: 1, title: "游戏基本规则", desc: "对局目标 · 行动力 · 阵位 · 流脉", xp: 100, body: [
       "先把一局游戏想象成两个人抢同一张桌子：每回合你获得行动力，用行动力把牌打到桌上，目标是把对方领袖的生命打到 0。",
       "行动力每回合开始回满，第 1 回合 1 点，之后每回合 +1，最多 10 点；不用不会存到下一回合，所以每回合尽量把行动力花在有价值的地方。",
-      "牌桌分左翼、中枢、右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。守备随从会保护同阵位的其他友方随从，想打后排先处理守备。",
+      "牌桌分左翼、中枢、右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。守备随从会保护同阵位的其他友方随从，想打有守备的阵位，先处理守备。",
       "同阵位是同一侧同一个位置，连携等效果需要同阵位有另一个友方随从；对位是同一列、分属双方的阵位，别把两个概念混在一起。",
       "流脉是双方共享的 0→12 风险条：每完整轮次自然 +1，4 震荡、7 裂隙、10 魔物潮会触发世界事件，12 回流清空。它既是资源也是倒计时，采掘会抽牌并加速流脉。",
       "先手抽 3 张，后手抽 4 张并获得本回合临时行动力；每回合开始自动抽 1 张，手牌超过上限会销毁多余的牌，抽牌前先看手牌空间。",
@@ -6311,7 +6312,7 @@
     ] },
     { id: "drill", level: 1, title: "实战演练", desc: "起手 · 守备 · 流脉 · 斩杀", xp: 100, drill: true, body: [
       "规则看懂不等于会打。下面准备了几种小局面，挑一个进入牌桌，只练一个目标，不要急着赢。",
-      "起手演练：只练换牌，目标是留下 1–3 费能打出的牌；守备演练：对面有守备，先想办法处理守备再打后排。",
+      "起手演练：只练换牌，目标是留下 1–3 费能打出的牌；守备演练：对面有守备，先想办法处理守备，再打有守备随从的阵位。",
       "流脉演练：把流脉推到阈值附近，观察世界事件什么时候来；斩杀演练：对方生命不高，先算清楚伤害再动手。",
       "每次演练只看一个目标，打完回到教程，换下一个局面。四场都试过，你对节奏和交换的理解会比只看文字深很多。"
     ] }
@@ -6337,7 +6338,7 @@
 
   const TUTORIAL_TABS = {
     basics: ["tutorial-core", "tutorial-zones", "tutorial-vein"],
-    advanced: ["tutorial-cards", "tutorial-flow", "tutorial-glossary"],
+    advanced: ["tutorial-heroes", "tutorial-factions", "tutorial-cards", "tutorial-flow", "tutorial-advanced", "tutorial-glossary"],
     deck: ["tutorial-deck"],
     drill: ["tutorial-practice", "tutorial-drills"]
   };
@@ -6367,7 +6368,7 @@
       base.mulligan = true;
       goal = "起手演练：换掉高费牌，留下 1–3 费能打出的牌。";
     } else if (kind === "guard") {
-      goal = "守备演练：先处理敌方守备，再攻击后排。";
+      goal = "守备演练：先处理敌方守备，再攻击有守备随从的阵位。";
       base.setup = (s) => {
         const E = global.GokEngine; if (!E) return;
         const enemy = E.summonMinion(s, s.players[1], "shield_recruit", "left", null);
@@ -6460,7 +6461,7 @@
     if (lesson.drill) {
       const drills = [
         { id: "mulligan", title: "起手换牌", desc: "只练开局换牌，先保证前三回合有牌可出。" },
-        { id: "guard", title: "守备突破", desc: "对面有守备，先处理守备再打后排。" },
+        { id: "guard", title: "守备突破", desc: "对面有守备，先处理守备，再打有守备随从的阵位。" },
         { id: "vein", title: "流脉事件", desc: "把流脉推到阈值附近，观察世界事件。" },
         { id: "lethal", title: "斩杀计算", desc: "对方生命不高，先算伤害再动手。" }
       ];
@@ -9183,7 +9184,7 @@ const tabs = $("deck-faction-tabs");
       const intro = el("div", "guide-sections");
       const sections = [
         ["胜利条件", "先把对方领袖生命降到 0。随从可以攻击敌方随从或领袖；有守备的随从必须先处理。"],
-        ["行动力与先后手", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张，并额外获得「采掘许可」（本回合 +2 点行动力）。"],
+        ["行动力与先后手", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张，并额外获得一张「采掘许可」（1 费战术：本回合 +2 点行动力，可以留着）。"],
         ["阵位", "左翼 / 中枢 / 右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。阵位会影响部分卡牌的范围与固定效果。"],
         ["流脉", "双方共享 0→12，每次完整轮次（双方各行动一次）自然 +1。4 震荡、7 裂隙、10 魔物潮触发世界事件，12 回流清空。"],
         ["牌组结构", "30 张主牌（随从 + 战术 + 阵型）+ 2 件装备牌。领袖在开局单独选择，不占牌组，也不进入牌库。装备需要抽到并打出，最多可同时装备两件。"]
@@ -9230,7 +9231,7 @@ const tabs = $("deck-faction-tabs");
       const box = el("div", "guide-sections");
       const sections = [
         ["目标", "把对方领袖生命降到 0。随从可攻击敌方随从或领袖；有守备的随从必须先处理。"],
-        ["行动力", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张并获得「采掘许可」。"],
+        ["行动力", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张并获得一张「采掘许可」（1 费战术，可留到需要时用）。"],
         ["阵位", "左翼 / 中枢 / 右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。同阵位可能触发协同，双方同列互为对位。"],
         ["流脉", "共享流脉 0→12。到达 4 震荡、7 裂隙、10 魔物潮时触发世界事件；12 回流清空。"],
         ["关键词", "登场、余响、守备、先遣、冻结、沉默、引脉、预兆等关键词会在卡牌和标签上标明。"],
@@ -9936,7 +9937,7 @@ const tabs = $("deck-faction-tabs");
     const dimLabel = $("settings-dim-label");
     if (dimLabel) dimLabel.textContent = (app.bgDim || 0) + "%";
     const density = $("btn-settings-density"); if (density) density.textContent = "界面：" + (app.uiDensity === "compact" ? "紧凑" : "舒适");
-    const sort = $("btn-settings-hand-sort"); if (sort) sort.textContent = "排序：" + (app.handSort === "cost" ? "费用" : app.handSort === "type" ? "类型" : "默认");
+    const sort = $("btn-settings-hand-sort"); if (sort) sort.textContent = "排序：" + (app.handSort === "cost" ? "行动力" : app.handSort === "type" ? "类型" : "默认");
     const contrast = $("btn-settings-contrast"); if (contrast) contrast.textContent = "高对比：" + (app.highContrast ? "开" : "关");
     const zones = $("btn-settings-zone-labels"); if (zones) zones.textContent = "标签：" + (app.zoneLabels ? "显示" : "隐藏");
     const battlerFx = $("btn-settings-battler-fx"); if (battlerFx) battlerFx.textContent = "演出：" + (app.battlerFx === "fast" ? "快速" : "标准");
