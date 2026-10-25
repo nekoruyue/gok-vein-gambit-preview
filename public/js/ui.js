@@ -6,7 +6,7 @@
   const D = global.GokData;
   const E = global.GokEngine;
   const AI = global.GokAI;
-  const ART_VERSION = "20261021art9";
+  const ART_VERSION = "20261025art12";
 
   // 经典模式：每个阵营首次开局播放一段对应 CG（可跳过）
   const CLASSIC_CG = {
@@ -692,7 +692,7 @@
     "鼠标悬停卡牌可以查看关键词说明。",
     "手机长按卡牌查看完整卡牌详情。",
     "预兆会从牌库顶 3 张里选 1 张置入手牌。",
-    "采掘会抽牌并增加共享流脉。",
+    "掘脉会抽牌并增加共享流脉。",
     "引脉只在共享流脉达到标注数字时触发。",
     "牌库抽空会进入疲劳，过牌也要算代价。",
     "结束回合前先确认行动力和可攻击随从。",
@@ -2225,6 +2225,12 @@
         slot.dataset.slot = String(i);
         zone.appendChild(slot);
       }
+      const seal = (app.game && Array.isArray(app.game.seals) ? app.game.seals : []).find(s => s.owner === player.index && s.lane === z);
+      if (seal) {
+        const badge = el("div", "lane-seal", "刻脉 " + (seal.threshold || 4));
+        badge.title = "脉痕：流脉达到 " + (seal.threshold || 4) + " 时触发刻脉";
+        zone.appendChild(badge);
+      }
       const minions = player.board[z] || [];
       const laneName = E.ZONE_NAMES[z];
       zone.classList.add("lane-" + z);
@@ -2990,13 +2996,13 @@
 
   function appendKeywordText(node, text) {
     if (!text) return;
-    const re = /(登场|余响|守备|先遣|冻结|隐匿|采掘|引脉|血祭|沉默|预兆|格挡|连携|蚀毒|血偿|先遣|回潮|封口|顺势|吞噬|阵位|对位|行动力|战术|阵型)/g;
+    const re = /(登场|余响|守备|先遣|冻结|隐匿|掘脉|涨脉|刻脉|引脉|血祭|沉默|预兆|格挡|连携|蚀毒|血偿|先遣|回潮|封口|顺势|吞噬|阵位|对位|行动力|战术|阵型)/g;
     let last = 0;
     let m;
     while ((m = re.exec(text)) !== null) {
       if (m.index > last) node.appendChild(document.createTextNode(text.slice(last, m.index)));
       const span = el("span", "kw", m[0]);
-      if (["采掘", "引脉"].indexOf(m[0]) >= 0) span.classList.add("vein-kw");
+      if (["掘脉", "涨脉", "引脉", "刻脉"].indexOf(m[0]) >= 0) span.classList.add("vein-kw");
       if (m[0] === "血祭") span.classList.add("danger-kw");
       applyKeywordColor(span, m[0]);
       node.appendChild(span);
@@ -3019,7 +3025,8 @@
     "隐匿": "敌方无法选中；攻击后解除。",
     "引脉": "共享流脉达到数字时触发；多个阈值只结算最高。",
     "预兆": "从牌库顶 3 张选 1 张。",
-    "采掘": "抽 X 张牌，流脉 +X。",
+    "掘脉": "抽 X 张牌，流脉 +X。",
+    "涨脉": "本回合行动力 +X，流脉 +X；行动力不保留到下一回合。",
     "血祭": "支付生命来触发。",
     "吞噬": "消灭一个友方随从，获得其攻击和生命。",
     "格挡": "下一次伤害 -2，然后移除。",
@@ -3028,13 +3035,14 @@
     "血偿": "溢出伤害转化为护甲。",
     "回潮": "第一次死亡后以 1 血回场一次。",
     "固定": "不随条件消失，之后进入该阵位的随从也获得。",
-    "逆流": "消耗流脉触发；不足时消耗到 0 仍可触发，0 点无效。",
+    "逆脉": "消耗流脉触发；不足时消耗到 0 仍可触发，0 点无效。",
     "镇脉": "消耗流脉换等量护甲；不足时只获得剩余部分。",
     "压脉": "消耗流脉对敌方领袖造成等量伤害；不足时整张无效。",
     "悬赏": "将一个目标标记为悬赏名单；该标记本身不触发死亡效果。",
     "装备": "持续生效；最多可同时装备两件。",
     "复制": "复制体默认继承目标当前攻击、最大生命、关键词和效果，不复制已受伤；复制体进场通常不触发登场。",
     "恢复溢出": "治疗超过生命上限的部分默认消失；卡面写明“溢出转护甲”时，未恢复的点数改为护甲。",
+    "刻脉": "在目标阵位刻下脉痕；共享流脉首次达到或越过阈值时触发该阵位的效果，然后脉痕消失。每个阵位最多一道脉痕。",
     "变形": "用新随从或衍生物替换目标；被替换的随从不视为死亡，不触发余响。",
     "获得控制权": "把敌方随从移到自己的空阵位；没有空阵位时无法获得。"
   };
@@ -3052,11 +3060,12 @@
     "登场": "登场是打出随从时触发一次的效果。它只在从手牌打出时触发；召唤、回潮或复制进场通常不会再触发，所以别把召唤当成第二次登场。",
     "余响": "余响是随从死亡时触发一次的效果。它可以被回潮再次利用；注意沉默会移除余响，某些复活也会影响触发次数。",
     "引脉": "引脉会在双方共享流脉达到标注数字时触发。多个阈值同时满足时，通常只结算最高那一档；所以不要只盯着 4，10 魔物潮才是更大的转折。",
-    "采掘": "采掘会抽取指定数量的牌，同时让共享流脉增加同样的点数。抽得越多，流脉事件来得越快；它既能补资源，也会加速世界事件，是一把双刃剑。",
+    "掘脉": "掘脉会抽取指定数量的牌，同时让共享流脉增加同样的点数。抽得越多，流脉事件来得越快；它既能补资源，也会加速世界事件，是一把双刃剑。",
+    "涨脉": "涨脉会立即增加本回合行动力，并让共享流脉同步上涨。它比掘脉更偏当回合爆发，但会把世界事件拉近，而且行动力不保留到下一回合。",
     "血祭": "血祭需要支付生命来触发。它不消耗行动力，但会让自己更接近危险线；适合需要抢节奏或补资源的卡组，血量低时要谨慎。",
     "预兆": "预兆会从牌库顶的三张牌中选择一张加入手牌。它比直接抽牌更可控，但不会减少牌库总数，也不能保证一定拿到你想要的牌。",
     "吞噬": "吞噬会消灭一个友方随从，并把它的攻击和生命加到吞噬者身上。适合把小随从转化成一个大威胁；注意被吞噬的随从会触发死亡效果。",
-    "逆流": "逆流需要消耗流脉来触发。流脉不足时会把流脉消耗到 0，但效果可能仍然触发；具体看卡面写的数值，别在流脉空的时候误判。",
+    "逆脉": "逆脉需要消耗流脉来触发。流脉不足时会把流脉消耗到 0，但效果可能仍然触发；流脉为 0 时不能触发，具体看卡面。",
     "镇脉": "镇脉会消耗流脉，换取等量护甲。流脉不足时只获得剩余部分；它适合把快要溢出的流脉转成防御，避免世界事件过快到来。",
     "压脉": "压脉会消耗流脉，对敌方领袖造成等量伤害。流脉不足时整张效果可能无效；使用前先看当前流脉，确认这一下能不能压到斩杀线。",
     "悬赏": "悬赏会把一个敌方随从列入名单。完成悬赏通常能触发抽牌或成长；名单本身不会直接杀死目标，需要后续攻击或效果来兑现。",
@@ -3066,24 +3075,25 @@
     "复制": "复制会生成一张与目标相同或相近的卡。复制体通常继承目标当前攻击、最大生命、关键词和效果，但不复制已经受到的伤害；复制体进场不会触发登场。复制进手牌时，按目标卡牌的基础数值生成，卡面标注的行动力调整优先。",
     "恢复溢出": "治疗会先把生命补到上限，多出的部分默认消失。若卡面写明“溢出转护甲”，未实际恢复的点数会变成等量护甲；满血时使用也能拿到护甲，但不会超过卡面数值。",
     "变形": "变形会用新的随从或衍生物替换目标。被替换的随从不算死亡，不会触发余响；新单位留在原阵位，并替换原卡的关键词、攻击和生命。",
+    "刻脉": "刻脉会在目标阵位刻下一道脉痕。共享流脉首次达到或越过标注数字时，触发该阵位的刻脉效果，然后脉痕消失；每个阵位最多一道脉痕，刻脉不会被沉默或偷取。",
     "获得控制权": "获得控制权会把敌方随从移到你的场上；目标必须有一个空的阵位，否则无法获得。控制权转移不是复制，原随从不会留在敌方场上。",
   };
   const KEYWORD_ICONS = {
     "登场": "battlecry", "余响": "deathrattle", "守备": "taunt", "先遣": "charge",
     "被动": "passive", "冻结": "freeze", "沉默": "silence", "隐匿": "stealth",
-    "复制": "passive", "恢复溢出": "heal", "变形": "damage", "获得控制权": "damage",
-    "引脉": "vein", "预兆": "discover", "采掘": "excavate", "血祭": "blood",
+    "复制": "passive", "恢复溢出": "heal", "变形": "damage", "获得控制权": "damage", "刻脉": "vein",
+    "引脉": "vein", "预兆": "discover", "掘脉": "excavate", "涨脉": "vein", "血祭": "blood",
     "吞噬": "damage", "格挡": "armor", "连携": "charge", "蚀毒": "deathrattle",
-    "血偿": "heal", "回潮": "passive", "固定": "passive", "逆流": "vein",
+    "血偿": "heal", "回潮": "passive", "固定": "passive", "逆脉": "vein",
     "镇脉": "armor", "压脉": "damage", "悬赏": "damage", "装备": "passive"
   };
   const KEYWORD_COLORS = {
-    "复制": "#b7d8ff", "恢复溢出": "#8ee8c8", "变形": "#d7a7ff", "获得控制权": "#ffb0a0",
+    "复制": "#b7d8ff", "恢复溢出": "#8ee8c8", "变形": "#d7a7ff", "获得控制权": "#ffb0a0", "刻脉": "#f2c66d",
     "登场": "#f2c66d", "余响": "#c49bff", "守备": "#82b7ff", "先遣": "#ff9b5e",
     "被动": "#8fd9cd", "冻结": "#8de8ff", "沉默": "#b6c0cc", "隐匿": "#d1a1ff",
-    "引脉": "#4fe0c0", "预兆": "#9cc7ff", "采掘": "#ffc86b", "血祭": "#ff7a7a",
+    "引脉": "#4fe0c0", "预兆": "#9cc7ff", "掘脉": "#ffc86b", "涨脉": "#f2c66d", "血祭": "#ff7a7a",
     "吞噬": "#d88cff", "格挡": "#8fb5d9", "连携": "#ffd36d", "蚀毒": "#9be36f",
-    "血偿": "#ff9db1", "回潮": "#74e7d8", "固定": "#a7bdd0", "逆流": "#65d4ff",
+    "血偿": "#ff9db1", "回潮": "#74e7d8", "固定": "#a7bdd0", "逆脉": "#65d4ff",
     "镇脉": "#7fe0cf", "压脉": "#ff8666", "悬赏": "#ffb36b", "装备": "#d8b96f",
     "阵位": "#e6c06a", "对位": "#e6c06a", "行动力": "#8ec5ff", "战术": "#c49bff", "阵型": "#7fd8c5"
   };
@@ -3107,8 +3117,8 @@
 
   const TUTORIAL_KEYWORD_ORDER = [
     "格挡", "守备", "先遣", "连携", "血偿", "蚀毒", "隐匿", "回潮", "冻结", "沉默",
-    "登场", "余响", "引脉", "采掘", "血祭", "预兆", "吞噬", "复制", "恢复溢出", "变形", "获得控制权",
-    "逆流", "镇脉", "压脉", "悬赏", "固定", "装备", "被动"
+    "登场", "余响", "引脉", "掘脉", "涨脉", "血祭", "预兆", "吞噬", "复制", "恢复溢出", "变形", "获得控制权", "刻脉",
+    "逆脉", "镇脉", "压脉", "悬赏", "固定", "装备", "被动"
   ];
   const CARD_TAG_ALLOWLIST = new Set(TUTORIAL_KEYWORD_ORDER);
   const TUTORIAL_KEYWORD_ALIASES = {};
@@ -3230,9 +3240,9 @@
       if (def.keywords.indexOf("stealth") >= 0) tags.push("隐匿");
       if (def.keywords.indexOf("reborn") >= 0) tags.push("回潮");
     }
-    if (def.excavate) tags.push("采掘");
-    if (def.text && def.text.indexOf("采掘") >= 0 && tags.indexOf("采掘") < 0) tags.push("采掘");
-    if ((def.reflux || (def.text && def.text.indexOf("逆流") >= 0)) && tags.indexOf("逆流") < 0) tags.push("逆流");
+    if (def.excavate) tags.push("掘脉");
+    if (def.text && def.text.indexOf("掘脉") >= 0 && tags.indexOf("掘脉") < 0) tags.push("掘脉");
+    if ((def.reflux || (def.text && def.text.indexOf("逆脉") >= 0)) && tags.indexOf("逆脉") < 0) tags.push("逆脉");
     if (def.bloodCost) tags.push("血祭");
     if (def.text && def.text.indexOf("引脉") >= 0) tags.push("引脉");
     if (def.text && def.text.indexOf("阵位") >= 0) tags.push("阵位");
@@ -3240,7 +3250,7 @@
     if (def.text && def.text.indexOf("吞噬") >= 0) tags.push("吞噬");
     if (def.text && def.text.indexOf("对位") >= 0) tags.push("对位");
     if (def.text && def.text.indexOf("借脉") >= 0) tags.push("借脉");
-    if (def.text && def.text.indexOf("逆流") >= 0) tags.push("逆流");
+    if (def.text && def.text.indexOf("逆脉") >= 0) tags.push("逆脉");
     if (def.text && def.text.indexOf("镇脉") >= 0) tags.push("镇脉");
     if (def.text && def.text.indexOf("压脉") >= 0) tags.push("压脉");
     if (def.text && def.text.indexOf("沉默") >= 0 && tags.indexOf("沉默") < 0) tags.push("沉默");
@@ -6287,7 +6297,7 @@
       "行动力每回合开始回满，第 1 回合 1 点，之后每回合 +1，最多 10 点；不用不会存到下一回合，所以每回合尽量把行动力花在有价值的地方。",
       "牌桌分左翼、中枢、右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。守备随从会保护同阵位的其他友方随从，想打有守备的阵位，先处理守备。",
       "同阵位是同一侧同一个位置，连携等效果需要同阵位有另一个友方随从；对位是同一列、分属双方的阵位，别把两个概念混在一起。",
-      "流脉是双方共享的 0→12 风险条：每完整轮次自然 +1，4 震荡、7 裂隙、10 魔物潮会触发世界事件，12 回流清空。它既是资源也是倒计时，采掘会抽牌并加速流脉。",
+      "流脉是双方共享的 0→12 风险条：每完整轮次自然 +1，4 震荡、7 裂隙、10 魔物潮会触发世界事件，12 回流清空。它既是资源也是倒计时，掘脉会抽牌并加速流脉。",
       "先手抽 3 张，后手抽 4 张并获得本回合临时行动力；每回合开始自动抽 1 张，手牌超过上限会销毁多余的牌，抽牌前先看手牌空间。",
       "随从当回合不能攻击，下一回合才可以；先遣随从登场当回合能攻击随从，但不能攻击领袖。随从互殴双方同时受伤，生命归零离场。",
       "记住一个最稳的新手顺序：低费随从站场 → 用战术处理威胁 → 随从交换 → 领袖技能 → 结束回合。先站住，再谈斩杀。"
@@ -6379,7 +6389,7 @@
         s.players[0].mana = 5;
       };
     } else if (kind === "vein") {
-      goal = "流脉演练：观察 4 震荡前的变化，决定要不要继续采掘。";
+      goal = "流脉演练：观察 4 震荡前的变化，决定要不要继续掘脉。";
       base.setup = (s) => { s.vein = 3; s.stats.veinPeak = 3; };
     } else if (kind === "lethal") {
       goal = "斩杀演练：先算清场上攻击和手牌伤害，再决定怎么打。";
@@ -7976,7 +7986,7 @@ const tabs = $("deck-faction-tabs");
     sigSection.appendChild(el("h4", null, "个人签名"));
     sigSection.appendChild(el("p", "profile-custom-hint", "最多 24 字，只显示在本机档案与排位页。"));
     const sigInput = el("input", "account-name-input profile-signature-input");
-    sigInput.maxLength = 24; sigInput.value = account.signature || ""; sigInput.placeholder = "例如：只在流脉涨潮时出牌。";
+    sigInput.maxLength = 24; sigInput.value = account.signature || ""; sigInput.placeholder = "例如：只在流脉涨脉时出牌。";
     const saveSig = el("button", "btn btn-small btn-ghost", "保存签名");
     saveSig.onclick = () => { account.signature = String(sigInput.value || "").trim().slice(0, 24); saveAccountCosmetics(); updateHomeAccount(); toast("个人签名已保存。"); };
     sigInput.addEventListener("keydown", (ev) => { if (ev.key === "Enter") saveSig.onclick(); });
@@ -8133,7 +8143,7 @@ const tabs = $("deck-faction-tabs");
     nameField.appendChild(nameInput); grid.appendChild(nameField);
     const sigField = el("div", "profile-field");
     sigField.appendChild(el("label", null, "个性签名"));
-    const sigInput = el("input"); sigInput.maxLength = 40; sigInput.value = account.signature || ""; sigInput.placeholder = "例如：只在流脉涨潮时出牌。";
+    const sigInput = el("input"); sigInput.maxLength = 40; sigInput.value = account.signature || ""; sigInput.placeholder = "例如：只在流脉涨脉时出牌。";
     sigField.appendChild(sigInput); grid.appendChild(sigField);
     panel.appendChild(grid);
     const actions = el("div", "profile-actions");
@@ -9184,7 +9194,7 @@ const tabs = $("deck-faction-tabs");
       const intro = el("div", "guide-sections");
       const sections = [
         ["胜利条件", "先把对方领袖生命降到 0。随从可以攻击敌方随从或领袖；有守备的随从必须先处理。"],
-        ["行动力与先后手", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张，并额外获得一张「采掘许可」（1 费战术：本回合 +2 点行动力，可以留着）。"],
+        ["行动力与先后手", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张，并额外获得一张「掘脉许可」（1 费战术：本回合 +2 点行动力，可以留着）。"],
         ["阵位", "左翼 / 中枢 / 右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。阵位会影响部分卡牌的范围与固定效果。"],
         ["流脉", "双方共享 0→12，每次完整轮次（双方各行动一次）自然 +1。4 震荡、7 裂隙、10 魔物潮触发世界事件，12 回流清空。"],
         ["牌组结构", "30 张主牌（随从 + 战术 + 阵型）+ 2 件装备牌。领袖在开局单独选择，不占牌组，也不进入牌库。装备需要抽到并打出，最多可同时装备两件。"]
@@ -9231,7 +9241,7 @@ const tabs = $("deck-faction-tabs");
       const box = el("div", "guide-sections");
       const sections = [
         ["目标", "把对方领袖生命降到 0。随从可攻击敌方随从或领袖；有守备的随从必须先处理。"],
-        ["行动力", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张并获得一张「采掘许可」（1 费战术，可留到需要时用）。"],
+        ["行动力", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张并获得一张「掘脉许可」（1 费战术，可留到需要时用）。"],
         ["阵位", "左翼 / 中枢 / 右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。同阵位可能触发协同，双方同列互为对位。"],
         ["流脉", "共享流脉 0→12。到达 4 震荡、7 裂隙、10 魔物潮时触发世界事件；12 回流清空。"],
         ["关键词", "登场、余响、守备、先遣、冻结、沉默、引脉、预兆等关键词会在卡牌和标签上标明。"],

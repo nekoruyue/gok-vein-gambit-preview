@@ -1,15 +1,46 @@
 {
-  "name": "gok-vein-gambit-preview",
-  "version": "0.9.1-preview.1",
+  "name": "gok-vein-gambit",
+  "version": "0.9.2",
   "private": true,
-  "description": "戈克世界：流脉牌局 - 抢先体验版",
+  "description": "《戈克世界：流脉牌局》Windows Demo — 八阵营流脉卡牌对战",
+  "main": "electron/main.js",
   "scripts": {
-    "start": "node server/server.js"
+    "start": "electron .",
+    "package": "electron-builder --win portable",
+    "sim": "node scripts/simulate.mjs",
+    "assert:cards": "node tests/card-assertions.js",
+    "test:cards": "node tests/card-assertions.js"
+  },
+  "devDependencies": {
+    "electron": "^44.9.0",
+    "electron-builder": "^26.15.3",
+    "playwright-core": "^1.64.1"
+  },
+  "build": {
+    "appId": "world.gok.vein-gambit",
+    "productName": "戈克世界-流脉牌局",
+    "icon": "launcher/icon.ico",
+    "asar": true,
+    "files": [
+      "electron/**/*",
+      "public/**/*",
+      "package.json",
+      "!public/assets/generated/*-raw/**"
+    ],
+    "directories": {
+      "output": "发布"
+    },
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "artifactName": "GokVeinGambit-${version}.exe"
+    },
+    "portable": {
+      "artifactName": "GokVeinGambit-${version}.exe"
+    }
   },
   "dependencies": {
     "pg": "^8.23.1"
-  },
-  "engines": {
-    "node": ">=24"
   }
 }

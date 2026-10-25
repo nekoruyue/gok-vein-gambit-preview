@@ -220,7 +220,7 @@
     resonance: {
       id: "resonance", name: "流脉共鸣", faction: "pus", type: "spell",
       cost: 3, rarity: "common", art: null, target: "none", excavate: 1,
-      text: "抽 2 张牌；采掘 1。",
+      text: "抽 2 张牌；掘脉 1。",
       flavor: "灯亮起来的时候，北港的雾会退半尺。",
       spell: { type: "draw", amount: 2 }
     },
@@ -399,7 +399,7 @@
     insight: {
       id: "insight", name: "洞察", faction: "academy", type: "spell",
       cost: 1, rarity: "common", art: null, target: "none",
-      text: "抽 1 张牌；采掘 1。",
+      text: "抽 1 张牌；掘脉 1。",
       flavor: "看得越深，脚下的脉越响。",
       excavate: 1,
       spell: { type: "draw", amount: 1 }
@@ -601,10 +601,10 @@
       battlecry: { type: "discover", pool: "any" }
     },
     gok_digger: {
-      id: "gok_digger", name: "戈克采掘者", faction: "neutral", type: "minion",
+      id: "gok_digger", name: "戈克掘脉者", faction: "neutral", type: "minion",
       cost: 2, attack: 2, health: 2, rarity: "common", art: null,
       keywords: ["battlecry"], target: "none", excavate: 1,
-      text: "采掘 1；登场：获得 2 点护甲。",
+      text: "掘脉 1；登场：获得 2 点护甲。",
       flavor: "挖得越深，灯越亮。",
       battlecry: { type: "armor", amount: 2 }
     },
@@ -650,20 +650,20 @@
     vein_prospect: {
       id: "vein_prospect", name: "流脉勘探", faction: "neutral", type: "spell",
       cost: 2, rarity: "common", art: null, target: "none", excavate: 1,
-      text: "抽 1 张牌；采掘 1。",
+      text: "抽 1 张牌；掘脉 1。",
       flavor: "先画脉，再下铲。",
       spell: { type: "draw", amount: 1 }
     },
     vein_channel: {
       id: "vein_channel", name: "流脉疏导", faction: "neutral", type: "spell",
       cost: 2, rarity: "common", art: null, target: "none",
-      text: "逆流 1：抽 1 张牌。",
+      text: "逆脉 1：抽 1 张牌。",
       flavor: "会挖的人，也要会放。",
       reflux: 1,
       spell: { type: "draw", amount: 1 }
     },
     mining_permit: {
-      id: "mining_permit", name: "采掘许可", faction: "neutral", type: "spell",
+      id: "mining_permit", name: "掘脉许可", faction: "neutral", type: "spell",
       cost: 0, rarity: "token", art: null, target: "none", token: true,
       text: "本回合获得 2 点行动力。",
       flavor: "许可从来不是免费的。",
@@ -703,7 +703,7 @@
     old_ledger: {
       id: "old_ledger", name: "旧账本", faction: "neutral", type: "spell",
       cost: 2, rarity: "common", art: null, target: "none", excavate: 1,
-      text: "抽 1 张牌；采掘 1。",
+      text: "抽 1 张牌；掘脉 1。",
       flavor: "有些账，翻页就会响。",
       spell: { type: "draw", amount: 1 }
     },
@@ -784,7 +784,7 @@
     recon: {
       id: "recon", name: "战前侦察", faction: "neutral", type: "spell",
       cost: 1, rarity: "common", art: null, target: "none", excavate: 1,
-      text: "抽 1 张牌；采掘 1。",
+      text: "抽 1 张牌；掘脉 1。",
       flavor: "地图上多画一笔，少死一个人。",
       spell: { type: "draw", amount: 1 }
     },
@@ -848,7 +848,7 @@
       spell: { type: "borrowVein", mana: 2, debt: 2 }
     },
     reflux: {
-      id: "reflux", name: "逆流", faction: "xizhao", type: "spell",
+      id: "reflux", name: "逆脉", faction: "xizhao", type: "spell",
       cost: 2, rarity: "rare", art: null, target: "none",
       text: "压脉 3：消耗 3 点流脉，对敌方领袖造成 3 点伤害；恢复你的领袖 3 点生命。",
       flavor: "潮水退回去时，也会把伤口一起带走。",
@@ -858,7 +858,7 @@
     stabilize: {
       id: "stabilize", name: "镇脉", faction: "republic", type: "spell",
       cost: 2, rarity: "rare", art: null, target: "none",
-      text: "逆流 2：获得 2 点护甲。",
+      text: "逆脉 2：获得 2 点护甲。",
       flavor: "秩序的工作，就是让河流按堤坝走。",
       reflux: 2,
       spell: { type: "armor", amount: 2 }
@@ -874,7 +874,7 @@
     return_tide: {
       id: "return_tide", name: "回潮", faction: "pus", type: "spell",
       cost: 2, rarity: "rare", art: null, target: "none",
-      text: "逆流 2：恢复你的领袖 2 点生命；抽 1 张牌。",
+      text: "逆脉 2：恢复你的领袖 2 点生命；抽 1 张牌。",
       flavor: "退潮不是结束，是把力量收回身体里。",
       reflux: 2,
       spell: { type: "healHeroDraw", amount: 2, draw: 1 }
@@ -1882,7 +1882,7 @@
   Object.assign(CARDS.zone_keeper, { keywords: [], target: "none", battlecry: null, zoneBonus: { attack: 2, health: 2 }, text: "阵位：若同阵位有另一个友方随从，获得 +2/+2。" });
   Object.assign(CARDS.ironclad, { keywords: ["taunt"], target: "none", battlecry: null, zoneBonus: { health: 1 }, text: "守备。 阵位：若同阵位有另一个友方随从，生命值 +1。" });
   Object.assign(CARDS.hans, { keywords: ["taunt"], target: "none", battlecry: null, passive: { type: "tauntAura", amount: 1 }, text: "守备。被动：你召唤的守备随从获得 +0/+1。" });
-  Object.assign(CARDS.gok_digger, { keywords: [], target: "none", battlecry: null, text: "采掘 1。" });
+  Object.assign(CARDS.gok_digger, { keywords: [], target: "none", battlecry: null, text: "掘脉 1。" });
 
   Object.assign(CARDS.vein_scout, { keywords: ["charge"], target: "none", battlecry: null, text: "先遣。" });
   Object.assign(CARDS.guard, { keywords: ["taunt"], target: "none", battlecry: null, text: "守备。 阵位：若同阵位有另一个友方随从，攻击力 +1。 引脉 4：获得 1 点护甲。" });
@@ -2340,7 +2340,7 @@
   }
   Object.assign(CARDS.courier, { text: "阵位：若同阵位有另一个友方随从，生命值 +1。" });
   Object.assign(CARDS.fog_sailor, { text: "阵位：若同阵位有另一个友方随从，生命值 +1。" });
-  Object.assign(CARDS.gok_digger, { text: "采掘 1；引脉 4：获得 1 点护甲。" });
+  Object.assign(CARDS.gok_digger, { text: "掘脉 1；引脉 4：获得 1 点护甲。" });
 
   // ===== 终版卡面文字与同质卡修正 =====
   // 恢复关键词随从的卡面说明，避免看起来像“效果被删除了”。
@@ -2361,10 +2361,10 @@
   // 帝国 5 费：攻城队长与火药元帅不再同效果、同定位。
   Object.assign(CARDS.siege_captain, { cost: 5, attack: 4, health: 5, keywords: ["battlecry"], target: "none", battlecry: { type: "damageAllEnemies", amount: 1 }, passive: null, text: "登场：对所有敌方随从造成 1 点伤害。" });
   Object.assign(CARDS.powder_marshal, { cost: 5, attack: 5, health: 4, keywords: ["battlecry"], target: "none", battlecry: { type: "armor", amount: 2 }, passive: null, text: "登场：获得 2 点护甲。" });
-  // 中立 2 费抽牌/采掘不再同模板。
-  Object.assign(CARDS.recon, { cost: 1, spell: { type: "draw", amount: 1 }, excavate: 1, text: "抽 1 张牌；采掘 1。" });
+  // 中立 2 费抽牌/掘脉不再同模板。
+  Object.assign(CARDS.recon, { cost: 1, spell: { type: "draw", amount: 1 }, excavate: 1, text: "抽 1 张牌；掘脉 1。" });
   Object.assign(CARDS.old_ledger, { cost: 3, spell: { type: "draw", amount: 2 }, excavate: null, text: "抽 2 张牌。" });
-  Object.assign(CARDS.vein_prospect, { cost: 3, spell: { type: "draw", amount: 1 }, excavate: 2, text: "抽 1 张牌；采掘 2。" });
+  Object.assign(CARDS.vein_prospect, { cost: 3, spell: { type: "draw", amount: 1 }, excavate: 2, text: "抽 1 张牌；掘脉 2。" });
   // 中立 2 费冻结/余响不再完全同效果。
   Object.assign(CARDS.smoke_screen, { cost: 3, text: "冻结一个敌方随从；抽 1 张牌。" });
   Object.assign(CARDS.sim_assistant, { cost: 3, attack: 2, health: 2, text: "余响：抽 1 张牌。" });
@@ -2378,7 +2378,7 @@
   Object.assign(CARDS.phalanx_warden, { battlecry: { type: "buffAllTaunt", health: 2 }, text: "守备。登场：所有友方守备随从获得 +0/+2。" });
 
   Object.assign(CARDS.blood_imp, { cost: 2 });
-  Object.assign(CARDS.gok_digger, { veinBonus: { vein: 4, armor: 2 }, text: "采掘 1；引脉 4：获得 2 点护甲。" });
+  Object.assign(CARDS.gok_digger, { veinBonus: { vein: 4, armor: 2 }, text: "掘脉 1；引脉 4：获得 2 点护甲。" });
   Object.assign(CARDS.bard, { battlecry: { type: "discover", pool: "any" }, text: "登场：检索一张牌。" });
 
   // ===== 阴卡与中立装备/阵型 =====
@@ -2821,7 +2821,7 @@
   Object.assign(CARDS.phalanx_warden, { health: 5 });
   Object.assign(CARDS.shield_sergeant, { health: 5 });
   Object.assign(CARDS.martial_law, { cost: 6 });
-  Object.assign(CARDS.stabilize, { reflux: 2, spell: { type: "armor", amount: 2 }, text: "逆流 2：获得 2 点护甲。" });
+  Object.assign(CARDS.stabilize, { reflux: 2, spell: { type: "armor", amount: 2 }, text: "逆脉 2：获得 2 点护甲。" });
 
   // 西昭/普卫岛：在“领袖无开场护甲”新规则下维持预组强度，不再额外上调。
 
@@ -2898,7 +2898,7 @@
     }
   }
 
-  // ===== 2026-10-19 卡牌重构：行动力、动态阵位、引脉阈值、采掘、删卡 =====
+  // ===== 2026-10-19 卡牌重构：行动力、动态阵位、引脉阈值、掘脉、删卡 =====
   Object.assign(CARDS.medic_apprentice, {
     keywords: [],
     deathrattle: null,
@@ -2993,12 +2993,12 @@
   Object.assign(CARDS.resonance, {
     cost: 2,
     excavate: 2,
-    text: "采掘 2：抽 2 张牌，流脉 +2。",
+    text: "掘脉 2：抽 2 张牌，流脉 +2。",
     spell: { type: "none" }
   });
-  Object.assign(CARDS.insight, { text: "采掘 1：抽 1 张牌，流脉 +1；复制下一张获得的法术牌。", spell: { type: "drawCopyNextSpell", draw: 0 } });
-  Object.assign(CARDS.recon, { text: "采掘 1：抽 1 张牌，流脉 +1。", spell: { type: "none" } });
-  Object.assign(CARDS.vein_prospect, { text: "采掘 2：抽 2 张牌，流脉 +2。", spell: { type: "none" } });
+  Object.assign(CARDS.insight, { text: "掘脉 1：抽 1 张牌，流脉 +1；复制下一张获得的法术牌。", spell: { type: "drawCopyNextSpell", draw: 0 } });
+  Object.assign(CARDS.recon, { text: "掘脉 1：抽 1 张牌，流脉 +1。", spell: { type: "none" } });
+  Object.assign(CARDS.vein_prospect, { text: "掘脉 2：抽 2 张牌，流脉 +2。", spell: { type: "none" } });
   for (const id of ["vein_channeler","vein_sentinel","vein_bulwark","vein_surveyor","siphon_guard","vein_ward","overload_ritual","return_tide","formation_echo"]) {
     if (CARDS[id]) Object.assign(CARDS[id], { disabled: true });
   }
@@ -3037,26 +3037,26 @@
   }
 
   // ===== 2026-10-19 学院重做（用户指定） =====
-  // 逆流 N：消耗 N 点流脉来触发；流脉不足 N 时消耗到 0 仍触发；流脉为 0 时逆流效果无效。
+  // 逆脉 N：消耗 N 点流脉来触发；流脉不足 N 时消耗到 0 仍触发；流脉为 0 时逆脉效果无效。
   // 冻结：不写“随机”的冻结一律为指定冻结；对方没有可冻结随从时冻结不触发，但随从照常落地。
   Object.assign(CARDS.spell_novice, {
     cost: 1, attack: 1, health: 3, reflux: 1,
     keywords: ["battlecry"], target: "none",
     battlecry: { type: "freeSpellTurn" },
-    text: "逆流 1：本回合你的下一张法术不消耗行动力。"
+    text: "逆脉 1：本回合你的下一张法术不消耗行动力。"
   });
   Object.assign(CARDS.doorman, {
     cost: 1, attack: 1, health: 2, reflux: 1,
     keywords: ["battlecry"], target: "none", taunt: false, veinBonus: null,
     battlecry: { type: "gainMana", amount: 2 },
-    text: "逆流 1：获得 2 点行动力。"
+    text: "逆脉 1：获得 2 点行动力。"
   });
   Object.assign(CARDS.formula_apprentice, { disabled: true });
   Object.assign(CARDS.nina, {
     cost: 2, attack: 4, health: 4, reflux: 1,
     keywords: ["battlecry"], target: "enemy", optionalTarget: true,
     battlecry: { type: "freezeZone" }, zoneBonus: null, mirrorBonus: null,
-    text: "逆流 1：冻结目标所在阵位的所有敌方随从。"
+    text: "逆脉 1：冻结目标所在阵位的所有敌方随从。"
   });
   Object.assign(CARDS.samuel, {
     cost: 2, attack: 3, health: 4,
@@ -3074,7 +3074,7 @@
     cost: 3, attack: 4, health: 4, reflux: 1,
     keywords: ["battlecry"], target: "none", deathrattle: null,
     battlecry: { type: "draw", amount: 1 },
-    text: "逆流 1：抽 1 张牌。"
+    text: "逆脉 1：抽 1 张牌。"
   });
   Object.assign(CARDS.justus, {
     cost: 3, attack: 4, health: 4, veinBonus: null,
@@ -3092,7 +3092,7 @@
     cost: 4, attack: 3, health: 4, reflux: 2,
     keywords: ["battlecry"], target: "enemy", optionalTarget: true, passive: null,
     battlecry: { type: "freezeZoneGrowth", attack: 1, health: 1 },
-    text: "逆流 2：冻结目标所在阵位的所有敌方随从；每冻结一个随从，获得 +1/+1。"
+    text: "逆脉 2：冻结目标所在阵位的所有敌方随从；每冻结一个随从，获得 +1/+1。"
   });
   Object.assign(CARDS.karl_desmond, {
     cost: 4, attack: 4, health: 6,
@@ -3112,7 +3112,7 @@
     keywords: ["battlecry", "passive"], target: "enemy", optionalTarget: true,
     battlecry: { type: "freeze" },
     passive: { type: "attackDestroyFrozen" },
-    text: "逆流 3：冻结一个敌方随从。 被动：你攻击已被冻结的随从时，直接消灭该随从。"
+    text: "逆脉 3：冻结一个敌方随从。 被动：你攻击已被冻结的随从时，直接消灭该随从。"
   });
   Object.assign(CARDS.spell_echo, { cost: 3 });
   Object.assign(CARDS.formation_script, {
@@ -3690,7 +3690,7 @@
       id: "vein_foreman", name: "掘脉工头", faction: "pus", type: "minion",
       cost: 2, attack: 2, health: 2, rarity: "common", art: null, noGeneratedArt: true,
       keywords: ["battlecry"], target: "none",
-      text: "采掘 1；登场：抽 1 张牌。",
+      text: "掘脉 1；登场：抽 1 张牌。",
       flavor: "他挖到的第一块脉晶，现在镶在安全帽上。",
       excavate: 1,
       battlecry: { type: "draw", amount: 1 }
@@ -3702,19 +3702,19 @@
       flavor: "阵线不需要喊口号，站住就行。",
       formation: { attack: 0, health: 2, taunt: true }
     },
-    /* 学院：逆流 / 冻结 / 法术 / 被动 */
+    /* 学院：逆脉 / 冻结 / 法术 / 被动 */
     reflux_apprentice: {
-      id: "reflux_apprentice", name: "逆流学徒", faction: "academy", type: "minion",
+      id: "reflux_apprentice", name: "逆脉学徒", faction: "academy", type: "minion",
       cost: 2, attack: 2, health: 3, rarity: "rare", art: null, noGeneratedArt: true,
       keywords: ["battlecry"], target: "none", reflux: 1,
-      text: "逆流 1：若本回合你施放过战术牌，抽 2 张牌。",
+      text: "逆脉 1：若本回合你施放过战术牌，抽 2 张牌。",
       flavor: "别人背书，她背的是水位线。",
       battlecry: { type: "spellDraw", draw: 2 }
     },
     frost_scribe: {
       id: "frost_scribe", name: "霜印书记", faction: "academy", type: "spell",
       cost: 2, rarity: "rare", art: null, noGeneratedArt: true, target: "enemy", reflux: 1,
-      text: "逆流 1：冻结一个敌方随从并抽 1 张牌。",
+      text: "逆脉 1：冻结一个敌方随从并抽 1 张牌。",
       flavor: "她记下的每一笔，都要先冻住再落墨。",
       spell: { type: "freezeDraw", draw: 1 }
     },
@@ -4121,7 +4121,7 @@
   });
   Object.assign(CARDS.reflux_apprentice, {
     battlecry: { type: "spellDraw", draw: 1 },
-    text: "逆流 1：若本回合你施放过战术牌，抽 1 张牌。"
+    text: "逆脉 1：若本回合你施放过战术牌，抽 1 张牌。"
   });
   Object.assign(CARDS.armor_break, {
     spell: { type: "stripArmorToMana", amount: 4, mana: 1 },
@@ -4393,32 +4393,32 @@
   Object.assign(CARDS.vein_channel, {
     reflux: 1,
     spell: { type: "draw", amount: 1 },
-    text: "逆流 1：抽 1 张牌。"
+    text: "逆脉 1：抽 1 张牌。"
   });
   Object.assign(CARDS.stabilize, {
     reflux: 2,
     spell: { type: "armor", amount: 2 },
-    text: "逆流 2：获得 2 点护甲。"
+    text: "逆脉 2：获得 2 点护甲。"
   });
   Object.assign(CARDS.return_tide, {
     reflux: 2,
     spell: { type: "healHeroDraw", amount: 2, draw: 1 },
-    text: "逆流 2：恢复你的领袖 2 点生命；抽 1 张牌。"
+    text: "逆脉 2：恢复你的领袖 2 点生命；抽 1 张牌。"
   });
   Object.assign(CARDS.wanderer_charm, {
     text: "装备：你的领袖生命上限 +5。"
   });
   Object.assign(CARDS.vein_tithe, {
     excavate: 2,
-    text: "获得 5 点护甲；采掘 2。",
+    text: "获得 5 点护甲；掘脉 2。",
     spell: { type: "armor", amount: 5 }
   });
   Object.assign(CARDS.vein_behemoth, {
-    text: "登场：采掘 2；引脉 10：获得 +0/+1 和守备。",
+    text: "登场：掘脉 2；引脉 10：获得 +0/+1 和守备。",
     battlecry: { type: "veinBuff", amount: 2, draw: 2, vein: 10, attack: 0, health: 1 }
   });
   Object.assign(CARDS.vein_leviathan, {
-    text: "登场：采掘 1；引脉 7：抽 1 张牌。",
+    text: "登场：掘脉 1；引脉 7：抽 1 张牌。",
     battlecry: { type: "veinDraw", amount: 1, vein: 7, draw: 1, thresholdDraw: 1 }
   });
   Object.assign(CARDS.void_titan, {
@@ -4443,13 +4443,13 @@
     keywords: ["taunt", "battlecry", "deathrattle"],
     text: "守备。登场：若本回合已打出过其他牌，本回合每使用一个随从，获得 +1/+1。余响：对敌方所有单位造成 1 点伤害。"
   });
-  Object.assign(CARDS.vein_prospect, { text: "采掘 2。" });
-  Object.assign(CARDS.recon, { text: "采掘 1。" });
-  Object.assign(CARDS.resonance, { text: "采掘 1。" });
-  Object.assign(CARDS.insight, { text: "采掘 1。" });
+  Object.assign(CARDS.vein_prospect, { text: "掘脉 2。" });
+  Object.assign(CARDS.recon, { text: "掘脉 1。" });
+  Object.assign(CARDS.resonance, { text: "掘脉 1。" });
+  Object.assign(CARDS.insight, { text: "掘脉 1。" });
   // 关键词统一放在所有效果文字之前：先放纯关键词，再放带关键词触发的效果，最后放普通效果。
   (function normalizeKeywordOrder() {
-    const labels = ["格挡", "守备", "先遣", "连携", "血偿", "蚀毒", "隐匿", "回潮", "冻结", "沉默", "登场", "余响", "引脉", "采掘", "血祭", "预兆", "吞噬", "逆流", "镇脉", "压脉", "悬赏", "固定", "装备", "被动"];
+    const labels = ["格挡", "守备", "先遣", "连携", "血偿", "蚀毒", "隐匿", "回潮", "冻结", "沉默", "登场", "余响", "引脉", "掘脉", "血祭", "预兆", "吞噬", "逆脉", "镇脉", "压脉", "悬赏", "固定", "装备", "被动"];
     const keywordOf = (s) => labels.find(k => s === k || s.indexOf(k + "：") === 0 || new RegExp("^" + k + "\\s+\\d").test(s)) || null;
     const keyStart = (s) => !!keywordOf(s);
     for (const c of Object.values(CARDS)) {
@@ -12861,7 +12861,7 @@
       .replace(/登场：(先遣|隐匿|连携|守备|格挡|蚀毒|血偿|回潮|先遣)/g, "$1。")
       .replace(/登场：被动：/g, "被动：")
       .replace(/被动：(守备|先遣|连携|隐匿|格挡)。/g, "$1。")
-      .replace(/登场：采掘 1；登场：/g, "采掘 1。登场：")
+      .replace(/登场：掘脉 1；登场：/g, "掘脉 1。登场：")
       .replace(/登场：登场：/g, "登场：")
       .replace(/^守备。守备。/g, "守备。")
       .replace(/^先遣。先遣。/g, "先遣。")
@@ -13014,7 +13014,7 @@
     gh_bounty_king: { passive: { type: "bountyClaimDamage", amount: 3 }, text: "被动：完成悬赏时，对敌方领袖造成 3 点伤害。" },
     field_engineer: { deathrattle: { type: "armor", amount: 2 }, text: "守备。余响：获得 2 点护甲。" },
     vein_medic: { deathrattle: { type: "healHero", amount: 2 }, text: "余响：恢复你的领袖 2 点生命。" },
-    vein_tithe: { spell: { type: "armor", amount: 5 }, text: "获得 5 点护甲；采掘 2。" }
+    vein_tithe: { spell: { type: "armor", amount: 5 }, text: "获得 5 点护甲；掘脉 2。" }
   };
   for (const [id, patch] of Object.entries(DEDUPE_PATCH)) {
     const c = CARDS[id]; if (!c) continue;
@@ -13052,7 +13052,7 @@
     if (patch.text) c.text = patch.text;
   }
 
-  const FINAL_KEYWORD_ORDER = ["格挡", "守备", "先遣", "连携", "血偿", "蚀毒", "隐匿", "回潮", "冻结", "沉默", "登场", "余响", "引脉", "采掘", "血祭", "预兆", "吞噬", "逆流", "镇脉", "压脉", "悬赏", "固定", "装备", "被动"];
+  const FINAL_KEYWORD_ORDER = ["格挡", "守备", "先遣", "连携", "血偿", "蚀毒", "隐匿", "回潮", "冻结", "沉默", "登场", "余响", "引脉", "掘脉", "血祭", "预兆", "吞噬", "逆脉", "镇脉", "压脉", "悬赏", "固定", "装备", "被动"];
   for (const c of Object.values(CARDS)) {
     if (!c.text) continue;
     const ends = /[。！？]/.test(c.text.slice(-1));
@@ -13091,8 +13091,8 @@
   // 学院说明优化
   if (CARDS.old_ledger) CARDS.old_ledger.text = "抽 1 张牌；若你本回合施放过战术牌，再抽 2 张。";
   if (CARDS.ac_archive_eruption) CARDS.ac_archive_eruption.text = "对所有敌方随从造成等同于本局已使用战术牌数量的伤害。";
-  if (CARDS.vein_prospect) CARDS.vein_prospect.text = "采掘 2：抽 2 张牌，并使流脉 +2。";
-  if (CARDS.recon) CARDS.recon.text = "采掘 1：抽 1 张牌，并使流脉 +1。";
+  if (CARDS.vein_prospect) CARDS.vein_prospect.text = "掘脉 2：抽 2 张牌，并使流脉 +2。";
+  if (CARDS.recon) CARDS.recon.text = "掘脉 1：抽 1 张牌，并使流脉 +1。";
   if (CARDS.ac_spell_copy) CARDS.ac_spell_copy.text = "抽 4 张牌。";
 
   if (CARDS.losutai_imp) CARDS.losutai_imp.faction = "losutai";
@@ -14331,7 +14331,7 @@
     c.text = "债务卡。打出后洗入对手牌库。对手不打出时只占手牌。对手打出此牌后，" + clause + "；完成免罚，未完成回合结束受到 " + c.debt.penalty.amount + " 点伤害。";
   }
 
-  // 修复：cleanLegacy 清掉了卡面仍明确写出的逆流消耗。
+  // 修复：cleanLegacy 清掉了卡面仍明确写出的逆脉消耗。
   if (CARDS.stabilize) CARDS.stabilize.reflux = 2;
   if (CARDS.return_tide) CARDS.return_tide.reflux = 2;
 
@@ -14373,7 +14373,7 @@
     xingchuan_molecricket: {
       id: "xingchuan_molecricket", name: "蝼蛄", faction: "neutral", type: "minion", token: true, noArtwork: true,
       cost: 0, attack: 3, health: 3, rarity: "common", keywords: [], target: "none", excavate: 2,
-      text: "采掘 2。"
+      text: "掘脉 2。"
     },
     xingchuan_mosquito: {
       id: "xingchuan_mosquito", name: "蚊子", faction: "neutral", type: "minion", token: true, noArtwork: true,
@@ -16271,7 +16271,7 @@
     t = t.replace(/\s+被动/g, "。被动");
     t = t.replace(/(\d)(点|个|张|回合|费)/g, "$1 $2");
     t = t.replace(/(\d)费/g, "$1 行动力");
-    t = t.replace(/(引脉|预兆|检索|采掘|镇脉|逆流|压脉|血祭|吞噬)(\d)/g, "$1 $2");
+    t = t.replace(/(引脉|预兆|检索|掘脉|镇脉|逆脉|压脉|血祭|吞噬)(\d)/g, "$1 $2");
     t = t.replace(/获得\+(?=\d)/g, "获得 +");
     t = t.replace(/获得\s+(\d)/g, "获得 $1");
     t = t.replace(/\s+([，。；：])/g, "$1");
@@ -16339,6 +16339,552 @@
   if (CARDS.gok_digger) { CARDS.gok_digger.excavate = 1; CARDS.gok_digger.veinBonus = { vein: 4, armor: 2 }; }
   if (CARDS.mist_scout) CARDS.mist_scout.veinBonus = { vein: 4, armor: 1 };
   if (CARDS.astral_colossus) CARDS.astral_colossus.veinBonus = { vein: 6, armor: 2 };
+  // ===== 即梦批量角色设定图：18 张新传说立绘 =====
+  for (const id of ["mirror_regent","time_debt_emperor","cinder_arbiter","unquiet_dowager","stone_alchemist","puwei_dawn_mender","puwei_overflow_saint","academy_arcane_transcriber","xizhao_blood_vow","republic_bastion_mentor","republic_ironwall_marshal","empire_veinblade_savant","grayharbor_bounty_chaser","losutai_spore_pathfinder","losutai_hive_ancestor","snow_frost_hunter","snow_shatter_judge","neutral_copyist_luomi"]) if (CARDS[id]) { CARDS[id].art = id; CARDS[id].noArtwork = false; CARDS[id].noGeneratedArt = false; }
+  if (CARDS.fireball) { CARDS.fireball.noArtwork = false; CARDS.fireball.noGeneratedArt = false; }
+  if (CARDS.lightning_bolt) { CARDS.lightning_bolt.noArtwork = false; CARDS.lightning_bolt.noGeneratedArt = false; }
+
+  // ===== 刻脉机制：学院 / 雪都 =====
+  if (CARDS.vein_prism) {
+    CARDS.vein_prism.target = "friendly";
+    CARDS.vein_prism.spell = { type: "carveSealAcademy" };
+    CARDS.vein_prism.text = "选择一个友方随从，在其阵位刻下脉痕；流脉达到 4 时，该阵位友方抽 1 张牌（流脉 7 时改为抽 2 张并复原 1 点行动力）。";
+  }
+  if (CARDS.frost_archivist) {
+    CARDS.frost_archivist.battlecry = { type: "carveSealSnow" };
+    CARDS.frost_archivist.text = "登场：在自身阵位刻下脉痕；流脉达到 4 时，冻结该阵位所有敌方随从 1 回合（流脉 7 时改为 2 回合）。";
+  }
+
+  // ===== 流脉机制落点：掘脉 / 涨脉 / 逆脉 / 镇脉 / 压脉 =====
+  if (CARDS.north_beast_tamer) { CARDS.north_beast_tamer.battlecry = { type: "flowDraw", draw: 1, vein: 1 }; CARDS.north_beast_tamer.text = "登场：掘脉 1：抽 1 张牌，流脉 +1。"; }
+  if (CARDS.vein_surge) { CARDS.vein_surge.spell = { type: "flowDraw", draw: 2, vein: 2, bonusAt: 7, bonusDraw: 3 }; CARDS.vein_surge.text = "掘脉 2：抽 2 张牌，流脉 +2；若流脉达到 7，改为抽 3 张牌。"; }
+  if (CARDS.fog_navigator) { delete CARDS.fog_navigator.deathrattle; CARDS.fog_navigator.keywords = (CARDS.fog_navigator.keywords || []).filter(k => k !== "deathrattle"); CARDS.fog_navigator.battlecry = { type: "riseVein", amount: 1 }; CARDS.fog_navigator.text = "登场：涨脉 1：本回合行动力 +1，流脉 +1。"; }
+  if (CARDS.time_loan) { CARDS.time_loan.spell = { type: "riseVein", amount: 2, penalty: 1 }; CARDS.time_loan.text = "涨脉 2：本回合行动力 +2，流脉 +2；下回合行动力 -1。"; }
+  if (CARDS.pulse_banner) { CARDS.pulse_banner.reflux = 2; CARDS.pulse_banner.battlecry = { type: "healHero", amount: 3 }; CARDS.pulse_banner.text = "逆脉 2：消耗最多 2 点流脉，恢复领袖 3 点生命。余响：恢复领袖 4 点生命。"; }
+  if (CARDS.gh_silence_expert) { CARDS.gh_silence_expert.reflux = 2; CARDS.gh_silence_expert.text = "逆脉 2：消耗最多 2 点流脉，沉默一个敌方随从；若目标有悬赏，抽 1 张牌。余响：对随机敌方目标造成 3 点伤害。"; }
+  if (CARDS.wind_cannon) { CARDS.wind_cannon.zhenmai = 2; CARDS.wind_cannon.text = "连携。镇脉 2：消耗最多 2 点流脉，获得等量护甲。余响：获得 7 点护甲。"; }
+  if (CARDS.aegis_guard) { CARDS.aegis_guard.zhenmai = 3; CARDS.aegis_guard.text = "守备。镇脉 3：消耗最多 3 点流脉，获得等量护甲。余响：获得 4 点护甲。"; }
+  if (CARDS.xh_pressure_master) { delete CARDS.xh_pressure_master.battlecry; delete CARDS.xh_pressure_master.passive; CARDS.xh_pressure_master.pressure = 3; CARDS.xh_pressure_master.keywords = (CARDS.xh_pressure_master.keywords || []).filter(k => k !== "battlecry"); CARDS.xh_pressure_master.text = "压脉 3：消耗 3 点流脉，对敌方领袖造成 3 点伤害。"; }
+  if (CARDS.pressure_warlock) { CARDS.pressure_warlock.pressure = 3; CARDS.pressure_warlock.text = "先遣。压脉 3：消耗 3 点流脉，对敌方领袖造成 3 点伤害。余响：获得 2 点护甲。"; }
+
+  for (const id of ["fireball","lightning_bolt","xingchuan_dungbeetle","xingchuan_cockroach","xingchuan_centipede","xingchuan_orbweaver","xingchuan_tigerbeetle","xingchuan_molecricket","xingchuan_mosquito","xingchuan_bee","xingchuan_cockroach_guard"]) if (CARDS[id]) { CARDS[id].noArtwork = false; CARDS[id].noGeneratedArt = false; }
+
+  // ===== 2026-10-25 第一批：权限修正 =====
+  if (CARDS.vein_foreman) { delete CARDS.vein_foreman.excavate; CARDS.vein_foreman.reflux = 1; CARDS.vein_foreman.battlecry = { type: "healHero", amount: 2 }; CARDS.vein_foreman.text = "登场：恢复你的领袖 2 点生命。逆脉 1：再恢复 1 点生命。"; }
+  if (CARDS.recon) { delete CARDS.recon.excavate; CARDS.recon.target = "friendly"; CARDS.recon.spell = { type: "carveSealAcademy", armor: 3 }; CARDS.recon.text = "获得 3 点护甲；刻脉 4：在该阵位刻下脉痕，流脉达到 4 时该阵位友方抽 1 张牌。"; }
+  if (CARDS.vein_prospect) { delete CARDS.vein_prospect.excavate; CARDS.vein_prospect.target = "friendly"; CARDS.vein_prospect.spell = { type: "carveSealAcademy", kind: "academyProspect", threshold: 7, discover: "spell" }; CARDS.vein_prospect.text = "预兆一张战术牌；刻脉 7：在该阵位刻下脉痕，流脉达到 7 时该阵位友方抽 1 张牌并复原 1 点行动力。"; }
+  if (CARDS.lt_tide_birth) { CARDS.lt_tide_birth.text = "抽 1 张牌；流脉 +2。"; delete CARDS.lt_tide_birth.excavate; }
+
+  // ===== 2026-10-25 第一批：史诗随从数值与完整文本 =====
+  const B1 = {
+    bulwark_lieutenant: [5,3,5,"登场：恢复你的领袖 2 点生命；若同阵位有其他友方随从，获得 4 点护甲。"],
+    vein_engineer: [6,4,5,"被动：每回合第一次恢复领袖生命时，同阵位一个友方随从获得 +0/+1。余响：逆脉 2，恢复领袖 2 点生命。"],
+    deepvein_guard: [6,3,6,"守备。余响：恢复 2 点生命；若本回合获得过护甲，改为 4 点护甲。"],
+    vein_attendant: [8,5,7,"登场：恢复 3 点生命。余响：若流脉达到 7，获得 6 点护甲；否则获得 2 点护甲。"],
+    vein_oracle: [8,4,7,"守备。余响：恢复 3 点生命；若同阵位有其他友方随从，抽 1 张牌。"],
+    spring_watcher: [8,5,6,"登场：若你控制守备随从，抽 1 张牌。余响：恢复 3 点生命；若本回合获得过护甲，再获得 3 点护甲。"],
+    excavation_titan: [9,6,7,"被动：每回合第一次恢复领袖生命时，同阵位友方随从获得 +1/+1。余响：获得 3 点护甲。"],
+    spell_conductor: [5,4,5,"被动：每回合施放第二张战术后，抽 1 张牌。"],
+    academy_arcane_transcriber: [5,3,5,"登场：复制你本局最近使用的一张战术牌；复制牌行动力 +2（最高 10）。若本局尚未使用战术牌，抽 1 张牌。"],
+    arcane_theorist: [7,5,5,"登场：预兆一张战术牌。被动：每回合第一张战术牌使自身获得 +1/+1。"],
+    echo_observer: [8,4,6,"登场：对一个敌方随从造成 2 点伤害。余响：若本回合施放过战术牌，对随机敌方随从造成 2 点伤害；否则造成 1 点。"],
+    blood_acolyte: [1,1,2,"登场：对一个敌方随从造成 1 点伤害。余响：若本回合受过伤害，对随机敌方随从造成 2 点伤害。"],
+    xh_blood_knight: [2,2,3,"先遣。格挡。"],
+    blood_priestess: [2,2,3,"先遣。血祭 1：对一个敌方随从造成 2 点伤害。"],
+    blood_pact_collector: [3,2,4,"守备。登场：若本回合受过伤害，对一个敌方随从造成 2 点伤害。余响：对随机敌方随从造成 2 点伤害。"],
+    bloodroad_guide: [3,3,2,"余响：对随机敌方随从造成 3 点伤害；若敌方没有随从，改为对敌方领袖造成 2 点伤害。"],
+    xh_bone_guard: [3,3,3,"余响：获得 3 点护甲；若本回合失去过生命，改为获得 6 点护甲。"],
+    tide_scout: [4,3,5,"守备。先遣。登场：若对位有敌方随从，获得 +1 攻击。"],
+    blood_executor: [4,3,4,"被动：每当你施放战术牌，对随机敌方随从造成 1 点伤害。余响：对随机敌方随从造成 3 点伤害。"],
+    xizhao_blood_vow: [4,3,4,"血祭 2：对一个敌方随从造成 3 点伤害；若将其消灭，抽 1 张牌。"],
+    xh_blood_colossus: [5,4,5,"登场：血祭 3，抽 3 张牌；否则抽 1 张牌。"],
+    xh_blood_priest: [7,5,5,"先遣。隐匿。攻击并消灭目标时，对敌方领袖造成 2 点伤害。"],
+    phalanx_executor: [5,3,5,"守备。登场：镇脉 2。余响：获得 3 点护甲。"],
+    shield_sergeant: [6,3,6,"格挡。余响：获得 4 点护甲；若同阵位有守备随从，改为 7 点。"],
+    rosen_borderlord: [6,4,5,"登场：若你控制守备随从，召唤一个共和国新兵。余响：获得 4 点护甲。"],
+    zone_banner: [6,4,5,"登场：同阵位友方随从获得 +2/+1。余响：获得等同于该阵位随从数量的护甲，最多 3 点。"],
+    bastion_captain: [7,5,6,"登场：若你有护甲，获得 +0/+2 和守备。余响：获得 2 点护甲。"],
+    cedric: [7,5,5,"余响：召唤一个 1/1 共和国新兵，并获得 3 点护甲。"],
+    shield_marshal: [9,6,7,"余响：获得 4 点护甲；若你控制阵型，改为 8 点。"],
+    siege_captain: [4,4,5,"守备。登场：若你有至少 3 点护甲，对所有敌方随从造成 1 点伤害。余响：获得 3 点护甲。"],
+    otto_hand: [4,4,4,"登场：镇脉 2。余响：获得 2 点护甲。"],
+    empire_veinblade_savant: [4,3,4,"登场：流脉 +1。被动：每回合第一次镇脉后，获得 +2 攻击。"],
+    powder_marshal: [5,4,5,"登场：获得 3 点护甲；若你已有护甲，对一个敌方随从造成 2 点伤害。"],
+    walter: [5,5,5,"登场：对随机敌方单位造成等同于你护甲值的伤害，最多 4 点。"],
+    iron_artillery: [5,3,5,"守备。登场：对一个敌方随从造成等同于你护甲值的伤害，最多 4 点。余响：获得 1 点护甲。"],
+    siege_train: [7,5,7,"连携。登场：若本回合获得过护甲，对所有敌方随从造成 2 点伤害；否则造成 1 点。"],
+    five_guild_council: [4,4,4,"登场：随机将两个敌方随从列入悬赏名单；若已有悬赏目标，自身获得 +1/+1。"],
+    execution_supervisor: [4,4,4,"先遣。被动：攻击悬赏名单上的随从时，获得 +1/+1。"],
+    gh_legend_assassin: [4,4,4,"先遣。登场：将一个敌方随从列入悬赏名单；若它已在名单上，抽 1 张牌。"],
+    venom_sac_guard: [4,3,5,"守备。登场：将对位敌方随从列入悬赏名单；若对位没有随从，抽 1 张牌。"],
+    gh_bounty_collector: [4,4,4,"先遣。被动：每完成一次悬赏，获得 +1/+1。"],
+    gh_captain: [5,5,5,"登场：所有友方随从获得先遣；若有悬赏目标，抽 1 张牌。"],
+    gh_medic: [5,3,4,"登场：恢复 4 点生命；若你完成过悬赏，改为恢复 8 点。"],
+    losutai_matriarch: [3,2,3,"登场：召唤一个 1/1 洛斯汰魔物。余响：若你控制其他魔物，获得 2 点护甲。"],
+    pressure_warlock: [4,3,4,"先遣。压脉 3：消耗 3 点流脉，对敌方领袖造成 3 点伤害。余响：若你控制其他魔物，获得 2 点护甲。"],
+    lt_tide_devourer: [4,3,4,"吞噬一个攻击力最低的友方魔物，获得其攻击力和生命值；若吞噬的是魔物，召唤一个 1/1 洛斯汰魔物。"],
+    devourer: [5,4,5,"登场：吞噬一个攻击力最低的友方随从，获得其攻击力和生命值。余响：对随机敌方随从造成 2 点伤害。"],
+    losutai_awakened: [6,4,6,"先遣。登场：若你控制其他魔物，召唤两个 1/1 洛斯汰魔物。余响：获得 2 点护甲。"],
+    lt_venom_behemoth: [7,5,7,"先遣。蚀毒。"],
+    tide_colossus: [7,5,5,"登场：吞噬一个友方魔物，并获得其生命值。余响：召唤一个 3/3 巨兽。"],
+    frost_professor: [2,1,3,"登场：预兆一张战术牌；若它是冻结牌，抽 1 张牌。"],
+    frost_archivist: [4,3,4,"登场：在自身阵位刻下脉痕；流脉达到 4 时，冻结该阵位所有敌方随从 1 回合（流脉 7 时改为 2 回合）。"],
+    snow_frozen_oracle: [5,3,5,"登场：冻结一个敌方随从；若目标已经冻结，抽 1 张牌。"],
+    snow_aurora_priestess: [5,3,4,"余响：冻结一个随机敌方随从；若它已经冻结，抽 1 张牌。"],
+    snow_ice_priest: [6,3,6,"登场：冻结一个敌方随从；若目标已经冻结，对所有已冻结敌方随从造成 2 点伤害。余响：抽 1 张牌。"],
+    snow_time_echo: [7,4,5,"登场：冻结一个敌方随从。余响：对所有已冻结敌方随从造成 2 点伤害。"],
+    snow_blizzard_elemental: [7,5,6,"登场：冻结所有敌方随从。余响：召唤一个雪狐哨兵。"],
+    snow_fox_guard: [7,4,6,"登场：若你控制其他雪狐，获得 +2/+2 和守备。余响：召唤一个雪狐哨兵。"],
+    snow_frost_colossus: [8,5,7,"被动：每冻结一个敌方随从，获得 +1 攻击。余响：获得 4 点护甲。"],
+    snow_exile: [3,2,4,"登场：恢复 2 点生命。余响：若你控制阵型，获得 4 点护甲。"],
+    fog_dockhand: [3,4,3,"守备。余响：获得 3 点护甲；若同阵位有其他友方随从，改为 5 点。"],
+    dusk_innkeeper: [3,2,4,"登场：抽 1 张牌。余响：抽 1 张牌；若你控制阵型，再抽 1 张牌。"],
+    neutral_copyist_luomi: [4,2,3,"登场：复制一个友方随从置入手牌；若其行动力不大于 3，复制牌行动力 +1。"],
+    astral_colossus: [6,3,8,"守备。被动：你的回合开始时获得 1 点护甲。引脉 6：获得 2 点护甲并抽 1 张牌。"],
+    twin_weaver: [7,4,4,"登场：召唤一个自身的复制；复制体为 1/1 且不触发登场。"],
+    chrono_archivist: [7,4,5,"登场：将一个敌方随从移回其手牌；若其行动力不大于 3，抽 1 张牌。"],
+    archive_devourer: [7,4,6,"登场：吞噬一个攻击力最低的友方随从，获得其攻击力和生命值。余响：抽 1 张牌。"],
+    vein_behemoth: [8,4,8,"登场：掘脉 2。引脉 10：获得 +1/+1 和守备。"],
+    frost_leviathan: [8,6,5,"余响：冻结所有敌方随从；若本局你冻结过至少 3 个随从，获得 +3/+3 后再冻结。"]
+  };
+  for (const [id, v] of Object.entries(B1)) {
+    const c = CARDS[id]; if (!c) continue;
+    c.cost = v[0];
+    if (c.type === "minion") { c.attack = v[1]; c.health = v[2]; c.maxHealth = v[2]; c.text = v[3]; }
+    else { c.text = v[2] || v[3]; }
+  }
+
+  // ===== 第一批效果：普卫岛 / 学院 =====
+  const B1E = {
+    bulwark_lieutenant: { battlecry: { type: "healSameZoneArmor", heal: 2, armor: 4 } },
+    vein_engineer: { passive: { type: "healGrowthOnce", attack: 0, health: 1 }, deathrattle: { type: "refluxHeal", reflux: 2, heal: 2 } },
+    deepvein_guard: { deathrattle: { type: "armorIfArmorGained", normal: 2, boosted: 4 } },
+    vein_attendant: { deathrattle: { type: "armorIfVein", threshold: 7, high: 6, low: 2 } },
+    vein_oracle: { deathrattle: { type: "healDrawIfSameZone", heal: 3 } },
+    spring_watcher: { battlecry: { type: "drawIfTaunt" }, deathrattle: { type: "healArmorIfArmorGained", heal: 3, armor: 3 } },
+    excavation_titan: { passive: { type: "healGrowthOnce", attack: 1, health: 1 }, deathrattle: { type: "armor", amount: 3 } },
+    spell_conductor: { passive: { type: "secondSpellDraw" } },
+    academy_arcane_transcriber: { battlecry: { type: "copyLastTacticPlus1", plus: 2 } },
+    arcane_theorist: { passive: { type: "firstSpellGrowth", attack: 1, health: 1 } },
+    echo_observer: { battlecry: { type: "damage", amount: 2 }, deathrattle: { type: "damageRandomIfSpell", normal: 1, boosted: 2 }, target: "enemy" }
+  };
+  for (const [id, e] of Object.entries(B1E)) { const c=CARDS[id]; if(!c) continue; for(const k of ["battlecry","deathrattle","passive"]) { if(e[k]) c[k]=e[k]; } if(e.target) c.target=e.target; }
+
+  // ===== 第一批效果：其余阵营（按现有引擎效果类型接入） =====
+  const B1R = {
+    blood_acolyte:{battlecry:{type:"damage",amount:1},deathrattle:{type:"damageRandomEnemy",amount:2},target:"enemy"},
+    blood_priestess:{bloodCost:1,battlecry:{type:"damage",amount:2},target:"enemy"},
+    blood_pact_collector:{battlecry:{type:"damage",amount:2},deathrattle:{type:"damageRandomEnemy",amount:2},target:"enemy"},
+    bloodroad_guide:{deathrattle:{type:"damageRandomEnemy",amount:3}},
+    xh_bone_guard:{deathrattle:{type:"armor",amount:3}},
+    tide_scout:{},
+    blood_executor:{deathrattle:{type:"damageRandomEnemy",amount:3}},
+    xizhao_blood_vow:{bloodCost:2,battlecry:{type:"damageDrawIfKill",amount:3},target:"enemy"},
+    xh_blood_colossus:{bloodCost:3,battlecry:{type:"draw",amount:3}},
+    phalanx_executor:{zhenmai:2,deathrattle:{type:"armor",amount:3}},
+    shield_sergeant:{deathrattle:{type:"armor",amount:4}},
+    rosen_borderlord:{battlecry:{type:"summon",token:"republic_recruit"},deathrattle:{type:"armor",amount:4}},
+    zone_banner:{battlecry:{type:"buffAlly",attack:2,health:1},deathrattle:{type:"armor",amount:1},target:"friendly"},
+    bastion_captain:{deathrattle:{type:"armor",amount:2}},
+    cedric:{deathrattle:{type:"summon",token:"republic_recruit"}},
+    shield_marshal:{deathrattle:{type:"armor",amount:4}},
+    siege_captain:{battlecry:{type:"damageAllEnemies",amount:1},deathrattle:{type:"armor",amount:3},target:"none"},
+    otto_hand:{zhenmai:2,deathrattle:{type:"armor",amount:2},target:"none"},
+    empire_veinblade_savant:{battlecry:{type:"veinOnly",amount:1},passive:{type:"veinSpendAttackOnce",attack:2},target:"none"},
+    powder_marshal:{battlecry:{type:"armor",amount:3},target:"none"},
+    walter:{battlecry:{type:"damagePerArmorRandom",amount:1},target:"none"},
+    iron_artillery:{battlecry:{type:"armorDamage"},deathrattle:{type:"armor",amount:1},target:"enemy"},
+    siege_train:{battlecry:{type:"damageAllEnemies",amount:1},target:"none"},
+    five_guild_council:{battlecry:{type:"markRandomBounties",count:2},target:"none"},
+    execution_supervisor:{passive:{type:"attackBountyBonus",attack:1},target:"none"},
+    gh_legend_assassin:{battlecry:{type:"markBounty"},target:"enemy"},
+    venom_sac_guard:{battlecry:{type:"markBounty"},target:"enemy"},
+    gh_bounty_collector:{passive:{type:"bountyClaimGrowth",attack:1,health:1},target:"none"},
+    gh_captain:{battlecry:{type:"grantRushAll"},target:"none"},
+    gh_medic:{battlecry:{type:"healHero",amount:4},target:"none"},
+    losutai_matriarch:{battlecry:{type:"summon",token:"losutai_imp"},deathrattle:{type:"armor",amount:2}},
+    pressure_warlock:{pressure:3,deathrattle:{type:"armor",amount:2}},
+    lt_tide_devourer:{battlecry:{type:"devour"},target:"none"},
+    devourer:{battlecry:{type:"devour"},deathrattle:{type:"damageRandomEnemy",amount:2},target:"none"},
+    losutai_awakened:{battlecry:{type:"summonCount",token:"losutai_imp",count:1},deathrattle:{type:"armor",amount:2}},
+    tide_colossus:{battlecry:{type:"devour"},deathrattle:{type:"summon",token:"losutai_imp"}},
+    frost_professor:{battlecry:{type:"discover",pool:"spell"}},
+    snow_frozen_oracle:{battlecry:{type:"freeze"},target:"enemy"},
+    snow_ice_priest:{battlecry:{type:"freezeAllEnemies"},deathrattle:{type:"draw",amount:1}},
+    snow_time_echo:{battlecry:{type:"freeze"},deathrattle:{type:"armor",amount:0},target:"enemy"},
+    snow_blizzard_elemental:{battlecry:{type:"freezeAllEnemies"},deathrattle:{type:"summon",token:"snow_fox_sentry"}},
+    snow_fox_guard:{deathrattle:{type:"summon",token:"snow_fox_sentry"}},
+    snow_frost_colossus:{passive:{type:"freezeGrowth",attack:1},deathrattle:{type:"armor",amount:4}},
+    snow_exile:{battlecry:{type:"healHero",amount:2},deathrattle:{type:"armor",amount:4}},
+    fog_dockhand:{deathrattle:{type:"armor",amount:3}},
+    dusk_innkeeper:{battlecry:{type:"draw",amount:1},deathrattle:{type:"draw",amount:1}},
+    astral_colossus:{passive:{type:"turnArmor",amount:1}},
+    chrono_archivist:{battlecry:{type:"returnToHand"},target:"enemy"},
+    archive_devourer:{battlecry:{type:"devour"},deathrattle:{type:"draw",amount:1}},
+    frost_leviathan:{deathrattle:{type:"freezeAllEnemies"}}
+  };
+  for (const [id,e] of Object.entries(B1R)) { const c=CARDS[id]; if(!c) continue; for(const k of ["battlecry","deathrattle","passive","bloodCost","zhenmai","pressure","target"]) if(e[k]!==undefined) c[k]=e[k]; }
+
+  // ===== 2026-10-25 补丁 2A-2E：数值/文本全量 =====
+  const PATCH2 = {"medic_apprentice":{"cost":2,"attack":1,"health":3,"text":"登场：若同阵位有另一友方，获得3甲；余响恢复1"},"survey_apprentice":{"cost":2,"attack":2,"health":4,"text":"被动：每回合第一张战术后恢复1；余响恢复2"},"coordination_dispatcher":{"cost":3,"attack":2,"health":4,"text":"余响：恢复2；若同阵位有其他友方，改为3"},"guard":{"cost":4,"attack":3,"health":5,"text":"守备；余响恢复1；若本回合获得过护甲，改为2"},"ksetra_instructor":{"cost":4,"attack":3,"health":4,"text":"登场：恢复2；若同阵位有守备，获得2甲；余响恢复1"},"research_sampler":{"cost":4,"attack":2,"health":5,"text":"登场：若控制阵型抽1；余响恢复3；若本回合治疗过领袖，再获得2甲"},"zone_keeper":{"cost":5,"attack":3,"health":5,"text":"余响：恢复2；若同阵位有其他友方，抽1"},"pulse_recorder":{"cost":7,"attack":4,"health":5,"text":"余响：恢复3；若流脉≥7，改为获得3甲并抽1"},"field_medic":{"cost":7,"attack":5,"health":6,"text":"被动：每回合第一次治疗领袖时，同阵位友方+0/+1；余响3甲"},"reflux_physician":{"cost":8,"attack":6,"health":6,"text":"登场：恢复领袖2；余响：逆脉2，恢复2并获得2甲"},"pulse_banner":{"cost":8,"attack":5,"health":7,"text":"逆脉2：恢复3；余响恢复2；若本回合逆脉过，改为4"},"doorman":{"cost":1,"attack":1,"health":3,"text":"登场：若本回合已施放战术，抽1；否则获得1甲"},"record_clerk":{"cost":1,"attack":2,"health":3,"text":"登场：若手牌≤5，抽1；否则获得1甲"},"formula_apprentice":{"cost":2,"attack":2,"health":3,"text":"余响：若本回合施放过战术，抽1；否则获得1甲"},"arcane_scribe":{"cost":2,"attack":1,"health":3,"text":"登场：若本回合施放过战术，获得4甲；否则1甲"},"page_scholar":{"cost":2,"attack":2,"health":4,"text":"登场：预兆一张战术牌"},"cassian_foreign":{"cost":3,"attack":3,"health":3,"text":"登场：若手牌中有战术牌，获得4甲；否则2甲"},"council_elder":{"cost":3,"attack":2,"health":4,"text":"被动：每回合第一张战术牌使自身+1/+1"},"spell_novice":{"cost":4,"attack":3,"health":5,"text":"登场：若本回合施放过战术，获得3甲并抽1；否则1甲"},"gok_engineer":{"cost":5,"attack":3,"health":4,"text":"登场：预兆一张战术牌；若它是刻脉牌，获得2甲"},"magic_lecturer":{"cost":5,"attack":5,"health":6,"text":"登场：若控制阵型，获得3甲；否则抽1"},"zone_archivist":{"cost":6,"attack":4,"health":6,"text":"余响：随机敌方随从1；若本回合施放过战术，改为2"},"arcane_conduit":{"cost":6,"attack":3,"health":5,"text":"守备；登场：对一个敌方随从1；若本回合施放过战术，改为2"},"lecturer":{"cost":6,"attack":2,"health":4,"text":"登场抽1；余响：若控制阵型获得4甲，否则2"},"pure_theorist":{"cost":6,"attack":5,"health":7,"text":"登场：若本回合施放过两张战术，获得4甲并抽1；否则2甲"},"index_assistant":{"cost":8,"attack":5,"health":7,"text":"登场：预兆一张战术牌；若它是刻脉牌，获得2甲"},"tribal_warrior":{"cost":1,"attack":2,"health":2,"text":"登场：血祭1，召唤一只霜爪兽"},"blood_duelist":{"cost":2,"attack":2,"health":3,"text":"先遣；余响：若本回合受过伤害，随机敌方随从2；否则1"},"broken_bone_warlord":{"cost":5,"attack":4,"health":4,"text":"守备回潮；登场：若本回合失去过生命，获得+1/+1"},"xh_blood_mist":{"cost":6,"attack":4,"health":5,"text":"登场：若本回合受过伤害，召唤一个医疗学徒；余响随机敌方随从2"},"xh_blood_steward":{"cost":7,"attack":5,"health":6,"text":"余响：随机敌方随从2；若本回合受过伤害改为3"},"ancient_fortress_scion":{"cost":8,"attack":5,"health":6,"text":"登场：若本回合受过伤害抽1；余响随机敌方随从3；若无随从对领袖2"},"xh_tribe_headhunter":{"cost":8,"attack":4,"health":6,"text":"守备；被动：每回合第一张战术牌后+2攻；若本回合失去生命，抽1"},"wall_recruit":{"cost":1,"attack":2,"health":2,"text":"登场：若控制守备，召唤新兵；否则获得1甲"},"recruiter":{"cost":2,"attack":1,"health":3,"text":"守备；登场：若同阵位有其他友方，获得2甲；否则1"},"republic_guard":{"cost":3,"attack":3,"health":3,"text":"登场：若你有护甲，恢复3；否则获得2甲"},"temple_priest":{"cost":3,"attack":2,"health":4,"text":"被动：回合开始获得1甲；若控制守备，改为2"},"eisenhut_newmoney":{"cost":3,"attack":3,"health":3,"text":"余响：获得3甲；若同阵位有守备改为5"},"shield_bearer":{"cost":4,"attack":2,"health":5,"text":"守备；余响：若本回合获得过护甲，获得3甲；否则1"},"reborn_shield_guard":{"cost":4,"attack":2,"health":4,"text":"格挡；余响：若控制阵型获得3甲，否则1"},"shield_instructor":{"cost":5,"attack":4,"health":4,"text":"登场：若控制守备恢复2；余响获得2甲"},"drill_sergeant":{"cost":8,"attack":4,"health":7,"text":"守备；登场镇脉2；余响3甲"},"bulwark_sentry":{"cost":9,"attack":6,"health":6,"text":"登场：若你有护甲恢复3；余响获得3甲；若控制阵型改为5"},"line_spearman":{"cost":8,"attack":5,"health":7,"text":"被动：回合开始1甲；余响获得4甲；若控制守备改为6"},"powder_boy":{"cost":1,"attack":1,"health":1,"text":"登场：若你有护甲，对一个敌方随从造成1"},"audit_accountant":{"cost":2,"attack":2,"health":2,"text":"登场：若你有护甲抽1；否则获得1甲"},"rush_lancer":{"cost":3,"attack":4,"health":4,"text":"先遣；若本回合获得过护甲，攻击时+1攻"},"quartermaster":{"cost":3,"attack":3,"health":3,"text":"登场：若你有护甲抽1；余响：镇脉1，获得1甲"},"forge_engineer":{"cost":3,"attack":2,"health":4,"text":"登场获得2甲；余响：若本回合镇脉过，获得2甲"},"detonation_sapper":{"cost":3,"attack":2,"health":2,"text":"余响：若你有护甲，对所有敌方随从1；否则随机敌方随从1"},"lab_researcher":{"cost":3,"attack":2,"health":3,"text":"登场：若你有护甲抽1；否则获得1甲"},"ironclad":{"cost":3,"attack":2,"health":3,"text":"余响：若你有护甲获得2甲；否则1"},"forge_technician":{"cost":3,"attack":3,"health":4,"text":"登场获得2甲；余响：若本回合获得过护甲，获得2甲"},"empire_guard":{"cost":4,"attack":3,"health":6,"text":"登场：若控制守备获得2甲；否则1"},"powder_martyr":{"cost":4,"attack":4,"health":3,"text":"先遣；余响对敌方领袖2；若你有护甲改为3"},"imperial_guard_officer":{"cost":4,"attack":3,"health":5,"text":"守备；登场镇脉2"},"grain_convoy":{"cost":4,"attack":4,"health":5,"text":"登场：若你有护甲恢复2；余响获得3甲"},"armory_keeper":{"cost":8,"attack":5,"health":8,"text":"登场：若你有护甲抽1；余响获得3甲"},"powder_apprentice":{"cost":7,"attack":5,"health":7,"text":"先遣；余响对敌方领袖2；若控制阵型改为4"},"gh_contract_squire":{"cost":1,"attack":1,"health":2,"text":"格挡；登场：若本回合使用过其他牌，悬赏一个敌方随从"},"venom_attendant":{"cost":1,"attack":1,"health":2,"text":"登场：若本回合使用过其他牌抽1；余响获得2甲"},"gh_venom_apprentice":{"cost":1,"attack":1,"health":1,"text":"登场：悬赏一个敌方随从；若它已悬赏，抽1"},"gh_cutthroat":{"cost":1,"attack":2,"health":2,"text":"先遣；余响：若目标被悬赏，随机敌方随从2；否则1"},"gh_rush_archer":{"cost":2,"attack":2,"health":3,"text":"先遣；余响获得2甲；若完成过悬赏改为4"},"gh_poison_thrower":{"cost":2,"attack":2,"health":2,"text":"登场悬赏一个敌方随从；余响：若该目标已死亡获得4甲；否则1"},"poison_mist_thrower":{"cost":3,"attack":2,"health":3,"text":"登场：对一个敌方随从1；若它是悬赏目标，改为3"},"gh_silence_expert":{"cost":3,"attack":3,"health":4,"text":"逆脉2：沉默一个敌方随从；若目标有悬赏抽1；余响随机敌方随从2"},"broken_line_merc":{"cost":3,"attack":4,"health":3,"text":"先遣；余响：若完成过悬赏获得5甲；否则2"},"gh_venom_shield":{"cost":3,"attack":4,"health":4,"text":"格挡；登场悬赏一个敌方随从；若它已悬赏，获得+1/+1"},"bounty_accountant":{"cost":3,"attack":2,"health":3,"text":"被动：完成悬赏时恢复2；若控制隐匿随从，抽1"},"blackmarket_bodyguard":{"cost":3,"attack":3,"health":4,"text":"格挡；余响：若完成过悬赏，随机敌方随从3；否则1"},"gh_shield_broker":{"cost":4,"attack":4,"health":5,"text":"格挡；余响获得3甲；若完成过悬赏改为5"},"gh_silencer":{"cost":5,"attack":3,"health":5,"text":"登场：沉默一个敌方随从；若它是悬赏目标抽1；余响获得3甲"},"gh_scorpion":{"cost":5,"attack":5,"health":6,"text":"格挡；登场悬赏；余响：若该目标已死亡获得4甲；否则2"},"gh_bounty_hunter":{"cost":6,"attack":4,"health":6,"text":"登场：悬赏一个敌方随从；若已有悬赏目标抽1"},"bounty_clerk":{"cost":7,"attack":4,"health":7,"text":"登场：悬赏；若已悬赏抽1；余响：若完成过悬赏获得5甲；否则2"},"silence_informant":{"cost":8,"attack":5,"health":8,"text":"登场：沉默；若它是悬赏目标抽1；余响获得2甲"},"blood_servant":{"cost":2,"attack":1,"health":3,"text":"被动：每回合第一张战术牌后+1攻；余响：若控制魔物，随机敌方随从1"},"blood_corpse_collector":{"cost":2,"attack":2,"health":4,"text":"登场召唤1/1魔物；余响：若控制其他魔物获得1甲"},"lt_venom_thrower":{"cost":3,"attack":2,"health":2,"text":"蚀毒；登场：对一个敌方随从1；若控制魔物改为2"},"losutai_hunter":{"cost":3,"attack":2,"health":4,"text":"守备；余响：若控制其他魔物，随机敌方随从2；否则1"},"monster_overseer":{"cost":3,"attack":2,"health":3,"text":"登场召唤1/1魔物；若控制其他魔物自身+1/+1；余响获得2甲"},"venom_fang":{"cost":4,"attack":3,"health":5,"text":"先遣；余响：若控制魔物获得3甲；否则1"},"tribal_shaman":{"cost":4,"attack":3,"health":5,"text":"登场召唤一个1/1魔物；余响若控制其他魔物获得3甲"},"brood_matron":{"cost":5,"attack":3,"health":4,"text":"守备；登场召唤两个1/1；若控制其他魔物改为三个"},"snow_refugee":{"cost":1,"attack":2,"health":1,"text":"登场：对一个敌方随从1；若目标已冻结改为2"},"snow_fox_sentry":{"cost":2,"attack":2,"health":3,"text":"登场获得1甲；余响召唤一个1/1雪狐残影"},"snow_frostwind_novice":{"cost":2,"attack":1,"health":3,"text":"登场：冻结一个敌方随从；余响召唤雪狐哨兵"},"snow_icewall_guard":{"cost":3,"attack":2,"health":4,"text":"登场：冻结一个敌方随从；若控制阵型，改为冻结所有敌方"},"snow_coldwind_assassin":{"cost":4,"attack":3,"health":4,"text":"登场：对一个已冻结敌方随从4；否则冻结它；余响召唤雪狐"},"snow_priest":{"cost":4,"attack":2,"health":5,"text":"登场：冻结一个敌方随从；余响召唤雪狐"},"frost_scribe":{"cost":4,"attack":3,"health":5,"text":"登场：若本回合冻结过敌方抽1；余响获得2甲"},"snow_frostclaw":{"cost":4,"attack":2,"health":5,"text":"登场：冻结一个敌方随从；余响召唤雪狐"},"frost_line_guard":{"cost":4,"attack":3,"health":4,"text":"守备；登场：若本回合冻结过敌方获得3甲；否则1"},"frost_page":{"cost":4,"attack":2,"health":4,"text":"登场预兆一张战术；被动每回合第一张战术+1攻"},"snow_storm_hunter":{"cost":4,"attack":2,"health":4,"text":"登场：对一个敌方随从2并冻结；若它已冻结抽1"},"snow_guard_captain":{"cost":5,"attack":3,"health":4,"text":"登场：冻结一个敌方随从；若控制雪狐，召唤一个雪狐"},"snow_windweaver":{"cost":5,"attack":4,"health":5,"text":"被动：每回合第一张战术使自身+0/+1；余响召唤雪狐"},"echo_adept":{"cost":8,"attack":5,"health":6,"text":"登场：冻结一个敌方随从；若本回合施放过战术抽1；若目标已冻结再抽1"},"snow_medic":{"cost":1,"attack":1,"health":2,"text":"余响：若控制阵型抽1；否则获得1甲"},"fog_sailor":{"cost":1,"attack":2,"health":2,"text":"被动：同阵位每有一个其他友方，本随从+1攻；余响抽1"},"archive_guard":{"cost":2,"attack":2,"health":3,"text":"守备；余响：若控制阵型抽1；否则获得1甲"},"archive_scribe":{"cost":2,"attack":1,"health":3,"text":"余响：抽1；若手牌≤4改为抽2"},"wandering_merchant":{"cost":2,"attack":2,"health":3,"text":"登场：弃1抽1；若弃的是随从，抽2"},"vein_medic":{"cost":2,"attack":1,"health":3,"text":"余响：抽1；若流脉≥4改为抽2"},"wandering_blade":{"cost":2,"attack":2,"health":3,"text":"先遣；余响获得2甲；若本回合攻击过改为4"},"white_reef_keeper":{"cost":2,"attack":1,"health":4,"text":"守备；余响抽1；若控制守备随从再抽1"},"white_reef_lighthouse":{"cost":2,"attack":1,"health":4,"text":"守备；余响恢复1；若同阵位有其他友方改为2"},"wandering_singer":{"cost":2,"attack":1,"health":4,"text":"登场抽1；余响：若控制阵型获得3甲；否则1"},"iron_engineer":{"cost":2,"attack":2,"health":3,"text":"余响抽1；若控制阵型再抽1"},"anvil_apprentice":{"cost":2,"attack":2,"health":3,"text":"登场1甲；余响获得2甲；若控制守备改为4"},"anvil_town_miner":{"cost":2,"attack":2,"health":3,"text":"登场1甲；余响：若控制阵型获得2甲"},"mist_scout":{"cost":2,"attack":2,"health":3,"text":"先遣；引脉4获得1甲；余响获得1甲"},"north_beast_tamer":{"cost":3,"attack":3,"health":3,"text":"登场掘脉1"},"bard":{"cost":3,"attack":2,"health":3,"text":"登场：预兆一张牌"},"field_engineer":{"cost":3,"attack":2,"health":5,"text":"守备；余响抽1；若控制阵型再抽1"},"traveling_healer":{"cost":3,"attack":2,"health":4,"text":"登场恢复2；余响获得2甲；若本回合治疗过领袖改为4"},"neutral_wayfarer":{"cost":3,"attack":3,"health":4,"text":"先遣；余响获得3甲；若控制阵型改为5"},"gh_shield_mercenary":{"cost":3,"attack":3,"health":4,"text":"格挡；余响获得2甲；若控制阵型改为4"},"vein_warden":{"cost":3,"attack":2,"health":5,"text":"守备；余响获得3甲；若流脉≥4改为5"},"free_merc":{"cost":3,"attack":3,"health":3,"text":"登场1甲；余响获得2甲；若控制阵型改为4"},"mercenary":{"cost":3,"attack":4,"health":3,"text":"登场1甲；余响获得1甲"},"xh_blood_tax":{"cost":3,"attack":2,"health":3,"text":"登场抽1；余响抽1；若手牌≤4再抽1"},"card_shark":{"cost":3,"attack":4,"health":3,"text":"登场抽1；余响抽1；若控制阵型再抽1"},"snow_capital_remnant":{"cost":3,"attack":2,"health":3,"text":"登场恢复2；若控制阵型抽1"},"fog_accountant":{"cost":3,"attack":2,"health":4,"text":"登场抽1；余响获得2甲；若控制阵型改为4"},"mist_harbor_city":{"cost":3,"attack":3,"health":4,"text":"登场1甲；余响获得2甲；若控制阵型改为4"},"caravan_guard":{"cost":4,"attack":3,"health":5,"text":"守备；余响获得2甲；若控制阵型改为3"},"small_state_envoy":{"cost":4,"attack":3,"health":4,"text":"登场1甲；余响获得2甲；若控制阵型改为4"},"sky_ship":{"cost":5,"attack":4,"health":5,"text":"先遣；余响获得3甲；若控制阵型改为5"},"emergency":{"cost":1,"text":"恢复1；若同阵位有守备随从，抽1"},"ksetra_beacon":{"cost":2,"text":"恢复2；若同阵位有其他友方，抽1"},"coordination":{"cost":2,"text":"下回合开始时获得2行动力；若本回合治疗过领袖，改为3"},"floating_route":{"cost":2,"text":"对一个敌方随从造成3伤；若同阵位有守备随从，改为4"},"medical_stretcher":{"cost":3,"text":"恢复2抽1；若本回合获得过护甲，再恢复1"},"resonance":{"cost":3,"text":"逆脉2：冻结一个敌方随从；抽1；若本回合逆脉过，再抽1"},"formation_echo":{"cost":3,"text":"抽1；若控制阵型，逆脉1：恢复领袖2"},"security_sentry":{"cost":4,"text":"恢复3；若同阵位有守备随从，改为恢复5"},"vein_echo":{"cost":4,"text":"获得4甲；若同阵位有其他友方，抽1"},"vein_siphon":{"cost":5,"text":"对一个敌方随从4伤；若它已受伤，恢复领袖2"},"coordinator_order":{"cost":6,"text":"恢复4抽1；若本回合逆脉过，再获得2甲"},"mana_surge":{"cost":1,"text":"本回合获得2行动力；若手牌中有战术牌，抽1"},"ac_arcane_insight":{"cost":2,"text":"获得2甲；若本回合已施放战术，改为4"},"debate":{"cost":2,"text":"对一个敌方随从2伤并冻结；若目标已冻结，抽1"},"supply_cache":{"cost":2,"text":"恢复3；若控制阵型，抽1"},"borrow_vein":{"cost":3,"text":"召唤一个医疗学徒；若本回合已施放战术，再召唤一个"},"ac_arcane_flood":{"cost":3,"text":"抽1；若本回合已施放战术，再抽1"},"ac_field_notes":{"cost":3,"text":"冻结一个敌方随从；若本回合已施放两张战术，改为冻结所有敌方"},"ac_spell_copy":{"cost":3,"text":"恢复2抽1；若本回合已施放战术，再恢复2"},"old_ledger":{"cost":3,"text":"预兆一张战术牌；若它是刻脉牌，抽1"},"ac_knowledge_burst":{"cost":3,"text":"抽1；若本回合已施放战术，复原1点行动力"},"armor_break":{"cost":3,"text":"对一个敌方随从1伤并冻结；若目标已冻结，抽1"},"ac_grand_library":{"cost":4,"text":"抽2；若本回合已施放战术，再抽1"},"ac_school_bell":{"cost":4,"text":"恢复2；若控制阵型，抽1"},"vein_channel":{"cost":4,"text":"对一个敌方随从2伤；若本回合已施放战术，改为3"},"double_formula":{"cost":5,"text":"对一个敌方随从3伤并冻结；若目标已冻结，抽1"},"combo_spark":{"cost":5,"text":"对所有敌方随从1伤；若本回合已施放两张战术，改为2"},"formula_fix":{"cost":6,"text":"对所有敌方随从2伤；若本回合已施放战术，改为3"},"old_compass":{"cost":6,"text":"冻结一个敌方随从；若目标已冻结，获得4甲；否则2甲"},"ac_archive_eruption":{"cost":6,"text":"抽2；若本回合已施放两张战术，再抽2"},"smoke_screen":{"cost":6,"text":"抽2；若本回合已施放战术，再抽1"},"spellstorm":{"cost":7,"text":"对所有敌方随从造成等同于本局已使用战术牌数量（最多5）的伤害"},"vein_prism":{"cost":4,"text":"刻脉4：流脉4时该阵位友方抽1；流脉7时改为抽2并复原1行动力"},"south_pole_tracker":{"cost":2,"text":"抽1；若敌方没有随从，血祭1：再抽1"},"blood_pact":{"cost":2,"text":"血祭2：对一个敌方随从3伤；若消灭，抽1"},"xh_blood_curse":{"cost":2,"text":"抽1；若本回合受过伤害，再抽1"},"xh_blood_road":{"cost":3,"text":"对一个敌方随从2伤；若本回合受过伤害，改为3"},"reflux":{"cost":3,"text":"血祭1：获得2甲；若本回合受过伤害，改为4"},"xh_blood_feast_spell":{"cost":4,"text":"压脉2：对敌方领袖2伤；对一个敌方随从2伤"},"anti_rush":{"cost":1,"text":"恢复1；若控制守备随从，改为2"},"levy":{"cost":1,"text":"本回合获得2行动力；若控制守备随从，抽1"},"line_rotation":{"cost":1,"text":"抽1；若控制守备随从，获得1甲"},"conscription_levy":{"cost":2,"text":"使一个友方随从获得+1攻和先遣；若它是守备随从，再获得+0/+1"},"combo_shield":{"cost":2,"text":"召唤一个共和国新兵；若控制守备随从，再获得1甲"},"iron_wall":{"cost":3,"text":"镇脉2；抽1；若控制守备随从，获得2甲"},"echo_standard":{"cost":4,"text":"恢复3；若控制阵型，获得2甲"},"mist_harbor_treaty":{"cost":4,"text":"获得3甲；若控制守备随从，抽1"},"house_legacy":{"cost":5,"text":"镇脉3：获得等量护甲；若实际消耗3，恢复2"},"impeachment":{"cost":6,"text":"抽1；若控制阵型，获得3甲；若控制守备随从，再抽1"},"barrage":{"cost":1,"text":"对一个敌方随从2伤；若你有护甲，改为3"},"conscription_order":{"cost":2,"text":"每有一个敌方随从获得1甲；若你有护甲，改为2"},"war_tax":{"cost":2,"text":"获得1甲；若你有护甲，抽1"},"ironflow_charge":{"cost":2,"text":"使一个友方随从获得先遣；若它在本回合死亡，抽1"},"quarantine":{"cost":2,"text":"下回合敌方领袖不能使用技能；若你有护甲，抽1"},"mobilize":{"cost":3,"text":"本回合获得1行动力；下回合开始再获得1；若控制阵型，抽1"},"powder_keg":{"cost":3,"text":"对所有随从造成3伤；若你有护甲，改为4"},"armor_recycle":{"cost":3,"text":"镇脉2：获得等量护甲；若实际消耗2，再获得1甲"},"armor_mortar":{"cost":3,"text":"消耗3甲，对敌方领袖造成4伤；若你护甲≥6，改为6"},"fortress":{"cost":3,"text":"使一个友方随从获得连携；若它有守备，该随从获得+0/+1"},"martial_court":{"cost":4,"text":"每有一个敌方随从获得1甲；若你有护甲，改为2"},"commission_advance":{"cost":2,"text":"抽1；若你本回合使用过其他牌，获得1行动力"},"gh_quick_strike":{"cost":2,"text":"使一个友方随从获得+1攻和先遣；若它是悬赏目标，抽1"},"venom_blade":{"cost":2,"text":"获得1甲抽1；若本回合完成过悬赏，再获得1甲"},"gh_bodyguard_contract":{"cost":2,"text":"抽1；若你本回合完成过悬赏，再抽1"},"toll_account":{"cost":2,"text":"悬赏一个敌方随从；抽1；若它已悬赏，改为抽2"},"gh_assassinate_contract":{"cost":3,"text":"对一个敌方随从3伤；若它是悬赏目标，改为消灭"},"gh_execution_contract":{"cost":3,"text":"消灭一个悬赏名单上的敌方随从；若名单为空，抽1"},"gh_ledger":{"cost":3,"text":"抽1；若你完成过悬赏，再抽1"},"ledger_constitution":{"cost":3,"text":"逆脉2：获得4甲；若实际消耗2，再抽1"},"gh_bounty_verdict":{"cost":4,"text":"抽1；若你本回合完成过悬赏，再抽1；并对敌方领袖1伤"},"reborn_rite":{"cost":1,"text":"对所有敌方随从1伤；若你控制魔物，改为2"},"lt_venom_mist":{"cost":2,"text":"对所有敌方随从2伤；若你控制魔物，改为3"},"lt_tide_birth":{"cost":2,"text":"抽1；流脉+2；若你控制魔物，再抽1"},"lt_tide_surge":{"cost":4,"text":"对所有敌方随从1伤抽1；若你控制魔物，再抽1"},"lt_brood_call":{"cost":5,"text":"召唤一个3/3巨兽；若你控制其他魔物，再召唤一个"},"lt_tide_colossus":{"cost":5,"text":"压脉2：获得2甲；抽1；若你控制魔物，再获得1甲"},"lt_reborn_behemoth":{"cost":6,"text":"使一个友方随从获得回潮；抽1；若它是魔物，该随从获得+1/+1"},"lt_deep_beast":{"cost":6,"text":"对所有敌方随从2伤抽1；若你控制魔物，再抽1"},"north_trail":{"cost":1,"text":"冻结一个敌方随从；若目标已冻结，获得2甲"},"gok_lamp":{"cost":1,"text":"恢复1；本回合你的随从不能被冻结；若控制雪狐，抽1"},"world_map":{"cost":2,"text":"抽1；若你控制雪狐，再抽1；下回合开始时行动力-1"},"snow_freeze_touch":{"cost":2,"text":"冻结一个敌方随从；若目标已冻结，获得2甲"},"mist_bargain":{"cost":2,"text":"冻结一个敌方随从；若目标已冻结，抽1"},"snow_wind_strike":{"cost":2,"text":"冻结一个敌方随从；获得1甲；若目标已冻结，再获得2甲"},"frost_seal":{"cost":3,"text":"冻结一个敌方随从；若目标已冻结，获得4甲；否则2甲"},"snow_gale":{"cost":3,"text":"冻结一个敌方随从；获得2甲；若你控制雪狐，再获得1甲"},"reef_signal":{"cost":3,"text":"冻结一个敌方随从；若它是悬赏目标，抽1"},"snow_frost_veil":{"cost":3,"text":"冻结一个敌方随从；若目标已冻结，抽1；否则获得1甲"},"snow_ice_wall":{"cost":4,"text":"冻结一个敌方随从；获得3甲；若目标已冻结，再获得2甲"},"snow_wind_step":{"cost":4,"text":"冻结一个敌方随从；若目标已冻结，抽2；否则抽1"},"snow_time_stop":{"cost":5,"text":"冻结一个敌方随从；若目标已冻结，获得4甲；否则2甲"},"smuggler_ship":{"cost":5,"text":"冻结一个敌方随从；抽1；若目标已冻结，再抽1"},"anvil_quench":{"cost":5,"text":"冻结一个敌方随从；若目标已冻结，获得5甲；否则3甲"},"dusk_inn":{"cost":5,"text":"冻结一个敌方随从；若你控制雪狐，获得2甲"},"snow_ice_lance":{"cost":6,"text":"冻结一个敌方随从；对所有已冻结敌方随从造成2伤；抽1"},"snow_aurora":{"cost":6,"text":"冻结所有敌方随从；抽2"},"snow_blizzard":{"cost":7,"text":"对所有敌方随从造成2伤并冻结；若本回合已冻结过，改为3伤"},"snow_last_snow":{"cost":7,"text":"冻结所有敌方随从；抽2；每冻结一个敌方随从，获得1甲"},"time_loan":{"cost":1,"text":"涨脉2：本回合行动力+2，流脉+2；下回合行动力-1"},"vein_surge":{"cost":2,"text":"掘脉2；若流脉达到7，改为抽3"},"dark_route":{"cost":3,"text":"抽2；若你控制阵型，再抽1"},"snow_lamp_rite":{"cost":4,"text":"恢复3抽1；若控制阵型，改为恢复5"},"losutai_tide":{"cost":5,"text":"抽1；若你控制魔物，再抽1；否则获得1甲"},"astral_gate":{"cost":6,"text":"召唤两个3/3星界守卫；若控制阵型，改为召唤三个"},"vein_tithe":{"cost":6,"text":"获得3甲；掘脉2"},"moonfall":{"cost":8,"text":"对所有敌方随从造成4伤；抽1；若你控制阵型，再获得2甲"},"formation_watcher":{"cost":2,"text":"该阵位友方随从固定获得+1/+1"},"formation_bastion":{"cost":2,"text":"该阵位友方随从+0/+1；若该阵位有守备随从，改为+1/+1"},"formation_bugler":{"cost":2,"text":"该阵位友方随从获得血偿；你每回合第一次恢复领袖生命时，该阵位随机友方+0/+1"},"formation_officer":{"cost":3,"text":"该阵位友方随从获得回潮；若你本回合治疗过领袖，召唤一个1/1"},"formation_artificer":{"cost":3,"text":"该阵位友方随从获得守备"},"formation_weaver":{"cost":3,"text":"该阵位友方随从获得守备；你每回合第一次获得护甲时，该阵位随机友方+0/+1"},"formation_vein":{"cost":4,"text":"该阵位友方随从固定获得+0/+2"},"council_gallery":{"cost":4,"text":"该阵位友方随从+0/+1；若该阵位有另一个友方随从，改为+0/+2"},"school_debate":{"cost":2,"text":"该阵位友方随从+1攻并获得连携"},"archive_search":{"cost":2,"text":"该阵位友方随从+0/+1；你施放战术后，该阵位随机友方+1攻（每回合一次）"},"formation_script":{"cost":2,"text":"该阵位友方随从获得守备"},"double_column_note":{"cost":3,"text":"该阵位友方随从+0/+1；你每回合第一张战术牌后，该阵位随机友方+0/+1"},"floating_library":{"cost":3,"text":"该阵位友方随从固定获得+1/+1"},"prohibition":{"cost":3,"text":"该阵位友方随从获得连携；若你本回合施放过战术，再+1攻"},"insight":{"cost":4,"text":"该阵位友方随从获得先遣；若你本回合施放过战术，抽1（每回合一次）"},"formation_tide":{"cost":2,"text":"该阵位友方随从固定获得+2攻"},"blood_contract":{"cost":2,"text":"该阵位友方随从+0/+1；你本回合失去过生命时，改为+1/+1"},"blood_feast":{"cost":2,"text":"该阵位友方随从获得先遣；若你本回合失去过生命，+1攻"},"blood_ritual":{"cost":3,"text":"该阵位友方随从获得血偿"},"xh_castle_pact":{"cost":4,"text":"该阵位友方随从+1攻并获得先遣"},"xh_blood_moon_altar":{"cost":4,"text":"该阵位友方随从获得先遣；若你本回合受过伤害，抽1（每回合一次）"},"battlefield_bill":{"cost":2,"text":"该阵位友方随从获得守备"},"phalanx_warden":{"cost":2,"text":"该阵位友方随从获得血偿"},"no_mans_land":{"cost":2,"text":"该阵位友方随从获得先遣；若该阵位有守备随从，+1攻"},"fortify":{"cost":2,"text":"该阵位友方随从+0/+1；若你控制守备随从，改为+1/+1"},"wayfarer_camp":{"cost":3,"text":"该阵位友方随从+1攻并获得守备"},"emergency_bill":{"cost":3,"text":"该阵位友方随从获得守备；你每回合第一次获得护甲时，该阵位随机友方+0/+1"},"parliament_debate":{"cost":3,"text":"该阵位友方随从获得连携"},"martial_law":{"cost":4,"text":"该阵位友方随从固定获得+1/+1"},"volley":{"cost":4,"text":"该阵位友方随从获得回潮"},"formation_wall":{"cost":4,"text":"该阵位友方随从+0/+1；若该阵位有守备随从，获得回潮"},"battlefield_salvage":{"cost":2,"text":"该阵位友方随从+0/+1；若你有护甲，改为+1/+1"},"armor_drive":{"cost":2,"text":"该阵位友方随从获得守备"},"blackridge_mine":{"cost":3,"text":"该阵位友方随从固定获得+1/+1"},"formation_cannon":{"cost":4,"text":"该阵位友方随从获得先遣"},"zone_barrage":{"cost":4,"text":"该阵位友方随从获得回潮"},"armor_volley":{"cost":6,"text":"该阵位友方随从+1攻；你镇脉后，该阵位随机友方+1攻（每回合一次）"},"gh_bounty_notice":{"cost":1,"text":"该阵位友方随从固定获得+1攻"},"lamp_post":{"cost":2,"text":"该阵位友方随从+0/+1；你完成悬赏后，该阵位随机友方+1/+1（每回合一次）"},"gh_silence_field":{"cost":3,"text":"该阵位友方随从+1攻并获得隐匿"},"gh_formation":{"cost":3,"text":"该阵位友方随从获得隐匿；若你控制悬赏目标，+1攻"},"gh_silence_master":{"cost":5,"text":"该阵位友方随从+0/+1；你每回合第一次沉默敌方随从时，该阵位随机友方+1/+1"},"gh_company":{"cost":6,"text":"该阵位友方随从获得先遣；若你完成过悬赏，+1攻"},"gh_venom_behemoth":{"cost":7,"text":"该阵位友方随从获得血偿"},"monster_summon":{"cost":3,"text":"该阵位友方随从获得蚀毒"},"monster_nest":{"cost":3,"text":"该阵位友方随从+0/+1并获得先遣；若它是魔物，+1攻"},"lt_hatchery":{"cost":4,"text":"该阵位友方随从获得守备"},"blood_pool":{"cost":4,"text":"该阵位友方随从+1攻并获得先遣"},"snow_icewall_formation":{"cost":2,"text":"该阵位友方随从攻击已冻结随从时+1攻"},"snow_time_array":{"cost":2,"text":"该阵位友方随从获得连携"},"snow_tundra_hunt":{"cost":3,"text":"该阵位友方随从获得回潮"},"snow_wind_altar":{"cost":3,"text":"该阵位友方随从固定获得+1/+1"},"white_frost_hall":{"cost":4,"text":"该阵位友方随从+0/+1；若你本回合冻结过敌方随从，改为+1/+1"},"snow_throne":{"cost":4,"text":"该阵位友方随从获得先遣"},"snow_windwall":{"cost":4,"text":"该阵位友方随从+1攻并获得守备"},"snow_frozen_court":{"cost":5,"text":"该阵位友方随从获得守备；你冻结敌方随从后，该阵位随机友方+0/+1（每回合一次）"},"snow_last_tundra":{"cost":5,"text":"该阵位友方随从攻击已冻结随从时+2攻"},"white_reef_light":{"cost":2,"text":"该阵位友方随从获得连携"},"mist_pier":{"cost":2,"text":"该阵位友方随从+0/+1并获得血偿"},"north_hunt_camp":{"cost":3,"text":"该阵位友方随从获得回潮"},"gok_lamp_row":{"cost":3,"text":"该阵位友方随从+1攻并获得连携"},"no_mans_camp":{"cost":3,"text":"该阵位友方随从+1攻；若该阵位有另一个友方随从，改为+2攻"},"smugglers_dock":{"cost":3,"text":"该阵位友方随从获得回潮；若你控制隐匿随从，+0/+1"},"anvil_forge_row":{"cost":3,"text":"该阵位友方随从获得血偿；若你控制守备随从，+0/+1"},"snow_warmhouse":{"cost":3,"text":"该阵位友方随从获得先遣"},"dusk_inn_yard":{"cost":3,"text":"该阵位友方随从获得连携；若你本回合施放过战术，+1攻"},"gh_black_market":{"cost":3,"text":"该阵位友方随从获得回潮；若你完成过悬赏，+1攻"},"losutai_pool":{"cost":4,"text":"该阵位友方随从固定获得+0/+3"},"world_edge_camp":{"cost":5,"text":"该阵位友方随从固定获得+2/+1"},"grey_ledger_post":{"cost":6,"text":"该阵位友方随从固定获得+0/+2和守备"},"forgotten_gate":{"cost":8,"text":"该阵位友方随从获得格挡和先遣"},"floating_anchor":{"cost":2,"text":"回合开始时恢复1生命"},"tide_ward_bracer":{"cost":3,"text":"友方随从+1生命；你每回合第一次治疗领袖时，抽1"},"formation_standard":{"cost":3,"text":"所有友方随从+1生命；若你控制阵型，再+0/+1"},"five_department_badge":{"cost":4,"text":"回合开始恢复1生命；你每回合第一张战术牌后获得1甲"},"ksetra_beacon_item":{"cost":4,"text":"所有友方随从+1生命；若你控制守备随从，回合开始恢复1"},"vein_heart":{"cost":4,"text":"回合开始恢复2生命；若你满血，改为获得2甲"},"academy_inkwell":{"cost":2,"text":"你每回合第一张战术牌后抽1"},"frostweave_cloak":{"cost":2,"text":"施放战术后抽1（每回合一次）"},"floating_ink_blade":{"cost":4,"text":"所有友方随从+1攻；你每回合第一张战术牌后抽1"},"spell_codex":{"cost":4,"text":"每回合第一张战术牌后抽1；若它是刻脉牌，获得1甲"},"whitefrost_bell":{"cost":4,"text":"友方随从+1生命；你每回合第一张战术牌后抽1"},"cataloging_lens":{"cost":4,"text":"所有友方随从+1生命；若你手牌≥6，改为+2生命"},"blood_censer":{"cost":3,"text":"友方随从+1攻；你本回合失去过生命时，回合开始恢复1"},"bloodbone_pauldron":{"cost":3,"text":"所有友方随从+1攻；若你本回合失去过生命，再+1攻"},"beast_hide_armor":{"cost":4,"text":"所有友方随从+1/+1；你每回合第一次失去生命时抽1"},"bloodmoon_bone_ring":{"cost":4,"text":"友方随从+1攻；你每回合第一次血祭后恢复2"},"blood_scythe":{"cost":4,"text":"回合开始时所有友方随从+1攻；若你生命≤15，改为+1/+1"},"bone_fang_blade":{"cost":4,"text":"友方随从+1攻；你每回合第一次压脉后恢复1"},"bluegold_breastplate":{"cost":3,"text":"回合开始时获得1甲"},"republic_seal":{"cost":3,"text":"友方随从+1生命；若你控制守备随从，回合开始获得1甲"},"border_lance":{"cost":3,"text":"友方随从+1生命；你每回合第一次获得护甲时，抽1"},"seven_cities_crest":{"cost":4,"text":"友方随从+1生命；回合开始时获得1甲"},"house_longsword":{"cost":4,"text":"所有友方随从+1/+1；若你控制守备随从，改为+1/+2"},"iron_banner":{"cost":4,"text":"回合开始时使一名友方随从获得格挡；若你控制阵型，再获得+0/+1"},"blackridge_heavy_armor":{"cost":2,"text":"生命上限+3"},"ministry_map":{"cost":3,"text":"回合开始时获得1甲；若你有护甲，施放战术后抽1"},"armor_forge":{"cost":3,"text":"回合开始时获得2甲；若你镇脉过，改为3甲"},"powder_engine":{"cost":4,"text":"回合开始时获得2甲；若你护甲≥5，抽1"},"furnace_heart":{"cost":4,"text":"所有友方随从+1攻；你每回合第一次镇脉后恢复1"},"iron_order_hammer":{"cost":4,"text":"所有友方随从+1攻；回合开始时获得1甲"},"brokenline_dagger":{"cost":3,"text":"友方随从+1攻；你每回合第一次悬赏后抽1"},"gh_ledger_chain":{"cost":3,"text":"友方随从+1攻；你完成悬赏后获得1甲（每回合一次）"},"sealing_wax":{"cost":4,"text":"回合开始时对一个随机敌方随从造成1伤；若它是悬赏目标，改为2"},"gh_bounty_board":{"cost":4,"text":"回合开始时随机悬赏一个敌方随从；若已有悬赏目标，抽1"},"ledger_paperknife":{"cost":4,"text":"所有友方随从+1攻；你每回合第一张战术牌后抽1"},"blackmarket_bracer":{"cost":4,"text":"施放战术后抽1（每回合一次）"},"lt_venom_pouch":{"cost":3,"text":"所有友方随从+1攻"},"gh_venom_vial":{"cost":3,"text":"友方随从+1攻；若它是魔物，施放战术后抽1"},"lt_tide_bell":{"cost":3,"text":"回合开始时获得1甲；若你控制魔物，施放战术后抽1"},"lt_tide_totem":{"cost":3,"text":"友方随从+1生命；若你控制魔物，回合开始时获得1甲"},"lt_brood_armor":{"cost":4,"text":"所有友方随从+1/+1；若它是魔物，再+0/+1"},"lt_deep_eye":{"cost":4,"text":"回合开始时召唤一个1/1魔物；若你控制其他魔物，改为召唤3/3巨兽"},"snow_iceblade":{"cost":2,"text":"施放战术后抽1（每回合一次）"},"snow_frostplate":{"cost":3,"text":"回合开始时获得1甲；若你本回合冻结过敌方，改为恢复1生命"},"frost_prism":{"cost":3,"text":"回合开始时恢复1生命；若你本回合冻结过敌方，抽1"},"snow_tundrabracer":{"cost":4,"text":"友方随从+1生命；回合开始时恢复1生命"},"snow_ember":{"cost":4,"text":"回合开始时随机冻结一个敌方随从；若目标已冻结，抽1"},"snow_hourglass":{"cost":5,"text":"回合开始时恢复1生命；若你本回合冻结过敌方，再获得1甲"},"white_reef_lamp_oil":{"cost":1,"text":"回合开始时恢复1生命"},"northern_bone_flute":{"cost":2,"text":"回合开始时恢复1生命"},"fog_harbor_ticket":{"cost":2,"text":"施放战术后抽1（每回合一次）"},"wanderer_charm":{"cost":3,"text":"所有友方随从+2生命"},"gambler_dice":{"cost":3,"text":"所有友方随从+1生命；若你手牌≥6，改为+2生命"},"anvil_bracer":{"cost":3,"text":"所有友方随从+1攻"},"world_map_item":{"cost":4,"text":"回合开始时恢复1生命；若你控制阵型，抽1"},"no_mans_land_deed":{"cost":4,"text":"所有友方随从+1/+1"},"sky_ship_ticket":{"cost":4,"text":"回合开始时恢复1生命；若你控制阵型，获得1甲"},"snow_capital_lamp":{"cost":4,"text":"回合开始时获得1甲"},"dusk_inn_key":{"cost":4,"text":"回合开始时获得+1生命上限；若你满血，改为抽1"},"smuggler_anchor":{"cost":8,"text":"回合开始时对所有敌方随从造成2伤；若你控制阵型，改为3伤"},"blood_infiltrator":{"cost":1,"text":"本回合不能再使用卡牌；完成免罚；未完成受到2伤"},"hunt_ritual":{"cost":1,"text":"本回合不能再摆放随从；完成免罚；未完成受到2伤"},"xh_blood_guard":{"cost":1,"text":"本回合不能再使用战术卡；完成免罚；未完成受到3伤"},"blood_debt":{"cost":2,"text":"本回合再打出2张牌；完成免罚；未完成受到2伤"},"xh_blood_brewer":{"cost":2,"text":"本回合再打出1张牌；完成免罚抽1；未完成受到2伤"},"shadow_raid":{"cost":2,"text":"本回合摆放2个随从；完成免罚；未完成受到3伤"},"blood_imp":{"cost":2,"text":"本回合摆放1个随从；完成免罚；未完成受到2伤"},"blood_incense_divination":{"cost":2,"text":"本回合使用1张战术卡；完成免罚；未完成受到3伤"},"xh_alley_blade":{"cost":2,"text":"本回合使用2张战术卡；完成免罚抽1；未完成受到2伤"},"blood_path":{"cost":2,"text":"本回合发起1次攻击；完成免罚；未完成受到2伤"},"xh_bone_hunter":{"cost":2,"text":"本回合不能再使用卡牌；完成免罚抽1；未完成受到3伤"},"blood_wraith":{"cost":2,"text":"本回合不能再摆放随从；完成免罚获得1甲；未完成受到4伤"},"monster_command":{"cost":1,"text":"本回合不能攻击；完成免罚；未完成受到3伤"},"lt_reborn_rite":{"cost":1,"text":"本回合不能攻击；完成免罚召唤1/1魔物；未完成受到2伤"},"lt_brood_attendant":{"cost":1,"text":"本回合不能再使用卡牌；完成免罚；未完成受到3伤"},"lt_hatch_guard":{"cost":1,"text":"本回合不能再摆放随从；完成免罚获得1甲；未完成受到3伤"},"lt_tide_warden":{"cost":1,"text":"本回合不能再使用战术卡；完成免罚；未完成受到3伤"},"lt_hatch":{"cost":2,"text":"本回合再打出2张牌；完成免罚；未完成受到3伤"},"lt_tide_spawn":{"cost":2,"text":"本回合再打出1张牌；完成免罚召唤1/1魔物；未完成受到2伤"},"lt_venom_fang":{"cost":2,"text":"本回合再打出3张牌；完成免罚；未完成受到4伤"},"lt_deep_sentinel":{"cost":2,"text":"本回合发起1次攻击；完成免罚获得1甲；未完成受到2伤"},"lt_venom_nest":{"cost":2,"text":"本回合发起2次攻击；完成免罚；未完成受到3伤"},"lt_venom_larva":{"cost":2,"text":"本回合摆放3个随从；完成免罚召唤1/1魔物；未完成受到2伤"},"lt_tide_hunter":{"cost":2,"text":"本回合摆放2个随从；完成免罚；未完成受到3伤"},"lt_bone_scavenger":{"cost":2,"text":"本回合摆放1个随从；完成免罚；未完成受到2伤"},"lt_tide_pool":{"cost":2,"text":"本回合使用2张战术卡；完成免罚；未完成受到4伤"},"lt_bone_warlock":{"cost":2,"text":"本回合使用1张战术卡；完成免罚获得1甲；未完成受到3伤"},"blood_altar":{"cost":2,"text":"本回合使用3张战术卡；完成免罚召唤1/1魔物；未完成受到4伤"}};
+  for (const [id, v] of Object.entries(PATCH2)) { const c = CARDS[id]; if (!c) continue; if (v.cost != null) c.cost = v.cost; if (v.attack != null && c.type === "minion") { c.attack = v.attack; c.health = v.health; c.maxHealth = v.health; } if (v.text) c.text = v.text; }
+
+  // ===== 2A 效果转译（条件+ops） =====
+  const PATCH2A_EFFECTS = {"medic_apprentice":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"sameZoneAlly","then":[{"op":"armor","amount":3}]}]},"deathrattle":{"type":"ops","ops":[{"op":"healHero","amount":1}]}},"survey_apprentice":{"deathrattle":{"type":"ops","ops":[{"op":"healHero","amount":2}]}},"coordination_dispatcher":{"deathrattle":{"type":"ops","ops":[{"op":"healHero","amount":2}]}},"guard":{"deathrattle":{"type":"ops","ops":[{"op":"healHero","amount":1}]}},"ksetra_instructor":{"battlecry":{"type":"ops","ops":[{"op":"healHero","amount":2},{"op":"if","cond":"sameZoneTaunt","then":[{"op":"armor","amount":2}]}]},"deathrattle":{"type":"ops","ops":[{"op":"healHero","amount":1}]}},"research_sampler":{"deathrattle":{"type":"ops","ops":[{"op":"healHero","amount":3},{"op":"if","then":[{"op":"armor","amount":2}]}]}},"zone_keeper":{"deathrattle":{"type":"ops","ops":[{"op":"healHero","amount":2}]}},"pulse_recorder":{"deathrattle":{"type":"ops","ops":[{"op":"healHero","amount":3},{"op":"if","cond":"vein","value":7,"then":[{"op":"armor","amount":3}]}]}},"reflux_physician":{"battlecry":{"type":"ops","ops":[{"op":"healHero","amount":2}]},"reflux":2},"pulse_banner":{"reflux":2,"battlecry":{"type":"ops","ops":[{"op":"healHero","amount":3}]},"deathrattle":{"type":"ops","ops":[{"op":"healHero","amount":2}]}},"arcane_scribe":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"spells","then":[{"op":"armor","amount":4}]}]}},"cassian_foreign":{"battlecry":{"type":"ops","ops":[{"op":"if","then":[{"op":"armor","amount":4}]}]}},"spell_novice":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"spells","then":[{"op":"armor","amount":3}]}]}},"gok_engineer":{"battlecry":{"type":"ops","ops":[{"op":"if","then":[{"op":"armor","amount":2}]}]}},"magic_lecturer":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"controlFormation","then":[{"op":"armor","amount":3}]}]}},"zone_archivist":{"deathrattle":{"type":"ops","ops":[{"op":"damageRandomEnemy","amount":1}]}},"arcane_conduit":{"battlecry":{"type":"ops","ops":[{"op":"damageTarget","amount":1,"target":"enemy"}]}},"pure_theorist":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"spells2","then":[{"op":"armor","amount":4}]}]}},"index_assistant":{"battlecry":{"type":"ops","ops":[{"op":"if","then":[{"op":"armor","amount":2}]}]}},"tribal_warrior":{"battlecry":{"type":"ops","ops":[{"op":"summon","token":"snow_frostclaw"}]}},"blood_duelist":{"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"tookDamage","then":[{"op":"damageRandomEnemy","amount":2}]}]}},"broken_bone_warlord":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"lostHealth","then":[{"op":"buffSelf","attack":1,"health":1}]}]}},"xh_blood_mist":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"tookDamage","then":[{"op":"summon","token":"medic_apprentice"}]}]},"deathrattle":{"type":"ops","ops":[{"op":"damageRandomEnemy","amount":2}]}},"xh_blood_steward":{"deathrattle":{"type":"ops","ops":[{"op":"damageRandomEnemy","amount":2}]}},"ancient_fortress_scion":{"deathrattle":{"type":"ops","ops":[{"op":"damageRandomEnemy","amount":3}]}},"wall_recruit":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"controlTaunt","then":[{"op":"summon","token":"republic_recruit"}],"else":[{"op":"armor","amount":1}]}]}},"recruiter":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"sameZoneAlly","then":[{"op":"armor","amount":2}]}]}},"republic_guard":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"armor","then":[{"op":"healHero","amount":3}],"else":[{"op":"armor","amount":2}]}]}},"eisenhut_newmoney":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":3}]}},"shield_bearer":{"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"armorGained","then":[{"op":"armor","amount":3}]}]}},"shield_instructor":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"drill_sergeant":{"battlecry":{"type":"ops","ops":[{"op":"zhenmai","amount":2}]}},"bulwark_sentry":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":3}]}},"line_spearman":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":4}]}},"powder_boy":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"armor","then":[{"op":"damageTarget","amount":1,"target":"enemy"}]}]}},"quartermaster":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":1}]}},"forge_engineer":{"battlecry":{"type":"ops","ops":[{"op":"armor","amount":2}]},"deathrattle":{"type":"ops","ops":[{"op":"if","then":[{"op":"armor","amount":2}]}]}},"forge_technician":{"battlecry":{"type":"ops","ops":[{"op":"armor","amount":2}]},"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"armorGained","then":[{"op":"armor","amount":2}]}]}},"imperial_guard_officer":{"battlecry":{"type":"ops","ops":[{"op":"zhenmai","amount":2}]}},"grain_convoy":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":3}]}},"armory_keeper":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":3}]}},"gh_contract_squire":{"battlecry":{"type":"ops","ops":[{"op":"if","then":[{"op":"markBountyTarget","target":"enemy"}]}]}},"venom_attendant":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"gh_venom_apprentice":{"battlecry":{"type":"ops","ops":[{"op":"markBountyTarget","target":"enemy"}]}},"gh_cutthroat":{"deathrattle":{"type":"ops","ops":[{"op":"if","then":[{"op":"damageRandomEnemy","amount":2}]}]}},"gh_rush_archer":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"gh_poison_thrower":{"battlecry":{"type":"ops","ops":[{"op":"markBountyTarget","target":"enemy"}]}},"poison_mist_thrower":{"battlecry":{"type":"ops","ops":[{"op":"damageTarget","amount":1,"target":"enemy"}]}},"gh_silence_expert":{"reflux":2,"battlecry":{"type":"ops","ops":[{"op":"silenceTarget","target":"enemy"}]},"deathrattle":{"type":"ops","ops":[{"op":"damageRandomEnemy","amount":2}]}},"gh_venom_shield":{"battlecry":{"type":"ops","ops":[{"op":"markBountyTarget","target":"enemy"},{"op":"if","cond":"targetBounty","then":[{"op":"buffSelf","attack":1,"health":1}]}]}},"blackmarket_bodyguard":{"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"bountyCompleted","then":[{"op":"damageRandomEnemy","amount":3}]}]}},"gh_shield_broker":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":3}]}},"gh_silencer":{"battlecry":{"type":"ops","ops":[{"op":"silenceTarget","target":"enemy"}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":3}]}},"gh_scorpion":{"battlecry":{"type":"ops","ops":[{"op":"markBountyTarget","target":"enemy"}]}},"gh_bounty_hunter":{"battlecry":{"type":"ops","ops":[{"op":"markBountyTarget","target":"enemy"}]}},"bounty_clerk":{"battlecry":{"type":"ops","ops":[{"op":"markBountyTarget","target":"enemy"}]}},"silence_informant":{"battlecry":{"type":"ops","ops":[{"op":"silenceTarget","target":"enemy"}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"blood_servant":{"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"controlDemon","then":[{"op":"damageRandomEnemy","amount":1}]}]}},"blood_corpse_collector":{"battlecry":{"type":"ops","ops":[{"op":"summon","token":"losutai_imp"}]}},"lt_venom_thrower":{"battlecry":{"type":"ops","ops":[{"op":"damageTarget","amount":1,"target":"enemy"}]}},"losutai_hunter":{"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"otherDemon","then":[{"op":"damageRandomEnemy","amount":2}]}]}},"monster_overseer":{"battlecry":{"type":"ops","ops":[{"op":"summon","token":"losutai_imp"}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"tribal_shaman":{"battlecry":{"type":"ops","ops":[{"op":"summon","token":"losutai_imp"}]}},"brood_matron":{"battlecry":{"type":"ops","ops":[{"op":"summon","token":"losutai_imp"}]}},"snow_refugee":{"battlecry":{"type":"ops","ops":[{"op":"damageTarget","amount":1,"target":"enemy"}]}},"snow_fox_sentry":{"battlecry":{"type":"ops","ops":[{"op":"armor","amount":1}]},"deathrattle":{"type":"ops","ops":[{"op":"summon","token":"snow_fox_sentry_echo"}]}},"snow_frostwind_novice":{"battlecry":{"type":"ops","ops":[{"op":"freezeTarget","target":"enemy"}]},"deathrattle":{"type":"ops","ops":[{"op":"summon","token":"snow_fox_sentry"}]}},"snow_icewall_guard":{"battlecry":{"type":"ops","ops":[{"op":"freezeTarget","target":"enemy"},{"op":"if","cond":"controlFormation","then":[{"op":"freezeAllEnemies"}]}]}},"snow_coldwind_assassin":{"deathrattle":{"type":"ops","ops":[{"op":"summon","token":"snow_fox_sentry"}]}},"snow_priest":{"battlecry":{"type":"ops","ops":[{"op":"freezeTarget","target":"enemy"}]},"deathrattle":{"type":"ops","ops":[{"op":"summon","token":"snow_fox_sentry"}]}},"frost_scribe":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"snow_frostclaw":{"battlecry":{"type":"ops","ops":[{"op":"freezeTarget","target":"enemy"}]},"deathrattle":{"type":"ops","ops":[{"op":"summon","token":"snow_fox_sentry"}]}},"snow_storm_hunter":{"battlecry":{"type":"ops","ops":[{"op":"damageTarget","amount":2,"target":"enemy"}]}},"snow_guard_captain":{"battlecry":{"type":"ops","ops":[{"op":"freezeTarget","target":"enemy"},{"op":"if","then":[{"op":"summon","token":"snow_fox_sentry"}]}]}},"snow_windweaver":{"deathrattle":{"type":"ops","ops":[{"op":"summon","token":"snow_fox_sentry"}]}},"echo_adept":{"battlecry":{"type":"ops","ops":[{"op":"freezeTarget","target":"enemy"}]}},"wandering_blade":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"white_reef_lighthouse":{"deathrattle":{"type":"ops","ops":[{"op":"healHero","amount":1}]}},"anvil_apprentice":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"mist_scout":{"veinBonus":4,"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":1}]}},"traveling_healer":{"battlecry":{"type":"ops","ops":[{"op":"healHero","amount":2}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"neutral_wayfarer":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":3}]}},"gh_shield_mercenary":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"vein_warden":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":3}]}},"free_merc":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"mercenary":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":1}]}},"snow_capital_remnant":{"battlecry":{"type":"ops","ops":[{"op":"healHero","amount":2}]}},"fog_accountant":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"mist_harbor_city":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"caravan_guard":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"small_state_envoy":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"sky_ship":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":3}]}}};
+  for (const [id, e] of Object.entries(PATCH2A_EFFECTS)) { const c = CARDS[id]; if (!c) continue; for (const k of ["battlecry","deathrattle"]) if (e[k]) c[k] = e[k]; if (e.reflux != null) c.reflux = e.reflux; if (e.veinBonus != null) c.veinBonus = e.veinBonus; }
+
+  // ===== 2A 效果转译：第二轮 =====
+  const PATCH2A_EFFECTS_V2 = {"medic_apprentice":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"sameZoneAlly","then":[{"op":"armor","amount":3}]}]},"deathrattle":{"type":"ops","ops":[{"op":"healHero","amount":1}]}},"survey_apprentice":{"deathrattle":{"type":"ops","ops":[{"op":"healHero","amount":2}]}},"coordination_dispatcher":{"deathrattle":{"type":"ops","ops":[{"op":"healHero","amount":2}]}},"guard":{"deathrattle":{"type":"ops","ops":[{"op":"healHero","amount":1}]}},"ksetra_instructor":{"battlecry":{"type":"ops","ops":[{"op":"healHero","amount":2},{"op":"if","cond":"sameZoneTaunt","then":[{"op":"armor","amount":2}]}]},"deathrattle":{"type":"ops","ops":[{"op":"healHero","amount":1}]}},"research_sampler":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"controlFormation","then":[{"op":"draw","amount":1}]}]},"deathrattle":{"type":"ops","ops":[{"op":"healHero","amount":3},{"op":"if","then":[{"op":"armor","amount":2}]}]}},"zone_keeper":{"deathrattle":{"type":"ops","ops":[{"op":"healHero","amount":2},{"op":"if","cond":"sameZoneAlly","then":[{"op":"draw","amount":1}]}]}},"pulse_recorder":{"deathrattle":{"type":"ops","ops":[{"op":"healHero","amount":3},{"op":"if","cond":"vein","value":7,"then":[{"op":"armor","amount":3}]}]}},"field_medic":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":3}]}},"reflux_physician":{"battlecry":{"type":"ops","ops":[{"op":"healHero","amount":2}]},"reflux":2},"pulse_banner":{"reflux":2,"battlecry":{"type":"ops","ops":[{"op":"healHero","amount":3}]},"deathrattle":{"type":"ops","ops":[{"op":"healHero","amount":2}]}},"doorman":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"spells","then":[{"op":"draw","amount":1}],"else":[{"op":"armor","amount":1}]}]}},"record_clerk":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"hand","value":5,"then":[{"op":"draw","amount":1}],"else":[{"op":"armor","amount":1}]}]}},"formula_apprentice":{"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"spells","then":[{"op":"draw","amount":1}],"else":[{"op":"armor","amount":1}]}]}},"arcane_scribe":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"spells","then":[{"op":"armor","amount":4}],"else":[{"op":"armor","amount":1}]}]}},"page_scholar":{"battlecry":{"type":"ops","ops":[{"op":"discover","pool":"spell"}]}},"cassian_foreign":{"battlecry":{"type":"ops","ops":[{"op":"if","then":[{"op":"armor","amount":4}]}]}},"spell_novice":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"spells","then":[{"op":"armor","amount":3}],"else":[{"op":"armor","amount":1}]}]}},"gok_engineer":{"battlecry":{"type":"ops","ops":[{"op":"discover","pool":"spell"},{"op":"if","then":[{"op":"armor","amount":2}]}]}},"magic_lecturer":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"controlFormation","then":[{"op":"armor","amount":3}],"else":[{"op":"draw","amount":1}]}]}},"zone_archivist":{"deathrattle":{"type":"ops","ops":[{"op":"damageRandomEnemy","amount":1}]}},"arcane_conduit":{"battlecry":{"type":"ops","ops":[{"op":"damageTarget","amount":1}]}},"lecturer":{"battlecry":{"type":"ops","ops":[{"op":"draw","amount":1}]},"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"controlFormation","then":[{"op":"armor","amount":4}]}]}},"pure_theorist":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"spells2","then":[{"op":"armor","amount":4}],"else":[{"op":"armor","amount":2}]}]}},"index_assistant":{"battlecry":{"type":"ops","ops":[{"op":"discover","pool":"spell"},{"op":"if","then":[{"op":"armor","amount":2}]}]}},"tribal_warrior":{"battlecry":{"type":"ops","ops":[{"op":"summon","token":"snow_frostclaw"}]}},"blood_duelist":{"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"tookDamage","then":[{"op":"damageRandomEnemy","amount":2}]}]}},"broken_bone_warlord":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"lostHealth","then":[{"op":"buffSelf","attack":1,"health":1}]}]}},"xh_blood_mist":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"tookDamage","then":[{"op":"summon","token":"medic_apprentice"}]}]},"deathrattle":{"type":"ops","ops":[{"op":"damageRandomEnemy","amount":2}]}},"xh_blood_steward":{"deathrattle":{"type":"ops","ops":[{"op":"damageRandomEnemy","amount":2}]}},"ancient_fortress_scion":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"tookDamage","then":[{"op":"draw","amount":1}]}]},"deathrattle":{"type":"ops","ops":[{"op":"damageRandomEnemy","amount":3}]}},"wall_recruit":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"controlTaunt","then":[{"op":"summon","token":"republic_recruit"}],"else":[{"op":"armor","amount":1}]}]}},"recruiter":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"sameZoneAlly","then":[{"op":"armor","amount":2}]}]}},"republic_guard":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"armor","then":[{"op":"healHero","amount":3}],"else":[{"op":"armor","amount":2}]}]}},"eisenhut_newmoney":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":3}]}},"shield_bearer":{"deathrattle":{"type":"ops","ops":[{"op":"if","then":[{"op":"armor","amount":3}]}]}},"reborn_shield_guard":{"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"controlFormation","then":[{"op":"armor","amount":3}]}]}},"shield_instructor":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"controlTaunt","then":[{"op":"healHero","amount":2}]}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"drill_sergeant":{"battlecry":{"type":"ops","ops":[{"op":"zhenmai","amount":2}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":3}]}},"bulwark_sentry":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"armor","then":[{"op":"healHero","amount":3}]}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":3}]}},"line_spearman":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":4}]}},"powder_boy":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"armor","then":[{"op":"damageTarget","amount":1}]}]}},"audit_accountant":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"armor","then":[{"op":"draw","amount":1}],"else":[{"op":"armor","amount":1}]}]}},"quartermaster":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"armor","then":[{"op":"draw","amount":1}]}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":1}]}},"forge_engineer":{"battlecry":{"type":"ops","ops":[{"op":"armor","amount":2}]},"deathrattle":{"type":"ops","ops":[{"op":"if","then":[{"op":"armor","amount":2}]}]}},"detonation_sapper":{"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"armor","then":[{"op":"damageAllEnemies","amount":1}],"else":[{"op":"damageRandomEnemy","amount":1}]}]}},"lab_researcher":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"armor","then":[{"op":"draw","amount":1}],"else":[{"op":"armor","amount":1}]}]}},"ironclad":{"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"armor","then":[{"op":"armor","amount":2}]}]}},"forge_technician":{"battlecry":{"type":"ops","ops":[{"op":"armor","amount":2}]},"deathrattle":{"type":"ops","ops":[{"op":"if","then":[{"op":"armor","amount":2}]}]}},"empire_guard":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"controlTaunt","then":[{"op":"armor","amount":2}]}]}},"powder_martyr":{"deathrattle":{"type":"ops","ops":[{"op":"damageHero","amount":2}]}},"imperial_guard_officer":{"battlecry":{"type":"ops","ops":[{"op":"zhenmai","amount":2}]}},"grain_convoy":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"armor","then":[{"op":"healHero","amount":2}]}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":3}]}},"armory_keeper":{"battlecry":{"type":"ops","ops":[{"op":"if","cond":"armor","then":[{"op":"draw","amount":1}]}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":3}]}},"powder_apprentice":{"deathrattle":{"type":"ops","ops":[{"op":"damageHero","amount":2}]}},"gh_contract_squire":{"battlecry":{"type":"ops","ops":[{"op":"if","then":[{"op":"markBountyTarget"}]}]}},"venom_attendant":{"battlecry":{"type":"ops","ops":[{"op":"if","then":[{"op":"draw","amount":1}]}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"gh_venom_apprentice":{"battlecry":{"type":"ops","ops":[{"op":"markBountyTarget"},{"op":"if","then":[{"op":"draw","amount":1}]}]}},"gh_cutthroat":{"deathrattle":{"type":"ops","ops":[{"op":"if","then":[{"op":"damageRandomEnemy","amount":2}]}]}},"gh_rush_archer":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2},{"op":"if","then":[{"op":"markBountyTarget"}]}]}},"gh_poison_thrower":{"battlecry":{"type":"ops","ops":[{"op":"markBountyTarget"}]},"deathrattle":{"type":"ops","ops":[{"op":"if","then":[{"op":"armor","amount":4}]}]}},"poison_mist_thrower":{"battlecry":{"type":"ops","ops":[{"op":"damageTarget","amount":1},{"op":"if","then":[{"op":"markBountyTarget"}]}]}},"gh_silence_expert":{"reflux":2,"battlecry":{"type":"ops","ops":[{"op":"silenceTarget"},{"op":"if","then":[{"op":"draw","amount":1}]}]},"deathrattle":{"type":"ops","ops":[{"op":"damageRandomEnemy","amount":2}]}},"broken_line_merc":{"deathrattle":{"type":"ops","ops":[{"op":"if","then":[{"op":"armor","amount":5}]}]}},"gh_venom_shield":{"battlecry":{"type":"ops","ops":[{"op":"markBountyTarget"},{"op":"if","then":[{"op":"markBountyTarget"}]}]}},"blackmarket_bodyguard":{"deathrattle":{"type":"ops","ops":[{"op":"if","then":[{"op":"damageRandomEnemy","amount":3}]}]}},"gh_shield_broker":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":3},{"op":"if","then":[{"op":"markBountyTarget"}]}]}},"gh_silencer":{"battlecry":{"type":"ops","ops":[{"op":"silenceTarget"},{"op":"if","then":[{"op":"draw","amount":1}]}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":3}]}},"gh_scorpion":{"battlecry":{"type":"ops","ops":[{"op":"markBountyTarget"}]},"deathrattle":{"type":"ops","ops":[{"op":"if","then":[{"op":"armor","amount":4}]}]}},"gh_bounty_hunter":{"battlecry":{"type":"ops","ops":[{"op":"markBountyTarget"},{"op":"if","then":[{"op":"draw","amount":1}]}]}},"bounty_clerk":{"battlecry":{"type":"ops","ops":[{"op":"markBountyTarget"},{"op":"if","then":[{"op":"draw","amount":1}]}]},"deathrattle":{"type":"ops","ops":[{"op":"if","then":[{"op":"armor","amount":5}]}]}},"silence_informant":{"battlecry":{"type":"ops","ops":[{"op":"silenceTarget"},{"op":"if","then":[{"op":"draw","amount":1}]}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"blood_servant":{"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"controlDemon","then":[{"op":"damageRandomEnemy","amount":1}]}]}},"blood_corpse_collector":{"battlecry":{"type":"ops","ops":[{"op":"summon","token":"losutai_imp"}]},"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"otherDemon","then":[{"op":"armor","amount":1}]}]}},"lt_venom_thrower":{"battlecry":{"type":"ops","ops":[{"op":"damageTarget","amount":1}]}},"losutai_hunter":{"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"otherDemon","then":[{"op":"damageRandomEnemy","amount":2}]}]}},"monster_overseer":{"battlecry":{"type":"ops","ops":[{"op":"summon","token":"losutai_imp"},{"op":"if","cond":"otherDemon","then":[{"op":"buffSelf","attack":1,"health":1}]}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"venom_fang":{"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"controlDemon","then":[{"op":"armor","amount":3}]}]}},"tribal_shaman":{"battlecry":{"type":"ops","ops":[{"op":"summon","token":"losutai_imp"}]},"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"otherDemon","then":[{"op":"armor","amount":3}]}]}},"brood_matron":{"battlecry":{"type":"ops","ops":[{"op":"summon","token":"losutai_imp"}]}},"snow_refugee":{"battlecry":{"type":"ops","ops":[{"op":"damageTarget","amount":1}]}},"snow_fox_sentry":{"battlecry":{"type":"ops","ops":[{"op":"armor","amount":1}]},"deathrattle":{"type":"ops","ops":[{"op":"summon","token":"snow_fox_sentry_echo"}]}},"snow_frostwind_novice":{"battlecry":{"type":"ops","ops":[{"op":"freezeTarget"}]},"deathrattle":{"type":"ops","ops":[{"op":"summon","token":"snow_fox_sentry"}]}},"snow_icewall_guard":{"battlecry":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"if","cond":"controlFormation","then":[{"op":"freezeAllEnemies"}]}]}},"snow_coldwind_assassin":{"deathrattle":{"type":"ops","ops":[{"op":"summon","token":"snow_fox_sentry"}]}},"snow_priest":{"battlecry":{"type":"ops","ops":[{"op":"freezeTarget"}]},"deathrattle":{"type":"ops","ops":[{"op":"summon","token":"snow_fox_sentry"}]}},"frost_scribe":{"battlecry":{"type":"ops","ops":[{"op":"if","then":[{"op":"draw","amount":1}]}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"snow_frostclaw":{"battlecry":{"type":"ops","ops":[{"op":"freezeTarget"}]},"deathrattle":{"type":"ops","ops":[{"op":"summon","token":"snow_fox_sentry"}]}},"frost_line_guard":{"battlecry":{"type":"ops","ops":[{"op":"if","then":[{"op":"armor","amount":3}]}]}},"frost_page":{"battlecry":{"type":"ops","ops":[{"op":"discover","pool":"spell"}]}},"snow_storm_hunter":{"battlecry":{"type":"ops","ops":[{"op":"damageTarget","amount":2},{"op":"if","then":[{"op":"draw","amount":1}]}]}},"snow_guard_captain":{"battlecry":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"if","then":[{"op":"summon","token":"snow_fox_sentry"}]}]}},"snow_windweaver":{"deathrattle":{"type":"ops","ops":[{"op":"summon","token":"snow_fox_sentry"}]}},"echo_adept":{"battlecry":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"if","cond":"spells","then":[{"op":"draw","amount":1}]},{"op":"if","then":[{"op":"draw","amount":1}]}]}},"snow_medic":{"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"controlFormation","then":[{"op":"draw","amount":1}],"else":[{"op":"armor","amount":1}]}]}},"fog_sailor":{"deathrattle":{"type":"ops","ops":[{"op":"draw","amount":1}]}},"archive_guard":{"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"controlFormation","then":[{"op":"draw","amount":1}],"else":[{"op":"armor","amount":1}]}]}},"archive_scribe":{"deathrattle":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"hand","value":4,"then":[{"op":"draw","amount":2}]}]}},"wandering_merchant":{"battlecry":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","then":[{"op":"draw","amount":2}]}]}},"vein_medic":{"deathrattle":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"vein","value":4,"then":[{"op":"draw","amount":2}]}]}},"wandering_blade":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"white_reef_keeper":{"deathrattle":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"controlTaunt","then":[{"op":"draw","amount":1}]}]}},"white_reef_lighthouse":{"deathrattle":{"type":"ops","ops":[{"op":"healHero","amount":1}]}},"wandering_singer":{"battlecry":{"type":"ops","ops":[{"op":"draw","amount":1}]},"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"controlFormation","then":[{"op":"armor","amount":3}]}]}},"iron_engineer":{"deathrattle":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"controlFormation","then":[{"op":"draw","amount":1}]}]}},"anvil_apprentice":{"battlecry":{"type":"ops","ops":[{"op":"armor","amount":1}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"anvil_town_miner":{"battlecry":{"type":"ops","ops":[{"op":"armor","amount":1}]},"deathrattle":{"type":"ops","ops":[{"op":"if","cond":"controlFormation","then":[{"op":"armor","amount":2}]}]}},"mist_scout":{"veinBonus":4,"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":1}]}},"north_beast_tamer":{"battlecry":{"type":"ops","ops":[{"op":"flowDraw","draw":1,"vein":1}]}},"bard":{"battlecry":{"type":"ops","ops":[{"op":"discover","pool":"spell"}]}},"field_engineer":{"deathrattle":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"controlFormation","then":[{"op":"draw","amount":1}]}]}},"traveling_healer":{"battlecry":{"type":"ops","ops":[{"op":"healHero","amount":2}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"neutral_wayfarer":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":3}]}},"gh_shield_mercenary":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"vein_warden":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":3}]}},"free_merc":{"battlecry":{"type":"ops","ops":[{"op":"armor","amount":1}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"mercenary":{"battlecry":{"type":"ops","ops":[{"op":"armor","amount":1}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":1}]}},"xh_blood_tax":{"battlecry":{"type":"ops","ops":[{"op":"draw","amount":1}]},"deathrattle":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"hand","value":4,"then":[{"op":"draw","amount":1}]}]}},"card_shark":{"battlecry":{"type":"ops","ops":[{"op":"draw","amount":1}]},"deathrattle":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"controlFormation","then":[{"op":"draw","amount":1}]}]}},"snow_capital_remnant":{"battlecry":{"type":"ops","ops":[{"op":"healHero","amount":2},{"op":"if","cond":"controlFormation","then":[{"op":"draw","amount":1}]}]}},"fog_accountant":{"battlecry":{"type":"ops","ops":[{"op":"draw","amount":1}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"mist_harbor_city":{"battlecry":{"type":"ops","ops":[{"op":"armor","amount":1}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"caravan_guard":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"small_state_envoy":{"battlecry":{"type":"ops","ops":[{"op":"armor","amount":1}]},"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"sky_ship":{"deathrattle":{"type":"ops","ops":[{"op":"armor","amount":3}]}}};
+  for (const [id, e] of Object.entries(PATCH2A_EFFECTS_V2)) { const c = CARDS[id]; if (!c) continue; for (const k of ["battlecry","deathrattle"]) if (e[k]) c[k] = e[k]; if (e.reflux != null) c.reflux = e.reflux; if (e.veinBonus != null) c.veinBonus = e.veinBonus; const raw=JSON.stringify(e); if (/damageTarget|freezeTarget|silenceTarget|markBountyTarget/.test(raw)) c.target="enemy"; }
+
+  // ===== 2A 剩余纯被动 =====
+  if (CARDS.council_elder) CARDS.council_elder.passive = { type: "firstSpellGrowth", attack: 1, health: 1 };
+  if (CARDS.xh_tribe_headhunter) CARDS.xh_tribe_headhunter.passive = { type: "firstSpellGrowth", attack: 2, health: 0 };
+  if (CARDS.temple_priest) CARDS.temple_priest.passive = { type: "turnArmor", amount: 1 };
+  if (CARDS.rush_lancer) CARDS.rush_lancer.passive = { type: "armorAttack", attack: 1 };
+  if (CARDS.bounty_accountant) CARDS.bounty_accountant.passive = { type: "bountyClaimHeal", amount: 2 };
+
+  // ===== 2B 战术效果转译 =====
+  const PATCH2B_EFFECTS = {"emergency":{"spell":{"type":"ops","ops":[{"op":"healHero","amount":1},{"op":"if","cond":"sameZoneTaunt","then":[{"op":"draw","amount":1}]}]}},"ksetra_beacon":{"spell":{"type":"ops","ops":[{"op":"healHero","amount":2},{"op":"if","cond":"sameZoneAlly","then":[{"op":"draw","amount":1}]}]}},"coordination":{"spell":{"type":"ops","ops":[{"op":"nextMana","amount":2}]}},"floating_route":{"spell":{"type":"ops","ops":[{"op":"damageTarget","amount":3}]}},"medical_stretcher":{"spell":{"type":"ops","ops":[{"op":"healHero","amount":2},{"op":"if","then":[{"op":"healHero","amount":1}]}]}},"resonance":{"spell":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"draw","amount":1},{"op":"if","cond":"reflux","then":[{"op":"draw","amount":1}]}]},"reflux":2},"formation_echo":{"spell":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"controlFormation","then":[{"op":"healHero","amount":2}]}]},"reflux":1},"security_sentry":{"spell":{"type":"ops","ops":[{"op":"healHero","amount":3},{"op":"if","cond":"sameZoneTaunt","then":[{"op":"healHero","amount":5}]}]}},"vein_echo":{"spell":{"type":"ops","ops":[{"op":"armor","amount":4},{"op":"if","cond":"sameZoneAlly","then":[{"op":"draw","amount":1}]}]}},"vein_siphon":{"spell":{"type":"ops","ops":[{"op":"damageTarget","amount":4},{"op":"if","then":[{"op":"healHero","amount":2}]}]}},"coordinator_order":{"spell":{"type":"ops","ops":[{"op":"healHero","amount":4},{"op":"if","cond":"reflux","then":[{"op":"armor","amount":2}]}]}},"mana_surge":{"spell":{"type":"ops","ops":[{"op":"mana","amount":2},{"op":"if","then":[{"op":"draw","amount":1}]}]}},"ac_arcane_insight":{"spell":{"type":"ops","ops":[{"op":"armor","amount":2}]}},"debate":{"spell":{"type":"ops","ops":[{"op":"damageTarget","amount":2},{"op":"if","then":[{"op":"draw","amount":1}]}]}},"supply_cache":{"spell":{"type":"ops","ops":[{"op":"healHero","amount":3},{"op":"if","cond":"controlFormation","then":[{"op":"draw","amount":1}]}]}},"borrow_vein":{"spell":{"type":"ops","ops":[{"op":"summon","token":"medic_apprentice"}]}},"ac_arcane_flood":{"spell":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"spells","then":[{"op":"draw","amount":1}]}]}},"ac_field_notes":{"spell":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"if","then":[{"op":"freezeAllEnemies"}]}]}},"ac_spell_copy":{"spell":{"type":"ops","ops":[{"op":"healHero","amount":2},{"op":"if","cond":"spells","then":[{"op":"healHero","amount":2}]}]}},"old_ledger":{"spell":{"type":"ops","ops":[{"op":"discover","pool":"spell"},{"op":"if","then":[{"op":"draw","amount":1}]}]}},"ac_knowledge_burst":{"spell":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"spells","then":[{"op":"mana","amount":1}]}]}},"armor_break":{"spell":{"type":"ops","ops":[{"op":"damageTarget","amount":1},{"op":"if","then":[{"op":"draw","amount":1}]}]}},"ac_grand_library":{"spell":{"type":"ops","ops":[{"op":"draw","amount":2},{"op":"if","cond":"spells","then":[{"op":"draw","amount":1}]}]}},"ac_school_bell":{"spell":{"type":"ops","ops":[{"op":"healHero","amount":2},{"op":"if","cond":"controlFormation","then":[{"op":"draw","amount":1}]}]}},"vein_channel":{"spell":{"type":"ops","ops":[{"op":"damageTarget","amount":2}]}},"double_formula":{"spell":{"type":"ops","ops":[{"op":"damageTarget","amount":3},{"op":"if","then":[{"op":"draw","amount":1}]}]}},"combo_spark":{"spell":{"type":"ops","ops":[{"op":"damageAllEnemies","amount":1}]}},"formula_fix":{"spell":{"type":"ops","ops":[{"op":"damageAllEnemies","amount":2}]}},"old_compass":{"spell":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"if","then":[{"op":"armor","amount":4}]}]}},"ac_archive_eruption":{"spell":{"type":"ops","ops":[{"op":"draw","amount":2},{"op":"if","then":[{"op":"draw","amount":2}]}]}},"smoke_screen":{"spell":{"type":"ops","ops":[{"op":"draw","amount":2},{"op":"if","cond":"spells","then":[{"op":"draw","amount":1}]}]}},"vein_prism":{"spell":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"draw","amount":2}]}},"south_pole_tracker":{"spell":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","then":[{"op":"draw","amount":1}]}]},"bloodCost":1},"blood_pact":{"spell":{"type":"ops","ops":[{"op":"damageTarget","amount":3},{"op":"if","then":[{"op":"draw","amount":1}]}]},"bloodCost":2},"xh_blood_curse":{"spell":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"tookDamage","then":[{"op":"draw","amount":1}]}]}},"xh_blood_road":{"spell":{"type":"ops","ops":[{"op":"damageTarget","amount":2}]}},"reflux":{"spell":{"type":"ops","ops":[{"op":"armor","amount":2}]},"bloodCost":1},"xh_blood_feast_spell":{"spell":{"type":"ops","ops":[{"op":"damageHero","amount":2},{"op":"damageTarget","amount":2}]},"pressure":2},"anti_rush":{"spell":{"type":"ops","ops":[{"op":"healHero","amount":1}]}},"levy":{"spell":{"type":"ops","ops":[{"op":"mana","amount":2},{"op":"if","cond":"controlTaunt","then":[{"op":"draw","amount":1}]}]}},"line_rotation":{"spell":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"controlTaunt","then":[{"op":"armor","amount":1}]}]}},"combo_shield":{"spell":{"type":"ops","ops":[{"op":"summon","token":"republic_recruit"},{"op":"if","cond":"controlTaunt","then":[{"op":"armor","amount":1}]}]}},"iron_wall":{"spell":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"controlTaunt","then":[{"op":"armor","amount":2}]}]}},"echo_standard":{"spell":{"type":"ops","ops":[{"op":"healHero","amount":3},{"op":"if","cond":"controlFormation","then":[{"op":"armor","amount":2}]}]}},"mist_harbor_treaty":{"spell":{"type":"ops","ops":[{"op":"armor","amount":3},{"op":"if","cond":"controlTaunt","then":[{"op":"draw","amount":1}]}]}},"house_legacy":{"spell":{"type":"ops","ops":[{"op":"if","then":[{"op":"healHero","amount":2}]}]}},"impeachment":{"spell":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"controlFormation","then":[{"op":"armor","amount":3}]},{"op":"if","cond":"controlTaunt","then":[{"op":"draw","amount":1}]}]}},"barrage":{"spell":{"type":"ops","ops":[{"op":"damageTarget","amount":2}]}},"conscription_order":{"spell":{"type":"ops","ops":[{"op":"armor","amount":1}]}},"war_tax":{"spell":{"type":"ops","ops":[{"op":"armor","amount":1},{"op":"if","then":[{"op":"draw","amount":1}]}]}},"ironflow_charge":{"spell":{"type":"ops","ops":[{"op":"if","then":[{"op":"draw","amount":1}]}]}},"quarantine":{"spell":{"type":"ops","ops":[{"op":"if","then":[{"op":"draw","amount":1}]}]}},"mobilize":{"spell":{"type":"ops","ops":[{"op":"mana","amount":1},{"op":"if","cond":"controlFormation","then":[{"op":"draw","amount":1}]}]}},"armor_recycle":{"spell":{"type":"ops","ops":[{"op":"if","then":[{"op":"armor","amount":1}]}]}},"armor_mortar":{"spell":{"type":"ops","ops":[{"op":"armor","amount":3}]}},"martial_court":{"spell":{"type":"ops","ops":[{"op":"armor","amount":1}]}},"commission_advance":{"spell":{"type":"ops","ops":[{"op":"draw","amount":1}]}},"gh_quick_strike":{"spell":{"type":"ops","ops":[{"op":"if","then":[{"op":"draw","amount":1}]}]}},"venom_blade":{"spell":{"type":"ops","ops":[{"op":"armor","amount":1},{"op":"if","cond":"bountyCompleted","then":[{"op":"armor","amount":1}]}]}},"gh_bodyguard_contract":{"spell":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"bountyCompleted","then":[{"op":"draw","amount":1}]}]}},"toll_account":{"spell":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"targetBounty","then":[{"op":"draw","amount":2}]}]}},"gh_assassinate_contract":{"spell":{"type":"ops","ops":[{"op":"damageTarget","amount":3}]}},"gh_execution_contract":{"spell":{"type":"ops","ops":[{"op":"if","then":[{"op":"draw","amount":1}]}]}},"gh_ledger":{"spell":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"bountyCompleted","then":[{"op":"draw","amount":1}]}]}},"ledger_constitution":{"spell":{"type":"ops","ops":[{"op":"armor","amount":4},{"op":"if","then":[{"op":"draw","amount":1}]}]},"reflux":2},"gh_bounty_verdict":{"spell":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"bountyCompleted","then":[{"op":"draw","amount":1}]},{"op":"damageHero","amount":1}]}},"reborn_rite":{"spell":{"type":"ops","ops":[{"op":"damageAllEnemies","amount":1}]}},"lt_venom_mist":{"spell":{"type":"ops","ops":[{"op":"damageAllEnemies","amount":2}]}},"lt_tide_birth":{"spell":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"controlDemon","then":[{"op":"draw","amount":1}]}]}},"lt_tide_surge":{"spell":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"controlDemon","then":[{"op":"draw","amount":1}]}]}},"lt_tide_colossus":{"spell":{"type":"ops","ops":[{"op":"armor","amount":2},{"op":"draw","amount":1},{"op":"if","cond":"controlDemon","then":[{"op":"armor","amount":1}]}]},"pressure":2},"lt_reborn_behemoth":{"spell":{"type":"ops","ops":[{"op":"draw","amount":1}]}},"lt_deep_beast":{"spell":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"controlDemon","then":[{"op":"draw","amount":1}]}]}},"north_trail":{"spell":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"if","then":[{"op":"armor","amount":2}]}]}},"gok_lamp":{"spell":{"type":"ops","ops":[{"op":"healHero","amount":1},{"op":"if","then":[{"op":"draw","amount":1}]}]}},"world_map":{"spell":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","then":[{"op":"draw","amount":1}]}]}},"snow_freeze_touch":{"spell":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"if","then":[{"op":"armor","amount":2}]}]}},"mist_bargain":{"spell":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"if","then":[{"op":"draw","amount":1}]}]}},"snow_wind_strike":{"spell":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"armor","amount":1},{"op":"if","then":[{"op":"armor","amount":2}]}]}},"frost_seal":{"spell":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"if","then":[{"op":"armor","amount":4}]}]}},"snow_gale":{"spell":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"armor","amount":2},{"op":"if","then":[{"op":"armor","amount":1}]}]}},"reef_signal":{"spell":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"if","then":[{"op":"draw","amount":1}]}]}},"snow_frost_veil":{"spell":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"if","then":[{"op":"draw","amount":1}]}]}},"snow_ice_wall":{"spell":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"armor","amount":3},{"op":"if","then":[{"op":"armor","amount":2}]}]}},"snow_wind_step":{"spell":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"if","then":[{"op":"draw","amount":2}]}]}},"snow_time_stop":{"spell":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"if","then":[{"op":"armor","amount":4}]}]}},"smuggler_ship":{"spell":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"draw","amount":1},{"op":"if","then":[{"op":"draw","amount":1}]}]}},"anvil_quench":{"spell":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"if","then":[{"op":"armor","amount":5}]}]}},"dusk_inn":{"spell":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"if","then":[{"op":"armor","amount":2}]}]}},"snow_ice_lance":{"spell":{"type":"ops","ops":[{"op":"freezeTarget"},{"op":"draw","amount":1}]}},"snow_aurora":{"spell":{"type":"ops","ops":[{"op":"freezeAllEnemies"},{"op":"draw","amount":2}]}},"snow_blizzard":{"spell":{"type":"ops","ops":[{"op":"damageAllEnemies","amount":2}]}},"snow_last_snow":{"spell":{"type":"ops","ops":[{"op":"freezeAllEnemies"},{"op":"draw","amount":2},{"op":"armor","amount":1}]}},"vein_surge":{"spell":{"type":"ops","ops":[{"op":"if","then":[{"op":"draw","amount":3}]}]}},"dark_route":{"spell":{"type":"ops","ops":[{"op":"draw","amount":2},{"op":"if","cond":"controlFormation","then":[{"op":"draw","amount":1}]}]}},"snow_lamp_rite":{"spell":{"type":"ops","ops":[{"op":"healHero","amount":3},{"op":"if","cond":"controlFormation","then":[{"op":"healHero","amount":5}]}]}},"losutai_tide":{"spell":{"type":"ops","ops":[{"op":"draw","amount":1},{"op":"if","cond":"controlDemon","then":[{"op":"draw","amount":1}],"else":[{"op":"armor","amount":1}]}]}},"vein_tithe":{"spell":{"type":"ops","ops":[{"op":"armor","amount":3}]}},"moonfall":{"spell":{"type":"ops","ops":[{"op":"damageAllEnemies","amount":4},{"op":"draw","amount":1},{"op":"if","cond":"controlFormation","then":[{"op":"armor","amount":2}]}]}}};
+  for (const [id, e] of Object.entries(PATCH2B_EFFECTS)) { const c = CARDS[id]; if (!c) continue; if (e.spell) c.spell=e.spell; if (e.reflux != null) c.reflux=e.reflux; if (e.bloodCost != null) c.bloodCost=e.bloodCost; if (e.pressure != null) c.pressure=e.pressure; const raw=JSON.stringify(e); if (/damageTarget|freezeTarget|silenceTarget|markBountyTarget|buffTarget/.test(raw)) c.target="enemy"; }
+
+  // ===== 2C 阵型效果转译 =====
+  const PATCH2C_EFFECTS = {"formation_watcher":{"formation":{"attack":1,"health":1}},"formation_bastion":{"formation":{"attack":0,"health":1,"taunt":true}},"formation_bugler":{"formation":{"attack":0,"health":1,"lifesteal":true}},"formation_officer":{"formation":{"reborn":true}},"formation_artificer":{"formation":{"taunt":true}},"formation_weaver":{"formation":{"attack":0,"health":1,"taunt":true}},"formation_vein":{"formation":{"attack":0,"health":2}},"council_gallery":{"formation":{"attack":0,"health":1}},"school_debate":{"formation":{"attack":1,"windfury":true}},"archive_search":{"formation":{"attack":0,"health":1}},"formation_script":{"formation":{"taunt":true}},"double_column_note":{"formation":{"attack":0,"health":1}},"floating_library":{"formation":{"attack":1,"health":1}},"prohibition":{"formation":{"attack":1,"windfury":true}},"insight":{"formation":{"rush":true}},"formation_tide":{"formation":{"attack":2}},"blood_contract":{"formation":{"attack":0,"health":1}},"blood_feast":{"formation":{"attack":1,"rush":true}},"blood_ritual":{"formation":{"lifesteal":true}},"xh_castle_pact":{"formation":{"attack":1,"rush":true}},"xh_blood_moon_altar":{"formation":{"rush":true}},"battlefield_bill":{"formation":{"taunt":true}},"phalanx_warden":{"formation":{"lifesteal":true}},"no_mans_land":{"formation":{"attack":1,"taunt":true,"rush":true}},"fortify":{"formation":{"attack":0,"health":1,"taunt":true}},"wayfarer_camp":{"formation":{"attack":1,"taunt":true}},"emergency_bill":{"formation":{"attack":0,"health":1,"taunt":true}},"parliament_debate":{"formation":{"windfury":true}},"martial_law":{"formation":{"attack":1,"health":1}},"volley":{"formation":{"reborn":true}},"formation_wall":{"formation":{"attack":0,"health":1,"taunt":true,"reborn":true}},"battlefield_salvage":{"formation":{"attack":0,"health":1}},"armor_drive":{"formation":{"taunt":true}},"blackridge_mine":{"formation":{"attack":1,"health":1}},"formation_cannon":{"formation":{"rush":true}},"zone_barrage":{"formation":{"reborn":true}},"armor_volley":{"formation":{"attack":1}},"gh_bounty_notice":{"formation":{"attack":1}},"lamp_post":{"formation":{"attack":0,"health":1}},"gh_silence_field":{"formation":{"attack":1,"stealth":true}},"gh_formation":{"formation":{"attack":1,"stealth":true}},"gh_silence_master":{"formation":{"attack":0,"health":1}},"gh_company":{"formation":{"attack":1,"rush":true}},"gh_venom_behemoth":{"formation":{"lifesteal":true}},"monster_summon":{"formation":{"poisonous":true}},"monster_nest":{"formation":{"attack":0,"health":1,"rush":true}},"lt_hatchery":{"formation":{"taunt":true}},"blood_pool":{"formation":{"attack":1,"rush":true}},"snow_icewall_formation":{"formation":{"attack":1}},"snow_time_array":{"formation":{"windfury":true}},"snow_tundra_hunt":{"formation":{"reborn":true}},"snow_wind_altar":{"formation":{"attack":1,"health":1}},"white_frost_hall":{"formation":{"attack":0,"health":1}},"snow_throne":{"formation":{"rush":true}},"snow_windwall":{"formation":{"attack":1,"taunt":true}},"snow_frozen_court":{"formation":{"attack":0,"health":1,"taunt":true}},"snow_last_tundra":{"formation":{"attack":2}},"white_reef_light":{"formation":{"windfury":true}},"mist_pier":{"formation":{"attack":0,"health":1,"lifesteal":true}},"north_hunt_camp":{"formation":{"reborn":true}},"gok_lamp_row":{"formation":{"attack":1,"windfury":true}},"no_mans_camp":{"formation":{"attack":1}},"smugglers_dock":{"formation":{"attack":0,"health":1,"reborn":true,"stealth":true}},"anvil_forge_row":{"formation":{"attack":0,"health":1,"taunt":true,"lifesteal":true}},"snow_warmhouse":{"formation":{"rush":true}},"dusk_inn_yard":{"formation":{"attack":1,"windfury":true}},"gh_black_market":{"formation":{"attack":1,"reborn":true}},"losutai_pool":{"formation":{"attack":0,"health":3}},"world_edge_camp":{"formation":{"attack":2,"health":1}},"grey_ledger_post":{"formation":{"attack":0,"health":2,"taunt":true}},"forgotten_gate":{"formation":{"rush":true,"divineShield":true}}};
+  for (const [id, e] of Object.entries(PATCH2C_EFFECTS)) { const c=CARDS[id]; if(c) c.formation=e.formation; }
+
+  // ===== 2D 装备效果转译 =====
+  const PATCH2D_EFFECTS = {"floating_anchor":{"equipAura":{"healTurn":1}},"tide_ward_bracer":{"equipAura":{}},"formation_standard":{"equipAura":{"health":1}},"five_department_badge":{"equipAura":{}},"ksetra_beacon_item":{"equipAura":{"health":1}},"vein_heart":{"equipAura":{}},"academy_inkwell":{"equipAura":{}},"frostweave_cloak":{"equipAura":{"spellDraw":1}},"floating_ink_blade":{"equipAura":{}},"spell_codex":{"equipAura":{}},"whitefrost_bell":{"equipAura":{}},"cataloging_lens":{"equipAura":{"health":1}},"blood_censer":{"equipAura":{}},"bloodbone_pauldron":{"equipAura":{}},"beast_hide_armor":{"equipAura":{"attack":1,"health":1}},"bloodmoon_bone_ring":{"equipAura":{}},"blood_scythe":{"equipAura":{}},"bone_fang_blade":{"equipAura":{}},"bluegold_breastplate":{"equipAura":{"armorTurn":1}},"republic_seal":{"equipAura":{}},"border_lance":{"equipAura":{}},"seven_cities_crest":{"equipAura":{"armorTurn":1}},"house_longsword":{"equipAura":{"attack":1,"health":1}},"iron_banner":{"equipAura":{}},"blackridge_heavy_armor":{"equipAura":{"maxHp":3}},"ministry_map":{"equipAura":{"armorTurn":1,"spellDraw":1}},"armor_forge":{"equipAura":{"armorTurn":2}},"powder_engine":{"equipAura":{"armorTurn":2}},"furnace_heart":{"equipAura":{}},"iron_order_hammer":{"equipAura":{"armorTurn":1}},"brokenline_dagger":{"equipAura":{}},"gh_ledger_chain":{"equipAura":{}},"sealing_wax":{"equipAura":{}},"gh_bounty_board":{"equipAura":{}},"ledger_paperknife":{"equipAura":{}},"blackmarket_bracer":{"equipAura":{"spellDraw":1}},"lt_venom_pouch":{"equipAura":{}},"gh_venom_vial":{"equipAura":{"spellDraw":1}},"lt_tide_bell":{"equipAura":{"armorTurn":1,"spellDraw":1}},"lt_tide_totem":{"equipAura":{"armorTurn":1}},"lt_brood_armor":{"equipAura":{"attack":1,"health":1}},"lt_deep_eye":{"equipAura":{}},"snow_iceblade":{"equipAura":{"spellDraw":1}},"snow_frostplate":{"equipAura":{"armorTurn":1}},"frost_prism":{"equipAura":{"healTurn":1}},"snow_tundrabracer":{"equipAura":{"healTurn":1}},"snow_ember":{"equipAura":{}},"snow_hourglass":{"equipAura":{"healTurn":1}},"white_reef_lamp_oil":{"equipAura":{"healTurn":1}},"northern_bone_flute":{"equipAura":{"healTurn":1}},"fog_harbor_ticket":{"equipAura":{"spellDraw":1}},"wanderer_charm":{"equipAura":{"health":2}},"gambler_dice":{"equipAura":{"health":1}},"anvil_bracer":{"equipAura":{}},"world_map_item":{"equipAura":{"healTurn":1}},"no_mans_land_deed":{"equipAura":{"attack":1,"health":1}},"sky_ship_ticket":{"equipAura":{"healTurn":1}},"snow_capital_lamp":{"equipAura":{"armorTurn":1}},"dusk_inn_key":{"equipAura":{}},"smuggler_anchor":{"equipAura":{}}};
+  for (const [id, e] of Object.entries(PATCH2D_EFFECTS)) { const c=CARDS[id]; if(c) c.equipAura=e.equipAura; }
+
+  // ===== 2E 债务效果转译 =====
+  const PATCH2E_EFFECTS = {"blood_infiltrator":{"debt":{"task":{"type":"noCards","amount":0,"label":"不能再使用卡牌"},"penalty":{"type":"damageHero","amount":2}}},"hunt_ritual":{"debt":{"task":{"type":"noSummon","amount":0,"label":"不能再摆放随从"},"penalty":{"type":"damageHero","amount":2}}},"xh_blood_guard":{"debt":{"task":{"type":"noSpell","amount":0,"label":"不能再使用战术卡"},"penalty":{"type":"damageHero","amount":3}}},"blood_debt":{"debt":{"task":{"type":"playCards","amount":2,"label":"再打出2张牌"},"penalty":{"type":"damageHero","amount":2}}},"xh_blood_brewer":{"debt":{"task":{"type":"playCards","amount":1,"label":"再打出1张牌"},"penalty":{"type":"damageHero","amount":2},"reward":{"type":"draw","amount":1}}},"shadow_raid":{"debt":{"task":{"type":"summon","amount":2,"label":"摆放2个随从"},"penalty":{"type":"damageHero","amount":3}}},"blood_imp":{"debt":{"task":{"type":"summon","amount":1,"label":"摆放1个随从"},"penalty":{"type":"damageHero","amount":2}}},"blood_incense_divination":{"debt":{"task":{"type":"spell","amount":1,"label":"使用1张战术卡"},"penalty":{"type":"damageHero","amount":3}}},"xh_alley_blade":{"debt":{"task":{"type":"spell","amount":2,"label":"使用2张战术卡"},"penalty":{"type":"damageHero","amount":2},"reward":{"type":"draw","amount":1}}},"blood_path":{"debt":{"task":{"type":"attack","amount":1,"label":"发起1次攻击"},"penalty":{"type":"damageHero","amount":2}}},"xh_bone_hunter":{"debt":{"task":{"type":"noCards","amount":0,"label":"不能再使用卡牌"},"penalty":{"type":"damageHero","amount":3},"reward":{"type":"draw","amount":1}}},"blood_wraith":{"debt":{"task":{"type":"noSummon","amount":0,"label":"不能再摆放随从"},"penalty":{"type":"damageHero","amount":4},"reward":{"type":"armor","amount":1}}},"monster_command":{"debt":{"task":{"type":"noAttack","amount":0,"label":"不能攻击"},"penalty":{"type":"damageHero","amount":3}}},"lt_reborn_rite":{"debt":{"task":{"type":"noAttack","amount":0,"label":"不能攻击"},"penalty":{"type":"damageHero","amount":2},"reward":{"type":"summon","token":"losutai_imp"}}},"lt_brood_attendant":{"debt":{"task":{"type":"noCards","amount":0,"label":"不能再使用卡牌"},"penalty":{"type":"damageHero","amount":3}}},"lt_hatch_guard":{"debt":{"task":{"type":"noSummon","amount":0,"label":"不能再摆放随从"},"penalty":{"type":"damageHero","amount":3},"reward":{"type":"armor","amount":1}}},"lt_tide_warden":{"debt":{"task":{"type":"noSpell","amount":0,"label":"不能再使用战术卡"},"penalty":{"type":"damageHero","amount":3}}},"lt_hatch":{"debt":{"task":{"type":"playCards","amount":2,"label":"再打出2张牌"},"penalty":{"type":"damageHero","amount":3}}},"lt_tide_spawn":{"debt":{"task":{"type":"playCards","amount":1,"label":"再打出1张牌"},"penalty":{"type":"damageHero","amount":2},"reward":{"type":"summon","token":"losutai_imp"}}},"lt_venom_fang":{"debt":{"task":{"type":"playCards","amount":3,"label":"再打出3张牌"},"penalty":{"type":"damageHero","amount":4}}},"lt_deep_sentinel":{"debt":{"task":{"type":"attack","amount":1,"label":"发起1次攻击"},"penalty":{"type":"damageHero","amount":2},"reward":{"type":"armor","amount":1}}},"lt_venom_nest":{"debt":{"task":{"type":"attack","amount":2,"label":"发起2次攻击"},"penalty":{"type":"damageHero","amount":3}}},"lt_venom_larva":{"debt":{"task":{"type":"summon","amount":3,"label":"摆放3个随从"},"penalty":{"type":"damageHero","amount":2},"reward":{"type":"summon","token":"losutai_imp"}}},"lt_tide_hunter":{"debt":{"task":{"type":"summon","amount":2,"label":"摆放2个随从"},"penalty":{"type":"damageHero","amount":3}}},"lt_bone_scavenger":{"debt":{"task":{"type":"summon","amount":1,"label":"摆放1个随从"},"penalty":{"type":"damageHero","amount":2}}},"lt_tide_pool":{"debt":{"task":{"type":"spell","amount":2,"label":"使用2张战术卡"},"penalty":{"type":"damageHero","amount":4}}},"lt_bone_warlock":{"debt":{"task":{"type":"spell","amount":1,"label":"使用1张战术卡"},"penalty":{"type":"damageHero","amount":3},"reward":{"type":"armor","amount":1}}},"blood_altar":{"debt":{"task":{"type":"spell","amount":3,"label":"使用3张战术卡"},"penalty":{"type":"damageHero","amount":4},"reward":{"type":"summon","token":"losutai_imp"}}}};
+  for (const [id, e] of Object.entries(PATCH2E_EFFECTS)) { const c=CARDS[id]; if(c) c.debt=e.debt; }
+
+  // ===== 2B 剩余复杂战术 =====
+  if (CARDS.spellstorm) CARDS.spellstorm.spell = { type: "spellstorm" };
+  if (CARDS.conscription_levy) { CARDS.conscription_levy.target="friendly"; CARDS.conscription_levy.spell={type:"ops",ops:[{op:"buffTarget",attack:1,health:0},{op:"grantRushTarget"},{op:"if",cond:"targetTaunt",then:[{op:"buffTarget",attack:0,health:1}]}]}; }
+  if (CARDS.powder_keg) CARDS.powder_keg.spell={type:"ops",ops:[{op:"if",cond:"armor",then:[{op:"damageAllMinions",amount:4}],else:[{op:"damageAllMinions",amount:3}]}]};
+  if (CARDS.fortress) { CARDS.fortress.target="friendly"; CARDS.fortress.spell={type:"ops",ops:[{op:"grantWindfuryTarget"},{op:"if",cond:"sameZoneTaunt",then:[{op:"buffTarget",attack:0,health:1}]}]}; }
+  if (CARDS.lt_brood_call) CARDS.lt_brood_call.spell={type:"ops",ops:[{op:"summon",token:"losutai_beast"},{op:"if",cond:"otherDemon",then:[{op:"summon",token:"losutai_beast"}]}]};
+  if (CARDS.time_loan) CARDS.time_loan.spell={type:"riseVein",amount:2,penalty:1};
+  if (CARDS.astral_gate) CARDS.astral_gate.spell={type:"ops",ops:[{op:"summon",token:"astral_guardian"},{op:"summon",token:"astral_guardian"},{op:"if",cond:"controlFormation",then:[{op:"summon",token:"astral_guardian"}]}]};
+
+  // ===== 2C 条件阵型 =====
+  const PATCH2C_COND = {"formation_bastion":{"condition":"sameZoneTaunt","bonus":{"attack":1,"health":0,"taunt":true}},"council_gallery":{"condition":"sameZoneAlly","bonus":{"attack":0,"health":1}},"no_mans_land":{"condition":"sameZoneTaunt","bonus":{"taunt":true,"rush":true}},"fortify":{"condition":"controlTaunt","bonus":{"attack":1,"health":0,"taunt":true}},"formation_wall":{"condition":"sameZoneTaunt","bonus":{"reborn":true,"taunt":true}},"battlefield_salvage":{"condition":"armor","bonus":{"attack":1,"health":0}},"gh_formation":{"condition":"bounty","bonus":{"stealth":true}},"gh_company":{"condition":"bounty","bonus":{"rush":true}},"no_mans_camp":{"condition":"sameZoneAlly","bonus":{"attack":1}},"smugglers_dock":{"condition":"stealth","bonus":{"reborn":true,"stealth":true}},"anvil_forge_row":{"condition":"controlTaunt","bonus":{"taunt":true,"lifesteal":true}},"gh_black_market":{"condition":"bounty","bonus":{"reborn":true}}};
+  for (const [id, c] of Object.entries(PATCH2C_COND)) { const card=CARDS[id]; if (card && card.formation) { card.formation.condition=c.condition; card.formation.bonus=c.bonus; } }
+
+  // ===== 2D 条件装备 =====
+  const PATCH2D_COND = {"formation_standard":{"condition":"controlFormation","bonus":{"attack":0,"health":1}},"ksetra_beacon_item":{"condition":"controlTaunt","bonus":{}},"vein_heart":{"condition":"fullHp","bonus":{}},"cataloging_lens":{"condition":"hand6","bonus":{}},"bloodbone_pauldron":{"condition":"lostHealth","bonus":{"attack":1}},"republic_seal":{"condition":"controlTaunt","bonus":{}},"house_longsword":{"condition":"controlTaunt","bonus":{"attack":0,"health":1}},"iron_banner":{"condition":"controlFormation","bonus":{}},"ministry_map":{"condition":"armor","bonus":{}},"powder_engine":{"condition":"armor","bonus":{}},"lt_tide_bell":{"condition":"demon","bonus":{}},"lt_tide_totem":{"condition":"demon","bonus":{}},"snow_frostplate":{"condition":"freeze","bonus":{}},"frost_prism":{"condition":"freeze","bonus":{}},"snow_hourglass":{"condition":"freeze","bonus":{}},"gambler_dice":{"condition":"hand6","bonus":{}},"world_map_item":{"condition":"controlFormation","bonus":{}},"sky_ship_ticket":{"condition":"controlFormation","bonus":{}},"dusk_inn_key":{"condition":"fullHp","bonus":{}},"smuggler_anchor":{"condition":"controlFormation","bonus":{}}};
+  for (const [id, c] of Object.entries(PATCH2D_COND)) { const card=CARDS[id]; if (card && card.equipAura) { card.equipAura.condition=c.condition; card.equipAura.bonus=c.bonus; } }
+
+  // ===== 2C/2D 条件补充 =====
+  const PATCH2CD_EXTRA = {"c":{"formation_bastion":{"condition":"sameZoneTaunt","bonus":{"attack":1,"health":0,"taunt":true}},"council_gallery":{"condition":"sameZoneAlly","bonus":{"attack":0,"health":1}},"no_mans_land":{"condition":"sameZoneTaunt","bonus":{"taunt":true,"rush":true}},"fortify":{"condition":"controlTaunt","bonus":{"attack":1,"health":0,"taunt":true}},"formation_wall":{"condition":"sameZoneTaunt","bonus":{"reborn":true,"taunt":true}},"battlefield_salvage":{"condition":"armor","bonus":{"attack":1,"health":0}},"gh_formation":{"condition":"bounty","bonus":{"stealth":true}},"gh_company":{"condition":"bounty","bonus":{"rush":true}},"no_mans_camp":{"condition":"sameZoneAlly","bonus":{"attack":1}},"smugglers_dock":{"condition":"stealth","bonus":{"reborn":true,"stealth":true}},"anvil_forge_row":{"condition":"controlTaunt","bonus":{"taunt":true,"lifesteal":true}},"gh_black_market":{"condition":"bounty","bonus":{"reborn":true}},"prohibition":{"condition":"spells","bonus":{"attack":1}},"blood_feast":{"condition":"lostHealth","bonus":{"attack":1}},"white_frost_hall":{"condition":"freeze","bonus":{"attack":1,"health":1}},"dusk_inn_yard":{"condition":"spells","bonus":{"attack":1}}},"d":{"formation_standard":{"condition":"controlFormation","bonus":{"attack":0,"health":1}},"ksetra_beacon_item":{"condition":"controlTaunt","bonus":{}},"vein_heart":{"condition":"fullHp","bonus":{}},"cataloging_lens":{"condition":"hand6","bonus":{}},"bloodbone_pauldron":{"condition":"lostHealth","bonus":{"attack":1}},"republic_seal":{"condition":"controlTaunt","bonus":{}},"house_longsword":{"condition":"controlTaunt","bonus":{"attack":0,"health":1}},"iron_banner":{"condition":"controlFormation","bonus":{}},"ministry_map":{"condition":"armor","bonus":{}},"powder_engine":{"condition":"armor","bonus":{}},"lt_tide_bell":{"condition":"demon","bonus":{}},"lt_tide_totem":{"condition":"demon","bonus":{}},"snow_frostplate":{"condition":"freeze","bonus":{}},"frost_prism":{"condition":"freeze","bonus":{}},"snow_hourglass":{"condition":"freeze","bonus":{}},"gambler_dice":{"condition":"hand6","bonus":{}},"world_map_item":{"condition":"controlFormation","bonus":{}},"sky_ship_ticket":{"condition":"controlFormation","bonus":{}},"dusk_inn_key":{"condition":"fullHp","bonus":{}},"smuggler_anchor":{"condition":"controlFormation","bonus":{}},"blood_scythe":{"condition":"hp15","bonus":{"attack":1}},"lt_brood_armor":{"condition":"demon","bonus":{"health":1}}}};
+  for (const [id, v] of Object.entries(PATCH2CD_EXTRA.c)) { const x=CARDS[id]; if(x&&x.formation){x.formation.condition=v.condition;x.formation.bonus=v.bonus;} }
+  for (const [id, v] of Object.entries(PATCH2CD_EXTRA.d)) { const x=CARDS[id]; if(x&&x.equipAura){x.equipAura.condition=v.condition;x.equipAura.bonus=v.bonus;} }
+
+  // ===== 2C 事件阵型 =====
+  const FEV = {
+    formation_bugler:{event:"heal",effect:"buffZoneRandom",health:1},
+    formation_officer:{event:"heal",effect:"summon",token:"losutai_imp"},
+    formation_weaver:{event:"armor",effect:"buffZoneRandom",health:1},
+    archive_search:{event:"spell",effect:"buffZoneRandom",attack:1},
+    double_column_note:{event:"spell",effect:"buffZoneRandom",health:1},
+    insight:{event:"spell",effect:"draw",amount:1},
+    xh_blood_moon_altar:{event:"damage",effect:"draw",amount:1},
+    dusk_inn_yard:{event:"spell",effect:"buffZoneRandom",attack:1}
+  };
+  for (const [id,e] of Object.entries(FEV)) { const c=CARDS[id]; if(c&&c.formation) c.formation.onEvent=e; }
+
+  // ===== 2D 事件装备补充 =====
+  if (CARDS.armor_forge && CARDS.armor_forge.equipAura) { CARDS.armor_forge.equipAura.condition = "zhenmai"; CARDS.armor_forge.equipAura.bonus = { armorTurn: 1 }; }
+
+  // ===== 2C/2D 文案格式统一 =====
+  for (const c of Object.values(CARDS)) {
+    if (c.type === "formation" && c.text && !c.text.includes("固定")) c.text = c.text.replace("该阵位友方随从", "该阵位友方随从固定获得");
+    if (c.type === "equipment" && c.text && !c.text.includes("持续生效")) c.text = "装备（持续生效）：" + c.text;
+  }
+
+  // ===== 2D 空装备字段兜底 =====
+  for (const c of Object.values(CARDS)) if (c.type === "equipment" && !c.equipAura) c.equipAura = {};
+
+  // ===== 2D 空装备基础字段补齐 =====
+  const EQ_FILL = {
+    tide_ward_bracer:{health:1}, five_department_badge:{healTurn:1}, floating_ink_blade:{attack:1,spellDraw:1},
+    whitefrost_bell:{health:1,spellDraw:1}, bone_fang_blade:{attack:1}, bloodmoon_bone_ring:{attack:1},
+    border_lance:{health:1}, furnace_heart:{attack:1}, ledger_paperknife:{attack:1,spellDraw:1},
+    brokenline_dagger:{attack:1}, sealing_wax:{turnDamage:1}, anvil_bracer:{attack:1},
+    lt_venom_pouch:{attack:1}, lt_deep_eye:{summonTurn:1}, snow_ember:{freezeTurn:1},
+    academy_inkwell:{spellDraw:1}, gh_ledger_chain:{attack:1}, iron_order_hammer:{attack:1}
+  };
+  for (const [id,v] of Object.entries(EQ_FILL)) { const c=CARDS[id]; if(c) c.equipAura=Object.assign({},c.equipAura||{},v); }
+  CARDS.rush_lancer.text = "先遣。被动：若本回合获得过护甲，攻击时+1攻";
+
+  // ===== 文本审计对齐 =====
+  if (CARDS.walter) delete CARDS.walter.battlecry.amount;
+  if (CARDS.bastion_captain) CARDS.bastion_captain.battlecry = { type: "ops", ops: [{ op: "if", cond: "armor", then: [{ op: "buffSelf", attack: 0, health: 2 }] }] };
+  if (CARDS.phalanx_executor) { delete CARDS.phalanx_executor.battlecry; CARDS.phalanx_executor.keywords = (CARDS.phalanx_executor.keywords||[]).filter(k=>k!=="battlecry"); }
+  if (CARDS.vein_attendant) CARDS.vein_attendant.battlecry = { type: "healHero", amount: 3 };
+  if (CARDS.frost_page) CARDS.frost_page.passive = { type: "firstSpellGrowth", attack: 1, health: 0 };
+  if (CARDS.reflux_physician) CARDS.reflux_physician.deathrattle = { type: "ops", ops: [{ op: "armor", amount: 2 }] };
+  if (CARDS.snow_fox_guard) CARDS.snow_fox_guard.battlecry = { type: "ops", ops: [{ op: "if", cond: "controlDemon", then: [{ op: "buffSelf", attack: 2, health: 2 }] }] };
+  if (CARDS.snow_aurora_priestess) CARDS.snow_aurora_priestess.deathrattle = { type: "ops", ops: [{ op: "freezeTarget" }] };
+
+  // ===== 卡面文案缩略与可读性 =====
+  for (const c of Object.values(CARDS)) {
+    if (!c.text) continue;
+    c.text = c.text
+      .replace(/恢复你的领袖\s*(\d+)\s*点生命/g, "恢复领袖$1")
+      .replace(/恢复\s*(\d+)\s*点生命/g, "恢复$1生命")
+      .replace(/获得\s*(\d+)\s*点护甲/g, "获得$1护甲")
+      .replace(/造成\s*(\d+)\s*点伤害/g, "造成$1伤害")
+      .replace(/抽\s*(\d+)\s*张牌/g, "抽$1张")
+      .replace(/消耗\s*(\d+)\s*点流脉/g, "消耗$1流脉")
+      .replace(/获得\s*(\d+)\s*点行动力/g, "获得$1行动力")
+      .replace(/若你控制/g, "若控制")
+      .replace(/同阵位有其他友方|同阵位有另一友方/g, "同阵位另有友方")
+      .replace(/流脉达到\s*(\d+)\s*时/g, "流脉$1时")
+      .replace(/每回合第一次/g, "每回合首次")
+      .replace(/固定获得获得/g, "固定获得")
+      .replace(/获得获得/g, "获得")
+      .replace(/该阵位友方随从固定/g, "该阵位友方固定")
+      .replace(/对一个敌方随从/g, "对敌方随从")
+      .replace(/\s+点(?=护甲|生命|伤害|行动力|流脉)/g, " ")
+      .replace(/  +/g, " ")
+      .trim();
+  }
+
+  // ===== 卡面文案缩略：第二轮 =====
+  for (const c of Object.values(CARDS)) {
+    if (!c.text) continue;
+    c.text = c.text
+      .replace(/造成\s*(\d+)\s*点(?=[。；])/g, "造成$1伤害")
+      .replace(/该阵位友方随从/g, "该阵位友方")
+      .replace(/同阵位一个友方随从/g, "同阵位友方")
+      .replace(/若目标已经冻结/g, "若目标已冻结")
+      .replace(/(\d)\s+(?=(点|张|甲|生命|伤害|行动力|流脉|回合|个|层|名|次|攻|护甲))/g, "$1")
+      .replace(/([点张甲生命伤害行动力流脉回合个层次名])\s+(?=\d)/g, "$1")
+      .replace(/\s+点(?=护甲|生命|伤害|行动力|流脉)/g, " ")
+      .replace(/  +/g, " ")
+      .trim();
+  }
+
+  // ===== 卡面文案排版收口 =====
+  for (const c of Object.values(CARDS)) {
+    if (!c.text) continue;
+    c.text = c.text
+      .replace(/\s+(?=\d)/g, "")
+      .replace(/(\d)\s+(?=(点|张|甲|生命|伤害|行动力|流脉|回合|个|层|名|次|攻|护甲|时|洛|复|星|雪|新|魔))/g, "$1")
+      .replace(/\s+(?=[+\-]\d)/g, "")
+      .replace(/([+\-]\d+(?:\/\+?\d+)?)\s+(?=(攻击|生命|护甲|攻|甲))/g, "$1")
+      .replace(/  +/g, " ")
+      .trim();
+  }
+
+  // ===== 长文案人工缩略 =====
+  const TEXT_SHORT = {
+    xingchuan_sun: "彩蛋卡。登场：用随机节肢伙伴填满自身阵位；同阵位有节肢伙伴时获得隐匿与+1/+1。每当一个节肢伙伴死亡，获得+1/+1。",
+    gh_bounty_king: "登场：消灭所有悬赏目标；每消灭一个，对敌方领袖造成4伤害。若无悬赏目标，改为8伤害。",
+    karl_desmond: "被动：施放战术后，将一张「火球术」置入手牌（3行动力：对敌方随从造成4伤害）。",
+    lt_awakened: "被动：本随从及同阵位其他随从攻击后，获得一张闪电箭（2行动力：对所有敌方随从造成1伤害）。",
+    academy_arcane_transcriber: "登场：复制本局最近使用的战术牌，复制牌行动力+2（最高10）；若本局未用战术，抽1张。",
+    lt_tide_devourer: "吞噬攻击力最低的友方魔物，获得其攻击和生命；若吞噬的是魔物，召唤一个1/1洛斯汰魔物。",
+    mirror_regent: "登场：复制一个敌方随从的1/1复制；复制体保留关键词和效果，但不触发登场。",
+    vein_engineer: "被动：每回合首次恢复领袖时，同阵位友方+0/+1。余响：逆脉2，恢复领袖2。",
+    frost_archivist: "登场：在自身阵位刻下脉痕；流脉4时冻结该阵位所有敌方1回合（流脉7时改为2回合）。",
+    bounty_hunter: "被动：同阵位每有一个其他友方，本随从+1/+0。余响：获得3护甲。",
+    zone_banner: "登场：同阵位友方+2/+1。余响：获得该阵位随从数量的护甲，最多3。",
+    losutai_hive_ancestor: "被动：回合结束时，若本回合召唤过至少2个洛斯汰魔物，召唤一个3/3洛斯汰巨兽。",
+    blood_elder: "被动：手牌和牌库中的随从行动力-1，战术行动力+1。",
+    vera: "隐匿。被动：当隐匿友方攻击后，随机使一张手牌行动力-3。",
+    snow_frost_hunter: "被动：每回合首次冻结敌方时+1攻击；第二次再+1。",
+    excavation_titan: "被动：每回合首次恢复领袖时，同阵位友方+1/+1。余响：获得3护甲。",
+    iron_artillery: "守备。登场：对一个敌方随从造成等同于护甲的伤害，最多4。余响：获得1护甲。"
+  };
+  for (const [id, t] of Object.entries(TEXT_SHORT)) if (CARDS[id]) CARDS[id].text = t;
+
+  // ===== 文案主语明确化：恢复 / 护甲 =====
+  for (const c of Object.values(CARDS)) {
+    if (!c.text) continue;
+    c.text = c.text
+      .replace(/(?<!领袖)恢复(\d+)(?=[；。，]|$)/g, "恢复领袖$1")
+      .replace(/(?<!领袖)恢复(\d+)生命/g, "恢复领袖$1生命")
+      .replace(/(?<!领袖)获得(\d+)甲/g, "领袖获得$1护甲")
+      .replace(/(?<!领袖)获得(\d+)护甲/g, "领袖获得$1护甲")
+      .replace(/(?<!领袖)获得等量护甲/g, "领袖获得等量护甲")
+      .replace(/(?<!领袖)获得等同于/g, "领袖获得等同于")
+      .replace(/(?<!领袖)获得该阵位/g, "领袖获得该阵位");
+  }
+
+  // ===== 恢复/护甲条件句主语收口 =====
+  for (const c of Object.values(CARDS)) {
+    if (!c.text) continue;
+    c.text = c.text
+      .replace(/恢复领袖(\d+)(?=[；。，]|$)/g, "恢复领袖$1生命")
+      .replace(/(恢复领袖\d+生命；[^。；]*?改为)(\d+)(?=[；。，]|$)/g, "$1恢复领袖$2生命")
+      .replace(/获得过护甲，改为(\d+)(?=[；。，]|$)/g, "获得过护甲，改为恢复领袖$1生命")
+      .replace(/否则(\d+)甲/g, "否则领袖获得$1护甲")
+      .replace(/改为(\d+)甲/g, "改为领袖获得$1护甲");
+  }
+
+  // ===== 否则分支补主语/类型 =====
+  for (const c of Object.values(CARDS)) {
+    if (!c.text) continue;
+    if (/护甲[^。；]*否则\d+/.test(c.text)) c.text = c.text.replace(/否则(\d+)/g, "否则领袖获得$1护甲");
+    else if (/(伤害|随机敌方随从)[^。；]*否则\d+/.test(c.text)) c.text = c.text.replace(/否则(\d+)/g, "否则造成$1伤害");
+  }
+
+  // ===== 否则分支补主语/类型：按上下文 =====
+  for (const c of Object.values(CARDS)) {
+    if (!c.text) continue;
+    c.text = c.text.replace(/否则(\d+)/g, (m, d, off) => {
+      const before = c.text.slice(0, off);
+      if (/护甲/.test(before)) return "否则领袖获得" + d + "护甲";
+      if (/(伤害|随机敌方随从)/.test(before)) return "否则造成" + d + "伤害";
+      return m;
+    });
+  }
+
+  // ===== 文案可读性收口 =====
+  if (CARDS.coordinator_order) CARDS.coordinator_order.text = "恢复领袖4生命，抽1；若本回合逆脉过，再获得2护甲";
+  for (const c of Object.values(CARDS)) {
+    if (!c.text) continue;
+    c.text = c.text
+      .replace(/再领袖获得/g, "再获得")
+      .replace(/(若[^，。；]{0,14})(领袖获得)/g, "$1，$2")
+      .replace(/恢复领袖(\d+)生命抽/g, "恢复领袖$1生命，抽")
+      .replace(/，{2,}/g, "，");
+  }
+
+  // ===== 属性/护甲主语补充 =====
+  const SELF_BUFF = ["shextena","lanxi","klaus","blood_retainer","vein_scout","bastion_captain","frost_leviathan","vein_behemoth","gh_venom_shield","gh_bounty_collector","powder_foreman","execution_supervisor","broken_bone_warlord","snow_fox_guard","xingchuan_sun","break_attachment","goodnight_logout","snow_shatter_judge"];
+  for (const id of SELF_BUFF) { const c=CARDS[id]; if (c && c.text) c.text = c.text.replace(/获得(\+\d+\/\+\d+)/g, "自身获得$1"); }
+  for (const c of Object.values(CARDS)) if (c.text) c.text = c.text.replace(/再获得(\d+)护甲/g, "领袖再获得$1护甲");
+
+  // ===== 语义补条件：if 缺 cond =====
+  function inferCond(text) {
+    if (/同阵位/.test(text)) return "sameZoneAlly";
+    if (/本回合获得过护甲/.test(text)) return "armorGained";
+    if (/施放过战术|已施放战术/.test(text)) return "spells";
+    if (/受过伤害/.test(text)) return "tookDamage";
+    if (/失去过生命|失去生命/.test(text)) return "lostHealth";
+    if (/控制守备/.test(text)) return "controlTaunt";
+    if (/控制阵型/.test(text)) return "controlFormation";
+    if (/本回合逆脉过/.test(text)) return "reflux";
+    if (/使用过其他牌/.test(text)) return "otherCards";
+    if (/完成过悬赏/.test(text)) return "bountyCompleted";
+    if (/已有悬赏目标|已悬赏|目标有悬赏|它是悬赏/.test(text)) return "targetBounty";
+    if (/控制其他魔物/.test(text)) return "otherDemon";
+    if (/控制魔物/.test(text)) return "controlDemon";
+    if (/目标已冻结/.test(text)) return "targetFrozen";
+    if (/本回合冻结过敌方/.test(text)) return "freezeCast";
+    if (/本回合攻击过/.test(text)) return "attacked";
+    if (/治疗过领袖/.test(text)) return "healedHero";
+    let m = text.match(/流脉≥(\d+)/); if (m) return "vein:" + m[1];
+    m = text.match(/手牌≤(\d+)/); if (m) return "hand:" + m[1];
+    return null;
+  }
+  function fillIfs(obj, text) {
+    if (!obj || typeof obj !== "object") return;
+    if (Array.isArray(obj)) { for (const x of obj) fillIfs(x, text); return; }
+    if (obj.op === "if" && !obj.cond) {
+      const c = inferCond(text);
+      if (c) { if (c.includes(":")) { const [k,v]=c.split(":"); obj.cond=k; obj.value=+v; } else obj.cond=c; }
+    }
+    for (const v of Object.values(obj)) fillIfs(v, text);
+  }
+  for (const c of Object.values(CARDS)) { fillIfs(c.battlecry, c.text || ""); fillIfs(c.deathrattle, c.text || ""); fillIfs(c.spell, c.text || ""); }
+
+  // ===== 语义补条件：简单“改为/否则”分支 =====
+  function baseOp(e) {
+    if (!e) return null;
+    if (e.type === "ops" && e.ops && e.ops.length === 1 && e.ops[0].op !== "if") return JSON.parse(JSON.stringify(e.ops[0]));
+    if (["armor","healHero","draw","damageRandomEnemy","damageTarget","damageHero"].includes(e.type)) return { op: e.type, amount: e.amount || 1 };
+    return null;
+  }
+  function setAmount(op, n) { if (op && n != null) op.amount = n; return op; }
+  for (const c of Object.values(CARDS)) {
+    const t = c.text || ""; if (!/若/.test(t)) continue;
+    const cond = inferCond(t); if (!cond) continue;
+    const mChanged = t.match(/改为(?:领袖获得|恢复领袖)?\s*(\d+)/) || t.match(/改为(\d+)/);
+    const mElse = t.match(/否则(?:领袖获得|造成)?\s*(\d+)/);
+    if (!mChanged && !mElse) continue;
+    for (const field of ["battlecry","deathrattle","spell"]) {
+      const e=c[field]; const op=baseOp(e); if(!op) continue;
+      if (JSON.stringify(e).includes('"if"')) continue;
+      const thenOp=JSON.parse(JSON.stringify(op)); const elseOp=JSON.parse(JSON.stringify(op));
+      const n = mChanged ? +mChanged[1] : null; const en = mElse ? +mElse[1] : null;
+      if (n != null) setAmount(thenOp, n); if (en != null) setAmount(elseOp, en);
+      const condObj = cond.includes(":") ? (()=>{const [k,v]=cond.split(":");return {cond:k,value:+v}})() : {cond};
+      c[field] = { type:"ops", ops:[{op:"if",...condObj,then:[thenOp],else:[elseOp]}] };
+      break;
+    }
+  }
+
+  // ===== 2C/2D 语义补全 =====
+  const C2 = {
+    insight: {formation:{onEvent:{event:"spell",effect:"draw",amount:1}}},
+    blood_contract: {formation:{condition:"lostHealth",bonus:{attack:1}}},
+    xh_blood_moon_altar: {formation:{onEvent:{event:"damage",effect:"draw",amount:1}}},
+    lamp_post: {formation:{onEvent:{event:"bounty",effect:"buffZoneRandom",attack:1,health:1}}},
+    monster_nest: {formation:{condition:"demon",bonus:{attack:1}}},
+    snow_icewall_formation: {formation:{attackVsFrozen:1}},
+    snow_last_tundra: {formation:{attackVsFrozen:2}},
+    snow_frozen_court: {formation:{onEvent:{event:"freeze",effect:"buffZoneRandom",health:1}}}
+  };
+  for (const [id,e] of Object.entries(C2)) { const c=CARDS[id]; if(c) { c.formation=Object.assign({},c.formation||{},e.formation); } }
+  const D2 = {
+    spell_codex: {equipAura:{condition:"carve",bonus:{armorTurn:1}}},
+    blood_censer: {equipAura:{condition:"lostHealth",bonus:{healTurn:1}}},
+    brokenline_dagger: {equipAura:{condition:"bounty",bonus:{spellDraw:1}}},
+    gh_ledger_chain: {equipAura:{condition:"bounty",bonus:{armorTurn:1}}},
+    sealing_wax: {equipAura:{condition:"bounty",bonus:{turnDamage:1}}},
+    gh_bounty_board: {equipAura:{condition:"bounty",bonus:{turnDamage:1}}},
+    gh_venom_vial: {equipAura:{condition:"demon",bonus:{spellDraw:1}}},
+    lt_deep_eye: {equipAura:{condition:"demon",bonus:{summonTurn:1}}},
+    snow_ember: {equipAura:{condition:"targetFrozen",bonus:{freezeTurn:1}}}
+  };
+  for (const [id,e] of Object.entries(D2)) { const c=CARDS[id]; if(c) { c.equipAura=Object.assign({},c.equipAura||{},e.equipAura); } }
+
+  // ===== 2A/2B 语义补全 =====
+  const OPS = (ops) => ({ type: "ops", ops });
+  if (CARDS.powder_martyr) CARDS.powder_martyr.deathrattle = OPS([{op:"if",cond:"armor",then:[{op:"damageHero",amount:3}],else:[{op:"damageHero",amount:2}]}]);
+  if (CARDS.gh_cutthroat) CARDS.gh_cutthroat.deathrattle = OPS([{op:"if",cond:"targetBounty",then:[{op:"damageRandomEnemy",amount:2}],else:[{op:"damageRandomEnemy",amount:1}]}]);
+  if (CARDS.snow_refugee) CARDS.snow_refugee.battlecry = OPS([{op:"if",cond:"targetFrozen",then:[{op:"damageTarget",amount:2}],else:[{op:"damageTarget",amount:1}]}]);
+  if (CARDS.snow_coldwind_assassin) CARDS.snow_coldwind_assassin.battlecry = OPS([{op:"if",cond:"targetFrozen",then:[{op:"damageTarget",amount:4}],else:[{op:"freezeTarget"}]}]);
+  if (CARDS.debate) CARDS.debate.spell = OPS([{op:"damageTarget",amount:2},{op:"freezeTarget"},{op:"if",cond:"targetFrozen",then:[{op:"draw",amount:1}]}]);
+  if (CARDS.armor_break) CARDS.armor_break.spell = OPS([{op:"damageTarget",amount:1},{op:"freezeTarget"},{op:"if",cond:"targetFrozen",then:[{op:"draw",amount:1}]}]);
+  if (CARDS.double_formula) CARDS.double_formula.spell = OPS([{op:"damageTarget",amount:3},{op:"freezeTarget"},{op:"if",cond:"targetFrozen",then:[{op:"draw",amount:1}]}]);
+  if (CARDS.borrow_vein) CARDS.borrow_vein.spell = OPS([{op:"summon",token:"medic_apprentice"},{op:"if",cond:"spells",then:[{op:"summon",token:"medic_apprentice"}]}]);
+  if (CARDS.combo_spark) CARDS.combo_spark.spell = OPS([{op:"if",cond:"spells2",then:[{op:"damageAllEnemies",amount:2}],else:[{op:"damageAllEnemies",amount:1}]}]);
+  if (CARDS.barrage) CARDS.barrage.spell = OPS([{op:"if",cond:"armor",then:[{op:"damageTarget",amount:3}],else:[{op:"damageTarget",amount:2}]}]);
+  if (CARDS.conscription_order) CARDS.conscription_order.spell = OPS([{op:"armor",amount:1},{op:"if",cond:"armor",then:[{op:"armor",amount:1}]}]);
+  if (CARDS.quarantine) CARDS.quarantine.spell = OPS([{op:"blockHeroPower"},{op:"if",cond:"armor",then:[{op:"draw",amount:1}]}]);
+  if (CARDS.armor_mortar) CARDS.armor_mortar.spell = OPS([{op:"if",cond:"armor",then:[{op:"damageHero",amount:6}],else:[{op:"damageHero",amount:4}]}]);
+  if (CARDS.martial_court) CARDS.martial_court.spell = OPS([{op:"armor",amount:1},{op:"if",cond:"armor",then:[{op:"armor",amount:1}]}]);
+  if (CARDS.commission_advance) CARDS.commission_advance.spell = OPS([{op:"draw",amount:1},{op:"if",cond:"otherCards",then:[{op:"mana",amount:1}]}]);
+  if (CARDS.gh_assassinate_contract) CARDS.gh_assassinate_contract.spell = OPS([{op:"if",cond:"targetBounty",then:[{op:"destroyTarget"}],else:[{op:"damageTarget",amount:3}]}]);
+  if (CARDS.gh_execution_contract) CARDS.gh_execution_contract.spell = OPS([{op:"if",cond:"bountyExists",then:[{op:"destroyTarget"}],else:[{op:"draw",amount:1}]}]);
+  if (CARDS.lt_reborn_behemoth) CARDS.lt_reborn_behemoth.spell = OPS([{op:"grantRebornTarget"},{op:"draw",amount:1},{op:"if",cond:"targetDemon",then:[{op:"buffTarget",attack:1,health:1}]}]);
+  if (CARDS.gok_lamp) CARDS.gok_lamp.spell = OPS([{op:"healHero",amount:1},{op:"if",cond:"controlBeast",then:[{op:"draw",amount:1}]}]);
+  if (CARDS.snow_blizzard) CARDS.snow_blizzard.spell = OPS([{op:"damageAllEnemies",amount:2},{op:"freezeAllEnemies"},{op:"if",cond:"freezeCast",then:[{op:"damageAllEnemies",amount:1}]}]);
+
+  // ===== 剩余语义补全 =====
+  if (CARDS.temple_priest) CARDS.temple_priest.passive = { type:"turnArmor", amount:1, condition:"controlTaunt", bonus:1 };
+  if (CARDS.rush_lancer) CARDS.rush_lancer.passive = { type:"armorAttack", attack:1, condition:"armorGained" };
+  if (CARDS.bounty_accountant) CARDS.bounty_accountant.passive = { type:"bountyClaimHeal", amount:2, drawIfStealth:true };
+  if (CARDS.xh_tribe_headhunter) CARDS.xh_tribe_headhunter.passive = { type:"firstSpellGrowth", attack:2, health:0, drawIfLost:true };
+  if (CARDS.brood_matron) CARDS.brood_matron.battlecry = { type:"ops", ops:[{op:"if",cond:"otherDemon",then:[{op:"summon",token:"losutai_imp"},{op:"summon",token:"losutai_imp"},{op:"summon",token:"losutai_imp"}],else:[{op:"summon",token:"losutai_imp"},{op:"summon",token:"losutai_imp"}]}] };
+  if (CARDS.gok_lamp) CARDS.gok_lamp.spell = { type:"ops", ops:[{op:"healHero",amount:1},{op:"if",cond:"controlBeast",then:[{op:"draw",amount:1}]}] };
+
+  // ===== 最后语义补丁 =====
+  if (CARDS.xh_tribe_headhunter && CARDS.xh_tribe_headhunter.passive) CARDS.xh_tribe_headhunter.passive.condition="lostHealth";
+  if (CARDS.bounty_accountant && CARDS.bounty_accountant.passive) CARDS.bounty_accountant.passive.condition="stealth";
+  if (CARDS.snow_storm_hunter) CARDS.snow_storm_hunter.battlecry={type:"ops",ops:[{op:"damageTarget",amount:2},{op:"freezeTarget"},{op:"if",cond:"targetFrozen",then:[{op:"draw",amount:1}]}]};
+  if (CARDS.gok_lamp) CARDS.gok_lamp.spell={type:"ops",ops:[{op:"healHero",amount:1},{op:"freezeImmune"},{op:"if",cond:"controlBeast",then:[{op:"draw",amount:1}]}]};
+
+  // ===== 2C 语义字段收口 =====
+  if (CARDS.insight && CARDS.insight.formation) { CARDS.insight.formation.condition="spells"; CARDS.insight.formation.bonus={}; }
+  if (CARDS.xh_blood_moon_altar && CARDS.xh_blood_moon_altar.formation) { CARDS.xh_blood_moon_altar.formation.condition="lostHealth"; CARDS.xh_blood_moon_altar.formation.bonus={}; }
   return { FACTIONS, FACTION_IDS, nextFaction, HEROES, CARDS, DECKS, NEUTRAL_DECK, KEYWORDS, DECK_STRATEGIES, DECK_SPECIALS, DECK_TRIM, DECK_RARITY_LIMITS, cardPool, deckRarityCounts, isExactPreset, validateDeck, autoBuildDeck, maxCopies };
 });
 
