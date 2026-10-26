@@ -7,7 +7,7 @@
   "minSupportedVersion": "0.9.0",
   "size": 239722558,
   "sha256": "3a7ba575ee68a546258e5d1288351fdaa360a17cbf021aa589b88a6996a49255",
-  "url": "https://gok-vein-gambit-preview.onrender.com/downloads/GokVeinGambit-Setup-0.9.3.exe",
+  "url": "https://github.com/nekoruyue/gok-vein-gambit-preview/releases/download/v0.9.3/GokVeinGambit-Setup-0.9.3.exe",
   "title": "e64：安装包 + 自更新 + 开场动画 + 领袖语音",
   "notes": [
     "新增 NSIS 安装包：装到用户目录，卸载保留存档",
