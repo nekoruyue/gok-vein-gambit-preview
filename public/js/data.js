@@ -1988,7 +1988,7 @@
       }
     }
     const warnings = [];
-    if (relics > 2) warnings.push("装备带了 " + relics + " 件：开局只生效前 2 件，后续装备会覆盖");
+    if (relics === 0) warnings.push("牌组里没有装备卡：可以放，但不放也不影响开局");
     if (formations > 3) warnings.push("阵型带了 " + formations + " 张：场上最多 3 张，后续阵型会覆盖");
     if (relics === 0) warnings.push("未携带装备：本局没有装备可用");
     if (formations === 0) warnings.push("未携带阵型：本局没有阵型可用");

@@ -15,7 +15,7 @@
   var current = null;
   var lastPlayed = {};          // id -> ts，做冷却
   var subtitlesOn = read(KEY_SUB, "1") === "1";
-  var enabled = read(KEY_ON, "1") === "1";
+  var enabled = read(KEY_ON, "0") === "1";  // 占位音不好听，默认关闭，等真音色再开
   var volume = Number(read(KEY_VOL, "80")) / 100;
   var subEl = null;
   var preloaded = {};

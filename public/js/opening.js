@@ -57,6 +57,8 @@
     return false;
   }
 
+  function markSeenEarly() { try { localStorage.setItem(KEY_SEEN, "1"); } catch (e) {} }
+
   function shouldPlay() {
     if (forced()) return true;
     try { if (localStorage.getItem("gok_cg_off") === "1") return false; } catch (e) {}
@@ -349,6 +351,11 @@
         }
       } catch (e) {}
       // 跳过按钮自己处理，别让它触发开始
+      // 开场有自己的配乐：先把首页 BGM 停掉，免得两首叠在一起
+      try {
+        var audio = window.GokUI && window.GokUI.audio;
+        if (audio && audio.bgmEl) audio.bgmEl.pause();
+      } catch (e) {}
       startRun(opts);
     };
     root.addEventListener("click", function (ev) {
@@ -387,6 +394,7 @@
   function boot() {
     if (!build()) return;
     if (!shouldPlay()) return;
+    markSeenEarly();   // 决定要播就先记账，中途刷新也不会重播
     // 等启动进度条走完再上开场，避免两层遮罩打架
     var tries = 0;
     var timer = setInterval(function () {

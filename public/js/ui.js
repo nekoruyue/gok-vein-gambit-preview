@@ -599,7 +599,7 @@
     else if (name === "home" || name === "mode" || name === "sim" || name === "tutorial" || name === "settings" || name === "rank" || name === "rules") AudioBox.bgm(MAIN_BGM);
     if (name !== "home") { closeStartMenu(); hideMobileWelcome(); }
     if (name !== "home") removeOnboardingCoach();
-    if (name === "home") { updateHomeLegendary(); updateHomeAccount(); updateHomeTaskWidget(); renderHomeDash(); startHomeQuoteRotation(); setTimeout(startOnboardingIfNeeded, 300); }
+    if (name === "home") { const taskStrip = $("home-task-strip"); if (taskStrip) taskStrip.onclick = () => { AudioBox.play("ui_open"); openTasks(); }; const arcadeEntry = $("home-arcade-entry"); if (arcadeEntry) arcadeEntry.onclick = () => { AudioBox.play("ui_open"); const other = $("home-other"); if (other) other.click(); }; updateHomeLegendary(); updateHomeAccount(); updateHomeTaskWidget(); renderHomeDash(); renderHomeRail(); startHomeQuoteRotation(); setTimeout(startOnboardingIfNeeded, 300); }
     if (name === "profile") renderProfilePage();
     if (name === "appearance") renderAppearancePage();
     if (name === "login") renderLoginPage();
@@ -917,10 +917,26 @@
     const firstLabel = app.firstChoice === "0" ? "先手" : app.firstChoice === "1" ? "后手" : "随机先手";
     const levelLabel = app.aiDifficulty === "hard" ? "机密" : app.aiDifficulty === "nightmare" ? "绝密" : "普通";
     $("setup-summary").textContent = "单人推演 · " + factionName(app.faction) + " vs " + (app.aiOpponentChoice ? factionName(aiOther) : "随机对手（" + factionName(aiOther) + "）") + " · 档案等级 " + levelLabel + " · " + firstLabel;
+    // 推演方式：单人 / 在线匹配 / 自建房间共用这一屏，只换按钮与参数行
+    app.setupMode = app.setupMode || "solo";
+    document.querySelectorAll("[data-setup-mode]").forEach((b) => b.classList.toggle("active", b.dataset.setupMode === app.setupMode));
+    const soloOnly = app.setupMode === "solo";
+    document.querySelectorAll(".setup-ai-row, .setup-series-row").forEach((row) => { row.hidden = !soloOnly; });
+    const startBtn = $("btn-start-game");
+    if (startBtn) startBtn.textContent = app.setupMode === "match" ? "开始匹配" : app.setupMode === "room" ? "创建房间" : "开始推演";
+    document.querySelectorAll("#setup-faction .faction-card").forEach((b) => {
+      const heroDef = D.HEROES[D.FACTIONS[b.dataset.faction].hero];
+      const statsEl = b.querySelector(".faction-stats");
+      if (statsEl && heroDef) statsEl.textContent = heroDef.hp + " 生命";   // 以 data.js 为准，不再用写死的数字
+    });
     const hero = D.HEROES[D.FACTIONS[app.faction].hero];
     const art = $("setup-hero-art");
     art.style.backgroundImage = "url('" + heroImage(hero.id) + "')";
     $("setup-hero-name").textContent = hero.name;
+    const hpEl = $("setup-hero-hp");
+    if (hpEl) hpEl.textContent = "生命 " + hero.hp;
+    const facEl = $("setup-hero-faction");
+    if (facEl) facEl.textContent = factionName(app.faction);
     $("setup-hero-quote").textContent = "“" + hero.quote + "”";
     const setupPowerIcon = $("setup-power-icon");
     if (setupPowerIcon) setupPowerIcon.src = heroSkillIcon(hero.id);
@@ -1549,9 +1565,9 @@
       pip.style.setProperty("flex", "0 0 12px", "important");
       pip.style.setProperty("transform", "none", "important");
       pip.style.setProperty("clip-path", "polygon(50% 0, 100% 28%, 80% 100%, 20% 100%, 0 28%)", "important");
-      pip.style.setProperty("border", "1px solid " + (filled ? "rgba(182,238,226,.95)" : "rgba(142,190,183,.5)"), "important");
-      pip.style.setProperty("background", filled ? "linear-gradient(180deg,#b5f4e7,#55c9ba 55%,#1b8278)" : "rgba(3,14,16,.82)", "important");
-      pip.style.setProperty("box-shadow", filled ? "0 0 9px rgba(95,211,196,.5)" : "none", "important");
+      pip.style.setProperty("border", "1px solid " + (filled ? "rgba(150,200,255,.95)" : "rgba(110,150,205,.5)"), "important");
+      pip.style.setProperty("background", filled ? "linear-gradient(180deg,#a6d4ff,#4a86d0 55%,#1d4a86)" : "rgba(10,18,30,.82)", "important");
+      pip.style.setProperty("box-shadow", filled ? "0 0 10px rgba(70,140,235,.55)" : "none", "important");
       const crystal = el("img", "mana-crystal-art");
       crystal.alt = "";
       crystal.loading = "eager";
@@ -2072,8 +2088,6 @@
     if (side === "bottom") {
       const deckBadge = $("deck-left-value");
       if (deckBadge) deckBadge.textContent = String(player.deck.length);
-      const deckDock = $("deck-dock-value");
-      if (deckDock) deckDock.textContent = String(player.deck.length);
       const playerRailValue = $("player-deck-rail-value");
       if (playerRailValue) playerRailValue.textContent = String(player.deck.length);
       const playerRail = $("player-deck-rail");
@@ -2204,6 +2218,11 @@
       zone.dataset.zoneName = E.ZONE_NAMES[z];
       zone.setAttribute("data-zone", E.ZONE_NAMES[z]);
       zone.appendChild(el("i", "zone-diamond"));
+      // 阵位编号（Ⅰ/Ⅱ/Ⅲ）：协同、对位、拖拽时能直接对上号
+      const ZONE_NO = { left: "Ⅰ", center: "Ⅱ", right: "Ⅲ" };
+      const zoneNo = el("span", "zone-no", ZONE_NO[z] || "");
+      zoneNo.title = "阵位 " + (ZONE_NO[z] || z);
+      zone.appendChild(zoneNo);
       const zonesOpen = app.zoneSelect && side === "bottom" && app.game.current === player.index;
       zone.classList.toggle("zone-open", !!zonesOpen);
       if (zonesOpen) zone.onclick = () => onZoneClick(z);
@@ -2621,8 +2640,12 @@
     return def.type === "spell" ? "战术" : (def.type === "equipment" || def.type === "relic") ? "装备" : def.type === "formation" ? "阵型" : def.type === "debt" ? "债务卡" : def.type === "leader" ? "领袖" : "随从";
   }
 
+
   function renderVein(s) {
     $("vein-value").textContent = String(s.vein);
+    const chipVal = $("gk-vein-chip-value");
+    if (chipVal) chipVal.textContent = String(s.vein);
+    const chip = $("gk-vein-chip");
     const sigil = document.querySelector("#vein-row .vein-sigil");
     if (sigil) {
       sigil.style.backgroundImage = "url('assets/ui/vein-core.webp?v=" + ART_VERSION + "')";
@@ -2922,7 +2945,35 @@
     hand.style.setProperty("--hand-zoom", scale.toFixed(3));
   }
 
+  // 手牌费用曲线：拖牌/出牌时一眼看出"还能打几张"
+  function renderHandCurve(player, s) {
+    const box = $("gk-hand-curve");
+    if (!box) return;
+    clear(box);
+    if (!player || !player.hand || !player.hand.length) { box.hidden = true; return; }
+    box.hidden = false;
+    const hist = {};
+    let maxCount = 1;
+    for (const c of player.hand) {
+      const cost = Math.max(0, Math.min(8, E.getCardCost(s, player, c)));
+      hist[cost] = (hist[cost] || 0) + 1;
+      if (hist[cost] > maxCount) maxCount = hist[cost];
+    }
+    const mana = player.mana || 0;
+    for (let cost = 0; cost <= 8; cost++) {
+      const n = hist[cost] || 0;
+      const col = el("div", "gk-curve-col" + (cost <= mana && n ? " playable" : ""));
+      const bar = el("i");
+      bar.style.height = n ? Math.max(14, Math.round((n / maxCount) * 100)) + "%" : "6%";
+      col.appendChild(bar);
+      col.appendChild(el("span", null, String(cost)));
+      col.title = cost === 8 ? "8+ 费：" + n + " 张" : cost + " 费：" + n + " 张";
+      box.appendChild(col);
+    }
+  }
+
   function renderHand(player, s) {
+    renderHandCurve(player, s);
     const hand = $("hand");
     clear(hand);
     if (!player) return;
@@ -3427,7 +3478,12 @@
       content.appendChild(el("h3", null, "关键词说明"));
       content.appendChild(el("p", null, "把鼠标移到卡牌上的效果标签，也会显示同样的说明。"));
       const grid = el("div", "keyword-glossary");
-      for (const [label, desc] of Object.entries(KEYWORD_HELP)) {
+      // 词条 = 短说明 ∪ 教程词条；说明优先用教程版的完整文字（看得更清楚）
+      const kbLabels = Array.from(new Set([...Object.keys(KEYWORD_HELP), ...TUTORIAL_KEYWORD_ORDER]));
+      const kbEntries = kbLabels
+        .map((label) => [label, KEYWORD_TUTORIAL[label] || KEYWORD_HELP[label] || ""])
+        .filter((e) => e[1]);
+      for (const [label, desc] of kbEntries) {
         const item = el("div", "keyword-glossary-item");
         const iconName = KEYWORD_ICONS[label];
         if (iconName) {
@@ -4943,7 +4999,7 @@
         if (def.art) art.style.backgroundImage = "url('" + portraitImage(def.art) + "')";
         else {
           art.classList.add("placeholder", "generic-art");
-          art.style.backgroundImage = genericArtStyle(def);
+          art.style.setProperty("--gk-art", cssAbsUrls(genericArtStyle(def)));
           art.dataset.icon = def.type === "spell" ? "术" : factionIcon(def.faction);
           addGenericGlyph(art, def);
           addGeneratedArt(art, def);
@@ -5016,6 +5072,7 @@
     const old = document.getElementById("target-focus-label");
     if (old) old.remove();
     const chip = el("div", "target-focus-label", "目标 · " + (label || "目标"));
+    chip.id = "target-focus-label";
     document.body.appendChild(chip);
     const r = targetEl.getBoundingClientRect();
     const w = chip.offsetWidth || 100;
@@ -5209,7 +5266,17 @@
     AudioBox.play(win ? "victory_jingle" : draw ? "turn_start" : "defeat_jingle");
     AudioBox.bgm(MAIN_BGM);
     openModal((content) => {
-      content.classList.add("end-modal", win ? "end-win" : draw ? "end-draw" : "end-lose");
+      content.classList.add("end-modal", "end-fullscreen", win ? "end-win" : draw ? "end-draw" : "end-lose");
+      // 一行"代价"：这一局拿什么换来的（世界观红线：不写没有代价的胜利）
+      const me = s.players && s.players[app.human] ? s.players[app.human] : null;
+      const hpLost = me && me.maxHp ? Math.max(0, (me.maxHp || 0) - (me.hp || 0)) : 0;
+      const rounds = s.round || s.rounds || 0;
+      const priceText = win
+        ? "代价：打了 " + rounds + " 回合，领袖掉了 " + hpLost + " 点生命；流脉已经记下这一笔。"
+        : draw
+        ? "代价：谁也没赢，双方都把这一局押在了桌面上。"
+        : "代价：这一页合上了，但地脉还在流——下一局它不会更便宜。";
+      content.dataset.price = priceText;
       content.appendChild(el("div", "eyebrow", "档案 / 结算"));
       const art = el("div", "end-art");
       const focusPlayer = s.winner != null ? s.players[s.winner] : s.players[app.human];
@@ -6438,32 +6505,7 @@
     setTimeout(() => toast(goal), 1100);
   }
 
-  function renderTutorialHub() {
-    const root = $("tutorial-hub-root");
-    if (!root) return;
-    clear(root);
-    const intro = el("div", "tutorial-intro");
-    intro.appendChild(el("div", "eyebrow", "TRAINING / 四堂必修课"));
-    intro.appendChild(el("h3", null, "先学四课，再上牌桌"));
-    intro.appendChild(el("p", null, "不按顺序也可以，但建议先看基本规则。进阶、组卡和实战演练会反复用到前面的概念。"));
-    const done = TUTORIAL_LESSONS.filter(x => lessonCompleted(x.id)).length;
-    intro.appendChild(el("p", "tutorial-hub-progress", "已完成 " + done + " / " + TUTORIAL_LESSONS.length + " 课"));
-    root.appendChild(intro);
-    const grid = el("div", "tutorial-hub-grid");
-    for (const lesson of TUTORIAL_LESSONS) {
-      const card = el("article", "tutorial-module" + (lessonCompleted(lesson.id) ? " done" : ""));
-      card.appendChild(el("span", "manual-index", String(TUTORIAL_LESSONS.indexOf(lesson) + 1).padStart(2, "0")));
-      card.appendChild(el("div", "tutorial-module-kicker", lesson.drill ? "PRACTICE / 实战" : "TUTORIAL / 教程"));
-      card.appendChild(el("h3", null, lesson.title));
-      card.appendChild(el("p", null, lesson.desc));
-      card.appendChild(el("small", null, lesson.drill ? "四种局面 · 一个目标一次" : "文字阅读 · 完成给经验"));
-      const btn = el("button", "btn btn-primary", lessonCompleted(lesson.id) ? "重看" : "进入教程");
-      btn.onclick = () => openLessonPage(lesson.id, "tutorial");
-      card.appendChild(btn);
-      grid.appendChild(card);
-    }
-    root.appendChild(grid);
-  }
+
 
   function openLessonPage(id, back) {
     app.currentLesson = id;
@@ -7325,7 +7367,7 @@
     if (add) { add.disabled = readonly || (!multiple && lib.length > 0); add.title = multiple ? "" : "Lv.7 开放多套牌组"; add.onclick = () => { if (!multiple && lib.length) { toast("Lv.7 开放多套牌组。"); return; } app.deckEditingId = null; app.deckDraftName = "新牌组"; app.deckDraftTag = ""; app.deckBuildList = D.DECKS[f].slice(); app.deckSource = "draft"; renderDeckBuilder(); }; }
     if (dup) { dup.disabled = readonly || !multiple || !app.deckEditingId; dup.onclick = () => { if (!multiple) { toast("Lv.7 开放多套牌组。"); return; } const d = lib.find(x => x.id === app.deckEditingId); if (!d) return; const copy = { id: newDeckId(), name: d.name + " 副本", tags: (d.tags || []).slice(), cards: d.cards.slice(), updatedAt: Date.now() }; lib.push(copy); app.activeDeckId[f] = copy.id; app.deckEditingId = copy.id; app.customDecks[f] = copy.cards.slice(); persistDeckLibrary(); app.deckBuildList = copy.cards.slice(); app.deckDraftName = copy.name; renderDeckBuilder(); toast("已复制牌组。"); }; }
     if (del) { del.disabled = readonly || !app.deckEditingId; del.onclick = () => { if (!app.deckEditingId) return; const i = lib.findIndex(x => x.id === app.deckEditingId); if (i < 0) return; lib.splice(i, 1); delete app.customDecks[f]; app.deckEditingId = lib[0] ? lib[0].id : null; app.deckDraftName = lib[0] ? lib[0].name : ""; app.deckBuildList = lib[0] ? lib[0].cards.slice() : D.DECKS[f].slice(); app.activeDeckId[f] = lib[0] ? lib[0].id : null; persistDeckLibrary(); renderDeckBuilder(); toast("牌组已删除。"); }; }
-    const note = el("span", "deck-library-locked", readonly ? "官方预设只读" : (multiple ? "可保存多套牌组" : "Lv.7 开放多套牌组"));
+    const note = el("span", "deck-library-locked", readonly ? "官方预组 · 借用" : (multiple ? "可保存多套牌组" : "Lv.7 开放多套牌组"));
     const old = bar && bar.querySelector(".deck-library-locked"); if (old) old.remove();
     if (bar) bar.appendChild(note);
   }
@@ -7349,25 +7391,18 @@
     if (noteEl) noteEl.textContent = "30 张 · 品级上限：传说 " + D.DECK_RARITY_LIMITS.legendary + " / 史诗 " + D.DECK_RARITY_LIMITS.epic + " / 稀有 " + D.DECK_RARITY_LIMITS.rare;
 
     const heroDef = D.HEROES[D.FACTIONS[f].hero];
-    const leaderName = $("deck-leader-name");
-    if (leaderName) leaderName.textContent = heroDef.name;
-    const relicSelect = $("deck-relic-select");
-    if (relicSelect) {
-      const relicIds = list.filter(id => D.CARDS[id] && (D.CARDS[id].type === "equipment" || D.CARDS[id].type === "relic"));
-      clear(relicSelect);
-      if (!relicIds.length) relicSelect.appendChild(el("option", null, "未装备"));
-      for (const rid of relicIds) relicSelect.appendChild(el("option", null, D.CARDS[rid].name));
-      relicSelect.value = relicIds[0] ? D.CARDS[relicIds[0]].name : "未装备";
-      relicSelect.disabled = true;
-      relicSelect.onchange = null;
-    }
     const leaderSkill = $("deck-leader-skill");
     if (leaderSkill) {
       clear(leaderSkill);
+      const pw = heroDef.power || {};
+      const isPassive = pw.passive === true || pw.target === "passive";
       const main = el("div", "deck-skill-main");
       main.appendChild(el("span", "deck-hero-stats", "领袖 " + heroDef.name + " · 生命 " + heroDef.hp + "（上限可成长）"));
-      main.appendChild(el("strong", null, "领袖技能 · " + heroDef.power.name + " · " + heroDef.power.cost + " 行动力"));
-      // keep the deck header compact: skill details are available in-game / via tooltip
+      const kicker = isPassive ? "被动技能" : "主动技能" + (pw.cost != null ? " · " + pw.cost + " 行动力" : "");
+      main.appendChild(el("strong", null, kicker + " · " + (pw.name || "无")));
+      // 技能原文里常带「被动：」「主动：」前缀，这里去掉避免重复
+      const skillText = (pw.text || "无").replace(/^(被动|主动)[:：]\s*/, "");
+      main.appendChild(el("p", "deck-skill-text", skillText));
       leaderSkill.appendChild(main);
     }
     const validEl = $("deck-valid");
@@ -7495,7 +7530,7 @@ const tabs = $("deck-faction-tabs");
     document.querySelectorAll("#deck-selected .deck-line-remove").forEach((b) => { b.disabled = !!app.deckReadOnly; });
     $("btn-deck-use").disabled = app.deckReadOnly || !validation.ok;
     const topUse = $("btn-deck-top-use");
-    if (topUse) { topUse.disabled = app.deckReadOnly || !validation.ok; topUse.textContent = app.deckReadOnly ? "只读预览" : "保存并使用"; }
+    if (topUse) { topUse.disabled = app.deckReadOnly || !validation.ok; topUse.textContent = app.deckReadOnly ? "借用预览" : "保存并使用"; }
     if ($("btn-deck-clear")) $("btn-deck-clear").disabled = !!app.deckReadOnly;
     const source = $("deck-source-label");
     if (source) {
@@ -8679,8 +8714,9 @@ const tabs = $("deck-faction-tabs");
 
   function updateHomeAccount() {
     const account = ensureAccount();
-    const nameEl = $("home-account-name");
     const metaEl = $("home-account-meta");
+    const cardBackEl = $("home-account-cardback");
+    const nameEl = $("home-account-name");
     const levelEl = $("home-account-level");
     const statusEl = $("home-account-status");
     if (nameEl) nameEl.textContent = account.name || "档案员";
@@ -8724,7 +8760,6 @@ const tabs = $("deck-faction-tabs");
     document.body.dataset.tableTheme = account.tableTheme || "archive";
     document.body.dataset.cardFrame = account.cardFrame || "none";
     applyProfileCardBack();
-    const cardBackEl = $("home-account-cardback");
     if (cardBackEl) {
       const cb = cardBackDefinition(account.cardBack || "classic");
       cardBackEl.style.backgroundImage = "url('" + cardBackUrl() + "')";
@@ -8744,6 +8779,31 @@ const tabs = $("deck-faction-tabs");
     metaEl.textContent = levelText + " · " + (time ? "自动备份 " + time : "自动备份已就绪") + " · 牌组 " + deckCount + " · 街机印记 " + (content.marks || 0);
     const dock = document.querySelector(".home-account-dock");
     if (dock) dock.classList.toggle("unset", !account.name || account.name === "档案员");
+  }
+
+  // 首页右栏：用真实的 profile 数据渲染速览与最近一局（没有数据就显示空态）
+  function renderHomeRail() {
+    const p = app.profile || {};
+    const games = p.games || 0, wins = p.wins || 0, losses = p.losses || 0;
+    const set = (id, text) => { const n = $(id); if (n) n.textContent = text; };
+    set("home-brief-games", games + " 局");
+    set("home-brief-record", wins + " 胜 " + losses + " 负");
+    set("home-brief-rate", games ? Math.round((wins / games) * 100) + "%" : "—");
+    const rank = typeof rankInfo === "function" ? rankInfo(p.rankPoints || 0) : null;
+    set("home-brief-rank", rank ? rank.tier + " · " + (p.rankPoints || 0) + " 分" : "未定级");
+    set("home-brief-streak", String(p.rankBestStreak || 0));
+    const hist = (p.history || [])[0];
+    const line = $("home-recent-line"), sub = $("home-recent-sub");
+    if (!hist) {
+      if (line) line.textContent = "还没有推演记录";
+      if (sub) sub.textContent = "打一局就会记在这里";
+      return;
+    }
+    const resultText = hist.result === "win" ? "胜利" : hist.result === "loss" ? "失败" : "平局";
+    if (line) line.textContent = factionName(hist.faction) + " vs " + factionName(hist.opponent) + " · " + resultText;
+    const when = hist.at ? new Date(hist.at) : null;
+    const whenText = when && !isNaN(when) ? (when.getMonth() + 1) + "-" + when.getDate() + " " + String(when.getHours()).padStart(2, "0") + ":" + String(when.getMinutes()).padStart(2, "0") : "";
+    if (sub) sub.textContent = [hist.round ? hist.round + " 回合" : "", hist.ranked ? "排位" : "推演", whenText].filter(Boolean).join(" · ");
   }
 
   function renderHomeDash() {
@@ -8775,8 +8835,6 @@ const tabs = $("deck-faction-tabs");
   function updateHomeProfile() {
     const p = app.profile || { games: 0, wins: 0 };
     const level = 1 + Math.floor((p.games || 0) / 5);
-    const el = $("home-profile");
-    if (el) el.textContent = "档案等级 " + level + " · " + (p.games || 0) + " 局 · " + (p.wins || 0) + " 胜";
     if (app.screen === "rank") renderRankScreen();
   }
 
@@ -8915,6 +8973,16 @@ const tabs = $("deck-faction-tabs");
     renderCodex();
   }
 
+  // CSS 变量里的 url() 会按"写 var() 的那张样式表"解析相对路径，
+  // 所以塞进 --gk-art 之前必须转成绝对地址，否则会去 /css/assets/... 找图
+  function cssAbsUrls(value) {
+    if (!value) return value;
+    return String(value).replace(/url\((['"]?)([^'")]+)\1\)/g, function (m, q, u) {
+      if (/^(data:|https?:|\/)/i.test(u)) return m;
+      try { return "url('" + new URL(u, document.baseURI).href + "')"; } catch (e) { return m; }
+    });
+  }
+
   function buildLibraryCard(def, opts) {
     opts = opts || {};
     const variantClass = opts.variant ? " library-" + opts.variant : " library-codex";
@@ -8930,9 +8998,9 @@ const tabs = $("deck-faction-tabs");
     const art = el("div", "gok-lib-art");
     const customArt = customCardArtFor(def.id);
     if (customArt) {
-      art.style.backgroundImage = "url('" + customArt + "')";
+      art.style.setProperty("--gk-art", cssAbsUrls("url('" + customArt + "')"));
       art.classList.add("has-custom-art");
-    } else if (def.art) art.style.backgroundImage = "url('" + portraitImage(def.art) + "')";
+    } else if (def.art) art.style.setProperty("--gk-art", cssAbsUrls("url('" + portraitImage(def.art) + "')"));
     else {
       art.classList.add("placeholder");
       art.style.backgroundImage = genericArtStyle(def);
@@ -8941,25 +9009,21 @@ const tabs = $("deck-faction-tabs");
     card.appendChild(art);
     card.appendChild(el("div", "gok-lib-scrim"));
     const costEl = el("div", "gok-lib-cost", String(opts.cost != null ? opts.cost : def.cost));
-    costEl.style.setProperty("--faction-color", factionColor);
     card.appendChild(costEl);
     if (opts.count != null) card.appendChild(el("div", "gok-lib-count", opts.count));
     if (opts.faction !== false) {
       const factionEl = el("div", "gok-lib-faction", factionName(def.faction));
-      factionEl.style.setProperty("--faction-color", factionColor);
       card.appendChild(factionEl);
     }
     card.appendChild(el("div", "gok-lib-name", def.name));
     const kindEl = el("div", "gok-lib-kind");
     kindEl.dataset.rarity = def.rarity || "common";
-    kindEl.style.setProperty("--rarity-color", rarityColor);
     if (opts.typeText) {
       kindEl.textContent = opts.typeText;
     } else {
       kindEl.appendChild(el("span", "gok-lib-type", typeLine(def)));
       kindEl.appendChild(el("span", "gok-lib-kind-sep", " · "));
       const rarityEl = el("b", "gok-lib-rarity", RARITY_NAMES[def.rarity] || "普通");
-      rarityEl.style.setProperty("--rarity-color", rarityColor);
       kindEl.appendChild(rarityEl);
     }
     card.appendChild(kindEl);
@@ -9051,7 +9115,7 @@ const tabs = $("deck-faction-tabs");
     const allCards = Object.values(D.CARDS).filter(d => !d.disabled);
     const factions = [{ id: "all", name: "全部" }, ...D.FACTION_IDS.map(id => ({ id, name: D.FACTIONS[id].name })), { id: "neutral", name: "中立" }];
     for (const f of factions) {
-      const count = f.id === "all" ? allCards.length : allCards.filter(d => d.faction === f.id).length;
+      const count = f.id === "all" ? allCards.filter(d => !d.token && !d.easterEgg).length : allCards.filter(d => d.faction === f.id).length;
       const b = el("button", "deck-faction-tab" + (app.codexFaction === f.id ? " active" : ""), f.name + " " + count);
       const factionColor = f.id === "all" ? "#f2c66d" : f.id === "neutral" ? "#b7c5cc" : (D.FACTIONS[f.id] && D.FACTIONS[f.id].color) || "#f2c66d";
       b.style.setProperty("--faction-color", factionColor);
@@ -9145,7 +9209,10 @@ const tabs = $("deck-faction-tabs");
     });
     const shown = list.slice(0, app.codexLimit || 60);
     const seenCount = allCards.filter(d => app.codexSeen && app.codexSeen[d.id]).length;
-    $("codex-count").innerHTML = '<span class="codex-count-total">收录 <b>' + allCards.length + '</b> 张</span><span class="codex-count-sep"> · </span><span class="codex-count-seen">已阅 ' + seenCount + '</span><span class="codex-count-sep"> · </span><span class="codex-count-fav">收藏 ' + (app.codexFavorites ? app.codexFavorites.size : 0) + '</span><span class="codex-count-sep"> · </span><span class="codex-count-hit">当前 <b>' + list.length + '</b> 张</span>' + (list.length > shown.length ? '<span class="codex-count-sep"> · </span><span class="codex-count-shown">已显示 ' + shown.length + '</span>' : "");
+    const collectible = allCards.filter(d => !d.token && !d.easterEgg).length;
+    const tokenCount = allCards.filter(d => d.token).length;
+    const easterCount = allCards.filter(d => d.easterEgg).length;
+    $("codex-count").innerHTML = '<span class="codex-count-total">可收藏 <b>' + collectible + '</b> 张</span><span class="codex-count-sep"> · </span><span class="codex-count-token">衍生 ' + tokenCount + '</span><span class="codex-count-sep"> · </span><span class="codex-count-easter">彩蛋 ' + easterCount + '</span><span class="codex-count-sep"> · </span><span class="codex-count-seen">已阅 ' + seenCount + '</span><span class="codex-count-sep"> · </span><span class="codex-count-fav">收藏 ' + (app.codexFavorites ? app.codexFavorites.size : 0) + '</span><span class="codex-count-sep"> · </span><span class="codex-count-hit">当前 <b>' + list.length + '</b> 张</span>' + (list.length > shown.length ? '<span class="codex-count-sep"> · </span><span class="codex-count-shown">已显示 ' + shown.length + '</span>' : "");
     const more = $("codex-more");
     if (more) { more.hidden = list.length <= shown.length; more.onclick = () => { app.codexLimit = (app.codexLimit || 60) + 60; renderCodex(); }; }
     const empty = $("codex-empty");
@@ -9184,6 +9251,8 @@ const tabs = $("deck-faction-tabs");
       }
       content.appendChild(art);
       content.appendChild(el("p", null, d.text || "—"));
+    const codexKeywordHelp = cardKeywordHelpNode(d);
+    if (codexKeywordHelp) content.appendChild(codexKeywordHelp);
       if (d.flavor) content.appendChild(el("div", "preview-flavor", "“" + d.flavor + "”"));
       const artTools = el("div", "card-art-tools");
       artTools.appendChild(el("small", null, "卡面替换只保存在本机，不会上传，也不会改变对手看到的卡面。"));
@@ -9227,7 +9296,7 @@ const tabs = $("deck-faction-tabs");
         ["行动力与先后手", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张，并额外获得一张「掘脉许可」（1 费战术：本回合 +2 点行动力，可以留着）。"],
         ["阵位", "左翼 / 中枢 / 右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。阵位会影响部分卡牌的范围与固定效果。"],
         ["流脉", "双方共享 0→12，每次完整轮次（双方各行动一次）自然 +1。4 震荡、7 裂隙、10 魔物潮触发世界事件，12 回流清空。"],
-        ["牌组结构", "30 张主牌（随从 + 战术 + 阵型）+ 2 件装备牌。领袖在开局单独选择，不占牌组，也不进入牌库。装备需要抽到并打出，最多可同时装备两件。"]
+        ["牌组结构", "30 张牌，随从 / 战术 / 阵型 / 装备自由混编（阵型最多 2 张）。领袖在开局单独选择，不占牌组，也不进入牌库。装备抽到打出即可生效，想同时带几件都行。"]
       ];
       for (const [title, desc] of sections) {
         const sec = el("div", "guide-section");
@@ -11653,6 +11722,7 @@ const tabs = $("deck-faction-tabs");
     loadActiveRelics();
     loadAchievements();
     app.profile = loadProfile();
+  if (app.screen === "home") renderHomeRail();   // 读档/登录后补刷右栏速览
     ensureAccount();
     snapshotSave("startup");
     applyFactionChipColors();
@@ -11684,7 +11754,6 @@ const tabs = $("deck-faction-tabs");
     if ($("mode-multi")) $("mode-multi").onclick = () => showModeMulti(true);
     if ($("mode-multi-back")) $("mode-multi-back").onclick = () => showModeMulti(false);
     if ($("mode-group")) $("mode-group").onclick = () => { AudioBox.play("ui_open"); openRoomPage(); };
-    if ($("mode-lan")) $("mode-lan").onclick = () => showModeLan(true);
     if ($("mode-lan-back")) $("mode-lan-back").onclick = () => showModeLan(false);
     if ($("mode-lan-direct")) $("mode-lan-direct").onclick = () => { AudioBox.play("ui_open"); showScreen("lan"); initLanScreen(); };
     if ($("mode-online")) $("mode-online").onclick = () => { AudioBox.play("ui_open"); openRoomPage(); };
@@ -11702,10 +11771,9 @@ const tabs = $("deck-faction-tabs");
     if (startBackdrop) startBackdrop.onclick = () => closeStartMenu();
     $("btn-solo").onclick = () => { closeStartMenu(); AudioBox.play("ui_open"); showScreen("setup"); setupState(); };
     $("btn-deck-home").onclick = () => { AudioBox.play("ui_open"); openDeckBuilder(app.faction || "pus", "home"); };
-    if ($("btn-content-home")) $("btn-content-home").onclick = () => { AudioBox.play("ui_open"); if (global.GokContent) global.GokContent.open(); };
     if ($("btn-home-profile")) $("btn-home-profile").onclick = () => openProfilePage("personal");
     if ($("btn-profile-back")) $("btn-profile-back").onclick = () => showScreen("home");
-    if ($("btn-appearance-back")) $("btn-appearance-back").onclick = () => openProfilePage("personal");
+
     if ($("btn-login-back")) $("btn-login-back").onclick = () => { if (app.authGate) { toast("请选择登录、注册或游客登录。"); return; } openProfilePage("security"); };
     if ($("btn-tasks-back")) $("btn-tasks-back").onclick = () => showScreen("home");
     if ($("btn-levelup-back")) $("btn-levelup-back").onclick = () => showScreen("tasks");
@@ -11734,7 +11802,6 @@ const tabs = $("deck-faction-tabs");
       setTimeout(() => { if (AudioBox.lastPlayedAt === before) AudioBox.play("click", { gain: 0.42 }); }, 30);
     });
     window.addEventListener("resize", () => { if (app.screen === "game") requestAnimationFrame(fitHandToWidth); });
-    if ($("btn-tutorial")) $("btn-tutorial").onclick = () => { closeStartMenu(); AudioBox.play("ui_open"); showScreen("tutorial"); };
     $("btn-codex").onclick = () => { AudioBox.play("ui_open"); openCodex(); };
     document.querySelectorAll("[data-ai-diff]").forEach((b) => { b.onclick = () => { const diff = b.dataset.aiDiff; if ((diff === "hard" && !levelUnlocked("hard")) || (diff === "nightmare" && !levelUnlocked("nightmare"))) { showLockedFeature(diff, diff === "hard" ? "机密档案" : "绝密档案"); return; } app.aiDifficulty = diff; document.querySelectorAll("[data-ai-diff]").forEach((x) => x.classList.toggle("active", x === b)); }; });
     document.querySelectorAll("[data-first]").forEach((b) => { b.onclick = () => { app.firstChoice = b.dataset.first; document.querySelectorAll("[data-first]").forEach((x) => x.classList.toggle("active", x === b)); AudioBox.play("select"); setupState(); }; });
@@ -11762,12 +11829,7 @@ const tabs = $("deck-faction-tabs");
     };
     if ($("codex-favorites")) $("codex-favorites").onclick = () => { app.codexFavoritesOnly = !app.codexFavoritesOnly; app.codexLimit = 60; renderCodex(); };
     if ($("codex-reset")) $("codex-reset").onclick = resetCodexFilters;
-    if ($("codex-random")) $("codex-random").onclick = () => {
-      const visible = Array.from(document.querySelectorAll("#codex-grid .codex-card")).map(c => c.dataset.cardId).filter(Boolean);
-      const pool = visible.length ? visible : Object.keys(D.CARDS).filter(id => !D.CARDS[id].token && !D.CARDS[id].disabled);
-      if (!pool.length) return;
-      openCodexCard(D.CARDS[pool[Math.floor(Math.random() * pool.length)]]);
-    };
+
     const fieldDrop = $("battlefield");
     if (fieldDrop) {
       fieldDrop.addEventListener("dragover", (ev) => {
@@ -11820,8 +11882,6 @@ const tabs = $("deck-faction-tabs");
     }, true);
     $("btn-achievements").onclick = () => { AudioBox.play("ui_open"); openAchievements(); };
     if ($("btn-tasks-home")) $("btn-tasks-home").onclick = () => { AudioBox.play("ui_open"); openTasks(); };
-    if ($("btn-tasks")) $("btn-tasks").onclick = () => { AudioBox.play("ui_open"); openTasks(); };
-    if ($("btn-home-tasks")) $("btn-home-tasks").onclick = () => { AudioBox.play("ui_open"); openTasks(); };
     $("btn-settings").onclick = () => { AudioBox.play("ui_open"); openSettings("home"); };
     $("btn-codex-back").onclick = () => { AudioBox.play("cancel"); showScreen("home"); };
     $("btn-achievements-back").onclick = () => { AudioBox.play("cancel"); showScreen("home"); };
@@ -11839,7 +11899,6 @@ const tabs = $("deck-faction-tabs");
     if ($("btn-settings-bgvideo")) $("btn-settings-bgvideo").onclick = toggleBgVideo;
     if ($("btn-settings-cinema")) $("btn-settings-cinema").onclick = toggleCinema;
     if ($("btn-settings-replay-cg")) $("btn-settings-replay-cg").onclick = replayOpening;
-    if ($("btn-settings-lowfx")) $("btn-settings-lowfx").onclick = toggleLowFx;
     if ($("btn-settings-motion")) $("btn-settings-motion").onclick = () => toggleMotion();
     if ($("btn-settings-damage")) $("btn-settings-damage").onclick = () => { app.damageNumbers = !app.damageNumbers; localStorage.setItem("gok_damage_numbers", app.damageNumbers ? "1" : "0"); updateSettingsUI(); };
     if ($("btn-settings-fx")) $("btn-settings-fx").onclick = () => { app.fxOn = !app.fxOn; localStorage.setItem("gok_fx", app.fxOn ? "1" : "0"); updateSettingsUI(); };
@@ -11891,10 +11950,8 @@ const tabs = $("deck-faction-tabs");
       renderTutorialCoach();
       AudioBox.play("click");
     };
-    if ($("btn-tutorial-skip")) $("btn-tutorial-skip").onclick = () => returnFromTutorial();
     if ($("btn-rules-back")) $("btn-rules-back").onclick = closeRulesScreen;
     if ($("btn-rules-back2")) $("btn-rules-back2").onclick = closeRulesScreen;
-    if ($("btn-rules-keywords-top")) $("btn-rules-keywords-top").onclick = () => { AudioBox.play("ui_open"); openKeywordGlossary(); };
     if ($("btn-rules-tutorial")) $("btn-rules-tutorial").onclick = () => { if (app.rulesReturn === "game" && app.game) { toast("对局中不能跳转新手教程。"); return; } AudioBox.play("ui_open"); showScreen("tutorial"); };
     const startTutorialFlow = () => { markTutorialSeen("drill"); runBootLoading("正在准备新手演练", "载入教学牌桌…", BOOT_ASSETS, () => startTutorial()); };
     if ($("btn-tutorial-start")) $("btn-tutorial-start").onclick = startTutorialFlow;
@@ -11913,25 +11970,18 @@ const tabs = $("deck-faction-tabs");
     $("btn-tutorial-exit").onclick = () => endTutorial();
     $("btn-lan").onclick = () => { closeStartMenu(); AudioBox.play("ui_open"); showScreen("lan"); initLanScreen(); };
     const matchBtn = $("btn-match");
-    if (matchBtn) matchBtn.onclick = () => { closeStartMenu(); AudioBox.play("ui_open"); openMatchPage(); };
+    if (matchBtn) matchBtn.onclick = () => { closeStartMenu(); AudioBox.play("ui_open"); beginMatchmaking(app.faction || "pus", lanHasCustom(app.faction) ? "custom" : "preset"); };
     const onlineBtn = $("btn-online");
     if (onlineBtn) onlineBtn.onclick = () => { closeStartMenu(); AudioBox.play("ui_open"); openRoomPage(); };
     $("btn-lan-back").onclick = () => { stopNet(true); showScreen("mode"); showModeMulti(true); };
-    if ($("btn-credits")) $("btn-credits").onclick = () => showCredits();
-    if ($("btn-rules")) $("btn-rules").onclick = () => { AudioBox.play("ui_open"); openKeywordGlossary(); };
-    if ($("btn-rank")) $("btn-rank").onclick = () => openRank("home");
     if ($("btn-customize-home")) $("btn-customize-home").onclick = () => { if (!levelUnlocked("customize")) { showLockedFeature("customize", "档案个性化"); return; } AudioBox.play("ui_open"); openAppearancePage(); };
-    if ($("home-account-cardback")) { $("home-account-cardback").style.cursor = "pointer"; $("home-account-cardback").title = "当前卡背 · 点击打开自定义"; $("home-account-cardback").onclick = () => { AudioBox.play("ui_open"); openProfileCustomization(); }; }
-    if ($("btn-rank-multi")) $("btn-rank-multi").onclick = () => { closeStartMenu(); AudioBox.play("ui_open"); openRank("mode"); };
-    if ($("btn-rank-mode")) $("btn-rank-mode").onclick = () => { AudioBox.play("ui_open"); openRank("mode"); };
     if ($("btn-rank-back")) $("btn-rank-back").onclick = () => closeRank();
     if ($("btn-rank-game")) $("btn-rank-game").onclick = () => openRank("game");
     if ($("btn-concede")) $("btn-concede").onclick = () => confirmConcede();
     if ($("btn-game-settings")) $("btn-game-settings").onclick = () => { AudioBox.play("ui_open"); openGameMenu(); };
     if (typeof app.emoteVoice !== "boolean") app.emoteVoice = localStorage.getItem("gok_emote_voice") !== "0";
     if ($("btn-emote")) $("btn-emote").onclick = () => { AudioBox.play("ui_open"); openEmotePanel(); };
-    if ($("btn-game-guide")) $("btn-game-guide").onclick = () => { AudioBox.play("ui_open"); app.tutorialReturn = app.screen === "game" ? "game" : "home"; showScreen("tutorial"); };
-    if ($("btn-lore-home")) $("btn-lore-home").onclick = () => { AudioBox.play("ui_open"); window.open("lore/index.html?v=20261023world1", "_blank", "noopener"); };
+    if ($("btn-lore-home")) $("btn-lore-home").onclick = () => { AudioBox.play("ui_open"); location.href = "lore/index.html"; };
     window.addEventListener("resize", () => { document.querySelectorAll("#player-hero, #opponent-hero").forEach(centerHeroDeckBadge); });
     if ($("btn-sim-back")) $("btn-sim-back").onclick = () => showScreen("home");
     $("btn-setup-back").onclick = () => showModeSelect();
@@ -12003,13 +12053,12 @@ const tabs = $("deck-faction-tabs");
     }
     const keyBtn = $("btn-keywords");
     if (keyBtn) keyBtn.onclick = () => openKeywordGlossary();
-    if ($("btn-game-tutorial")) $("btn-game-tutorial").onclick = () => { AudioBox.play("ui_open"); app.tutorialReturn = "game"; openGameGuide(); };
     const logMini = $("log-mini");
     if (logMini) logMini.onclick = () => toggleGameLog();
     $("btn-sound").onclick = () => AudioBox.toggle();
-    if ($("btn-series-bo1")) $("btn-series-bo1").onclick = () => { app.seriesMode = "bo1"; document.querySelectorAll(".series-choice").forEach(b => b.classList.toggle("active", b.id === "btn-series-bo1")); AudioBox.play("click"); };
-    if ($("btn-series-bo3")) $("btn-series-bo3").onclick = () => { app.seriesMode = "bo3"; document.querySelectorAll(".series-choice").forEach(b => b.classList.toggle("active", b.id === "btn-series-bo3")); AudioBox.play("click"); };
     $("btn-start-game").onclick = () => {
+      if (app.setupMode === "match") { AudioBox.play("ui_open"); openMatchmaking(); return; }
+      if (app.setupMode === "room") { AudioBox.play("ui_open"); openRoomPage(); return; }
       const deckForStart = getPlayDeck(app.faction);
       if (!confirmDeckWarnings(app.faction, deckForStart, "仍然开始推演？")) return;
       app.lastUsedDeckId = app.customDecks[app.faction] ? (activeDeckFor(app.faction) ? activeDeckFor(app.faction).id : null) : null;
@@ -12025,6 +12074,9 @@ const tabs = $("deck-faction-tabs");
         begin();
       }
     };
+    document.querySelectorAll("[data-setup-mode]").forEach((b) => {
+      b.onclick = () => { app.setupMode = b.dataset.setupMode; AudioBox.play("select"); setupState(); };
+    });
     document.querySelectorAll("#setup-faction .faction-card").forEach((b) => {
       b.onclick = () => { app.faction = b.dataset.faction; AudioBox.play("click"); setupState(); };
     });
@@ -12253,6 +12305,12 @@ const tabs = $("deck-faction-tabs");
     if (btnGo) btnGo.textContent = downloaded ? "重启安装" : "下载";
     var nav = document.getElementById("btn-settings");
     if (nav) nav.classList.add("has-update");
+    var railTitle = document.getElementById("home-update-title");
+    var railSub = document.getElementById("home-update-sub");
+    var railBox = document.getElementById("home-update-entry");
+    if (railTitle) railTitle.textContent = "发现新版本 " + state.latest;
+    if (railSub) railSub.textContent = fmtSize(state.size) + " · 点这里去下载";
+    if (railBox) railBox.classList.add("has-update");
   }
 
   function onProgress(p) {
@@ -12292,6 +12350,17 @@ const tabs = $("deck-faction-tabs");
         btnGo.textContent = "重试下载";
         setStatus("下载失败：" + (e && e.message ? e.message : "未知原因"));
       });
+    });
+  }
+
+  var railEntry = document.getElementById("home-update-entry");
+  if (railEntry) {
+    railEntry.addEventListener("click", function () {
+      window.GokUI.showScreen("settings");
+      setTimeout(function () {
+        var panel = document.getElementById("gok-update-panel");
+        if (panel) panel.scrollIntoView({ block: "center" });
+      }, 260);
     });
   }
 

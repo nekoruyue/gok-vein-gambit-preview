@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, user-scalable=yes">
   <title>戈克世界：流脉牌局</title>
   <link rel="icon" href="favicon.ico">
-  <link rel="stylesheet" href="css/style.css?v=20261026e64">
-  <link rel="stylesheet" href="css/hs-layout.css?v=20261026e64">
-  <link rel="stylesheet" href="css/art-fixes.css?v=20261026e64">
-  <link rel="stylesheet" href="css/mobile.css?v=20261026e64">
-  <link rel="stylesheet" href="css/vfx.css?v=20261026e64">
+  <link rel="stylesheet" href="css/style.css?v=20261026e67">
+  <link rel="stylesheet" href="css/hs-layout.css?v=20261026e67">
+  <link rel="stylesheet" href="css/art-fixes.css?v=20261026e67">
+  <link rel="stylesheet" href="css/mobile.css?v=20261026e67">
+  <link rel="stylesheet" href="css/vfx.css?v=20261026e67">
   <link rel="stylesheet" href="css/archive.css?v=20261026ui1">
   <link rel="stylesheet" href="css/opening.css?v=20261026o1">
 </head>
@@ -39,7 +39,7 @@
         <source src="assets/cinematics/opening.mp4" type="video/mp4">
       </video>
       <div class="home-stage">
-        <div class="home-hero">
+        <div class="home-main"><div class="home-hero">
           <div class="home-kicker-row">
             <div class="brand-mark">GK</div>
             <div class="home-kicker">凯斯特学院内部绝密档案</div>
@@ -74,7 +74,36 @@
           </div>
           <div class="home-version" id="home-version-line">八阵营 · 633 张卡牌 · 585 可收藏</div>
         </div>
-        <aside class="home-legendary" id="home-legendary">
+        
+        
+        <nav class="home-nav" aria-label="档案功能">
+          <button id="btn-deck-home" class="home-nav-item"><span class="home-nav-no">01</span><strong>构筑卡组</strong><small>手动 / 自动构筑</small></button>
+          <button id="btn-codex" class="home-nav-item"><span class="home-nav-no">02</span><strong>卡牌图鉴</strong><small>主卡 + 衍生卡全收录</small></button>
+          <button id="btn-tasks-home" class="home-nav-item"><span class="home-nav-no">03</span><strong>任务</strong><small>主线 · 每日 · 每周</small></button>
+          <button id="btn-achievements" class="home-nav-item"><span class="home-nav-no">04</span><strong>推演记录</strong><small>战绩 · 成就</small></button>
+          <button id="btn-customize-home" class="home-nav-item"><span class="home-nav-no">05</span><strong>档案外观</strong><small>头像 · 称号 · 卡背</small></button>
+          <button id="btn-settings" class="home-nav-item"><span class="home-nav-no">06</span><strong>推演设置</strong><small>画面 · 音效 · 操作</small></button>
+          <button id="btn-lore-home" class="home-nav-item"><span class="home-nav-no">07</span><strong>游戏背景</strong><small>大陆 · 阵营 · 历史</small></button>
+        </nav>
+        </div>
+
+        <aside class="home-rail" id="home-rail" aria-label="档案栏">
+<aside class="home-profile-dock" aria-label="个人资料">
+          <button id="btn-home-profile" class="home-profile-button" type="button" title="查看个人资料">
+            <div id="home-account-avatar" class="home-account-avatar">GK</div>
+            <div class="home-profile-copy">
+              <strong id="home-account-name">档案员</strong>
+              <small id="home-account-level">Lv.1</small>
+              <span id="home-account-title" class="home-account-title"></span>
+              <span id="home-account-meta" class="home-account-meta"></span>
+              <span id="home-account-status">本地访客</span>
+            </div>
+          </button>
+          <div id="home-account-cardback" class="home-account-cardback" title="当前卡背"></div>
+          <div id="home-account-badges" class="home-account-badges"></div>
+          <div id="home-account-signature" class="home-account-signature"></div>
+        </aside>
+<aside class="home-legendary" id="home-legendary">
           <div class="home-legendary-art" id="home-legendary-art">
             <img id="home-legendary-img" alt="" />
             <div class="home-legendary-shade"></div>
@@ -85,27 +114,37 @@
             <span id="home-legendary-faction">—</span>
           </div>
         </aside>
-        <aside class="home-profile-dock" aria-label="个人资料">
-          <button id="btn-home-profile" class="home-profile-button" type="button" title="查看个人资料">
-            <div id="home-account-avatar" class="home-account-avatar">GK</div>
-            <div class="home-profile-copy">
-              <strong id="home-account-name">档案员</strong>
-              <small id="home-account-level">Lv.1</small>
-              <span id="home-account-status">本地访客</span>
-            </div>
+          <button id="home-update-entry" class="home-rail-update" type="button">
+            <span class="hr-update-kicker">更新 / UPDATE</span>
+            <strong id="home-update-title">检查新版本</strong>
+            <small id="home-update-sub">当前版本与更新状态</small>
           </button>
-          <div id="home-account-badges" class="home-account-badges"></div>
+          <button id="home-arcade-entry" class="home-rail-arcade" type="button">
+            <span class="hr-arcade-kicker">街机档案</span>
+            <strong id="home-arcade-status">今日挑战待推演 · 印记 0</strong>
+            <small id="home-arcade-cta">进入街机 <i>→</i></small>
+          </button>
+          <button id="home-task-strip" class="home-rail-task" type="button">
+            <span class="hr-task-kicker">主线</span>
+            <strong id="home-task-next">下一步：查看任务</strong>
+          </button>
+          <div class="home-rail-brief" id="home-rail-brief">
+            <div class="hr-brief-head"><span>档案速览</span><small id="home-brief-games">0 局</small></div>
+            <div class="hr-brief-rows">
+              <div><span>战绩</span><b id="home-brief-record">0 胜 0 负</b></div>
+              <div><span>胜率</span><b id="home-brief-rate">—</b></div>
+              <div><span>排位</span><b id="home-brief-rank">未定级</b></div>
+              <div><span>最高连胜</span><b id="home-brief-streak">0</b></div>
+            </div>
+            <div class="hr-recent" id="home-recent">
+              <span class="hr-recent-kicker">最近一局</span>
+              <strong id="home-recent-line">还没有推演记录</strong>
+              <small id="home-recent-sub">打一局就会记在这里</small>
+            </div>
+          </div>
+<div class="home-quote" id="home-quote">每个阵位最多放 3 个随从，全场最多 6 个。</div>
         </aside>
-        <nav class="home-nav" aria-label="档案功能">
-          <button id="btn-deck-home" class="home-nav-item"><span class="home-nav-no">01</span><strong>构筑卡组</strong><small>手动 / 自动构筑</small></button>
-          <button id="btn-codex" class="home-nav-item"><span class="home-nav-no">02</span><strong>卡牌图鉴</strong><small>主卡 + 衍生卡全收录</small></button>
-          <button id="btn-tasks-home" class="home-nav-item"><span class="home-nav-no">03</span><strong>任务</strong><small>主线 · 每日 · 每周</small></button>
-          <button id="btn-achievements" class="home-nav-item"><span class="home-nav-no">04</span><strong>推演记录</strong><small>战绩 · 成就</small></button>
-          <button id="btn-customize-home" class="home-nav-item"><span class="home-nav-no">05</span><strong>档案外观</strong><small>头像 · 称号 · 卡背</small></button>
-          <button id="btn-settings" class="home-nav-item"><span class="home-nav-no">06</span><strong>推演设置</strong><small>画面 · 音效 · 操作</small></button>
-          <button id="btn-lore-home" class="home-nav-item"><span class="home-nav-no">07</span><strong>游戏背景</strong><small>大陆 · 阵营 · 历史</small></button>
-        </nav>
-        <div class="home-quote" id="home-quote">每个阵位最多放 3 个随从，全场最多 6 个。</div>
+        
       </div>
         <div id="start-menu" class="start-menu" hidden>
           <div class="start-menu-backdrop"></div>
@@ -118,7 +157,7 @@
             <div id="start-menu-root" class="start-menu-step">
               <button id="btn-solo" class="start-choice">
                 <span class="start-choice-icon">单人</span>
-                <span class="start-choice-copy"><strong>单人推演</strong><small>对 AI · 30 张带牌 + 2 件装备 · 随时开始</small></span>
+                <span class="start-choice-copy"><strong>单人推演</strong><small>对 AI · 30 张卡（阵型最多 2 张） · 随时开始</small></span>
                 <span class="start-choice-arrow">→</span>
               </button>
               <button id="btn-mode-multi" class="start-choice">
@@ -733,6 +772,7 @@
           </div>
           <div class="head-spacer"></div>
         </header>
+        <div id="rules-keywords" class="keyword-glossary"></div>
         <div class="tutorial-intro">
           <div class="eyebrow">戈克世界 · 流脉牌局</div>
           <h3>先把规则看清，再谈输赢。</h3>
@@ -874,7 +914,6 @@
     <section id="screen-appearance" class="screen">
       <div class="page-shell appearance-page-shell">
         <header class="page-head">
-          <button id="btn-appearance-back" class="btn btn-small btn-ghost">← 返回档案处</button>
           <div><div class="eyebrow">档案 / 外观</div><h2>档案外观</h2></div>
           <div class="head-spacer"></div>
         </header>
@@ -1077,7 +1116,7 @@
           <div class="panel settings-panel settings-about-panel">
             <div class="panel-label">关于 / ABOUT</div>
             <p class="settings-about">《戈克世界：流脉牌局》经典模式 2.0。八阵营、633 张卡牌 / 585 可收藏，支持起手调度、编成、单人 AI 与在线组队码房间。</p>
-            <p class="settings-about">当前构建：20261026e64</p>
+            <p class="settings-about">当前构建：20261026e67</p>
             <button id="btn-settings-credits" class="btn btn-small btn-ghost">制作与素材说明</button>
           </div>
         </div>
@@ -1108,7 +1147,7 @@
           </div>
           <div class="head-spacer"></div>
           <div class="deck-head-actions">
-            <span id="deck-source-label" class="deck-source-label">预设牌组 · 可编辑</span>
+            <span id="deck-source-label" class="deck-source-label">预组 · 可编辑</span>
             <button id="btn-deck-clear" class="btn btn-small btn-ghost">清空重编</button>
             <button id="btn-deck-top-use" class="btn btn-small btn-primary">保存并使用</button>
             <span class="deck-head-count" id="deck-head-count">0 / 30</span>
@@ -1151,7 +1190,7 @@
           <aside class="panel deck-side">
             <div id="deck-library-bar" class="deck-library-bar">
               <div class="panel-label">牌组库</div>
-              <div id="deck-readonly-note" class="deck-readonly-note" hidden>官方预设只读 · Lv.5 后可复制为自定义牌组</div>
+              <div id="deck-readonly-note" class="deck-readonly-note" hidden>官方预组 · 借用 · Lv.5 后可复制为自定义牌组</div>
               <select id="deck-library-select" class="deck-library-select"></select>
               <input id="deck-name-input" class="deck-name-input" maxlength="18" placeholder="牌组名称" />
               <select id="deck-tag-select" class="deck-library-select deck-tag-select"><option value="">流派标签</option><option value="流脉">流脉</option><option value="快攻">快攻</option><option value="中速">中速</option><option value="控制">控制</option><option value="组合">组合</option><option value="娱乐">娱乐</option></select>
@@ -1165,7 +1204,7 @@
             <div class="deck-side-head">
               <div class="deck-count-stack">
                 <strong id="deck-count">30 / 30 张</strong>
-                <small id="deck-count-note">30 张带牌（含阵型，最多 2 张）+ 2 件装备</small>
+                <small id="deck-count-note">30 张卡：随从 / 战术 / 阵型 / 装备，阵型最多 2 张</small>
               </div>
               <span id="deck-valid" class="deck-valid">未完成</span>
             </div>
@@ -1175,7 +1214,7 @@
             <div id="deck-type-stats" class="deck-type-stats"></div>
 
             <div class="panel-label section-gap">策略自动构筑 <span class="deck-section-hint">一键替换为 30 张</span></div>
-            <div class="auto-deck-help">30 张带牌 + 2 件装备，阵型最多 2 张。</div>
+            <div class="auto-deck-help">30 张卡（阵型最多 2 张），阵型最多 2 张。</div>
             <div class="auto-deck-buttons">
               <button class="auto-deck-btn" data-deck-strategy="aggro"><strong>快攻</strong><span>低费抢血</span><small>铺场 · 抢节奏</small></button>
               <button class="auto-deck-btn" data-deck-strategy="midrange"><strong>中速</strong><span>按费拍怪</span><small>稳定 · 站场</small></button>
@@ -1310,6 +1349,7 @@
             <div class="setup-hero-copy">
               <div class="eyebrow">已选领袖</div>
               <h3 id="setup-hero-name">莱恩·科斯特</h3>
+              <div class="setup-hero-chips"><span class="setup-hp" id="setup-hero-hp">生命 30</span><span class="setup-faction" id="setup-hero-faction">普卫岛</span></div>
               <p id="setup-hero-quote">“他不是强者。他只是第一个试图理解的人。”</p>
               <div class="hero-power-preview">
                 <div class="setup-power-head"><img id="setup-power-icon" class="setup-power-icon" src="/assets/icons/skills/lain.webp" alt=""><span class="hero-power-name" id="setup-power-name">协调 · 2 行动力</span></div>
@@ -1604,6 +1644,7 @@
             <div class="hint" id="game-hint">点击手牌出牌；点击随从攻击。</div>
           </div>
           <div class="mobile-hint">长按卡牌查看详情 · 左右滑动浏览手牌</div>
+          <div class="gk-hand-curve" id="gk-hand-curve" aria-hidden="true"></div>
           <div class="hand-row">
             <div class="hand" id="hand"></div>
           </div>
@@ -1614,6 +1655,7 @@
         </div>
         <div class="mana-corner" id="mana-corner">
           <div class="mana-display" id="mana-display">行动力 0 / 0</div>
+          
         </div>
         <div id="mobile-mana-hud" aria-label="双方行动力">
           <span class="mobile-mana-pill player" id="mobile-mana-player"></span>
@@ -1650,17 +1692,17 @@
   <div id="toast" class="toast"></div>
 
   <script>window.__GOK_CHANNEL_VALUE__ = "__GOK_CHANNEL__";</script>
-  <script src="js/channel.js?v=20261026e64"></script>
-  <script src="js/data.js?v=20261026e64"></script>
-  <script src="js/engine.js?v=20261026e64"></script>
-  <script src="js/ai.js?v=20261026e64"></script>
-  <script src="js/cinematic.js?v=20261026e64"></script>
-  <script src="js/vfx.js?v=20261026e64"></script>
-  <script src="js/ui.js?v=20261026e64"></script>
-  <script src="js/content.js?v=20261026e64"></script>
-  <script src="js/battler.js?v=20261026e64"></script>
-  <script src="js/arcade.js?v=20261026e64"></script>
-  <script src="js/main.js?v=20261026e64"></script>
+  <script src="js/channel.js?v=20261026e67"></script>
+  <script src="js/data.js?v=20261026e67"></script>
+  <script src="js/engine.js?v=20261026e67"></script>
+  <script src="js/ai.js?v=20261026e67"></script>
+  <script src="js/cinematic.js?v=20261026e67"></script>
+  <script src="js/vfx.js?v=20261026e67"></script>
+  <script src="js/ui.js?v=20261026e67"></script>
+  <script src="js/content.js?v=20261026e67"></script>
+  <script src="js/battler.js?v=20261026e67"></script>
+  <script src="js/arcade.js?v=20261026e67"></script>
+  <script src="js/main.js?v=20261026e67"></script>
 
   <!-- 开场动画：六幕，需要一次点击才允许出声，可跳过 -->
   <div id="gok-opening" class="gkopen" hidden data-scene="idle">

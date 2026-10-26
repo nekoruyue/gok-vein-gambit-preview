@@ -1,19 +1,23 @@
 {
   "channel": "preview",
-  "version": "0.9.4",
-  "build": "20261026e65",
-  "publishedAt": "2026-10-26T13:49:18+08:00",
+  "version": "0.9.6",
+  "build": "20261026e67",
+  "publishedAt": "2026-10-26T18:12:39+08:00",
   "mandatory": false,
   "minSupportedVersion": "0.9.0",
-  "size": 239724633,
-  "sha256": "e640efd863a0acb2f8239cb65f1c28f49fa92cf7a525f4da917dac1ab7786a29",
-  "url": "https://github.com/nekoruyue/gok-vein-gambit-preview/releases/download/v0.9.4/GokVeinGambit-Setup-0.9.4.exe",
-  "title": "e65：修复代理环境下的更新下载",
+  "size": 239732223,
+  "sha256": "af803045c15f47fbe822c05f87400721843c3dc055a5a4e00fc2e4246af51836",
+  "url": "https://github.com/nekoruyue/gok-vein-gambit-preview/releases/download/v0.9.6/GokVeinGambit-Setup-0.9.6.exe",
+  "title": "e67：图鉴加密 · 关键词速查 · 装备不限件",
   "notes": [
-    "修复：更新下载改走系统代理（主进程用 Electron 网络栈）",
-    "修复：清单请求也走同一网络栈，代理环境下不再超时",
-    "自更新闭环：检查 / 下载 / sha256 校验 / 重启安装",
-    "40 秒开场动画 + 35 条领袖语音与字幕",
-    "图鉴筛选逐层收窄，档案化视觉层"
+    "图鉴紧凑化：筛选区 490px → 286px，每行 9 张，卡片宽度 140px",
+    "卡牌详情新增「关键词速查」：只列这张卡用到的词，附完整说明（图鉴与组卡共用）",
+    "组卡页领袖技能按「主动 / 被动」单条显示，并补全技能全文；「只读预览」改为「借用预览」",
+    "规则改动：装备（原遗物）不设上限，牌组里想带几件就几件（原「只生效前 2 件」的引擎限制已去掉）",
+    "修引擎 bug：悬赏标记被写成 true 导致归属非法，claimBounty 可能取到 undefined 玩家",
+    "对局界面：费用六边形与行动力统一为蓝色；移除挡住视口的流脉徽标",
+    "世界观入口改为同窗口打开（原来会开第二个游戏实例）；开场动画只播一次，且不再与首页 BGM 叠加",
+    "任务页与个人资料页面板加实底，提升文字可读性；加载页字阶与字距重排",
+    "占位配音默认关闭，等真音色再开"
   ]
 }

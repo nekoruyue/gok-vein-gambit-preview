@@ -1616,7 +1616,7 @@
       }
     } else if (def.type === "equipment" || def.type === "equipment") {
       const equipments = player.equipments || (player.equipments = []);
-      if (equipments.length >= 2) equipments.shift();
+      // 装备不设上限：想在牌组里塞几件就几件（玩家确认的规则）
       const hadRelic = player.relic;
       if (equipments.indexOf(def.id) < 0) equipments.push(def.id);
       player.relic = equipments[0] || def.id;
@@ -1808,10 +1808,10 @@
         else if (op.op === "blockHeroPower") { player.heroPowerBlocked = true; }
         else if (op.op === "freezeImmune") { player.freezeImmuneTurn = state.turnNumber; }
         else if (op.op === "buffTarget" && target && !target.dead) buffMinion(state, target, op.attack || 0, op.health || 0, "补丁", true);
-        else if (op.op === "markBountyTarget" && target && !target.dead) target.bounty = true;
+        else if (op.op === "markBountyTarget" && target && !target.dead) markBounty(state, player, target);
         else if (op.op === "freezeAllEnemies") { for (const m of aliveMinions(opponentOf(state, player))) freezeMinion(state, m); }
         else if (op.op === "summon") summonMinion(state, player, op.token, openZones(player)[0], null);
-        else if (op.op === "markBounty" && target && !target.dead) target.bounty = true;
+        else if (op.op === "markBounty" && target && !target.dead) markBounty(state, player, target);
         else if (op.op === "markRandomBounties") { const e = aliveMinions(opponentOf(state, player)); for (let i=0;i<(op.count||1)&&i<e.length;i++) e[i].bounty = true; }
         else if (op.op === "grantRushAll") { for (const m of aliveMinions(player)) grantRush(state, m); }
         else if (op.op === "buffSelf" && minion) buffMinion(state, minion, op.attack || 0, op.health || 0, "补丁", true);
