@@ -1,15 +1,20 @@
 {
   "name": "gok-vein-gambit",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "private": true,
-  "description": "《戈克世界：流脉牌局》Windows Demo — 八阵营流脉卡牌对战",
+  "description": "《戈克世界：流脉牌局》八阵营流脉卡牌对战",
+  "author": "戈克世界",
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
-    "package": "electron-builder --win portable",
+    "dev": "electron .",
+    "build:win": "electron-builder --win nsis",
+    "package": "electron-builder --win nsis",
+    "release": "pwsh -NoProfile -File tools/build-release.ps1",
     "sim": "node scripts/simulate.mjs",
     "assert:cards": "node tests/card-assertions.js",
-    "test:cards": "node tests/card-assertions.js"
+    "test:cards": "node tests/card-assertions.js",
+    "test:embed": "node tests/embedded-server-check.js"
   },
   "devDependencies": {
     "electron": "^44.9.0",
@@ -18,26 +23,50 @@
   },
   "build": {
     "appId": "world.gok.vein-gambit",
-    "productName": "戈克世界-流脉牌局",
+    "productName": "GokVeinGambit",
+    "copyright": "戈克世界",
     "icon": "launcher/icon.ico",
     "asar": true,
     "files": [
       "electron/**/*",
       "public/**/*",
+      "server/server.js",
+      "server/auth.js",
+      "server/auth_pg.js",
       "package.json",
-      "!public/assets/generated/*-raw/**"
+      "!public/assets/generated/*-raw/**",
+      "!public/assets/generated/jimeng-raw*/**"
     ],
     "directories": {
-      "output": "发布"
+      "output": "发布/安装包",
+      "buildResources": "launcher"
     },
     "win": {
       "target": [
-        "portable"
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
-      "artifactName": "GokVeinGambit-${version}.exe"
+      "artifactName": "GokVeinGambit-Setup-${version}.exe"
     },
-    "portable": {
-      "artifactName": "GokVeinGambit-${version}.exe"
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "戈克世界：流脉牌局",
+      "uninstallDisplayName": "戈克世界：流脉牌局 ${version}",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "installerLanguages": [
+        "zh_CN"
+      ],
+      "language": "2052"
     }
   },
   "dependencies": {

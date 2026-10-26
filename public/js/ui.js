@@ -1052,6 +1052,8 @@
     app.local = false;
     app.net = null;
     app.game = state;
+    // 配音：玩家阵营的开场台词（没有音频文件时 voice.js 静默跳过）
+    voiceLine(voiceRoleForFaction(faction), "opening");
     if (state.mulliganPhase) autoMulliganAI(state, 1);
     app.mode = mode;
     app.faction = faction;
@@ -4383,7 +4385,10 @@
       const r = E.useHeroPower(app.game, powerPlayer, uid);
       app.targetInfo = null;
       if (!r.ok) toast(r.reason || "无法使用领袖技能。");
-      else showAbilityFeedback(app.game.players[powerPlayer].hero.power.name, abilityPoint);
+      else {
+        showAbilityFeedback(app.game.players[powerPlayer].hero.power.name, abilityPoint);
+        voicePowerLine(app.game.players[powerPlayer]);
+      }
       renderGame();
       if (r.ok) showManaSpend(powerPlayer, powerBefore - app.game.players[powerPlayer].mana);
       if (showPendingDiscoverIfNeeded()) return;
@@ -5134,11 +5139,36 @@
     showEnd();
   }
 
+  // 配音桥：UI 只负责“在什么时候说哪一句”，播不播、怎么混音交给 voice.js
+  function voiceLine(role, scene) {
+    if (!role || !scene) return;
+    if (global.GokVoice && typeof global.GokVoice.play === "function") global.GokVoice.play(role, scene);
+  }
+
+  function voiceRoleForFaction(faction) {
+    if (!faction || !D.FACTIONS[faction]) return null;
+    return D.FACTIONS[faction].hero || null;
+  }
+
+  // 技能台词：一局最多说 4 次，避免每回合都念一遍
+  function voicePowerLine(player) {
+    if (!player || !player.hero) return;
+    if (app.voicePowerCount == null) app.voicePowerCount = 0;
+    if (app.voicePowerCount >= 4) return;
+    app.voicePowerCount++;
+    voiceLine(player.hero.id || voiceRoleForFaction(player.faction), "power");
+  }
+
   function showEnd() {
     const s = app.game;
     if (!s) return;
     if (app.modalOpen || app.endCGPending) return;
     const classicOrStory = !app.contentRun || (app.contentRun && app.contentRun.mode === "story");
+    // 配音：先出胜负台词（不等 CG，两句不冲突，BGM 会自动压低）
+    if (s.winner != null && !app.tutorial) {
+      const humanFaction = s.players && s.players[app.human] ? s.players[app.human].faction : null;
+      voiceLine(voiceRoleForFaction(humanFaction), s.winner === app.human ? "win" : "lose");
+    }
     if (!app.endCGPlayed && s.winner != null && !app.tutorial && classicOrStory && global.GokCinema) {
       app.endCGPlayed = true;
       app.endCGPending = true;
@@ -9779,6 +9809,11 @@ const tabs = $("deck-faction-tabs");
   }
 
   function replayOpening() {
+    // 优先播新的网页动态开场（可跳过、带字幕），老版本回退到 mp4
+    if (global.GokOpening && typeof global.GokOpening.play === "function") {
+      global.GokOpening.play({ force: true, noGesture: false });
+      return;
+    }
     if (!global.GokCinema || typeof global.GokCinema.play !== "function") {
       toast("当前版本没有可播放的剧情演出。");
       return;
@@ -11712,7 +11747,9 @@ const tabs = $("deck-faction-tabs");
       const typeLabel = [...codexToolbar.querySelectorAll(".codex-filter-label")].find(x => x.textContent.includes("卡牌类型"));
       const rarityLabel = [...codexToolbar.querySelectorAll(".codex-filter-label")].find(x => x.textContent.includes("品级"));
       const factionLabel = [...codexToolbar.querySelectorAll(".codex-filter-label")].find(x => x.textContent.includes("阵营"));
-      for (const node of [factionLabel, document.querySelector("#codex-faction-tabs"), document.querySelector("#codex-hero-panel"), typeLabel, document.querySelector(".codex-type-row"), rarityLabel, document.querySelector("#codex-rarity-row"), document.querySelector(".codex-search-row"), document.querySelector(".codex-color-legend")]) if (node) codexToolbar.appendChild(node);
+      const searchLabel = [...codexToolbar.querySelectorAll(".codex-filter-label")].find(x => x.textContent.includes("筛选与搜索"));
+      // 顺序即信息架构：阵营 -> 类型 -> 品级 -> 搜索/排序；未列入的节点会被留在首位，所以新增标签必须加进来
+      for (const node of [factionLabel, document.querySelector("#codex-faction-tabs"), document.querySelector("#codex-hero-panel"), typeLabel, document.querySelector(".codex-type-row"), rarityLabel, document.querySelector("#codex-rarity-row"), searchLabel, document.querySelector(".codex-search-row"), document.querySelector(".codex-color-legend")]) if (node) codexToolbar.appendChild(node);
     }
     if ($("codex-search")) $("codex-search").oninput = (e) => { app.codexSearch = e.target.value; app.codexLimit = 60; renderCodex(); };
     if ($("codex-cost")) $("codex-cost").onchange = (e) => { app.codexCost = e.target.value; app.codexLimit = 60; renderCodex(); };
@@ -12133,7 +12170,7 @@ const tabs = $("deck-faction-tabs");
   setTimeout(reinforceHandCardText, 80);
 
 
-  global.GokUI = { init: init, app: app, startGame: startGame, showScreen: showScreen, runSimulation: runSimulation, renderGame: renderGame };
+  global.GokUI = { init: init, app: app, startGame: startGame, showScreen: showScreen, runSimulation: runSimulation, renderGame: renderGame, audio: AudioBox };
 
 })(window);
 
@@ -12143,4 +12180,127 @@ const tabs = $("deck-faction-tabs");
 
 
 
+
+
+/* ===== 桌面版自更新：只在 Electron 里生效（通过 preload 暴露的 window.gokUpdater） ===== */
+(function () {
+  var api = window.gokUpdater;
+  if (!api || typeof api.check !== "function") return;
+
+  var elCurrent = document.getElementById("gok-update-current");
+  var elStatus = document.getElementById("gok-update-status");
+  var elBadge = document.getElementById("gok-update-badge");
+  var elNotes = document.getElementById("gok-update-notes");
+  var elProgress = document.getElementById("gok-update-progress");
+  var elBar = document.getElementById("gok-update-bar");
+  var elRow = document.getElementById("gok-update-action-row");
+  var elTitle = document.getElementById("gok-update-action-title");
+  var elSub = document.getElementById("gok-update-action-sub");
+  var btnCheck = document.getElementById("gok-update-check");
+  var btnGo = document.getElementById("gok-update-go");
+  var info = null;
+  var last = null;
+  var downloaded = false;
+
+  function setStatus(text) { if (elStatus) elStatus.textContent = text; }
+
+  function fmtSize(n) {
+    if (!n) return "体积未知";
+    return n > 1024 * 1024 * 100 ? Math.round(n / 1048576) + " MB" : (n / 1048576).toFixed(1) + " MB";
+  }
+
+  function render(state) {
+    if (!state) return;
+    last = state;
+    if (state.reason === "no-feed") {
+      setStatus("尚无更新清单（发布后自动检查）");
+      if (elBadge) elBadge.hidden = true;
+      if (elRow) elRow.hidden = true;
+      return;
+    }
+    if (state.reason === "network") {
+      setStatus("连不上更新服务器，稍后再试");
+      if (elBadge) elBadge.hidden = true;
+      return;
+    }
+    if (state.reason === "bad-manifest") {
+      setStatus("更新清单异常，已跳过");
+      return;
+    }
+    if (!state.ok) { setStatus("检查失败"); return; }
+    if (!state.updateAvailable) {
+      setStatus("已是最新版本（" + state.current + "）");
+      if (elBadge) elBadge.hidden = true;
+      if (elRow) elRow.hidden = true;
+      if (elNotes) elNotes.hidden = true;
+      return;
+    }
+    setStatus("发现新版本 " + state.latest + " · " + fmtSize(state.size) + (state.mandatory ? " · 必须更新" : ""));
+    if (elBadge) { elBadge.hidden = false; elBadge.textContent = "v" + state.latest; elBadge.classList.add("ready"); }
+    if (elNotes) {
+      elNotes.innerHTML = "";
+      (state.notes || []).slice(0, 6).forEach(function (note) {
+        var d = document.createElement("div");
+        d.className = "gk-note";
+        d.textContent = String(note);
+        elNotes.appendChild(d);
+      });
+      elNotes.hidden = !(state.notes && state.notes.length);
+    }
+    if (elRow) elRow.hidden = false;
+    if (elTitle) elTitle.textContent = "下载 " + state.latest;
+    if (elSub) elSub.textContent = downloaded ? "已下载，点右侧完成安装" : "下载完成后可立即安装，存档不受影响";
+    if (btnGo) btnGo.textContent = downloaded ? "重启安装" : "下载";
+    var nav = document.getElementById("btn-settings");
+    if (nav) nav.classList.add("has-update");
+  }
+
+  function onProgress(p) {
+    if (!elProgress || !elBar) return;
+    elProgress.hidden = false;
+    elBar.style.width = (p && p.percent ? p.percent : 0) + "%";
+    setStatus("正在下载 " + (p && p.percent ? p.percent : 0) + "%（" + fmtSize(p ? p.received : 0) + " / " + fmtSize(p ? p.total : 0) + "）");
+  }
+
+  if (btnCheck) {
+    btnCheck.addEventListener("click", function () {
+      setStatus("正在检查…");
+      downloaded = false;
+      if (elProgress) elProgress.hidden = true;
+      api.check().then(render).catch(function () { setStatus("检查失败"); });
+    });
+  }
+
+  if (btnGo) {
+    btnGo.addEventListener("click", function () {
+      if (downloaded) { api.install(); return; }
+      btnGo.disabled = true;
+      btnGo.textContent = "下载中";
+      api.download().then(function (r) {
+        btnGo.disabled = false;
+        if (r && r.ok) {
+          downloaded = true;
+          if (elProgress) elProgress.hidden = true;
+          setStatus("已下载完成，点「重启安装」后游戏会关闭并自动安装");
+          if (btnGo) btnGo.textContent = "重启安装";
+        } else {
+          btnGo.textContent = "重试下载";
+          setStatus("下载失败：" + ((r && r.message) || "未知原因"));
+        }
+      }).catch(function (e) {
+        btnGo.disabled = false;
+        btnGo.textContent = "重试下载";
+        setStatus("下载失败：" + (e && e.message ? e.message : "未知原因"));
+      });
+    });
+  }
+
+  if (api.onProgress) api.onProgress(onProgress);
+  if (api.onState) api.onState(render);
+
+  api.info().then(function (i) {
+    info = i;
+    if (elCurrent) elCurrent.textContent = "桌面版 " + i.version + " · 通道 " + i.channel;
+  }).catch(function () {});
+})();
 

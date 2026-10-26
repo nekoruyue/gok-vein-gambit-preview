@@ -1,0 +1,442 @@
+/* ==========================================================================
+   流脉牌局 · 档案化视觉层（UI 重构批1）
+   加载顺序：style.css -> hs-layout.css -> art-fixes.css -> mobile.css -> vfx.css -> 本文件
+   原则：
+   1. 只加令牌、只做“皮肤”，不改 DOM 结构与交互；
+   2. 一律用现有元素已有的 --faction-color / --rarity-color 变量上色，不重新计算颜色；
+   3. 新组件用 gk- 前缀，老页面靠类名覆盖，互不干扰。
+   ========================================================================== */
+
+:root {
+  /* 层级 */
+  --gk-panel-3: rgba(20, 32, 44, 0.94);
+  --gk-line: rgba(217, 164, 65, 0.26);
+  --gk-line-soft: rgba(233, 225, 210, 0.10);
+  --gk-blood: #b4384a;
+
+  /* 稀有度（与 RARITY_COLORS 对齐） */
+  --gk-c-common: #8fa3b5;
+  --gk-c-rare: #4a8fd4;
+  --gk-c-epic: #9a6fd4;
+  --gk-c-legend: #d4a83c;
+  --gk-c-easter: #3fb8a0;
+  --gk-c-debt: #a5573f;
+
+  /* 节奏 */
+  --gk-r-sm: 2px;
+  --gk-r-md: 4px;
+  --gk-r-lg: 8px;
+  --gk-t-fast: 120ms;
+  --gk-t-mid: 220ms;
+  --gk-ease: cubic-bezier(.2, .8, .2, 1);
+}
+
+/* ---------------------------------------------------------------- 页头 */
+.page-head {
+  align-items: flex-end;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--gk-line-soft);
+  margin-bottom: 14px;
+}
+.page-head .eyebrow {
+  font-size: 10px;
+  letter-spacing: .26em;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+.page-head h2 {
+  font-family: var(--serif);
+  letter-spacing: .12em;
+  font-weight: 600;
+}
+.page-head h2::after {
+  content: "";
+  display: block;
+  width: 34px;
+  height: 2px;
+  margin-top: 8px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+}
+
+/* ---------------------------------------------------------------- 筛选区 */
+.codex-toolbar,
+.deck-toolbar {
+  border: 1px solid var(--gk-line-soft);
+  border-radius: var(--gk-r-md);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  padding: 14px 16px;
+  display: grid;
+  gap: 10px;
+}
+.codex-filter-label {
+  font-size: 10px;
+  letter-spacing: .22em;
+  color: var(--dim);
+  margin-top: 4px;
+}
+.codex-filter-label:first-child { margin-top: 0; }
+
+/* 阵营索引：胶囊 + 计数 */
+.deck-faction-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.deck-faction-tab {
+  position: relative;
+  height: 30px;
+  padding: 0 13px;
+  border: 1px solid var(--gk-line-soft);
+  border-radius: var(--gk-r-sm);
+  background: rgba(233, 225, 210, 0.02);
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: .06em;
+  font-variant-numeric: tabular-nums;
+  transition: border-color var(--gk-t-fast) var(--gk-ease), color var(--gk-t-fast) var(--gk-ease), background var(--gk-t-fast) var(--gk-ease);
+}
+.deck-faction-tab:hover {
+  border-color: var(--gk-line);
+  color: var(--ink);
+}
+.deck-faction-tab.active {
+  color: #0a1017;
+  font-weight: 600;
+  border-color: transparent;
+  background: linear-gradient(160deg, var(--gold-soft), var(--gold));
+}
+.deck-faction-tab.active::after {
+  content: "";
+  position: absolute;
+  left: 8px; right: 8px; bottom: -5px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity: .55;
+}
+
+/* 类型 / 品级按钮：统一成同一种胶囊 */
+.deck-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.deck-filter {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--gk-line-soft);
+  border-radius: var(--gk-r-sm);
+  background: rgba(233, 225, 210, 0.02);
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: .04em;
+  transition: all var(--gk-t-fast) var(--gk-ease);
+}
+.deck-filter:hover { color: var(--ink); border-color: var(--gk-line); }
+.deck-filter.active {
+  color: #0a1017;
+  font-weight: 600;
+  border-color: transparent;
+  background: linear-gradient(160deg, var(--gold-soft), var(--gold));
+}
+.deck-filter.rarity-common.active { background: linear-gradient(160deg, #c6d3de, var(--gk-c-common)); }
+.deck-filter.rarity-rare.active   { background: linear-gradient(160deg, #a8cdea, var(--gk-c-rare)); }
+.deck-filter.rarity-epic.active   { background: linear-gradient(160deg, #c9b4ea, var(--gk-c-epic)); color: #0b0812; }
+.deck-filter.rarity-legendary.active { background: linear-gradient(160deg, var(--gold-soft), var(--gk-c-legend)); }
+.deck-filter:disabled { opacity: .35; }
+
+/* 搜索 / 下拉 */
+.codex-search,
+.codex-select {
+  height: 32px;
+  border-radius: var(--gk-r-sm);
+  border: 1px solid var(--gk-line-soft);
+  background: rgba(233, 225, 210, 0.03);
+  color: var(--ink);
+  font-size: 12.5px;
+  padding: 0 11px;
+}
+.codex-search:focus,
+.codex-select:focus {
+  outline: none;
+  border-color: var(--vein);
+  box-shadow: 0 0 0 2px rgba(95, 211, 196, .12);
+}
+.codex-search::placeholder { color: var(--dim); }
+.codex-color-legend { color: var(--dim); font-size: 11px; }
+
+/* 计数条 */
+.codex-count {
+  font-size: 11.5px;
+  letter-spacing: .06em;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+.codex-count b { color: var(--gold); font-weight: 600; }
+
+/* ---------------------------------------------------------------- 卡牌瓦片 */
+/* 现有 .codex-grid 的列数与断点由 style.css 决定，这里只补新页面的网格 */
+.gok-library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+}
+.gok-library-card {
+  position: relative;
+  border-radius: 3px;
+  overflow: hidden;
+  background: #0a1017;
+  border: 1px solid color-mix(in srgb, var(--rarity-color, var(--gk-c-common)) 55%, transparent);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .45);
+  transition: transform var(--gk-t-fast) var(--gk-ease), box-shadow var(--gk-t-fast) var(--gk-ease), border-color var(--gk-t-fast) var(--gk-ease);
+}
+.gok-library-card::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--faction-color, var(--gk-c-common));
+  opacity: .9;
+  z-index: 3;
+}
+.gok-library-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--rarity-color, var(--gold));
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .55);
+}
+.gok-library-card[data-rarity="legendary"],
+.gok-library-card[data-rarity="legend"] {
+  box-shadow: 0 0 0 1px rgba(212, 168, 60, .35), 0 12px 30px rgba(212, 168, 60, .16);
+}
+.gok-lib-art {
+  /* 位置由原样式控制（绝对定位铺满卡面），这里只保证铺满 */
+  background-size: cover;
+  background-position: center top;
+}
+.gok-lib-scrim {
+  background: linear-gradient(180deg, transparent 46%, rgba(4, 8, 12, .9) 82%) !important;
+}
+.gok-lib-cost {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 700;
+  color: #0a1017 !important;
+  background: linear-gradient(160deg, var(--gold-soft), var(--gold)) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  clip-path: polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%);
+}
+.gok-lib-faction {
+  font-size: 9.5px !important;
+  letter-spacing: .14em;
+  color: var(--faction-color, var(--muted)) !important;
+  border: 0 !important;
+  background: transparent !important;
+  opacity: .85;
+}
+.gok-lib-name {
+  font-family: var(--serif) !important;
+  letter-spacing: .02em;
+}
+.gok-lib-kind[data-rarity] .gok-lib-rarity {
+  color: var(--rarity-color, var(--gk-c-common)) !important;
+}
+
+/* ---------------------------------------------------------------- 空态 / 提示 */
+.codex-empty {
+  border: 1px dashed var(--gk-line);
+  border-radius: var(--gk-r-md);
+  background: rgba(233, 225, 210, .02);
+  color: var(--muted);
+  font-size: 12.5px;
+  letter-spacing: .04em;
+  padding: 22px;
+  text-align: center;
+}
+
+/* ---------------------------------------------------------------- 主页功能导航 */
+.home-nav {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-top: 1px solid var(--gk-line);
+  background: linear-gradient(0deg, rgba(6, 11, 16, .96), rgba(6, 11, 16, .5));
+}
+.home-nav-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  padding: 12px 18px;
+  border: 0;
+  border-right: 1px solid var(--gk-line-soft);
+  background: transparent;
+  text-align: left;
+  transition: background var(--gk-t-fast) var(--gk-ease);
+}
+.home-nav-item:last-child { border-right: 0; }
+.home-nav-item .home-nav-no {
+  font-family: var(--serif);
+  font-size: 10px;
+  letter-spacing: .22em;
+  color: var(--gold);
+  opacity: .75;
+}
+.home-nav-item strong {
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: .08em;
+  color: var(--ink);
+}
+.home-nav-item small {
+  font-size: 10px;
+  letter-spacing: .04em;
+  color: var(--dim);
+}
+.home-nav-item:hover { background: linear-gradient(180deg, rgba(217, 164, 65, .10), transparent 75%); }
+.home-nav-item:hover::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+/* ---------------------------------------------------------------- 设置面板 */
+.settings-panel {
+  border-radius: var(--gk-r-md);
+  border: 1px solid var(--gk-line-soft);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+}
+.settings-panel .panel-label {
+  font-size: 10px;
+  letter-spacing: .24em;
+  color: var(--gold);
+  opacity: .9;
+}
+.settings-row strong {
+  font-weight: 500;
+  letter-spacing: .04em;
+}
+.settings-row span {
+  color: var(--dim);
+}
+
+/* ---------------------------------------------------------------- gk- 组件（新页面用） */
+.gk-pane {
+  border: 1px solid var(--gk-line-soft);
+  border-radius: var(--gk-r-md);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  box-shadow: var(--shadow);
+}
+.gk-pane-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 13px 16px 10px;
+  border-bottom: 1px solid var(--gk-line-soft);
+}
+.gk-pane-head h3 {
+  font-family: var(--serif);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .14em;
+}
+.gk-pane-head span { font-size: 11px; color: var(--dim); letter-spacing: .08em; }
+
+.gk-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 13px;
+  border: 1px solid var(--gk-line-soft);
+  border-radius: var(--gk-r-sm);
+  background: rgba(233, 225, 210, .02);
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: .06em;
+}
+.gk-pill b { color: var(--dim); font-weight: 400; font-variant-numeric: tabular-nums; }
+.gk-pill.on {
+  color: #0a1017;
+  font-weight: 600;
+  border-color: transparent;
+  background: linear-gradient(160deg, var(--gold-soft), var(--gold));
+}
+.gk-pill.on b { color: rgba(10, 16, 23, .62); }
+
+.gk-seg { display: inline-flex; border: 1px solid var(--gk-line-soft); border-radius: var(--gk-r-sm); overflow: hidden; }
+.gk-seg span {
+  padding: 7px 16px;
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: .06em;
+  border-right: 1px solid var(--gk-line-soft);
+}
+.gk-seg span:last-child { border-right: 0; }
+.gk-seg span.on { background: rgba(95, 211, 196, .14); color: var(--vein); }
+
+.gk-hair { height: 1px; background: linear-gradient(90deg, transparent, var(--gk-line), transparent); }
+.gk-num { font-variant-numeric: tabular-nums; }
+.gk-quote { font-family: var(--serif); font-style: italic; color: var(--muted); line-height: 1.9; letter-spacing: .04em; }
+
+/* 移动端：胶囊横滑、卡池两列 */
+@media (max-width: 820px) {
+  .home-nav { grid-template-columns: repeat(2, 1fr); }
+  .deck-faction-tabs,
+  .deck-filter-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .deck-faction-tabs::-webkit-scrollbar,
+  .deck-filter-row::-webkit-scrollbar { display: none; }
+  .gok-library-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+}
+
+/* ===== 配音字幕条 ===== */
+.gok-voice-sub {
+  position: fixed;
+  left: 50%;
+  bottom: 96px;
+  transform: translate(-50%, 8px);
+  z-index: 9000;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  max-width: min(920px, 82vw);
+  padding: 10px 18px;
+  border: 1px solid var(--gk-line-soft, rgba(233,225,210,.1));
+  border-left: 2px solid var(--gold);
+  border-radius: 3px;
+  background: rgba(6, 11, 16, .82);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .5);
+  opacity: 0;
+  transition: opacity 200ms ease, transform 200ms ease;
+  pointer-events: none;
+}
+.gok-voice-sub.on { opacity: 1; transform: translate(-50%, 0); }
+.gok-voice-sub b {
+  font-family: var(--serif, "Songti SC", serif);
+  font-size: 12px;
+  letter-spacing: .12em;
+  color: var(--gold, #d9a441);
+  white-space: nowrap;
+}
+.gok-voice-sub span {
+  font-size: 14px;
+  line-height: 1.7;
+  letter-spacing: .06em;
+  color: #e9e1d2;
+}
+@media (max-width: 820px) {
+  .gok-voice-sub { bottom: 120px; padding: 8px 12px; gap: 8px; }
+  .gok-voice-sub span { font-size: 12.5px; }
+}

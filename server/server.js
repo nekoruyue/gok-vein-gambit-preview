@@ -160,9 +160,10 @@ function serveStatic(req, res, pathname) {
       });
       return;
     }
+    const isUpdateFeed = rel.indexOf("/updates/") === 0;
     res.writeHead(200, {
       "Content-Type": MIME[ext] || "application/octet-stream",
-      "Cache-Control": ext === ".html" || ext === ".js" || ext === ".css" ? "no-cache" : "public, max-age=3600"
+      "Cache-Control": isUpdateFeed ? "no-store" : (ext === ".html" || ext === ".js" || ext === ".css" ? "no-cache" : "public, max-age=3600")
     });
     fs.createReadStream(file).pipe(res);
   });
@@ -379,15 +380,44 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, "0.0.0.0", () => {
-  console.log("Gok Vein Gambit LAN server");
-  console.log("http://" + lanIp() + ":" + PORT + "/");
-});
+// 空闲自动退出：只在独立进程（CLI / 测试服）里启用。
+// 被 Electron 内嵌时不能自杀，否则游戏会在 10 分钟后跟着进程一起没了。
+let idleTimer = null;
 
-// 没有任何客户端活跃 10 分钟后自动退出，避免留下后台进程。
-setInterval(() => {
-  if (process.env.TRIAL_KEEPALIVE === "1") return;
-  const now = Date.now();
-  const active = Array.from(rooms.values()).some((r) => now - r.lastSeen[0] < 10 * 60 * 1000 || now - r.lastSeen[1] < 10 * 60 * 1000);
-  if (!active) process.exit(0);
-}, 60 * 1000);
+function startIdleWatch() {
+  if (idleTimer) return idleTimer;
+  idleTimer = setInterval(() => {
+    if (process.env.TRIAL_KEEPALIVE === "1") return;
+    const now = Date.now();
+    const active = Array.from(rooms.values()).some((r) => now - r.lastSeen[0] < 10 * 60 * 1000 || now - r.lastSeen[1] < 10 * 60 * 1000);
+    if (!active) process.exit(0);
+  }, 60 * 1000);
+  if (idleTimer.unref) idleTimer.unref();
+  return idleTimer;
+}
+
+function listen(port, host) {
+  return new Promise((resolve, reject) => {
+    const onError = (err) => { server.removeListener("error", onError); reject(err); };
+    server.once("error", onError);
+    server.listen(port === undefined ? PORT : port, host || "0.0.0.0", () => {
+      server.removeListener("error", onError);
+      resolve(server.address());
+    });
+  });
+}
+
+function close() {
+  if (idleTimer) { clearInterval(idleTimer); idleTimer = null; }
+  return new Promise((resolve) => server.close(() => resolve()));
+}
+
+if (require.main === module) {
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log("Gok Vein Gambit LAN server");
+    console.log("http://" + lanIp() + ":" + PORT + "/");
+  });
+  startIdleWatch();
+}
+
+module.exports = { server, listen, close, startIdleWatch, PORT, CHANNEL, PUBLIC };

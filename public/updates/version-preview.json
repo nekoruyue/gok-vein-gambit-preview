@@ -1,0 +1,19 @@
+{
+  "channel": "preview",
+  "version": "0.9.3",
+  "build": "20261026e64",
+  "publishedAt": "2026-10-26T13:18:43+08:00",
+  "mandatory": false,
+  "minSupportedVersion": "0.9.0",
+  "size": 239722558,
+  "sha256": "3a7ba575ee68a546258e5d1288351fdaa360a17cbf021aa589b88a6996a49255",
+  "url": "https://gok-vein-gambit-preview.onrender.com/downloads/GokVeinGambit-Setup-0.9.3.exe",
+  "title": "e64：安装包 + 自更新 + 开场动画 + 领袖语音",
+  "notes": [
+    "新增 NSIS 安装包：装到用户目录，卸载保留存档",
+    "自更新面板：检查更新 / 下载 / 重启安装，清单走线上 Render",
+    "40 秒开场动画：六幕、字幕、旁白、可跳过、可重播",
+    "35 条领袖语音与台词字幕，设置里可开关",
+    "图鉴筛选改为逐层收窄，档案化视觉层落地"
+  ]
+}

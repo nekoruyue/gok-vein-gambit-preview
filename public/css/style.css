@@ -8158,3 +8158,14 @@ body[data-screen="home"] .toast.show { transform: translateY(0); }
 .zone{position:relative}
 .lane-seal{position:absolute;top:7px;left:50%;transform:translateX(-50%);z-index:9;padding:2px 7px;border:1px solid rgba(242,198,109,.65);background:rgba(8,15,19,.84);color:#f2c66d;font:9px/1.4 var(--font-body);letter-spacing:.08em;pointer-events:none;box-shadow:0 0 10px rgba(242,198,109,.18)}
 .lane-seal::before{content:"◇";margin-right:3px;color:#8ee8c8}
+
+/* ===== 桌面版自更新面板（2026-10-26 新增） ===== */
+.gok-update-notes { display: grid; gap: 6px; padding: 4px 0 8px; }
+.gok-update-notes .gk-note { font-size: 12px; color: var(--muted); line-height: 1.6; padding-left: 12px; position: relative; }
+.gok-update-notes .gk-note::before { content: ""; position: absolute; left: 2px; top: 8px; width: 4px; height: 4px; border-radius: 50%; background: var(--gold); opacity: .8; }
+.gok-update-notes .gk-note.dim { color: var(--dim); }
+.gok-update-progress { height: 4px; border-radius: 2px; background: rgba(233,225,210,.12); overflow: hidden; margin: 2px 0 10px; }
+.gok-update-progress i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, var(--vein), var(--gold)); transition: width .2s linear; }
+#gok-update-badge.ready { color: #0a1017; background: linear-gradient(160deg, var(--gold-soft), var(--gold)); border-color: transparent; }
+#btn-settings.has-update { position: relative; }
+#btn-settings.has-update::after { content: ""; position: absolute; top: 10px; right: 12px; width: 7px; height: 7px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 3px rgba(192,80,77,.22); }

@@ -5,11 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, user-scalable=yes">
   <title>戈克世界：流脉牌局</title>
   <link rel="icon" href="favicon.ico">
-  <link rel="stylesheet" href="css/style.css?v=20261025e63">
-  <link rel="stylesheet" href="css/hs-layout.css?v=20261025e63">
-  <link rel="stylesheet" href="css/art-fixes.css?v=20261025e63">
-  <link rel="stylesheet" href="css/mobile.css?v=20261025e63">
-  <link rel="stylesheet" href="css/vfx.css?v=20261025e63">
+  <link rel="stylesheet" href="css/style.css?v=20261026e64">
+  <link rel="stylesheet" href="css/hs-layout.css?v=20261026e64">
+  <link rel="stylesheet" href="css/art-fixes.css?v=20261026e64">
+  <link rel="stylesheet" href="css/mobile.css?v=20261026e64">
+  <link rel="stylesheet" href="css/vfx.css?v=20261026e64">
+  <link rel="stylesheet" href="css/archive.css?v=20261026ui1">
+  <link rel="stylesheet" href="css/opening.css?v=20261026o1">
 </head>
 <body data-screen="home">
   <div id="channel-badge" class="channel-badge" hidden></div>
@@ -70,7 +72,7 @@
               <span class="home-start-cta">进入其他 <i>→</i></span>
             </button>
           </div>
-          <div class="home-version" id="home-version-line">八阵营 · 633 张卡牌 · 589 可收藏</div>
+          <div class="home-version" id="home-version-line">八阵营 · 633 张卡牌 · 585 可收藏</div>
         </div>
         <aside class="home-legendary" id="home-legendary">
           <div class="home-legendary-art" id="home-legendary-art">
@@ -785,6 +787,26 @@
           <div id="codex-faction-tabs" class="deck-faction-tabs"></div>
           <div id="codex-hero-panel" class="codex-hero-panel"></div>
           <div class="codex-filter-label">选择卡牌类型</div>
+          
+          <div class="deck-filter-row codex-type-row">
+            <button class="deck-filter active" data-codex-filter="all">全部</button>
+            <button class="deck-filter" data-codex-filter="minion">随从</button>
+            <button class="deck-filter" data-codex-filter="spell">战术</button>
+            <button class="deck-filter" data-codex-filter="formation">阵型</button>
+            <button class="deck-filter" data-codex-filter="equipment">装备</button>
+            <button class="deck-filter" data-codex-filter="debt">债务卡</button>
+            <button id="codex-token-quick" class="deck-filter codex-token-quick">衍生卡</button>
+            <button id="codex-easter-quick" class="deck-filter codex-token-quick">彩蛋卡</button>
+          </div>
+          <div class="codex-filter-label">选择品级</div>
+          <div id="codex-rarity-row" class="deck-filter-row codex-rarity-row">
+            <button class="deck-filter active" data-codex-rarity="all">全部</button>
+            <button class="deck-filter rarity-common" data-codex-rarity="common">普通</button>
+            <button class="deck-filter rarity-rare" data-codex-rarity="rare">稀有</button>
+            <button class="deck-filter rarity-epic" data-codex-rarity="epic">史诗</button>
+            <button class="deck-filter rarity-legendary" data-codex-rarity="legendary">传说</button>
+          </div>
+                    <div class="codex-filter-label">筛选与搜索</div>
           <div class="codex-search-row codex-search-after-filters">
             <input id="codex-search" class="codex-search" type="search" placeholder="搜索卡名、规则文本或关键词…" autocomplete="off" />
             <select id="codex-cost" class="codex-select" aria-label="行动力筛选">
@@ -807,25 +829,7 @@
             <button id="codex-favorites" class="btn btn-small btn-ghost">收藏 0</button>
             <button id="codex-reset" class="btn btn-small btn-ghost">重置</button>
           </div>
-          <div class="deck-filter-row codex-type-row">
-            <button class="deck-filter active" data-codex-filter="all">全部</button>
-            <button class="deck-filter" data-codex-filter="minion">随从</button>
-            <button class="deck-filter" data-codex-filter="spell">战术</button>
-            <button class="deck-filter" data-codex-filter="formation">阵型</button>
-            <button class="deck-filter" data-codex-filter="equipment">装备</button>
-            <button class="deck-filter" data-codex-filter="debt">债务卡</button>
-            <button id="codex-token-quick" class="deck-filter codex-token-quick">衍生卡</button>
-            <button id="codex-easter-quick" class="deck-filter codex-token-quick">彩蛋卡</button>
-          </div>
-          <div class="codex-filter-label">选择品级</div>
-          <div id="codex-rarity-row" class="deck-filter-row codex-rarity-row">
-            <button class="deck-filter active" data-codex-rarity="all">全部</button>
-            <button class="deck-filter rarity-common" data-codex-rarity="common">普通</button>
-            <button class="deck-filter rarity-rare" data-codex-rarity="rare">稀有</button>
-            <button class="deck-filter rarity-epic" data-codex-rarity="epic">史诗</button>
-            <button class="deck-filter rarity-legendary" data-codex-rarity="legendary">传说</button>
-          </div>
-          <div class="codex-color-legend">
+<div class="codex-color-legend">
             <span><i class="legend-faction"></i>边框：阵营</span>
             <span><i class="legend-rarity"></i>顶部：稀有度</span>
             <span><i class="legend-keyword"></i>标签：关键词</span>
@@ -1052,10 +1056,28 @@
             <div class="settings-row"><div><strong>档案统计</strong><span>清除总局数、胜率与对阵记录</span></div><button id="btn-settings-clear-profile" class="btn btn-small btn-ghost">重置统计</button></div>
             <div class="settings-row"><div><strong>画面与声音</strong><span>恢复默认音量、动效与演出设置</span></div><button id="btn-settings-reset-prefs" class="btn btn-small btn-ghost">恢复默认</button></div>
           </div>
+          <div class="panel settings-panel" id="gok-update-panel">
+            <div class="panel-label">更新 / UPDATE</div>
+            <div class="settings-row"><div><strong>当前版本</strong><span id="gok-update-current">浏览器版 · 不检查更新</span></div><button id="gok-update-check" class="btn btn-small btn-ghost">检查更新</button></div>
+            <div class="settings-row"><div><strong>更新状态</strong><span id="gok-update-status">尚未检查</span></div><span id="gok-update-badge" class="settings-badge" hidden>有新版本</span></div>
+            <div class="gok-update-notes" id="gok-update-notes" hidden></div>
+            <div class="gok-update-progress" id="gok-update-progress" hidden><i id="gok-update-bar"></i></div>
+            <div class="settings-row" id="gok-update-action-row" hidden>
+              <div><strong id="gok-update-action-title">下载更新</strong><span id="gok-update-action-sub">下载完成后可立即安装</span></div>
+              <button id="gok-update-go" class="btn btn-small btn-primary">下载</button>
+            </div>
+          </div>
+
+          <div class="panel settings-panel" id="gok-voice-panel">
+            <div class="panel-label">语音 / VOICE</div>
+            <div class="settings-row"><div><strong>语音台词</strong><span>领袖开场与胜负台词；关闭后完全静音</span></div><button id="btn-voice-toggle" class="btn btn-small btn-primary">开</button></div>
+            <div class="settings-row settings-volume-row"><div><strong>语音音量</strong><span>台词独立音量 · 当前 <b id="settings-voice-label">80%</b></span></div><input id="settings-voice" class="settings-volume" type="range" min="0" max="100" value="80" /></div>
+            <div class="settings-row"><div><strong>台词字幕</strong><span>屏幕底部显示角色名与台词</span></div><button id="btn-voice-sub" class="btn btn-small btn-primary">开</button></div>
+          </div>
           <div class="panel settings-panel settings-about-panel">
             <div class="panel-label">关于 / ABOUT</div>
-            <p class="settings-about">《戈克世界：流脉牌局》经典模式 2.0。八阵营、633 张卡牌 / 589 可收藏，支持起手调度、编成、单人 AI 与在线组队码房间。</p>
-            <p class="settings-about">当前构建：20261025e63</p>
+            <p class="settings-about">《戈克世界：流脉牌局》经典模式 2.0。八阵营、633 张卡牌 / 585 可收藏，支持起手调度、编成、单人 AI 与在线组队码房间。</p>
+            <p class="settings-about">当前构建：20261026e64</p>
             <button id="btn-settings-credits" class="btn btn-small btn-ghost">制作与素材说明</button>
           </div>
         </div>
@@ -1628,17 +1650,44 @@
   <div id="toast" class="toast"></div>
 
   <script>window.__GOK_CHANNEL_VALUE__ = "__GOK_CHANNEL__";</script>
-  <script src="js/channel.js?v=20261025e63"></script>
-  <script src="js/data.js?v=20261025e63"></script>
-  <script src="js/engine.js?v=20261025e63"></script>
-  <script src="js/ai.js?v=20261025e63"></script>
-  <script src="js/cinematic.js?v=20261025e63"></script>
-  <script src="js/vfx.js?v=20261025e63"></script>
-  <script src="js/ui.js?v=20261025e63"></script>
-  <script src="js/content.js?v=20261025e63"></script>
-  <script src="js/battler.js?v=20261025e63"></script>
-  <script src="js/arcade.js?v=20261025e63"></script>
-  <script src="js/main.js?v=20261025e63"></script>
+  <script src="js/channel.js?v=20261026e64"></script>
+  <script src="js/data.js?v=20261026e64"></script>
+  <script src="js/engine.js?v=20261026e64"></script>
+  <script src="js/ai.js?v=20261026e64"></script>
+  <script src="js/cinematic.js?v=20261026e64"></script>
+  <script src="js/vfx.js?v=20261026e64"></script>
+  <script src="js/ui.js?v=20261026e64"></script>
+  <script src="js/content.js?v=20261026e64"></script>
+  <script src="js/battler.js?v=20261026e64"></script>
+  <script src="js/arcade.js?v=20261026e64"></script>
+  <script src="js/main.js?v=20261026e64"></script>
+
+  <!-- 开场动画：六幕，需要一次点击才允许出声，可跳过 -->
+  <div id="gok-opening" class="gkopen" hidden data-scene="idle">
+    <canvas class="gkopen-fx"></canvas>
+    <div class="gkopen-vignette"></div>
+    <div class="gkopen-emblems">
+      <img src="assets/emblems/pus.svg" alt="">
+      <img src="assets/emblems/academy.svg" alt="">
+      <img src="assets/emblems/xizhao.svg" alt="">
+      <img src="assets/emblems/republic.svg" alt="">
+      <img src="assets/emblems/empire.svg" alt="">
+      <img src="assets/emblems/greyharbor.svg" alt="">
+      <img src="assets/emblems/losutai.svg" alt="">
+      <img src="assets/emblems/snow.svg" alt="">
+    </div>
+    <div class="gkopen-title">
+      <span class="en">GOK WORLD</span>
+      <h1>戈克世界</h1>
+      <em>流脉牌局</em>
+    </div>
+    <div class="gkopen-sub"></div>
+    <div class="gkopen-start"><i></i><span>点 击 开 始</span><small>建议戴耳机</small></div>
+    <button class="gkopen-skip">跳 过</button>
+    <audio class="gkopen-audio" preload="none"></audio>
+  </div>
+  <script src="js/opening.js?v=20261026o1"></script>
+  <script src="js/voice.js?v=20261026v1"></script>
 </body>
 </html>
 
