@@ -1078,3 +1078,714 @@ body[data-screen="game"] .board-card .gok-lib-cost {
 #screen-codex .codex-search input { height: 26px !important; font-size: 11.5px !important; }
 #screen-codex .codex-legend { font-size: 9.5px !important; margin-top: 4px !important; }
 #screen-codex .codex-head { padding-bottom: 8px !important; margin-bottom: 10px !important; }
+
+/* ===== 右栏：反馈与交流入口 ===== */
+#screen-home .home-rail-feedback {
+  order: 3; display: grid; gap: 3px; text-align: left;
+  padding: 11px 14px; border-radius: var(--gk-r-md);
+  border: 1px solid rgba(95,211,196,.28);
+  background: linear-gradient(160deg, rgba(95,211,196,.07), rgba(233,225,210,.02));
+  transition: border-color var(--gk-t-fast) var(--gk-ease), background var(--gk-t-fast) var(--gk-ease);
+}
+#screen-home .home-rail-feedback:hover {
+  border-color: rgba(95,211,196,.55);
+  background: linear-gradient(160deg, rgba(95,211,196,.12), rgba(233,225,210,.03));
+}
+.home-rail-feedback .hr-feedback-kicker {
+  font-size: 9px; letter-spacing: .22em; color: var(--vein);
+}
+.home-rail-feedback strong {
+  font-size: 11.5px; font-weight: 500; color: var(--ink); letter-spacing: .02em;
+  font-variant-numeric: tabular-nums;
+}
+.home-rail-feedback small {
+  font-size: 10px; color: var(--dim); letter-spacing: .04em;
+}
+.home-rail-feedback small i { font-style: normal; color: var(--vein); }
+
+/* ===== 反馈弹窗 ===== */
+.feedback-group {
+  margin: 14px 0; padding: 16px 18px; border-radius: 3px; text-align: center;
+  border: 1px solid rgba(95,211,196,.32);
+  background: linear-gradient(160deg, rgba(95,211,196,.09), rgba(233,225,210,.02));
+  display: grid; gap: 5px; justify-items: center;
+}
+.feedback-group-kicker { font-size: 9px; letter-spacing: .24em; color: var(--vein); }
+.feedback-group-number {
+  font-family: var(--serif); font-size: 26px; letter-spacing: .12em; color: #eaf6ff;
+  font-variant-numeric: tabular-nums; text-shadow: 0 2px 12px rgba(95,211,196,.35);
+}
+.feedback-group-name { font-size: 11px; color: var(--muted); letter-spacing: .1em; }
+.feedback-group .btn { margin-top: 8px; }
+.feedback-block { margin-top: 14px; }
+.feedback-block h4 {
+  font-family: var(--serif); font-size: 13px; letter-spacing: .1em; color: var(--gold-soft);
+  margin-bottom: 7px; font-weight: 500;
+}
+.feedback-block ul { margin: 0; padding-left: 18px; }
+.feedback-block li { font-size: 11.5px; line-height: 1.8; color: var(--muted); }
+.feedback-env {
+  display: inline-block; padding: 7px 11px; border-radius: 2px;
+  border: 1px solid rgba(233,225,210,.12); background: rgba(233,225,210,.04);
+  font-size: 11px; color: var(--ink); font-family: ui-monospace, Consolas, monospace;
+  letter-spacing: .02em; word-break: break-all;
+}
+
+/* 首页提示条：轮播时淡入 */
+#screen-home .home-quote.swap { animation: gkQuoteSwap .5s ease; }
+@keyframes gkQuoteSwap {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ===== 右栏排版：反馈提到第一屏可见，并且整栏可滚动（不再被裁掉） ===== */
+#screen-home .home-rail {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(217,164,65,.35) transparent;
+  padding-right: 2px;
+}
+#screen-home .home-rail::-webkit-scrollbar { width: 6px; }
+#screen-home .home-rail::-webkit-scrollbar-thumb {
+  background: rgba(217,164,65,.3); border-radius: 3px;
+}
+#screen-home .home-profile-dock { order: 1; }
+#screen-home .home-rail-feedback { order: 2; }
+#screen-home .home-rail-arcade { order: 3; }
+#screen-home .home-rail-task { order: 4; }
+#screen-home .home-rail-brief { order: 5; }
+#screen-home .home-legendary { order: 6; }
+#screen-home .home-rail-update { order: 7; }
+#screen-home .home-quote { order: 8; }
+
+/* 反馈入口行内排版修正：别叠字、别发虚 */
+#screen-home .home-rail-feedback { opacity: 1 !important; }
+#screen-home .home-rail-feedback strong,
+#screen-home .home-rail-feedback small { display: block; }
+#screen-home .home-rail-feedback strong {
+  line-height: 1.5; font-size: 11.5px; color: #e9e1d2;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#screen-home .home-rail-feedback small {
+  margin-top: 2px; line-height: 1.45; color: #98a6b4;
+}
+#screen-home .home-rail-feedback .hr-feedback-kicker { margin-bottom: 1px; }
+
+/* 反馈入口：提高权重（背后压一层暗底 + 左侧流脉色条），在首页插画上也能看清 */
+#screen-home .home-rail-feedback {
+  position: relative;
+  background: linear-gradient(160deg, rgba(12,20,26,.92), rgba(8,14,18,.94)) !important;
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(95,211,196,.34) !important;
+  padding-left: 17px;
+}
+#screen-home .home-rail-feedback::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: linear-gradient(180deg, var(--vein), rgba(95,211,196,.25));
+}
+#screen-home .home-rail-feedback:hover { border-color: rgba(95,211,196,.6) !important; }
+
+/* =========================================================
+   任务页 · 精修（等级卡两栏 / 章节封条 / 任务行 checklist）
+   ========================================================= */
+#screen-tasks .page-shell { max-width: 1180px; }
+
+/* —— 等级卡：左边大等级，中间进度，右边差值 —— */
+#screen-tasks .levelup-hero {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center;
+  gap: 26px; padding: 22px 26px; border-radius: 4px;
+  border: 1px solid rgba(217,164,65,.26) !important;
+  background:
+    radial-gradient(120% 160% at 0% 0%, rgba(217,164,65,.10), transparent 55%),
+    linear-gradient(180deg, rgba(13,20,26,.96), rgba(7,11,15,.97)) !important;
+  box-shadow: 0 18px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.05);
+}
+#screen-tasks .levelup-hero > div:first-child { display: grid; gap: 2px; }
+#screen-tasks .levelup-hero strong,
+#screen-tasks .levelup-hero h3 {
+  font-family: var(--serif); font-size: 30px; letter-spacing: .1em; color: var(--ink); line-height: 1.1;
+}
+#screen-tasks .levelup-hero small,
+#screen-tasks .levelup-hero .muted { font-size: 10.5px; letter-spacing: .18em; color: var(--dim); }
+/* 进度条 */
+#screen-tasks .levelup-hero .bar,
+#screen-tasks .levelup-hero [class*="progress"] {
+  height: 6px !important; border-radius: 3px; background: rgba(233,225,210,.1) !important; overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.6);
+}
+#screen-tasks .levelup-hero .bar > *,
+#screen-tasks .levelup-hero [class*="progress"] > * {
+  background: linear-gradient(90deg, var(--vein), var(--gold)) !important;
+  box-shadow: 0 0 12px rgba(217,164,65,.45);
+}
+#screen-tasks .levelup-hero .xp-line,
+#screen-tasks .levelup-hero .muted {
+  font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+
+/* —— 页签：下划线式 —— */
+#screen-tasks .task-tabs, #screen-tasks .tasks-tabs, #screen-tasks [class*="tab-row"] {
+  display: flex; gap: 6px; margin: 20px 0 4px; border-bottom: 1px solid rgba(233,225,210,.09);
+}
+#screen-tasks .task-tabs button, #screen-tasks [class*="tab-row"] button {
+  height: 34px; padding: 0 16px; border: 0; background: transparent;
+  color: var(--dim); font-size: 12.5px; letter-spacing: .12em; border-bottom: 2px solid transparent;
+  transition: color .16s ease, border-color .16s ease;
+}
+#screen-tasks .task-tabs button:hover, #screen-tasks [class*="tab-row"] button:hover { color: var(--ink); }
+#screen-tasks .task-tabs button.active, #screen-tasks [class*="tab-row"] button.active {
+  color: var(--gold-soft); border-bottom-color: var(--gold);
+}
+
+/* —— 章节：左边金条 + 大标题，说明靠右 —— */
+#screen-tasks .task-chapter { margin-top: 22px; }
+#screen-tasks .task-chapter-head {
+  position: relative; display: flex; align-items: baseline; justify-content: space-between;
+  gap: 16px; padding: 0 0 12px 18px; margin-bottom: 10px;
+}
+#screen-tasks .task-chapter-head::before {
+  content: ""; position: absolute; left: 0; top: 2px; bottom: 12px; width: 3px;
+  background: linear-gradient(180deg, var(--gold), rgba(217,164,65,.15));
+}
+#screen-tasks .task-chapter-head strong {
+  font-family: var(--serif); font-size: 21px; letter-spacing: .14em; color: var(--ink); font-weight: 500;
+}
+#screen-tasks .task-chapter-head small { font-size: 10.5px; letter-spacing: .1em; color: var(--dim); }
+
+/* —— 任务行：checklist —— */
+#screen-tasks .task-row {
+  position: relative; display: grid;
+  grid-template-columns: 26px minmax(0,1fr) auto auto;
+  align-items: center; gap: 14px;
+  padding: 12px 16px; margin-bottom: 6px; border-radius: 3px;
+  border: 1px solid rgba(233,225,210,.07);
+  background: linear-gradient(180deg, rgba(233,225,210,.028), rgba(233,225,210,.012));
+  transition: border-color .16s ease, background .16s ease, transform .16s ease;
+}
+#screen-tasks .task-row:hover {
+  border-color: rgba(217,164,65,.32); background: linear-gradient(180deg, rgba(217,164,65,.06), rgba(233,225,210,.015));
+  transform: translateX(1px);
+}
+#screen-tasks .task-row:hover::before {
+  content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px; background: var(--vein);
+}
+#screen-tasks .task-mark {
+  width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  border: 1px solid rgba(217,164,65,.5); color: transparent; font-size: 11px;
+  background: rgba(217,164,65,.05);
+}
+#screen-tasks .task-row.done .task-mark,
+#screen-tasks .task-row.is-done .task-mark {
+  background: linear-gradient(160deg, var(--gold-soft), var(--gold)); color: #241a0c; border-color: transparent;
+}
+#screen-tasks .task-row > div { display: grid; gap: 3px; min-width: 0; }
+#screen-tasks .task-row > div strong {
+  font-size: 12.5px; font-weight: 500; letter-spacing: .02em; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#screen-tasks .task-row > div small {
+  font-size: 10px; color: var(--dim); letter-spacing: .06em; font-variant-numeric: tabular-nums;
+}
+#screen-tasks .task-xp {
+  font-family: var(--serif); font-size: 12px; letter-spacing: .04em; color: var(--gold-soft);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+#screen-tasks .task-row .btn {
+  height: 26px; padding: 0 12px; font-size: 10.5px; letter-spacing: .1em;
+  border-color: rgba(217,164,65,.3); color: var(--muted); background: transparent;
+}
+#screen-tasks .task-row .btn:hover { color: #241a0c; background: linear-gradient(160deg,var(--gold-soft),var(--gold)); border-color: transparent; }
+/* 章节奖励行 */
+#screen-tasks .task-chapter > .task-row:last-child,
+#screen-tasks .task-chapter [class*="reward"] {
+  border-style: dashed; border-color: rgba(217,164,65,.28);
+  background: rgba(217,164,65,.04);
+}
+
+/* =========================================================
+   个人资料页 · 精修（头像环 / 徽章 / 下划线页签 / 字段网格）
+   ========================================================= */
+#screen-profile .page-shell { max-width: 1180px; }
+#screen-profile .profile-hero {
+  display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center;
+  gap: 22px; padding: 24px 26px; border-radius: 4px;
+  border: 1px solid rgba(217,164,65,.22) !important;
+  background:
+    radial-gradient(110% 150% at 0% 0%, rgba(95,211,196,.08), transparent 55%),
+    linear-gradient(180deg, rgba(13,20,26,.96), rgba(7,11,15,.97)) !important;
+  box-shadow: 0 18px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.05);
+}
+#screen-profile .profile-hero .home-account-avatar {
+  width: 74px; height: 74px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-family: var(--serif); font-size: 22px; letter-spacing: .08em; color: var(--gold-soft);
+  background: radial-gradient(circle at 38% 30%, #2b3945, #0a1016 72%);
+  border: 1px solid rgba(217,164,65,.55);
+  box-shadow: 0 0 0 4px rgba(217,164,65,.08), 0 10px 26px rgba(0,0,0,.55);
+}
+#screen-profile .profile-hero-copy h3 {
+  font-family: var(--serif); font-size: 25px; letter-spacing: .12em; color: var(--ink); line-height: 1.2;
+}
+#screen-profile .profile-hero-copy p {
+  font-size: 11.5px; letter-spacing: .06em; color: var(--muted); margin-top: 3px;
+}
+#screen-profile .profile-hero-meta {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;
+}
+#screen-profile .profile-hero-meta span {
+  padding: 3px 10px; border-radius: 2px; font-size: 10px; letter-spacing: .08em;
+  color: var(--muted); border: 1px solid rgba(233,225,210,.12); background: rgba(233,225,210,.03);
+}
+#screen-profile .profile-actions { display: flex; gap: 10px; align-items: center; }
+#screen-profile .profile-hero .profile-actions { flex-direction: column; align-items: stretch; }
+#screen-profile .profile-hero .profile-actions .btn { height: 32px; padding: 0 16px; font-size: 11.5px; }
+
+/* 页签 */
+#screen-profile .profile-tabs {
+  display: flex; gap: 6px; margin: 20px 0 4px; border-bottom: 1px solid rgba(233,225,210,.09);
+}
+#screen-profile .profile-tab {
+  height: 34px; padding: 0 16px; background: transparent; border: 0;
+  border-bottom: 2px solid transparent; color: var(--dim);
+  font-size: 12.5px; letter-spacing: .12em; transition: color .16s ease, border-color .16s ease;
+}
+#screen-profile .profile-tab:hover { color: var(--ink); }
+#screen-profile .profile-tab.active { color: var(--gold-soft); border-bottom-color: var(--gold); }
+
+/* 面板与字段 */
+#screen-profile .profile-panel {
+  margin-top: 16px; padding: 22px 24px; border-radius: 4px;
+  border: 1px solid rgba(217,164,65,.16) !important;
+  background: linear-gradient(180deg, rgba(12,19,25,.95), rgba(7,11,15,.96)) !important;
+  box-shadow: 0 16px 36px rgba(0,0,0,.42);
+}
+#screen-profile .profile-subhead {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
+  padding-bottom: 12px; margin-bottom: 18px; border-bottom: 1px solid rgba(233,225,210,.08);
+}
+#screen-profile .profile-subhead strong {
+  font-family: var(--serif); font-size: 17px; letter-spacing: .14em; color: var(--ink); font-weight: 500;
+}
+#screen-profile .profile-subhead small { font-size: 10px; letter-spacing: .06em; color: var(--dim); }
+#screen-profile .profile-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 22px; }
+#screen-profile .profile-field { display: grid; gap: 7px; }
+#screen-profile .profile-field label {
+  font-size: 9.5px; letter-spacing: .2em; color: var(--dim); text-transform: uppercase;
+}
+#screen-profile .profile-field input {
+  height: 40px; padding: 0 14px; border-radius: 2px;
+  border: 1px solid rgba(233,225,210,.13); background: rgba(233,225,210,.04);
+  color: var(--ink); font-size: 12.5px; letter-spacing: .02em;
+  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+#screen-profile .profile-field input:hover { border-color: rgba(233,225,210,.22); }
+#screen-profile .profile-field input:focus {
+  outline: none; border-color: var(--vein); background: rgba(95,211,196,.05);
+  box-shadow: 0 0 0 3px rgba(95,211,196,.12);
+}
+#screen-profile .profile-panel .profile-actions { margin-top: 20px; justify-content: flex-end; }
+#screen-profile .profile-panel .profile-actions .btn { height: 34px; padding: 0 22px; font-size: 12px; }
+#screen-profile .profile-custom-hint {
+  margin-top: 14px; font-size: 10.5px; letter-spacing: .04em; color: var(--dim); line-height: 1.7;
+}
+
+/* 窄屏：两栏塌成一栏 */
+@media (max-width: 900px) {
+  #screen-tasks .levelup-hero { grid-template-columns: 1fr; gap: 14px; }
+  #screen-profile .profile-hero { grid-template-columns: auto 1fr; }
+  #screen-profile .profile-hero .profile-actions { grid-column: 1 / -1; flex-direction: row; }
+  #screen-profile .profile-field-grid { grid-template-columns: 1fr; }
+  #screen-tasks .task-row { grid-template-columns: 22px minmax(0,1fr) auto; }
+  #screen-tasks .task-row .btn { grid-column: 2 / -1; justify-self: start; }
+}
+
+/* 任务页真实类名修正：.tasks-top（等级卡）/ .tasks-tabs / .task-chapter */
+#screen-tasks .tasks-top {
+  display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center;
+  gap: 24px; padding: 22px 26px; border-radius: 4px;
+  border: 1px solid rgba(217,164,65,.26);
+  background:
+    radial-gradient(120% 160% at 0% 0%, rgba(217,164,65,.10), transparent 55%),
+    linear-gradient(180deg, rgba(12,19,25,.97), rgba(7,11,15,.98)) !important;
+  box-shadow: 0 18px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.05);
+  position: relative; overflow: hidden;
+}
+#screen-tasks .tasks-top::after {
+  content: ""; position: absolute; right: -40px; top: -40px; width: 180px; height: 180px;
+  border-radius: 50%; background: radial-gradient(circle, rgba(95,211,196,.10), transparent 70%);
+  pointer-events: none;
+}
+#screen-tasks .tasks-top strong {
+  font-family: var(--serif); font-size: 28px; letter-spacing: .12em; color: var(--ink);
+  display: block; line-height: 1.15;
+}
+#screen-tasks .tasks-top small {
+  font-size: 10.5px; letter-spacing: .14em; color: var(--dim);
+}
+/* 经验条：拉高、加发光 */
+#screen-tasks .tasks-top .bar,
+#screen-tasks .tasks-top [class*="progress"] {
+  height: 7px; border-radius: 4px; background: rgba(233,225,210,.1);
+  overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,.6); margin: 10px 0 7px;
+}
+#screen-tasks .tasks-top .bar > *,
+#screen-tasks .tasks-top [class*="progress"] > * {
+  background: linear-gradient(90deg, var(--vein), var(--gold));
+  box-shadow: 0 0 14px rgba(217,164,65,.5);
+}
+#screen-tasks .tasks-top .muted,
+#screen-tasks .tasks-top [class*="xp"] {
+  font-size: 10.5px; color: var(--muted); letter-spacing: .04em; font-variant-numeric: tabular-nums;
+}
+/* 右侧"距离下一级"做成胶囊 */
+#screen-tasks .tasks-top > *:last-child {
+  justify-self: end; text-align: right;
+}
+#screen-tasks .tasks-top > *:last-child span,
+#screen-tasks .tasks-top > *:last-child small {
+  display: inline-block; padding: 4px 11px; border-radius: 2px;
+  border: 1px solid rgba(217,164,65,.32); background: rgba(217,164,65,.07);
+  color: var(--gold-soft) !important; font-size: 10px; letter-spacing: .08em;
+}
+
+/* 页签真实类名 */
+#screen-tasks .tasks-tabs {
+  display: flex; gap: 6px; margin: 20px 0 4px; border-bottom: 1px solid rgba(233,225,210,.09);
+}
+#screen-tasks .tasks-tabs button {
+  height: 34px; padding: 0 16px; border: 0; border-bottom: 2px solid transparent;
+  background: transparent; color: var(--dim); font-size: 12.5px; letter-spacing: .12em;
+  transition: color .16s ease, border-color .16s ease;
+}
+#screen-tasks .tasks-tabs button:hover { color: var(--ink); }
+#screen-tasks .tasks-tabs button.active,
+#screen-tasks .tasks-tabs button.on { color: var(--gold-soft); border-bottom-color: var(--gold); }
+
+/* 章节容器加深，行与章节分得开 */
+#screen-tasks .task-chapter {
+  margin-top: 20px; padding: 18px 18px 6px; border-radius: 4px;
+  border: 1px solid rgba(233,225,210,.07);
+  background: linear-gradient(180deg, rgba(11,18,23,.94), rgba(7,11,15,.95)) !important;
+}
+
+/* 资料页：真实类名核对后的补丁（tabs / hero 已在通用规则里，这里只补塌陷与间距） */
+#screen-profile .profile-hero-copy h3 { margin: 0; }
+#screen-profile .profile-hero-meta span { white-space: nowrap; }
+#screen-profile .profile-panel + .profile-panel { margin-top: 14px; }
+
+/* 任务页等级卡：按真实内部结构（head / xp-bar / fine-print）排版 */
+#screen-tasks .tasks-top {
+  display: block !important; padding: 20px 26px 18px !important; position: relative;
+}
+#screen-tasks .tasks-top .tasks-top-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 18px; flex-wrap: wrap;
+}
+#screen-tasks .tasks-top .tasks-top-head strong {
+  font-family: var(--serif); font-size: 27px; letter-spacing: .12em; color: var(--ink); line-height: 1.2;
+}
+#screen-tasks .tasks-top .tasks-top-head small {
+  font-size: 10px; letter-spacing: .1em; color: var(--gold-soft);
+  padding: 4px 11px; border-radius: 2px; white-space: nowrap;
+  border: 1px solid rgba(217,164,65,.32); background: rgba(217,164,65,.07);
+}
+#screen-tasks .tasks-top .tasks-xp-bar {
+  height: 8px; border-radius: 4px; margin: 16px 0 9px;
+  background: rgba(233,225,210,.09); overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.65);
+}
+#screen-tasks .tasks-top .tasks-xp-bar i {
+  display: block; height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, var(--vein), var(--gold));
+  box-shadow: 0 0 14px rgba(217,164,65,.5);
+  transition: width .5s ease;
+}
+#screen-tasks .tasks-top .fine-print {
+  font-size: 10.5px; letter-spacing: .05em; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+
+/* 页签：确保四个都看得见 */
+#screen-tasks .tasks-tabs button {
+  color: var(--muted) !important; opacity: 1 !important; visibility: visible !important;
+}
+#screen-tasks .tasks-tabs button.active,
+#screen-tasks .tasks-tabs button.on { color: var(--gold-soft) !important; }
+
+/* 资料页 hero：回到两列（头像 / 文案），按钮横排不再拉成整行 */
+#screen-profile .profile-hero {
+  grid-template-columns: auto minmax(0,1fr) !important;
+  align-items: start !important;
+}
+#screen-profile .profile-hero .home-account-avatar {
+  flex: 0 0 auto; aspect-ratio: 1 / 1; width: 74px; height: 74px;
+  align-self: center;
+}
+#screen-profile .profile-hero .profile-actions {
+  flex-direction: row !important; display: flex !important; gap: 10px !important;
+  margin-top: 14px; align-items: center; justify-content: flex-start;
+}
+#screen-profile .profile-hero .profile-actions .btn {
+  width: auto !important; flex: 0 0 auto; height: 32px; padding: 0 18px; font-size: 11.5px;
+}
+#screen-profile .profile-hero-copy { display: block; }
+#screen-profile .profile-hero-copy h3 { margin-bottom: 2px; }
+#screen-profile .profile-hero-meta { margin-top: 10px; }
+
+/* 头像尺寸修正 + 页签对比度 + hero 收紧 */
+#screen-profile .profile-hero .home-account-avatar {
+  width: 74px !important; height: 74px !important; min-width: 74px; min-height: 74px;
+  aspect-ratio: auto !important; border-radius: 50% !important;
+  display: grid !important; place-items: center; align-self: center !important;
+  line-height: 1;
+}
+#screen-profile .profile-hero { align-items: center !important; padding: 22px 26px !important; }
+#screen-profile .profile-tabs button,
+#screen-profile .profile-tabs .profile-tab { color: var(--muted) !important; }
+#screen-profile .profile-tabs button.active,
+#screen-profile .profile-tabs .profile-tab.active { color: var(--gold-soft) !important; }
+#screen-profile .profile-tabs { margin-top: 18px !important; }
+
+/* =========================================================
+   首页重排：提示条置顶 · 大按钮撑满 · 更新右上 · 反馈右下
+   ========================================================= */
+#screen-home .home-main { display: flex; flex-direction: column; min-height: 0; }
+#screen-home .home-hero { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+
+/* —— 顶部滚动提示条 —— */
+#screen-home .home-tip-bar {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: 10px;
+  height: 34px; margin: 4px 0 14px; padding: 0 16px 0 14px;
+  border: 1px solid rgba(217,164,65,.22); border-radius: 2px;
+  background: linear-gradient(90deg, rgba(217,164,65,.07), rgba(233,225,210,.015) 40%, rgba(95,211,196,.06));
+  overflow: hidden; position: relative;
+}
+#screen-home .home-tip-bar::before {
+  content: "提示 / TIP"; flex: 0 0 auto;
+  font-family: var(--serif); font-size: 9px; letter-spacing: .2em; color: var(--gold);
+  padding-right: 11px; margin-right: 3px; border-right: 1px solid rgba(217,164,65,.28);
+}
+#screen-home .home-tip-bar #home-quote {
+  flex: 1 1 auto; overflow: hidden;
+  font-size: 11.5px; letter-spacing: .04em; color: rgba(233,225,210,.82);
+  white-space: nowrap; text-overflow: ellipsis;
+}
+/* 换条时从右侧滑入，读作"滚动" */
+#screen-home .home-tip-bar #home-quote.swap { animation: gkTipSlide .55s cubic-bezier(.2,.7,.2,1); }
+@keyframes gkTipSlide {
+  from { opacity: 0; transform: translateX(26px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* —— 两个主按钮：吃掉剩余高度 —— */
+#screen-home .home-start-wrap.home-dual {
+  flex: 1 1 auto; min-height: 210px; margin-top: 18px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch;
+}
+#screen-home .home-start-button {
+  height: 100%; min-height: 200px;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 22px 24px 20px; position: relative; overflow: hidden;
+  transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+#screen-home .home-start-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 22px 46px rgba(0,0,0,.5), 0 0 0 1px rgba(217,164,65,.28) inset;
+}
+#screen-home .home-start-kicker {
+  position: absolute; top: 18px; left: 24px;
+  font-family: var(--serif); font-size: 10px; letter-spacing: .22em; color: var(--gold);
+}
+#screen-home .home-start-button strong {
+  font-family: var(--serif); font-size: 30px; letter-spacing: .1em; line-height: 1.15;
+}
+#screen-home .home-start-button small {
+  margin-top: 6px; font-size: 11.5px; letter-spacing: .04em; color: rgba(233,225,210,.62);
+}
+#screen-home .home-start-cta {
+  margin-top: 14px; font-size: 11px; letter-spacing: .14em; color: var(--gold-soft);
+  display: flex; align-items: center; gap: 7px;
+}
+#screen-home .home-start-cta i { font-style: normal; transition: transform .18s ease; }
+#screen-home .home-start-button:hover .home-start-cta i { transform: translateX(4px); }
+
+/* —— 更新入口：右上角、实验徽标下面 —— */
+#screen-home .home-rail-update,
+#home-update-entry {
+  position: fixed !important; right: 22px; top: 62px; z-index: 40;
+  width: 214px; order: unset !important;
+  padding: 9px 13px; border-radius: 3px; text-align: left; display: grid; gap: 2px;
+  border: 1px solid rgba(233,225,210,.14);
+  background: linear-gradient(180deg, rgba(14,21,27,.92), rgba(8,13,18,.95));
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 24px rgba(0,0,0,.5);
+}
+#home-update-entry .hr-update-kicker { font-size: 9px; letter-spacing: .2em; color: var(--gold); }
+#home-update-entry strong { font-size: 11.5px; font-weight: 500; color: var(--ink); }
+#home-update-entry small { font-size: 9.5px; color: var(--dim); letter-spacing: .04em; }
+
+/* —— 反馈入口：右下角 —— */
+#screen-home .home-rail-feedback,
+#home-feedback-entry {
+  position: fixed !important; right: 22px; bottom: 22px; z-index: 40;
+  width: 246px; order: unset !important;
+}
+
+/* —— 右栏只剩资料卡与主线，靠上排 —— */
+#screen-home .home-rail {
+  justify-content: flex-start !important;
+  overflow: visible !important;
+  padding-top: 4px;
+}
+#screen-home .home-rail-feedback,
+#screen-home .home-rail-update { position: fixed !important; }
+
+/* —— 窄屏：两个固定浮层回到文档流 —— */
+@media (max-width: 1100px) {
+  #screen-home .home-rail-update,
+  #home-update-entry,
+  #screen-home .home-rail-feedback,
+  #home-feedback-entry { position: static !important; width: 100% !important; }
+  #screen-home .home-start-wrap.home-dual { grid-template-columns: 1fr; min-height: 0; }
+  #screen-home .home-start-button { min-height: 132px; }
+  #screen-home .home-start-button strong { font-size: 24px; }
+}
+
+/* 收尾：更新入口与资料卡错开；提示条居中 */
+#screen-home .home-rail { padding-top: 78px !important; }
+#screen-home .home-tip-bar {
+  width: min(760px, 100%); margin: 2px auto 16px !important;
+}
+#screen-home .home-tip-bar #home-quote { font-size: 12px; }
+#screen-home .home-hero { align-items: stretch; }
+
+#screen-home .home-rail { padding-top: 112px !important; }
+
+/* 提示条真正居中到舞台；按钮再撑高一点 */
+@media (min-width: 1101px) {
+  #screen-home .home-tip-bar {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    top: 14px; width: min(820px, 62vw) !important; margin: 0 !important; z-index: 30;
+  }
+  #screen-home .home-hero { padding-top: 56px; }
+  #screen-home .home-start-wrap.home-dual { min-height: 248px; }
+}
+@media (max-width: 1100px) {
+  #screen-home .home-tip-bar { position: static; transform: none; }
+}
+
+/* 导航贴底：主列撑满视口，hero 吃掉剩余高度 */
+#screen-home .home-main {
+  min-height: calc(100vh - 46px) !important;
+  display: flex !important; flex-direction: column !important;
+}
+#screen-home .home-nav { margin-top: auto !important; }
+#screen-home .home-hero { flex: 1 1 auto; }
+
+/* =========================================================
+   右上角对齐：资料卡与「实验版」徽标同一水平线
+   布局：徽标(右上) → 更新入口(徽标正下方同宽) → 资料卡(与徽标同高，靠左排)
+   ========================================================= */
+@media (min-width: 1101px) {
+  /* 资料卡：与徽标同 top，右边缘让开徽标宽度 */
+  #screen-home .home-profile-dock {
+    position: fixed !important; top: 10px !important; right: 176px !important;
+    width: 342px !important; z-index: 45;
+    margin: 0 !important;
+  }
+  /* 更新入口：徽标正下方，同宽 */
+  #home-update-entry {
+    top: 42px !important; right: 14px !important; width: 144px !important;
+    padding: 7px 10px !important; z-index: 46;
+  }
+  #home-update-entry .hr-update-kicker { font-size: 8.5px; letter-spacing: .16em; }
+  #home-update-entry strong { font-size: 11px; }
+  #home-update-entry small { font-size: 9px; }
+  /* 右栏只剩主线任务条，往下让开固定层 */
+  #screen-home .home-rail { padding-top: 196px !important; }
+  #screen-home .home-rail-brief, #screen-home .home-legendary { display: none !important; }
+}
+
+/* =========================================================
+   右栏最终布局：资料卡 → 主线任务 → 随机卡牌（撑满剩余高度）
+   整栏固定，顶边与「实验版」徽标对齐
+   ========================================================= */
+@media (min-width: 1101px) {
+  #screen-home .home-rail {
+    position: fixed !important;
+    top: 10px !important; right: 176px !important;
+    width: 342px !important;
+    bottom: 104px !important;
+    padding: 0 !important;
+    display: flex !important; flex-direction: column !important; gap: 10px !important;
+    overflow: hidden !important; z-index: 45;
+  }
+  #screen-home .home-profile-dock {
+    position: static !important; width: 100% !important; margin: 0 !important; order: 1;
+  }
+  #screen-home .home-rail-task { order: 2; width: 100% !important; }
+  #screen-home .home-legendary {
+    order: 3; position: relative !important; flex: 1 1 auto !important;
+    width: 100% !important; height: auto !important; min-height: 180px;
+    display: block !important; overflow: hidden; border-radius: 3px;
+  }
+  #screen-home .home-legendary-art { position: absolute !important; inset: 0 !important; }
+  #screen-home .home-legendary-art img { width: 100%; height: 100%; object-fit: cover; object-position: center 22%; }
+  #screen-home .home-legendary-shade {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(4,9,13,.1) 0%, rgba(4,9,13,.35) 45%, rgba(5,10,14,.94) 100%);
+  }
+  #screen-home .home-legendary-meta {
+    position: absolute !important; left: 16px; right: 16px; bottom: 16px;
+    display: grid; gap: 4px; text-align: left;
+  }
+  #screen-home .home-legendary-meta .eyebrow {
+    font-size: 9px; letter-spacing: .22em; color: var(--gold);
+  }
+  #screen-home .home-legendary-meta strong {
+    font-family: var(--serif); font-size: 22px; letter-spacing: .06em; color: #f6efe0;
+    text-shadow: 0 2px 10px rgba(0,0,0,.85);
+  }
+  #screen-home .home-legendary-meta > span:last-child {
+    font-size: 10px; letter-spacing: .05em; color: rgba(233,225,210,.6);
+  }
+  #screen-home .home-rail-brief { display: none !important; }
+}
+
+/* 覆盖旧的 margin/height 限制，让随机卡真正撑满 */
+#screen-home .home-legendary {
+  margin: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 200px !important;
+  flex: 1 1 auto !important;
+}
+
+/* rail 高度显式给死，legendary 才能真正撑满中段 */
+@media (min-width: 1101px) {
+  #screen-home .home-rail {
+    height: calc(100vh - 118px) !important;
+    max-height: calc(100vh - 118px) !important;
+  }
+  #screen-home .home-legendary { min-height: 0 !important; }
+}
+
+/* 右栏贴到右边、与右侧三个浮层上下对齐 */
+@media (min-width: 1101px) {
+  #screen-home .home-rail {
+    right: 14px !important;
+    width: 342px !important;
+    top: 10px !important;
+    height: calc(100vh - 116px) !important;
+    max-height: calc(100vh - 116px) !important;
+  }
+  /* 更新入口挪到资料卡与徽标之间会打架 → 放到资料卡正上方右侧留白处，宽度与徽标一致 */
+  #home-update-entry {
+    top: 42px !important;
+    right: 372px !important;
+    width: 144px !important;
+  }
+}
+
+/* 反馈入口与右栏贴同一条右边线 */
+#home-feedback-entry { right: 14px !important; width: 342px !important; }

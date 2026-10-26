@@ -219,6 +219,7 @@
     settlementRecorded: false,
     rankChange: null,
     rankReturn: "home",
+    lastLegendary: null,
     deckBuildFaction: "pus",
     deckBuildList: [],
     deckBuildFilter: "all",
@@ -281,7 +282,6 @@
     zoneLabels: true,
     battlerFx: "normal",
     lastAutoStrategy: null,
-    lastLegendary: null,
     logOpen: false,
     aiRunning: false,
     lastConfig: null,
@@ -599,7 +599,7 @@
     else if (name === "home" || name === "mode" || name === "sim" || name === "tutorial" || name === "settings" || name === "rank" || name === "rules") AudioBox.bgm(MAIN_BGM);
     if (name !== "home") { closeStartMenu(); hideMobileWelcome(); }
     if (name !== "home") removeOnboardingCoach();
-    if (name === "home") { const taskStrip = $("home-task-strip"); if (taskStrip) taskStrip.onclick = () => { AudioBox.play("ui_open"); openTasks(); }; const arcadeEntry = $("home-arcade-entry"); if (arcadeEntry) arcadeEntry.onclick = () => { AudioBox.play("ui_open"); const other = $("home-other"); if (other) other.click(); }; updateHomeLegendary(); updateHomeAccount(); updateHomeTaskWidget(); renderHomeDash(); renderHomeRail(); startHomeQuoteRotation(); setTimeout(startOnboardingIfNeeded, 300); }
+    if (name === "home") { updateHomeLegendary(); const taskStrip = $("home-task-strip"); if (taskStrip) taskStrip.onclick = () => { AudioBox.play("ui_open"); openTasks(); };   updateHomeAccount(); updateHomeTaskWidget();   startHomeQuoteRotation(); setTimeout(startOnboardingIfNeeded, 300); }
     if (name === "profile") renderProfilePage();
     if (name === "appearance") renderAppearancePage();
     if (name === "login") renderLoginPage();
@@ -688,7 +688,7 @@
     "7 裂隙：双方领袖受到 2 点伤害。",
     "10 魔物潮：所有随从受到 3 点伤害，双方领袖受到 5 点伤害。",
     "12 回流：共享流脉清空，重新开始积累。",
-    "装备槽最多 2 个，阵位槽最多 3 个。",
+    "每个阵位最多 3 个随从；装备想带几件都能带。",
     "鼠标悬停卡牌可以查看关键词说明。",
     "手机长按卡牌查看完整卡牌详情。",
     "预兆会从牌库顶 3 张里选 1 张置入手牌。",
@@ -696,7 +696,7 @@
     "引脉只在共享流脉达到标注数字时触发。",
     "牌库抽空会进入疲劳，过牌也要算代价。",
     "结束回合前先确认行动力和可攻击随从。",
-    "一套牌组固定 30 张，装备最多 2 件，阵型最多 3 张。",
+    "一套牌组固定 30 张，阵型最多 3 张，装备想带几件都行。",
     "自动构筑只是起点，建议再手动改 3–5 张。",
     "未拥有的传说卡会显示灰色标记，仍然可以查看效果。",
     "每个阵营可以保存多套不同流派的牌组。",
@@ -708,15 +708,48 @@
     "鼠标悬停卡牌可以查看完整关键词。",
     "手机长按卡牌可以打开详情。",
     "守备随从会挡住敌方对领袖的攻击。",
-    "连携需要同阵位有另一个友方随从。",
     "流脉 4 / 7 / 10 / 12 会触发不同事件。",
     "牌库抽空后进入疲劳，过牌也要付代价。",
     "对局中不会自动跳转到教程页。",
     "普卫岛相信秩序应该像潮汐一样可预测。",
     "学院把流脉当作可以拆解的公式。",
     "灰港同盟不问你从哪来，只问你付不付得起。",
-    "雪都的极光会记录每一个路过的名字。"
+    "雪都的极光会记录每一个路过的名字。",
+
   ];
+  // 关键词 tips：直接从关键词表生成，改说明就同步（不手写第二份）
+  let _keywordTipsCache = null;
+  function keywordTips() {
+    if (_keywordTipsCache) return _keywordTipsCache;
+    const help = (typeof KEYWORD_HELP !== "undefined") ? KEYWORD_HELP : {};
+    const long = (typeof KEYWORD_TUTORIAL !== "undefined") ? KEYWORD_TUTORIAL : {};
+    const out = [];
+    for (const label of Object.keys(help)) {
+      // 短说明优先（适合当 tips），并把开头重复的词名去掉
+      let desc = String(help[label] || long[label] || "").trim();
+      if (!desc) continue;
+      desc = desc.split(/[。；]/)[0].trim();
+      if (desc.startsWith(label)) desc = desc.slice(label.length).replace(/^[是为：:，,、]\s*/, "");
+      if (!desc) desc = String(long[label] || "").trim().split(/[。；]/)[0] || "";
+      if (!desc) continue;
+      out.push(label + "｜" + desc);
+    }
+    _keywordTipsCache = out;
+    return out;
+  }
+
+  // 规则与关键词交错：转两下就能看到一条关键词
+  function mixedTips() {
+    const rules = HOME_TIPS;
+    const kw = keywordTips();
+    const out = [];
+    for (let i = 0; i < Math.max(rules.length, kw.length); i++) {
+      if (rules[i]) out.push(rules[i]);
+      if (kw[i]) out.push(kw[i]);
+    }
+    return out;
+  }
+
   let homeQuoteTimer = null;
   let homeQuoteIndex = 0;
   function setHomeQuote(text) {
@@ -739,14 +772,7 @@
     });
   }
 
-  function startHomeQuoteRotation() {
-    if (homeQuoteTimer) clearInterval(homeQuoteTimer);
-    setHomeQuote(HOME_TIPS[homeQuoteIndex % HOME_TIPS.length]);
-    homeQuoteTimer = setInterval(() => {
-      homeQuoteIndex = (homeQuoteIndex + 1) % HOME_TIPS.length;
-      setHomeQuote(HOME_TIPS[homeQuoteIndex]);
-    }, 6200);
-  }
+
   function updateHomeLegendary() {
     const candidates = Object.values(D.CARDS).filter(c => !c.disabled && c.name);
     if (!candidates.length) return;
@@ -783,6 +809,16 @@
     }
   }
 
+  function startHomeQuoteRotation() {
+    if (homeQuoteTimer) clearInterval(homeQuoteTimer);
+    const allTips = mixedTips();
+    setHomeQuote(allTips[homeQuoteIndex % allTips.length]);
+    homeQuoteTimer = setInterval(() => {
+      if (app.screen !== "home") { clearInterval(homeQuoteTimer); homeQuoteTimer = null; return; }
+      homeQuoteIndex = (homeQuoteIndex + 1) % allTips.length;
+      setHomeQuote(allTips[homeQuoteIndex]);
+    }, 4500);
+  }
   function renderOtherModes() {
     const box = $("other-page-root");
     if (!box) return;
@@ -961,7 +997,7 @@
   let bootTipTimer = null;
   function startBootTips(initialTip) {
     if (bootTipTimer) clearInterval(bootTipTimer);
-    const tips = HOME_TIPS;
+    const tips = mixedTips();
     let index = Math.floor(Math.random() * tips.length);
     const show = (text) => {
       const el = $("boot-tip");
@@ -2643,9 +2679,6 @@
 
   function renderVein(s) {
     $("vein-value").textContent = String(s.vein);
-    const chipVal = $("gk-vein-chip-value");
-    if (chipVal) chipVal.textContent = String(s.vein);
-    const chip = $("gk-vein-chip");
     const sigil = document.querySelector("#vein-row .vein-sigil");
     if (sigil) {
       sigil.style.backgroundImage = "url('assets/ui/vein-core.webp?v=" + ART_VERSION + "')";
@@ -3092,7 +3125,7 @@
     "镇脉": "消耗流脉换等量护甲；不足时只获得剩余部分。",
     "压脉": "消耗流脉对敌方领袖造成等量伤害；不足时整张无效。",
     "悬赏": "将一个目标标记为悬赏名单；该标记本身不触发死亡效果。",
-    "装备": "持续生效；最多可同时装备两件。",
+    "装备": "打出后持续生效，不设件数上限，想带几件都行。",
     "复制": "复制体默认继承目标当前攻击、最大生命、关键词和效果，不复制已受伤；复制体进场通常不触发登场。",
     "恢复溢出": "治疗超过生命上限的部分默认消失；卡面写明“溢出转护甲”时，未恢复的点数改为护甲。",
     "刻脉": "在目标阵位刻下脉痕；共享流脉首次达到或越过阈值时触发该阵位的效果，然后脉痕消失。每个阵位最多一道脉痕。",
@@ -6410,7 +6443,7 @@
     ] },
     { id: "deck", level: 1, title: "组卡教学", desc: "30 张 · 曲线 · 品级 · 标签", xp: 120, body: [
       "先定方向：快攻、中速、控制、组合。先想清楚这套牌靠什么赢，再决定带哪些卡；不要把所有强卡塞在一起。",
-      "固定 30 张：28 张主牌 + 2 件装备；阵型最多 3 张，装备最多 2 件；同名卡数量受品级和卡牌规则限制。",
+      "固定 30 张，随从 / 战术 / 阵型 / 装备自由混编；阵型最多 3 张，装备不限件数；同名卡数量受品级和卡牌规则限制。",
       "曲线参考：2–3 费 8–12 张，4–5 费 8–10 张，6 费以上别太多。前 3 回合有牌可出，比单卡强度更重要。",
       "品级上限：传说最多 2 张，史诗最多 6 张，稀有最多 10 张；未拥有的传说不能加入自定义牌组，官方预组可以试玩。",
       "新手先用预设或自动构筑生成 30 张，再手动替换 3–5 张；不要从零硬凑，也不要为了“完美”反复推翻整套牌。",
@@ -6429,7 +6462,7 @@
     id: "deck_class", level: 1, title: "组卡课堂", desc: "30 张 · 曲线 · 品级 · 流派标签", textOnly: true,
     body: [
       "先定方向：快攻、中速、控制、组合。先想清楚这套牌靠什么赢，再往里面塞卡。",
-      "固定 30 张：28 张主牌 + 2 件装备；阵型最多 3 张，装备最多 2 件。",
+      "固定 30 张，阵型最多 3 张，装备不限件数。",
       "曲线参考：2–3 费 8–12 张，4–5 费 8–10 张，6 费以上不要太多；先保证每回合有事做。",
       "品级上限：传说最多 2 张，史诗最多 6 张，稀有最多 10 张；未拥有的传说不能加入自定义牌组。",
       "先用「预设牌组」试玩；Lv.5 后可以复制为自定义牌组，再改名、加流派标签、手动替换。",
@@ -8715,7 +8748,6 @@ const tabs = $("deck-faction-tabs");
   function updateHomeAccount() {
     const account = ensureAccount();
     const metaEl = $("home-account-meta");
-    const cardBackEl = $("home-account-cardback");
     const nameEl = $("home-account-name");
     const levelEl = $("home-account-level");
     const statusEl = $("home-account-status");
@@ -8732,39 +8764,14 @@ const tabs = $("deck-faction-tabs");
     if (avatarEl) {
       clear(avatarEl);
       const av = PROFILE_AVATARS.find(x => x.id === account.avatar) || PROFILE_AVATARS[0];
-      if (account.avatar === "custom" && account.customAvatar) { const img = el("img"); img.src = account.customAvatar; img.alt = "自传头像"; avatarEl.appendChild(img); }
-      else if (av.emblem) { const img = el("img"); img.src = av.emblem; img.alt = av.name; avatarEl.appendChild(img); }
-      else avatarEl.textContent = av.glyph || "GK";
-      avatarEl.dataset.frame = account.avatarFrame || "none";
-    }
-    if (nameEl) {
-      const nc = PROFILE_NAME_COLORS.find(x => x.id === account.nameColor) || PROFILE_NAME_COLORS[0];
-      nameEl.style.color = nc.color;
-    }
-    if (titleEl) {
-      titleEl.dataset.plate = account.titlePlate || "none";
-    }
-    const sigEl = $("home-account-signature");
-    if (sigEl) { sigEl.textContent = account.signature || ""; sigEl.hidden = !account.signature; }
-    const badgesEl = $("home-account-badges");
-    if (badgesEl) {
-      clear(badgesEl);
-      const badges = (account.badges || []).map(id => ACHIEVEMENTS.find(a => a.id === id)).filter(Boolean);
-      badges.forEach(a => {
-        const chip = el("span", "home-account-badge", a.icon + " " + a.name);
-        chip.title = a.desc;
-        badgesEl.appendChild(chip);
-      });
-      badgesEl.hidden = !badges.length;
-    }
-    document.body.dataset.tableTheme = account.tableTheme || "archive";
-    document.body.dataset.cardFrame = account.cardFrame || "none";
-    applyProfileCardBack();
-    if (cardBackEl) {
-      const cb = cardBackDefinition(account.cardBack || "classic");
-      cardBackEl.style.backgroundImage = "url('" + cardBackUrl() + "')";
-      cardBackEl.textContent = cb.glyph || "GK";
-      cardBackEl.title = "当前卡背：" + cb.name;
+      if (account.avatar === "custom" && account.customAvatar) {
+        const img = document.createElement("img");
+        img.src = account.customAvatar;
+        img.alt = "";
+        avatarEl.appendChild(img);
+      } else {
+        avatarEl.textContent = (av && av.glyph) || "GK";
+      }
     }
     if (!metaEl) return;
     let content = {};
@@ -8782,53 +8789,9 @@ const tabs = $("deck-faction-tabs");
   }
 
   // 首页右栏：用真实的 profile 数据渲染速览与最近一局（没有数据就显示空态）
-  function renderHomeRail() {
-    const p = app.profile || {};
-    const games = p.games || 0, wins = p.wins || 0, losses = p.losses || 0;
-    const set = (id, text) => { const n = $(id); if (n) n.textContent = text; };
-    set("home-brief-games", games + " 局");
-    set("home-brief-record", wins + " 胜 " + losses + " 负");
-    set("home-brief-rate", games ? Math.round((wins / games) * 100) + "%" : "—");
-    const rank = typeof rankInfo === "function" ? rankInfo(p.rankPoints || 0) : null;
-    set("home-brief-rank", rank ? rank.tier + " · " + (p.rankPoints || 0) + " 分" : "未定级");
-    set("home-brief-streak", String(p.rankBestStreak || 0));
-    const hist = (p.history || [])[0];
-    const line = $("home-recent-line"), sub = $("home-recent-sub");
-    if (!hist) {
-      if (line) line.textContent = "还没有推演记录";
-      if (sub) sub.textContent = "打一局就会记在这里";
-      return;
-    }
-    const resultText = hist.result === "win" ? "胜利" : hist.result === "loss" ? "失败" : "平局";
-    if (line) line.textContent = factionName(hist.faction) + " vs " + factionName(hist.opponent) + " · " + resultText;
-    const when = hist.at ? new Date(hist.at) : null;
-    const whenText = when && !isNaN(when) ? (when.getMonth() + 1) + "-" + when.getDate() + " " + String(when.getHours()).padStart(2, "0") + ":" + String(when.getMinutes()).padStart(2, "0") : "";
-    if (sub) sub.textContent = [hist.round ? hist.round + " 回合" : "", hist.ranked ? "排位" : "推演", whenText].filter(Boolean).join(" · ");
-  }
 
-  function renderHomeDash() {
-    const statusEl = $("home-arcade-status");
-    const ctaEl = $("home-arcade-cta");
-    if (!statusEl && !ctaEl) return;
-    let content = {};
-    try { content = JSON.parse(localStorage.getItem("gok_content_v1") || "{}") || {}; } catch (e) {}
-    const date = new Date().toISOString().slice(0, 10);
-    const daily = content.daily && content.daily.date === date ? content.daily.result : null;
-    const expedition = content.expedition;
-    const arena = content.arena;
-    let active = null;
-    if (expedition && !expedition.finished && expedition.nodes && expedition.node < expedition.nodes.length) {
-      active = "继续远征 · 节点 " + (expedition.node + 1) + "/" + expedition.nodes.length;
-    } else if (arena && arena.active) {
-      active = "继续轮抽 · " + arena.picks + "/10 选";
-    }
-    if (statusEl) {
-      if (active) statusEl.textContent = active + " · 印记 " + (content.marks || 0);
-      else if (daily) statusEl.textContent = (daily === "win" ? "今日已通关" : "今日已结算") + " · 印记 " + (content.marks || 0);
-      else statusEl.textContent = "今日挑战待推演 · 印记 " + (content.marks || 0);
-    }
-    if (ctaEl) ctaEl.innerHTML = (active ? "继续档案" : "进入街机") + " <i>→</i>";
-  }
+
+
 
   function afterAccountUI() { updateHomeAccount(); }
 
@@ -9285,6 +9248,76 @@ const tabs = $("deck-faction-tabs");
     });
   }
 
+  const FEEDBACK_QQ_GROUP = "1132308724";
+  const FEEDBACK_QQ_NAME = "戈克世界交流群";
+
+  function openFeedback() {
+    openModal((content) => {
+      content.appendChild(el("div", "eyebrow", "ARCHIVE / 反馈"));
+      content.appendChild(el("h3", null, "反馈与交流"));
+      content.appendChild(el("p", null, "卡牌数值、bug、UI 问题都可以直接说；带上版本号和截图，我改起来最快。"));
+
+      const group = el("div", "feedback-group");
+      group.appendChild(el("div", "feedback-group-kicker", "交流群 / QQ"));
+      const num = el("strong", "feedback-group-number", FEEDBACK_QQ_GROUP);
+      num.style.cursor = "pointer";
+      num.title = "点击复制群号";
+      num.onclick = () => { const btn = group.querySelector("button"); if (btn) btn.click(); };
+      group.appendChild(num);
+      group.appendChild(el("div", "feedback-group-name", FEEDBACK_QQ_NAME));
+      const copyBtn = el("button", "btn btn-small btn-primary", "复制群号");
+      copyBtn.onclick = () => {
+        const okText = "群号已复制：" + FEEDBACK_QQ_GROUP + "（QQ 搜群号即可加入）";
+        const fallback = () => {
+          // 局域网 http 下没有 clipboard API：用临时 textarea 兜底，失败就明说让用户手动复制
+          try {
+            const ta = document.createElement("textarea");
+            ta.value = FEEDBACK_QQ_GROUP;
+            ta.style.position = "fixed";
+            ta.style.opacity = "0";
+            document.body.appendChild(ta);
+            ta.select();
+            const ok = document.execCommand && document.execCommand("copy");
+            document.body.removeChild(ta);
+            toast(ok ? okText : "复制失败，请手动记下群号：" + FEEDBACK_QQ_GROUP);
+          } catch (e) {
+            toast("复制失败，请手动记下群号：" + FEEDBACK_QQ_GROUP);
+          }
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+          navigator.clipboard.writeText(FEEDBACK_QQ_GROUP).then(() => toast(okText)).catch(fallback);
+        } else { fallback(); }
+      };
+      group.appendChild(copyBtn);
+      content.appendChild(group);
+
+      const tips = el("div", "feedback-block");
+      tips.appendChild(el("h4", null, "这样反馈最有用"));
+      const ul = document.createElement("ul");
+      for (const t of [
+        "说清楚在哪个界面、点了什么、期望是什么、实际发生了什么",
+        "附一张截图（桌面截图键直接粘进 QQ）",
+        "如果有报错文字，整段贴过来，不要只发一部分"
+      ]) ul.appendChild(el("li", null, t));
+      tips.appendChild(ul);
+      content.appendChild(tips);
+
+      const env = el("div", "feedback-block");
+      env.appendChild(el("h4", null, "自动带上这些信息"));
+      const buildText = (document.querySelector(".settings-about") || {}).textContent || "";
+      const buildId = (buildText.match(/当前构建：(\S+)/) || [])[1] || "本机开发版";
+      const isApp = /Electron/i.test(navigator.userAgent) || !!window.gokEmbedded;
+      env.appendChild(el("code", "feedback-env", "构建 " + buildId + " · " + (isApp ? "安装版" : "网页版")));
+      content.appendChild(env);
+
+      const actions = el("div", "modal-actions");
+      const close = el("button", "btn btn-primary", "知道了");
+      close.onclick = () => closeModal(true);
+      actions.appendChild(close);
+      content.appendChild(actions);
+    });
+  }
+
   function openGameGuide() {
     openModal((content) => {
       content.appendChild(el("div", "eyebrow", "ARCHIVE / GAME GUIDE"));
@@ -9296,7 +9329,7 @@ const tabs = $("deck-faction-tabs");
         ["行动力与先后手", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张，并额外获得一张「掘脉许可」（1 费战术：本回合 +2 点行动力，可以留着）。"],
         ["阵位", "左翼 / 中枢 / 右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。阵位会影响部分卡牌的范围与固定效果。"],
         ["流脉", "双方共享 0→12，每次完整轮次（双方各行动一次）自然 +1。4 震荡、7 裂隙、10 魔物潮触发世界事件，12 回流清空。"],
-        ["牌组结构", "30 张牌，随从 / 战术 / 阵型 / 装备自由混编（阵型最多 2 张）。领袖在开局单独选择，不占牌组，也不进入牌库。装备抽到打出即可生效，想同时带几件都行。"]
+        ["牌组结构", "30 张牌，随从 / 战术 / 阵型 / 装备自由混编（阵型最多 3 张）。领袖在开局单独选择，不占牌组，也不进入牌库。装备抽到打出即可生效，想同时带几件都行。"]
       ];
       for (const [title, desc] of sections) {
         const sec = el("div", "guide-section");
@@ -11722,7 +11755,7 @@ const tabs = $("deck-faction-tabs");
     loadActiveRelics();
     loadAchievements();
     app.profile = loadProfile();
-  if (app.screen === "home") renderHomeRail();   // 读档/登录后补刷右栏速览
+     // 读档/登录后补刷右栏速览
     ensureAccount();
     snapshotSave("startup");
     applyFactionChipColors();
@@ -11732,7 +11765,7 @@ const tabs = $("deck-faction-tabs");
     restoreAuthSession().then(() => setTimeout(maybeShowAuthGate, 1500));
     setTimeout(maybePromptArchiveName, 1200);
     setTimeout(startOnboardingIfNeeded, 1400);
-    updateHomeLegendary();
+    
     const openArcadeFromHome = () => {
       if (!global.GokContent) return;
       let content = {};
@@ -11772,6 +11805,7 @@ const tabs = $("deck-faction-tabs");
     $("btn-solo").onclick = () => { closeStartMenu(); AudioBox.play("ui_open"); showScreen("setup"); setupState(); };
     $("btn-deck-home").onclick = () => { AudioBox.play("ui_open"); openDeckBuilder(app.faction || "pus", "home"); };
     if ($("btn-home-profile")) $("btn-home-profile").onclick = () => openProfilePage("personal");
+    if ($("home-feedback-entry")) $("home-feedback-entry").onclick = () => { AudioBox.play("ui_open"); openFeedback(); };
     if ($("btn-profile-back")) $("btn-profile-back").onclick = () => showScreen("home");
 
     if ($("btn-login-back")) $("btn-login-back").onclick = () => { if (app.authGate) { toast("请选择登录、注册或游客登录。"); return; } openProfilePage("security"); };
@@ -11938,6 +11972,7 @@ const tabs = $("deck-faction-tabs");
     $("btn-settings-clear-achievements").onclick = () => { app.achievements = {}; persistAchievements(); toast("成就记录已重置。"); };
     $("btn-settings-clear-profile").onclick = () => { app.profile = loadProfile(); app.profile = { games: 0, wins: 0, losses: 0, draws: 0, byFaction: {}, history: [], maxRound: 0 }; persistProfile(); updateHomeProfile(); toast("档案统计已重置。"); };
     $("btn-settings-credits").onclick = () => showCredits();
+    if ($("btn-settings-feedback")) $("btn-settings-feedback").onclick = () => { AudioBox.play("ui_open"); openFeedback(); };
     $("btn-tutorial-back").onclick = () => returnFromTutorial();
     if ($("btn-tutorial-coach-collapse")) $("btn-tutorial-coach-collapse").onclick = () => {
       app.tutorialCoachCollapsed = true;
@@ -12173,7 +12208,7 @@ const tabs = $("deck-faction-tabs");
     setupState();
     renderTutorialKeywords();
     renderTutorialRoute();
-    renderHomeDash();
+    
     runBootLoading("正在展开流脉档案", "校准地脉、阵位与关键词…", BOOT_ASSETS, null);
     if (!localStorage.getItem("gok_welcome_v2")) localStorage.setItem("gok_welcome_v2", "1");
     AudioBox.updateButton();
@@ -12305,12 +12340,6 @@ const tabs = $("deck-faction-tabs");
     if (btnGo) btnGo.textContent = downloaded ? "重启安装" : "下载";
     var nav = document.getElementById("btn-settings");
     if (nav) nav.classList.add("has-update");
-    var railTitle = document.getElementById("home-update-title");
-    var railSub = document.getElementById("home-update-sub");
-    var railBox = document.getElementById("home-update-entry");
-    if (railTitle) railTitle.textContent = "发现新版本 " + state.latest;
-    if (railSub) railSub.textContent = fmtSize(state.size) + " · 点这里去下载";
-    if (railBox) railBox.classList.add("has-update");
   }
 
   function onProgress(p) {
@@ -12353,16 +12382,6 @@ const tabs = $("deck-faction-tabs");
     });
   }
 
-  var railEntry = document.getElementById("home-update-entry");
-  if (railEntry) {
-    railEntry.addEventListener("click", function () {
-      window.GokUI.showScreen("settings");
-      setTimeout(function () {
-        var panel = document.getElementById("gok-update-panel");
-        if (panel) panel.scrollIntoView({ block: "center" });
-      }, 260);
-    });
-  }
 
   if (api.onProgress) api.onProgress(onProgress);
   if (api.onState) api.onState(render);
