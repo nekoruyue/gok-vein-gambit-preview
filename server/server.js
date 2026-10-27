@@ -4,15 +4,27 @@
  */
 const http = require("http");
 const fs = require("fs");
+const zlib = require("zlib");
 const path = require("path");
 const os = require("os");
 const { URL } = require("url");
 const { createAuth } = process.env.DATABASE_URL ? require("./auth_pg") : require("./auth");
 
 const PORT = Number(process.env.PORT || 4173);
+
 const PUBLIC = path.join(__dirname, "..", "public");
+let BUILD_ID = "";
+try {
+  const html = fs.readFileSync(require("path").join(PUBLIC, "index.html"), "utf8");
+  const m = html.match(/ui\.js\?v=([\w]+)/);
+  BUILD_ID = m ? m[1] : "";
+} catch (e) {}
+if (process.env.GOK_BUILD_OVERRIDE) BUILD_ID = process.env.GOK_BUILD_OVERRIDE;
+
 // 本地/局域网服务器默认就是实验通道；只有显式声明 stable 才走稳定通道。
 const CHANNEL = process.env.GOK_CHANNEL === "stable" ? "stable" : "preview";
+const authoritative = require("./authoritative");
+const ladder = require("./ladder");
 const MIME = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -139,6 +151,7 @@ const auth = createAuth({
   readBody,
   dataDir: process.env.GOK_DATA_DIR || path.join(__dirname, "data")
 });
+try { ladder.ensureSchema(auth); ladder.ensureSchemaVersion(auth); } catch (e) { console.log("ladder schema", e && e.message); }
 
 function serveStatic(req, res, pathname) {
   let rel = decodeURIComponent(pathname);
@@ -148,10 +161,19 @@ function serveStatic(req, res, pathname) {
   fs.stat(file, (err, st) => {
     if (err || !st.isFile()) { res.writeHead(404); res.end("not found"); return; }
     const ext = path.extname(file).toLowerCase();
+    // 作弊台只给桌面版和内测端（本机访问）用，公网一律 404
+    if (rel === "/cheat.html" && process.env.GOK_ALLOW_CHEAT !== "1") {
+      const addr = String((req.socket && req.socket.remoteAddress) || "");
+      const isLocal = /^(::1|::ffff:127\.0\.0\.1|127\.0\.0\.1)$/.test(addr);
+      if (!isLocal && process.env.GOK_EMBEDDED !== "1") { res.writeHead(404); res.end("not found"); return; }
+    }
     if (rel === "/index.html") {
       fs.readFile(file, "utf8", (readErr, html) => {
         if (readErr) { res.writeHead(500); res.end("read error"); return; }
-        const body = html.replaceAll("__GOK_CHANNEL__", CHANNEL);
+        const health = process.env.GOK_SKIP_HEALTH === "1" ? "true" : "false";
+        const body = html
+          .replaceAll("__GOK_CHANNEL__", CHANNEL)
+          .replace("</head>", "<script>window.__GOK_SKIP_HEALTH__ = " + health + "; window.__GOK_BUILD__ = \"" + BUILD_ID + "\";<\/script></head>");
         res.writeHead(200, {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "no-cache"
@@ -161,23 +183,200 @@ function serveStatic(req, res, pathname) {
       return;
     }
     const isUpdateFeed = rel.indexOf("/updates/") === 0;
-    res.writeHead(200, {
+    // 带 ?v= 构建号的资源可以长缓存；不带版本号的一次性回源
+    let hasVersion = false;
+    try { hasVersion = !!new URL(req.url, "http://localhost").searchParams.get("v"); } catch (e) {}
+    const isText = /^\.(html|js|css|json|svg|txt|map)$/i.test(ext);
+    const cacheControl = isUpdateFeed
+      ? "no-store"
+      : hasVersion
+        ? "public, max-age=31536000, immutable"
+        : (ext === ".html" || ext === ".js" || ext === ".css" ? "no-cache" : "public, max-age=3600");
+    const headers = {
       "Content-Type": MIME[ext] || "application/octet-stream",
-      "Cache-Control": isUpdateFeed ? "no-store" : (ext === ".html" || ext === ".js" || ext === ".css" ? "no-cache" : "public, max-age=3600")
-    });
-    fs.createReadStream(file).pipe(res);
+      "Cache-Control": cacheControl,
+      "X-Content-Type-Options": "nosniff"
+    };
+    // 文本资源开 gzip：CSS+JS 合计约 3.3MB，压缩后能省七成多
+    const acceptGzip = /\bgzip\b/.test(req.headers["accept-encoding"] || "") && isText && st.size > 1024;
+    if (acceptGzip) headers["Content-Encoding"] = "gzip";
+    res.writeHead(200, headers);
+    if (acceptGzip) fs.createReadStream(file).pipe(zlib.createGzip({ level: 6 })).pipe(res);
+    else fs.createReadStream(file).pipe(res);
   });
 }
+
+// 权威对局的超时与掉线巡检
+const authSweepTimer = setInterval(() => {
+  try { authoritative.sweep(); } catch (e) {}
+}, Number(process.env.GOK_SWEEP_MS || 5000));
+if (authSweepTimer.unref) authSweepTimer.unref();
+
+// ===== 运行指标（阶段 4 的可做部分：先有数，再谈监控系统）=====
+const metrics = {
+  startedAt: Date.now(),
+  requests: 0,
+  byRoute: Object.create(null),
+  errors: 0
+};
 
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://localhost");
   const p = u.pathname;
+  metrics.requests += 1;
+  const routeKey = p.replace(/\/api\/aroom\/[A-Za-z0-9]+\//, "/api/aroom/:code/");
+  metrics.byRoute[routeKey] = (metrics.byRoute[routeKey] || 0) + 1;
+  res.on("finish", () => { if (res.statusCode >= 500) metrics.errors += 1; });
   try {
+    if (p === "/api/metrics") {
+      const mem = process.memoryUsage();
+      const roomsInfo = authoritative.stats();
+      json(res, 200, {
+        ok: true,
+        uptimeSec: Math.round((Date.now() - metrics.startedAt) / 1000),
+        requests: metrics.requests,
+        errors: metrics.errors,
+        rooms: roomsInfo.rooms,
+        playing: roomsInfo.list.filter((r) => r.status === "playing").length,
+        matchQueue: matchQueue.size,
+        rssMB: Math.round(mem.rss / 1048576),
+        heapMB: Math.round(mem.heapUsed / 1048576),
+        byRoute: metrics.byRoute
+      });
+      return;
+    }
+
     if (p === "/api/health") {
       json(res, 200, { ok: true, service: "gok-vein-gambit", channel: CHANNEL, time: Date.now(), rooms: rooms.size });
       return;
     }
     if (await auth.handle(req, res, u)) return;
+    /* ===== 服务端权威对局（阶段 1）===== */
+    if (p === "/api/aroom/create" && req.method === "POST") {
+      const body = JSON.parse((await readBody(req)) || "{}");
+      let room;
+      try {
+        room = authoritative.createRoom({ faction1: body.faction1, faction2: body.faction2, seed: body.seed,
+          deck1: body.deck1, deck2: body.deck2, name1: body.name1, name2: body.name2 });
+      } catch (e) {
+        json(res, 400, { ok: false, error: String((e && e.message) || e) });
+        return;
+      }
+      // 建房只占 0 号座位；1 号座位留给对手自己 join
+      const a = authoritative.join(room, 0);
+      json(res, 200, { ok: true, code: room.id, seat: 0, token: a.token });
+      return;
+    }
+    if (p === "/api/aroom/join" && req.method === "POST") {
+      const body = JSON.parse((await readBody(req)) || "{}");
+      const room = authoritative.getRoom(body.code);
+      if (!room) { json(res, 404, { ok: false, error: "房间不存在" }); return; }
+      const r = authoritative.join(room, body.seat);
+      if (!r.ok) { json(res, 409, r); return; }
+      json(res, 200, { ok: true, seat: r.seat, token: r.token, version: room.version });
+      return;
+    }
+    if (p.startsWith("/api/aroom/") && p.endsWith("/events")) {
+      const code = p.split("/")[3];
+      const room = authoritative.getRoom(code);
+      if (!room) { json(res, 404, { ok: false, error: "房间不存在" }); return; }
+      const player = Number(u.searchParams.get("player"));
+      const token = u.searchParams.get("token") || "";
+      if (!authoritative.authorized(room, player, token)) { json(res, 403, { ok: false, error: "座位校验失败" }); return; }
+      res.writeHead(200, {
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-store",
+        Connection: "keep-alive",
+        "X-Accel-Buffering": "no"
+      });
+      authoritative.attachStream(room, player, res);
+      req.on("close", () => { try { res.end(); } catch (e) {} });
+      return;
+    }
+    if (p.startsWith("/api/aroom/") && p.endsWith("/action") && req.method === "POST") {
+      const code = p.split("/")[3];
+      const room = authoritative.getRoom(code);
+      if (!room) { json(res, 404, { ok: false, error: "房间不存在" }); return; }
+      const body = JSON.parse((await readBody(req)) || "{}");
+      const player = Number(body.player);
+      if (!authoritative.authorized(room, player, body.token)) { json(res, 403, { ok: false, error: "座位校验失败" }); return; }
+      const r = authoritative.act(room, player, body.action);
+      json(res, r.ok ? 200 : 400, r);
+      return;
+    }
+    if (p.startsWith("/api/aroom/") && p.endsWith("/deck") && req.method === "POST") {
+      const code = p.split("/")[3];
+      const room = authoritative.getRoom(code);
+      if (!room) { json(res, 404, { ok: false, error: "房间不存在" }); return; }
+      const body = JSON.parse((await readBody(req)) || "{}");
+      const player = Number(body.player);
+      if (!authoritative.authorized(room, player, body.token)) { json(res, 403, { ok: false, error: "座位校验失败" }); return; }
+      const r = authoritative.setDeck(room, player, body.deck, body.faction);
+      json(res, r.ok ? 200 : 400, r);
+      return;
+    }
+    if (p === "/api/admin/ladder/reset" && req.method === "POST") {
+      const token = process.env.GOK_ADMIN_TOKEN || "";
+      if (!token) { json(res, 403, { ok: false, error: "服务端没配 GOK_ADMIN_TOKEN，重置被禁用" }); return; }
+      const body = JSON.parse((await readBody(req)) || "{}");
+      if (String(body.token || "") !== token) { json(res, 403, { ok: false, error: "口令不对" }); return; }
+      const nextSeason = String(body.season || "").trim();
+      const r = ladder.resetSeason(auth, nextSeason);
+      json(res, 200, { ok: true, ...r });
+      return;
+    }
+
+    if (p === "/api/ladder" && req.method === "GET") {
+      json(res, 200, { ok: true, season: ladder.SEASON, top: ladder.top(auth, 20) });
+      return;
+    }
+    if (p === "/api/ladder/me" && req.method === "GET") {
+      const user = await auth.sessionUser(req);
+      if (!user) { json(res, 401, { ok: false, error: "需要登录" }); return; }
+      const rank = Math.max(0, Math.min(5000, Number(u.searchParams.get("rank")) || 0));
+      json(res, 200, { ok: true, me: ladder.me(auth, user.id, rank || 1000) });
+      return;
+    }
+    if (p.startsWith("/api/aroom/") && p.endsWith("/result") && req.method === "POST") {
+      const code = p.split("/")[3];
+      const room = authoritative.getRoom(code);
+      if (!room) { json(res, 404, { ok: false, error: "房间不存在" }); return; }
+      const body = JSON.parse((await readBody(req)) || "{}");
+      const player = Number(body.player);
+      if (!authoritative.authorized(room, player, body.token)) { json(res, 403, { ok: false, error: "座位校验失败" }); return; }
+      const g = room.game;
+      if (g.status === "playing") { json(res, 409, { ok: false, error: "对局还没结束" }); return; }
+      const user = await auth.sessionUser(req);
+      if (!user) { json(res, 200, { ok: true, recorded: false, reason: "未登录不记排名" }); return; }
+      room.recorded = room.recorded || [false, false];
+      if (room.recorded[player]) { json(res, 200, { ok: true, recorded: false, reason: "已记录" }); return; }
+      const win = g.winner === player;
+      const info = ladder.record(auth, user.id, win, Number(body.rank) || 1000);
+      room.recorded[player] = true;
+      json(res, 200, { ok: true, recorded: true, win, ladder: info });
+      return;
+    }
+
+    if (p.startsWith("/api/aroom/") && p.endsWith("/resign") && req.method === "POST") {
+      const code = p.split("/")[3];
+      const room = authoritative.getRoom(code);
+      if (!room) { json(res, 404, { ok: false, error: "房间不存在" }); return; }
+      const body = JSON.parse((await readBody(req)) || "{}");
+      if (!authoritative.authorized(room, Number(body.player), body.token)) { json(res, 403, { ok: false, error: "座位校验失败" }); return; }
+      json(res, 200, authoritative.resign(room, Number(body.player)));
+      return;
+    }
+    if (p.startsWith("/api/aroom/") && p.endsWith("/state")) {
+      const code = p.split("/")[3];
+      const room = authoritative.getRoom(code);
+      if (!room) { json(res, 404, { ok: false, error: "房间不存在" }); return; }
+      const player = Number(u.searchParams.get("player"));
+      const token = u.searchParams.get("token") || "";
+      if (!authoritative.authorized(room, player, token)) { json(res, 403, { ok: false, error: "座位校验失败" }); return; }
+      json(res, 200, { ok: true, ...authoritative.snapshotFor(room, player) });
+      return;
+    }
+
     if (p === "/api/room/create" && req.method === "POST") {
       const code = createRoomCode();
       if (!code) { json(res, 500, { ok: false, error: "无法创建房间" }); return; }
@@ -209,6 +408,12 @@ const server = http.createServer(async (req, res) => {
       if (matchRanked && !matchUser) { json(res, 401, { ok: false, error: "排位需要先登录账号。" }); return; }
       const matchName = typeof matchBody.name === "string" ? matchBody.name.slice(0, 24) : null;
       const matchRank = Math.max(0, Math.min(5000, Number(matchBody.rank) || 0));
+      // 版本门禁：老客户端连新服会打出对不上的房间，直接劝更新
+      const clientBuild = String(matchBody.build || "");
+      if (BUILD_ID && clientBuild && clientBuild !== BUILD_ID) {
+        json(res, 409, { ok: false, code: "stale_client", error: "客户端版本过旧", clientBuild, serverBuild: BUILD_ID });
+        return;
+      }
       const now = Date.now();
       let waitingTicket = null;
       let bestRankDiff = Infinity;
@@ -231,12 +436,28 @@ const server = http.createServer(async (req, res) => {
         room.names[1] = matchName;
         room.createdAt = now;
         matchQueue.delete(waitingTicket);
-        matchResults.set(waitingTicket, { room: code, role: "host", at: now, ranked: matchRanked, names: room.names.slice() });
-        matchResults.set(ticket, { room: code, role: "guest", at: now, ranked: matchRanked, names: room.names.slice() });
-        json(res, 200, { ok: true, matched: true, ticket, room: code, role: "guest", ranked: matchRanked, names: room.names });
+        // 同时开一局服务端权威对局：两边各拿 (code, seat, token)
+        let authInfo = null;
+        try {
+          const aroom = authoritative.createRoom({
+            faction1: (waiting && waiting.faction) || "pus",
+            faction2: matchBody.faction || "academy"
+          });
+          const seat0 = authoritative.join(aroom, 0);
+          const seat1 = authoritative.join(aroom, 1);
+          authInfo = {
+            waiting: { code: aroom.id, seat: 0, token: seat0.token },
+            me: { code: aroom.id, seat: 1, token: seat1.token }
+          };
+        } catch (e) {
+          console.log("authoritative room create failed", e && e.message);
+        }
+        matchResults.set(waitingTicket, { room: code, role: "host", at: now, ranked: matchRanked, names: room.names.slice(), auth: authInfo && authInfo.waiting });
+        matchResults.set(ticket, { room: code, role: "guest", at: now, ranked: matchRanked, names: room.names.slice(), auth: authInfo && authInfo.me });
+      json(res, 200, { ok: true, matched: true, ticket, room: code, role: "guest", ranked: matchRanked, names: room.names, auth: (authInfo && authInfo.me) || null });
         return;
       }
-      matchQueue.set(ticket, { at: now, seen: now, ranked: matchRanked, name: matchName, rank: matchRank });
+      matchQueue.set(ticket, { at: now, seen: now, ranked: matchRanked, name: matchName, rank: matchRank, faction: (matchBody.faction || "") });
       json(res, 200, { ok: true, waiting: true, ticket, waitMs: 0, ranked: matchRanked });
       return;
     }
@@ -245,7 +466,7 @@ const server = http.createServer(async (req, res) => {
       const ticket = String(u.searchParams.get("ticket") || "");
       const result = matchResults.get(ticket);
       if (result) {
-        json(res, 200, { ok: true, matched: true, ticket, room: result.room, role: result.role, ranked: !!result.ranked, names: result.names || [] });
+        json(res, 200, { ok: true, matched: true, ticket, room: result.room, role: result.role, ranked: !!result.ranked, names: result.names || [], auth: result.auth || null });
         return;
       }
       const waiting = matchQueue.get(ticket);

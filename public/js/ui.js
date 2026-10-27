@@ -2,11 +2,42 @@
  * 原生 DOM，无框架；负责屏幕切换、渲染、输入与音效。
  */
 (function (global) {
+
+  /* ===== 存档版本迁移（一次性） =====
+   * 2026-10-27：等级/领袖解锁/传说发放全部重做，老存档作废，所有人从 Lv.1 开始。
+   * 只清进度，不清设置（音量、画质、操作方式留着）。
+   */
+  const GOK_SAVE_SCHEMA = 3;
+  // 这个键故意不以 gok_ 开头：channel.js 会给 gok_* 加通道前缀，导致读不到
+  const GOK_SCHEMA_KEY = "saveSchemaV1";
+  const GOK_PROGRESS_RE = /^gok_(account|profile|save_backup|cloud_version|content|codex_seen|codex_favorites|achievements|active_deck|custom_decks|deck_library|active_relics|tutorial_seen|welcome|lan_session)/;
+  (function migrateSaveSchema() {
+    // 用打过补丁之前的原始方法，避免通道前缀干扰
+    const raw = (global.__gokStorageRaw) || null;
+    const get = raw ? (k) => raw.get.call(localStorage, k) : (k) => localStorage.getItem(k);
+    const set = raw ? (k, v) => raw.set.call(localStorage, k, v) : (k, v) => localStorage.setItem(k, v);
+    const del = raw ? (k) => raw.remove.call(localStorage, k) : (k) => localStorage.removeItem(k);
+    try {
+      const stored = Number(get(GOK_SCHEMA_KEY) || 0) || 0;
+      if (stored >= GOK_SAVE_SCHEMA) return;
+      const kill = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+        const bare = key.replace(/^gok_(preview|stable)::/, "");
+        if (GOK_PROGRESS_RE.test(bare)) kill.push(key);
+      }
+      for (const key of kill) { try { del(key); } catch (e) {} }
+      set(GOK_SCHEMA_KEY, String(GOK_SAVE_SCHEMA));
+      try { sessionStorage.setItem("gok_save_reset_notice", "1"); } catch (e) {}
+    } catch (e) {}
+  })();
+
   "use strict";
   const D = global.GokData;
   const E = global.GokEngine;
   const AI = global.GokAI;
-  const ART_VERSION = "20261025art12";
+  const ART_VERSION = "20261027art22";
 
   // 经典模式：每个阵营首次开局播放一段对应 CG（可跳过）
   const CLASSIC_CG = {
@@ -99,6 +130,15 @@
     reader.readAsDataURL(file);
   }
 
+  // 列表/网格里用的缩略图：放宽 256 的 webp（原图 768×1024，一张近百 KB）
+  function thumbUrl(url) {
+    if (!url || typeof url !== "string") return url;
+    return url
+      .replace("/assets/generated/", "/assets/thumbs/generated/")
+      .replace("assets/generated/", "assets/thumbs/generated/")
+      .replace("/assets/portraits/", "/assets/thumbs/portraits/")
+      .replace("assets/portraits/", "assets/thumbs/portraits/");
+  }
   function cardArtUrl(def) {
     if (!def) return "";
     if (def.art) return portraitImage(def.art);
@@ -106,11 +146,20 @@
     return "assets/generated/" + encodeURIComponent(def.id) + (def.noGeneratedArt ? ".svg" : ".webp") + "?v=" + ART_VERSION;
   }
 
-  function addCardFrame(card) {
+  // 四档卡框：普通/稀有/史诗/传说各一张，按 def.rarity 取
+  const CARD_FRAME_FILES = {
+    common: "frame-common", rare: "frame-rare", epic: "frame-epic", legendary: "frame-legendary"
+  };
+  function cardFrameUrl(rarity) {
+    const file = CARD_FRAME_FILES[rarity] || CARD_FRAME_FILES.common;
+    return "assets/ui/frames/" + file + ".webp?v=" + ART_VERSION;
+  }
+  function addCardFrame(card, rarity) {
     if (!card) return;
     const frame = el("img", "card-frame-art");
     frame.alt = "";
-    frame.src = "assets/ui/card-frame.webp?v=" + ART_VERSION;
+    frame.dataset.rarity = rarity || "common";
+    frame.src = cardFrameUrl(rarity);
     card.appendChild(frame);
   }
 
@@ -126,8 +175,10 @@
     if (!art || !def || def.art || def.noArtwork) return;
     const img = el("img", "generated-art-img");
     img.alt = "";
-    img.loading = "eager";
-    img.src = cardArtUrl(def);
+    // 图鉴一屏 60 张，原来全是 eager，等于首屏把 60 张原图全拉一遍
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.src = thumbUrl(cardArtUrl(def));
     img.onload = () => { if (img.naturalWidth > 2 && img.naturalHeight > 2) art.classList.add("has-custom-art"); };
     img.onerror = () => {
       if (!img.dataset.retried) {
@@ -320,15 +371,15 @@
     "battler-setup": MAIN_BGM
   };
   const SFX_FILES = {
-    click: "click.wav", hover: "hover.wav", select: "select.wav", cancel: "cancel.wav",
-    coin: "coin.wav", battle: "battle.wav", wave: "wave.wav", end_turn: "end_turn.wav",
-    victory: "victory.wav", error: "error.wav", ui_open: "ui_open.wav",
-    damage: "damage.wav", hero_hit: "hero_hit.wav", death: "death.wav", deathrattle: "deathrattle.wav",
-    heal: "heal.wav", draw: "draw.wav", armor: "armor.wav", freeze: "freeze.wav",
-    summon: "summon.wav", spell: "spell.wav", buff: "buff.wav", discover: "discover.wav",
-    hero_power: "hero_power.wav", turn_start: "turn_start.wav", relic: "relic.wav", equipment: "relic.wav",
-    shield: "shield.wav", poison: "poison.wav",
-    victory_jingle: "victory_jingle.wav", defeat_jingle: "defeat_jingle.wav"
+    click: "click.ogg", hover: "hover.ogg", select: "select.ogg", cancel: "cancel.ogg",
+    coin: "coin.ogg", battle: "battle.ogg", wave: "wave.ogg", end_turn: "end_turn.ogg",
+    victory: "victory.ogg", error: "error.ogg", ui_open: "ui_open.ogg",
+    damage: "damage.ogg", hero_hit: "hero_hit.ogg", death: "death.ogg", deathrattle: "deathrattle.ogg",
+    heal: "heal.ogg", draw: "draw.ogg", armor: "armor.ogg", freeze: "freeze.ogg",
+    summon: "summon.ogg", spell: "spell.ogg", buff: "buff.ogg", discover: "discover.ogg",
+    hero_power: "hero_power.ogg", turn_start: "turn_start.ogg", relic: "relic.ogg", equipment: "relic.ogg",
+    shield: "shield.ogg", poison: "poison.ogg",
+    victory_jingle: "victory_jingle.ogg", defeat_jingle: "defeat_jingle.ogg"
   };
   const SFX_GAIN = {
     click: 0.9, hover: 0.6, select: 1.2, cancel: 0.72, coin: 1.0, battle: 1.05,
@@ -618,6 +669,21 @@
     hideMobileCardSheet();
     clearToast();
     if (name !== "game") app.busy = false;
+  }
+
+  // 权威模式里主动退出 = 认输，别让对面干等
+  function authResign() {
+    if (!isAuthNet()) return false;
+    const session = { code: app.net.code, seat: app.net.seat, token: app.net.token };
+    try {
+      fetch("/api/aroom/" + encodeURIComponent(session.code) + "/resign", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ player: session.seat, token: session.token })
+      });
+    } catch (e) {}
+    if (global.GokAuthority) global.GokAuthority.clearSession();
+    app.net = null;
+    return true;
   }
 
   function returnFromTutorial() {
@@ -986,7 +1052,6 @@
   /* ===== game start ===== */
   const BOOT_ASSETS = [
     "assets/backgrounds/menu.webp",
-    "assets/backgrounds/battle.webp",
     "assets/heroes/lain.webp",
     "assets/heroes/marta.webp",
     "assets/heroes/karna.webp",
@@ -1003,11 +1068,12 @@
       const el = $("boot-tip");
       if (el) el.textContent = text;
     };
-    show(initialTip || tips[index]);
+    // 提示条只放「规则/关键词」提示，不重复上面的状态文字
+    show(tips[index]);
     bootTipTimer = setInterval(() => {
       index = (index + 1) % tips.length;
       show(tips[index]);
-    }, 3800);
+    }, 2600);
   }
   function stopBootTips() {
     if (bootTipTimer) clearInterval(bootTipTimer);
@@ -1026,16 +1092,64 @@
     })));
   }
 
-  function setBootProgress(value, tip) {
+  function setBootProgress(value, statusText) {
     const pct = Math.max(0, Math.min(100, Math.round(value)));
     const fill = $("boot-progress");
     if (fill) fill.style.width = pct + "%";
     const percent = $("boot-percent");
     if (percent) percent.textContent = pct + "%";
-    if (tip) {
-      const tipEl = $("boot-tip");
-      if (tipEl) tipEl.textContent = tip;
+    if (statusText) {
+      // 进度说明写「状态行」，tips 由 startBootTips 单独轮播，互不覆盖
+      const statusEl = $("boot-status");
+      if (statusEl) statusEl.textContent = statusText;
     }
+  }
+
+  function showHealthNotice(onDone) {
+    onDone = typeof onDone === "function" ? onDone : null;
+    // 测试/脚本环境跳过（服务器注入 __GOK_SKIP_HEALTH__）
+    if (global.__GOK_SKIP_HEALTH__) { if (onDone) onDone(); return false; }
+    const box = document.getElementById("health-notice");
+    if (!box) return false;
+    box.hidden = false;
+    // 倒计时条动画重播
+    const bar = box.querySelector(".health-timer i");
+    if (bar) { bar.style.animation = "none"; void bar.offsetWidth; bar.style.animation = ""; }
+    requestAnimationFrame(() => box.classList.add("in"));
+    const DURATION = 3600;
+    let timer = null;
+    const close = () => {
+      if (timer) { clearTimeout(timer); timer = null; }
+      box.classList.remove("in");
+      // 等淡出结束再隐藏，避免闪一下
+      setTimeout(() => { box.hidden = true; }, 260);
+      document.removeEventListener("keydown", onKey, true);
+      app.healthNoticeOpen = false;
+      if (onDone) { const cb = onDone; onDone = null; cb(); }
+    };
+    const onKey = (ev) => {
+      if (ev.key === "Enter" || ev.key === " " || ev.key === "Escape") { ev.preventDefault(); close(); }
+    };
+    box.onclick = close;
+    document.addEventListener("keydown", onKey, true);
+    app.healthNoticeOpen = true;
+    timer = setTimeout(close, DURATION);
+    return true;
+  }
+
+  // 进入游戏前保证播过一次健康忠告；播完再继续
+  function ensureHealthNotice(cb) {
+    if (global.__GOK_SKIP_HEALTH__ || app.healthNoticeShown) { if (cb) cb(); return; }
+    app.healthNoticeShown = true;
+    // 忠告期间先把加载页收起来，视觉顺序才是「先忠告 → 后加载」
+    const boot = $("boot-loading");
+    const bootWasVisible = boot ? !boot.classList.contains("hidden") : false;
+    if (bootWasVisible) boot.classList.add("hidden");
+    const resume = () => {
+      if (bootWasVisible) boot.classList.remove("hidden");
+      if (cb) cb();
+    };
+    if (!showHealthNotice(resume)) resume();
   }
 
   function runBootLoading(title, tip, list, done) {
@@ -1061,8 +1175,43 @@
     });
   }
 
+  // 进对局再加载 VFX 贴图（首屏不背这 468KB）
+  // 版本过低时弹的说明框：告诉玩家差在哪、怎么更新
+  function showVersionBlocked(clientBuild, serverBuild) {
+    openModal((content) => {
+      content.appendChild(el("div", "eyebrow", "联机 / 版本校验"));
+      content.appendChild(el("h2", null, "客户端版本过旧"));
+      content.appendChild(el("p", null, "多人匹配要求客户端与服务器版本一致，否则出牌与结算会对不上。"));
+      const box2 = el("div", "version-block-box");
+      const row = (k, v) => {
+        const line = el("div", "hint-row");
+        line.appendChild(el("span", null, k));
+        line.appendChild(el("b", null, v || "未知"));
+        box2.appendChild(line);
+      };
+      row("你的版本", clientBuild);
+      row("服务器版本", serverBuild);
+      content.appendChild(box2);
+      const actions = el("div", "modal-actions");
+      const check = el("button", "btn btn-small btn-primary", "检查更新");
+      check.onclick = () => {
+        closeModal(true);
+        if (global.gokUpdater && global.gokUpdater.check) { global.gokUpdater.check(); return; }
+        toast("网页版刷新页面即可拿到最新版本；桌面版请用安装包更新。");
+      };
+      const later = el("button", "btn btn-small btn-ghost", "稍后再试");
+      later.onclick = () => closeModal(true);
+      actions.appendChild(check); actions.appendChild(later);
+      content.appendChild(actions);
+    });
+  }
+
+  function ensureVfx() { try { if (global.GokVFX && global.GokVFX.init) global.GokVFX.init(); } catch (e) {}
+  }
+
   function startGame(config) {
     config = config || {};
+    ensureVfx();
     document.body.classList.remove("game-over-cinematic", "low-hp-warning");
     const mode = "ai";
     const faction = config.faction || app.faction;
@@ -1323,7 +1472,328 @@
     else if (app.attacker) $("game-hint").textContent = "选择攻击目标";
     else $("game-hint").textContent = "点击或拖动卡牌；点击我方随从攻击。";
     enforceBattleCardPresentation();
+    renderStatusStrip();
+    checkFormationChurn();
+    renderPhaseStrip();
+    renderSidePanels();
     if (app.net && app.net.role === "host" && app.net.active) { scheduleNetBroadcast(); scheduleHostSave(); }
+  }
+
+  // 布阵光环反馈：同阵位随从闪一下 + 一句提示，让「光环生效」看得见
+  function flashFormationAura(zone, def, playerIndex) {
+    const game = app.game;
+    if (!game) return;
+    const idx = playerIndex != null ? playerIndex : (app.viewer != null ? app.viewer : 0);
+    const player = game.players[idx];
+    if (!player) return;
+    if (playerIndex != null && playerIndex !== (app.viewer != null ? app.viewer : 0)) return; // 对手布阵不弹提示
+    const fm = (def && def.formation) || {};
+    const parts = [];
+    if (fm.attack) parts.push("+" + fm.attack + " 攻击");
+    if (fm.health) parts.push("+" + fm.health + " 生命");
+    ["taunt", "rush", "charge", "lifesteal", "stealth", "poisonous", "windfury", "reborn", "divineShield"].forEach((k) => {
+      if (fm[k]) parts.push(D.KEYWORDS && D.KEYWORDS[k] ? D.KEYWORDS[k].name : k);
+    });
+    const zoneName = { left: "左翼", center: "中枢", right: "右翼" }[zone] || "全场";
+    const summary = parts.length ? parts.join("、") : "持续光环";
+
+    const zoneKeys = zone ? [zone] : ["left", "center", "right"];
+    const uids = new Set();
+    for (const z of zoneKeys) for (const m of (player.board[z] || [])) uids.add(m.uid);
+    for (const c of document.querySelectorAll(".board-card")) {
+      const uid = c.dataset && c.dataset.minion;
+      if (!uid || !uids.has(uid)) continue;
+      c.classList.remove("formation-aura-flash");
+      void c.offsetWidth;   // 强制重排，让动画能重播
+      c.classList.add("formation-aura-flash");
+      setTimeout(() => c.classList.remove("formation-aura-flash"), 1300);
+    }
+    if (def) {
+      gameWarn("阵型「" + def.name + "」已布置： " + zoneName + " " + summary);
+      AudioBox.play("buff");
+    }
+  }
+
+  // 对比上次的阵型快照，发现新增就点亮（兼容所有布阵路径：点击/拖拽/联机同步）
+  function checkFormationChurn() {
+    const game = app.game;
+    if (!game) { app.lastFormationSig = null; return; }
+    const meIdx = app.viewer != null ? app.viewer : 0;
+    const player = game.players[meIdx];
+    if (!player) return;
+    const list = Array.isArray(player.formations) ? player.formations : [];
+    const sig = list.map((f) => f.cardId + "@" + f.zone).join("|");
+    const prev = app.lastFormationSig;
+    app.lastFormationSig = sig;
+    if (prev == null || prev === sig) return;
+    const prevSet = new Set(prev ? prev.split("|") : []);
+    for (const f of list) {
+      const key = f.cardId + "@" + f.zone;
+      if (prevSet.has(key)) continue;
+      const def = D.CARDS[f.cardId];
+      if (def) flashFormationAura(f.zone, def, meIdx);
+      break; // 一次只提示新上的那一张
+    }
+  }
+
+  // 回合阶段指示器：英雄信息栏右侧的空白处
+  function renderPhaseStrip() {
+    const host = $("phase-strip");
+    if (!host) return;
+    const game = app.game;
+    if (!game || game.status !== "playing") { host.hidden = true; return; }
+    const phase = game.phase || "play";
+    const mineTurn = game.current === app.viewer;
+    const STEPS = [
+      { key: "start", label: "回合开始", hint: "行动力回复、自动增益、光环与阵型倒计时结算" },
+      { key: "draw", label: "抽牌", hint: "从抽牌堆抽 1 张" },
+      { key: "play", label: "出牌", hint: "放随从、用战术、上装备、摆阵型、结债务" },
+      { key: "end", label: "结束", hint: "结算债务卡与回合结束效果，交给对手" }
+    ];
+    clear(host);
+    host.classList.toggle("foe-turn", !mineTurn);
+    const title = el("div", "phase-strip-title");
+    title.appendChild(el("small", null, mineTurn ? "你的回合" : "对方回合"));
+    host.appendChild(title);
+    const curIdx = STEPS.findIndex((x) => x.key === phase);
+    const col = el("div", "phase-strip-col");
+    STEPS.forEach((step, i) => {
+      const chip = el("div", "phase-chip" + (i === curIdx ? " active" : "") + (i < curIdx ? " done" : ""));
+      chip.appendChild(el("b", null, step.label));
+      chip.title = step.label + "：" + step.hint;
+      col.appendChild(chip);
+      if (i < STEPS.length - 1) col.appendChild(el("i", "phase-arrow", "›"));
+    });
+    host.appendChild(col);
+    host.hidden = false;
+  }
+
+  // 顶栏信息条：回合 / 流脉 / 行动力 / 一句提示
+  function renderStatusStrip() {
+    const host = $("game-status-strip");
+    if (!host) return;
+    const game = app.game;
+    if (!game || game.status !== "playing") { host.hidden = true; return; }
+    clear(host);
+    const round = el("span", "status-round");
+    round.appendChild(el("small", null, "轮次"));
+    round.appendChild(el("b", null, "第 " + (game.round || 1) + " 轮"));
+    host.appendChild(round);
+    host.appendChild(el("span", "status-tip", nextPhaseTip()));
+    host.hidden = false;
+  }
+
+  // 顶栏 tips：按顺序轮播，讲的都是这版本真正用得上的机制
+  var PHASE_TIPS = [
+    "守备会保护同阵位的友方随从，想打穿就先处理守备。",
+    "阵型是持续光环：布阵之后放进那个阵位的随从一样吃加成。",
+    "每个阵位同时只生效一张阵型，同阵位再布一张会把旧的顶进弃牌堆。",
+    "装备场上同时生效 2 件，打第三张会挤掉最早的那张。",
+    "弃牌堆是双方共享的，对手死了什么你都看得到。",
+    "流脉到 4 震荡、7 裂隙、10 魔物潮会触发全场事件，12 回流清空。",
+    "先遣随从当回合就能攻击，但打不了领袖。",
+    "余响在随从死亡时触发，配合阵型能反复赚节奏。",
+    "牌组只卡品级：传说 2、张、史诗 15 张，普通和稀有随便带。",
+    "点左侧日志里的卡名，可以直接看那张牌的效果。",
+    "起手调度别留太多 4 费以上，先把前两回合铺稳。"
+  ];
+  var phaseTipIndex = -1;
+  function nextPhaseTip() {
+    phaseTipIndex = (phaseTipIndex + 1) % PHASE_TIPS.length;
+    return PHASE_TIPS[phaseTipIndex];
+  }
+
+
+  // 对局页两侧空白：左侧推演日志（可折叠、卡牌可点开看效果），右侧双方牌库夹共享坟墓
+  function renderSidePanels() {
+    const left = $("side-log");
+    const right = $("side-pile");
+    const game = app.game;
+    if (!game) {
+      if (left) left.hidden = true;
+      if (right) right.hidden = true;
+      return;
+    }
+    const meIdx = app.viewer != null ? app.viewer : 0;
+    const LOG_ICONS = { turn: "◈", play: "▸", summon: "▣", buff: "↑", attack: "⚔", damage: "✸", heal: "✚", armor: "◎", death: "☠", draw: "▤", discard: "▥", formation: "◇", equipment: "◉" };
+
+    // ---------- 左：日志（卡名全部高亮可点）----------
+    if (left) {
+      const entries = Array.isArray(game.log) ? game.log : [];
+      clear(left);
+      const hidden = !!app.sideLogHidden;
+      left.classList.toggle("log-hidden", hidden);
+      left.classList.toggle("collapsed", !!app.sideLogCollapsed);
+
+      // 隐藏后只留一个「显示日志」的小按钮
+      if (hidden) {
+        const showBtn = el("button", "side-log-show", "日志 ▸");
+        showBtn.title = "显示推演日志";
+        showBtn.onclick = () => { app.sideLogHidden = false; renderSidePanels(); };
+        left.appendChild(showBtn);
+        left.hidden = false;
+        return;
+      }
+
+      const head = el("div", "side-panel-head");
+      const titleBtn = el("button", "side-log-toggle", app.sideLogCollapsed ? "推演日志 ▸" : "推演日志");
+      titleBtn.title = app.sideLogCollapsed ? "展开日志" : "收起日志";
+      titleBtn.onclick = () => {
+        app.sideLogCollapsed = !app.sideLogCollapsed;
+        renderSidePanels();
+      };
+      head.appendChild(titleBtn);
+      // 明确的隐藏按钮
+      const hideBtn = el("button", "side-log-hide", "隐藏");
+      hideBtn.title = "隐藏日志栏（右侧会出现「日志 ▸」按钮恢复）";
+      hideBtn.onclick = () => { app.sideLogHidden = true; renderSidePanels(); };
+      head.appendChild(hideBtn);
+      left.appendChild(head);
+
+      if (!app.sideLogCollapsed) {
+        const list = el("div", "side-log-list");
+        const privateTypes = ["draw", "discover", "burn", "mulligan"];
+        const shown = entries.slice(-60).map((entry) => {
+          const hid = entry.player != null && entry.player !== meIdx && privateTypes.indexOf(entry.type) >= 0;
+          if (!hid) return entry;
+          const hiddenText = entry.type === "draw" ? "对手抽了一张牌。"
+            : entry.type === "discover" ? "对手预兆了一张牌。"
+            : entry.type === "mulligan" ? "对手完成了起手调度。"
+            : "对手手牌已满，一张牌被烧掉。";
+          return Object.assign({}, entry, { text: hiddenText, hidden: true });
+        });
+        // 连续的隐私占位（对手抽牌/预兆/调度/烧牌）合并成一条带计数的，否则连着 4 条一样的
+        if (!shown.length) list.appendChild(el("span", "side-panel-empty", "还没有记录"));
+        else {
+          const merged = [];
+          for (const e of shown) {
+            if (e.hidden) {
+              const last = merged[merged.length - 1];
+              if (last && last.hidden && last.text === e.text) {
+                last.count = (last.count || 1) + 1;
+                continue;
+              }
+              merged.push(Object.assign({}, e, { count: 1 }));
+            } else {
+              merged.push(e);
+            }
+          }
+          shown.length = 0;
+          for (const e of merged) shown.push(e);
+        }
+
+        // 卡名索引只建一次；匹配用「预编译正则 + split」，一次扫描完所有卡名
+        // （之前是每个卡名各自 indexOf，60 条日志 × 600 多卡名 = 三万多次数不清的搜索，会卡死）
+        if (!app.logNameIndex) {
+          const idxMap = new Map();
+          for (const c of Object.values(D.CARDS)) {
+            if (!c || !c.name || c.token) continue;
+            if (c.name.length < 2) continue;                      // 单字名容易误伤正文
+            if (/^(你|我|他|它|她|对手)$/.test(c.name)) continue;   // 代词不当卡名高亮
+            if (idxMap.has(c.name)) continue;                      // 同名只留一个，避免重复匹配
+            idxMap.set(c.name, c);
+          }
+          app.logNameIndex = idxMap;
+          const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const names = [...idxMap.keys()].sort((a, b) => b.length - a.length).map(esc);
+          app.logNameRe = names.length ? new RegExp("(" + names.join("|") + ")", "g") : null;
+        }
+        const nameMap = app.logNameIndex;
+        const nameRe = app.logNameRe;
+
+        // 日志最多渲染最近 40 条：再多也没人翻，纯属拖慢渲染
+        const MAX_ROWS = 40;
+        const rows = shown.slice(-MAX_ROWS);
+        for (const entry of rows) {
+          const row = el("div", "side-log-row" + (entry.hidden ? " hidden-info" : ""));
+          row.appendChild(el("i", "side-log-icon", LOG_ICONS[entry.type] || "·"));
+          if (entry.round != null) row.appendChild(el("em", "side-log-turn", "R" + entry.round));
+
+          const text = entry.text || "";
+          // split 带捕获组会保留分隔符，天然不重叠也不会重复切
+          const segs = nameRe ? text.split(nameRe) : [text];
+          let appended = 0;
+          for (const seg of segs) {
+            if (!seg) continue;
+            const def = nameMap.get(seg);
+            if (def) {
+              const btn = el("button", "side-log-card", seg);
+              btn.title = seg + "：\n" + (def.text || "—");
+              btn.onclick = (ev) => { ev.stopPropagation(); openCodexCard(def, "关闭"); };
+              row.appendChild(btn);
+            } else {
+              row.appendChild(el("span", "side-log-text", seg));
+            }
+            appended++;
+          }
+          if (!appended) row.appendChild(el("span", "side-log-text", text));
+          if (entry.count > 1) row.appendChild(el("em", "side-log-count", "×" + entry.count));
+          list.appendChild(row);
+        }
+        left.appendChild(list);
+        const listEl = list;
+        requestAnimationFrame(() => { listEl.scrollTop = listEl.scrollHeight; });
+      }
+      left.hidden = false;
+    }
+
+    // ---------- 右：对方牌库 / 坟墓 / 我方牌库（三块独立框）----------
+    if (right) {
+      const me = game.players[meIdx];
+      const foe = game.players[1 - meIdx];
+      const shared = Array.isArray(game.discard) ? game.discard : [];
+      clear(right);
+      right.classList.add("side-pile-stack");
+
+      const countOf = (p) => (p && Array.isArray(p.deck) ? p.deck.length : 0);
+      const mineN = shared.filter((x) => x.owner === meIdx).length;
+      const foeN = shared.filter((x) => x.owner != null && x.owner !== meIdx).length;
+
+      // 牌库框：封面用真实卡背，放大显示
+      const deckBox = (label, count, cls, tip) => {
+        const box = el("div", "pile-box " + cls);
+        box.title = tip || (label + " 剩余 " + count + " 张");
+        const cover = el("div", "pile-box-cover");
+        const art = el("img", "pile-box-art");
+        art.alt = "";
+        art.src = cardBackUrl();
+        cover.appendChild(art);
+        cover.appendChild(el("b", "pile-box-count", String(count)));
+        box.appendChild(cover);
+        box.appendChild(el("small", "pile-box-label", label));
+        return box;
+      };
+
+      right.appendChild(deckBox("对方牌库", countOf(foe), "foe"));
+
+      // 中间：坟墓（只有图标 + 按钮，不列具体牌）
+      const gy = el("button", "pile-box grave");
+      gy.type = "button";
+      gy.title = "弃牌堆（坟墓）：敌我共享 " + shared.length + " 张";
+      const graveIco = el("div", "pile-box-cover grave-cover");
+      const gi = el("img", "pile-box-art grave-art");
+      gi.alt = "";
+      gi.src = "assets/ui/status-bounty.webp?v=" + ART_VERSION;
+      // 用一块简易墓碑图形更强，这里直接画一个
+      graveIco.innerHTML =
+        '<svg viewBox="0 0 48 56" aria-hidden="true" class="grave-svg">' +
+        '<path d="M8 54V24C8 13.5 15.2 6 24 6s16 7.5 16 18v30z" fill="rgba(10,20,26,.9)" stroke="rgba(150,170,180,.55)" stroke-width="1.6"/>' +
+        '<path d="M8 54V24C8 13.5 15.2 6 24 6s16 7.5 16 18v30z" fill="none" stroke="rgba(240,204,132,.28)" stroke-width=".8"/>' +
+        '<path d="M24 16v22M17 24h14" stroke="rgba(200,214,220,.75)" stroke-width="2.4" stroke-linecap="round"/>' +
+        '<path d="M6 54h36" stroke="rgba(150,170,180,.5)" stroke-width="2" stroke-linecap="round"/>' +
+        '</svg>';
+      graveIco.appendChild(el("b", "pile-box-count", String(shared.length)));
+      gy.appendChild(graveIco);
+      gy.appendChild(el("small", "pile-box-label", "弃牌堆 · 共享"));
+      const gm = el("span", "grave-meta", "我方 " + mineN + " · 对方 " + foeN);
+      gy.appendChild(gm);
+      gy.onclick = () => openGraveyard();
+      right.appendChild(gy);
+
+      right.appendChild(deckBox("我方牌库", countOf(me), "mine"));
+
+      right.hidden = false;
+    }
   }
 
   function autoMulliganAI(state, playerIndex) {
@@ -1799,8 +2269,9 @@
     const freeRight = sr.left;
     if (freeRight <= freeLeft) return;
     const gap = freeRight - freeLeft;
-    const width = Math.max(72, gap - 22);
-    const height = Math.max(48, container.clientHeight - 24);
+    // 上限收一收：原来会把「头像 ⇢ 技能位」之间的空隙整个撑满（实测 179×80），显得又大又空
+    const width = Math.min(104, Math.max(68, gap - 26));
+    const height = Math.min(46, Math.max(40, container.clientHeight - 38));
     badge.style.setProperty("width", width + "px", "important");
     badge.style.setProperty("min-width", width + "px", "important");
     badge.style.setProperty("height", height + "px", "important");
@@ -1915,7 +2386,7 @@
     hpArt.alt = "";
     hpArt.src = "assets/ui/stat-hp.webp?v=" + ART_VERSION;
     hp.appendChild(hpArt);
-    hp.appendChild(el("b", null, String(Math.max(0, player.hp))));
+    hp.appendChild(el("b", null, Math.max(0, player.hp) + "/" + (player.maxHp != null ? player.maxHp : player.hp)));
     hp.appendChild(el("small", null, "生命"));
     vitals.appendChild(hp);
     const armor = el("span", "hs-vital hs-armor");
@@ -2050,7 +2521,7 @@
     container.appendChild(sideCol);
     const heroDeckBadge = el("span", "hs-hero-deck");
     heroDeckBadge.id = side === "bottom" ? "player-hero-deck" : "opponent-hero-deck";
-    heroDeckBadge.innerHTML = "<img class=\"hs-hero-deck-art\" alt=\"\" src=\"" + cardBackUrl() + "\"><span class=\"hs-hero-deck-copy\"><span class=\"hs-hero-deck-label\">牌库</span><b>" + player.deck.length + "</b></span>";
+    heroDeckBadge.innerHTML = "<img class=\"hs-hero-deck-art\" alt=\"\" src=\"" + cardBackUrl() + "\"><span class=\"hs-hero-deck-copy\"><span class=\"hs-hero-deck-label\">牌库</span><b>" + player.deck.length + "<small class=\"hs-hero-deck-total\">/30</small>" + "</b></span>";
     heroDeckBadge.title = "牌库剩余 " + player.deck.length + " 张";
     heroDeckBadge.setAttribute("aria-label", "牌库剩余 " + player.deck.length + " 张");
     container.appendChild(heroDeckBadge);
@@ -2206,7 +2677,7 @@
       container.addEventListener("dragover", (ev) => {
         const attackOk = app.draggingAttacker && canDropAttackOn("hero");
         const cardDef = app.draggingUid ? handDef(app.draggingUid) : null;
-        const cardOk = !!(cardDef && (cardDef.type === "spell" || cardDef.type === "equipment") &&
+        const cardOk = !!(cardDef && (cardDef.type === "spell" || cardDef.type === "equipment" || cardDef.type === "debt") &&
           E.getPlayOptions(app.game, app.game.current, app.draggingUid).ok);
         if (!attackOk && !cardOk) return;
         ev.preventDefault();
@@ -2220,7 +2691,7 @@
         container.classList.remove("drop-hover");
         if (app.draggingAttacker && canDropAttackOn("hero")) { performDragAttack("hero"); return; }
         const cardDef = app.draggingUid ? handDef(app.draggingUid) : null;
-        if (cardDef && (cardDef.type === "spell" || cardDef.type === "equipment")) {
+        if (cardDef && (cardDef.type === "spell" || cardDef.type === "equipment" || cardDef.type === "debt")) {
           playCardFromDrop(app.draggingUid);
           return;
         }
@@ -2540,7 +3011,7 @@
 
   function createBoardCard(m, player, ownerIndex) {
     const def = D.CARDS[m.cardId];
-    const healthText = m.health < m.maxHealth ? m.health + "/" + m.maxHealth : String(m.health);
+    const healthText = m.health + "/" + m.maxHealth;
     const card = buildLibraryCard(def, {
       variant: "mini",
       faction: true,
@@ -2563,18 +3034,24 @@
     if (m.frozenTurns > 0) card.classList.add("frozen");
     if (m.stealth) card.classList.add("stealthed");
     if (m.silenced) card.classList.add("silenced");
+    if (m.divineShield) {
+      const sm = el("div", "shield-mark");
+      sm.title = "格挡：下一次受到的伤害无效";
+      sm.setAttribute("aria-label", "格挡");
+      const smImg = el("img", "shield-mark-art");
+      smImg.src = "assets/ui/status-shield.webp?v=" + ART_VERSION;
+      smImg.alt = "";
+      sm.appendChild(smImg);
+      card.appendChild(sm);
+    }
     if (m.bounty != null) {
       const seal = el("div", "bounty-seal");
       seal.title = "悬赏名单：该随从已被标记为悬赏目标";
       seal.setAttribute("aria-label", "悬赏目标");
-      seal.innerHTML =
-        '<svg viewBox="0 0 40 40" aria-hidden="true">' +
-          '<circle cx="20" cy="20" r="18" fill="rgba(5,13,14,.94)" stroke="rgba(242,198,109,.9)" stroke-width="1.4"/>' +
-          '<circle cx="20" cy="20" r="14.6" fill="none" stroke="rgba(255,232,170,.28)" stroke-width=".7"/>' +
-          '<polygon points="20,4.4 24.8,15.4 36.7,16.1 27.3,23.9 30.2,35.5 20,28.9 9.8,35.5 12.7,23.9 3.3,16.1 15.2,15.4" fill="url(#bountyGold)" stroke="#4a2c08" stroke-width="1"/>' +
-          '<polygon points="20,9.2 23,16.3 30.5,16.8 24.8,21.6 26.5,28.8 20,24.8 13.5,28.8 15.2,21.6 9.5,16.8 17,16.3" fill="rgba(255,244,198,.38)"/>' +
-          '<defs><linearGradient id="bountyGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1b6"/><stop offset=".5" stop-color="#e8b85c"/><stop offset="1" stop-color="#9b651f"/></linearGradient></defs>' +
-        '</svg><b>悬赏</b>';
+      const sealImg = el("img", "bounty-seal-art");
+      sealImg.src = "assets/ui/status-bounty.webp?v=" + ART_VERSION;
+      sealImg.alt = "";
+      seal.appendChild(sealImg);
       card.classList.add("has-bounty");
       card.appendChild(seal);
     }
@@ -2617,7 +3094,9 @@
         }
       }
     };
-    const canAttackNow = ownerIndex === app.viewer && app.game.current === app.viewer && app.game.status === "playing" && m.attacksLeft > 0 && m.frozenTurns === 0 && m.attack > 0 && !app.busy;
+    // 场面卡状态徽记（assets/ui/status-*.webp）
+  const STATUS_ICONS = { "冻结": "status-frozen", "沉睡": "status-asleep", "已行动": "status-acted" };
+  const canAttackNow = ownerIndex === app.viewer && app.game.current === app.viewer && app.game.status === "playing" && m.attacksLeft > 0 && m.frozenTurns === 0 && m.attack > 0 && !app.busy;
     const ownTurn = ownerIndex === app.viewer && app.game.current === app.viewer && app.game.status === "playing";
     let attackStatus = null;
     let attackStatusClass = "";
@@ -2631,7 +3110,18 @@
       attackStatus = m.attacksLeft > 0 ? "待命" : "已行动";
       attackStatusClass = "waiting";
     }
-    if (attackStatus) card.appendChild(el("div", "attack-status " + attackStatusClass, attackStatus));
+    if (attackStatus) {
+      const st = el("div", "attack-status " + attackStatusClass);
+      const stIcon = STATUS_ICONS[attackStatus];
+      if (stIcon) {
+        const im = el("img", "attack-status-icon");
+        im.src = "assets/ui/" + stIcon + ".webp?v=" + ART_VERSION;
+        im.alt = "";
+        st.appendChild(im);
+      }
+      st.appendChild(document.createTextNode(attackStatus));
+      card.appendChild(st);
+    }
     if (m.frozenTurns > 0) {
       const ice = el("div", "ice-shards");
       for (let i = 0; i < 5; i++) ice.appendChild(el("i", null, ""));
@@ -3169,10 +3659,17 @@
     "被动": "passive", "冻结": "freeze", "沉默": "silence", "隐匿": "stealth",
     "复制": "passive", "恢复溢出": "heal", "变形": "damage", "获得控制权": "damage", "刻脉": "vein",
     "引脉": "vein", "预兆": "discover", "掘脉": "excavate", "涨脉": "vein", "血祭": "blood",
-    "吞噬": "damage", "格挡": "armor", "连携": "charge", "蚀毒": "deathrattle",
+    "吞噬": "damage", "格挡": "armor", "连携": "windfury", "蚀毒": "deathrattle",
     "血偿": "heal", "回潮": "passive", "固定": "passive", "逆脉": "vein",
     "镇脉": "armor", "压脉": "damage", "悬赏": "damage", "装备": "passive"
   };
+  // 有写实 webp 版的关键词图标（其余仍是矢量 svg）
+  const KEYWORD_ICON_WEBP = new Set([
+    "taunt", "charge", "battlecry", "deathrattle", "freeze", "stealth",
+    "counter", "armor", "windfury", "poisonous", "lifesteal", "rebirth", "equip",
+    "heal", "passive", "silence", "vein", "excavate", "blood", "discover", "damage"
+  ]);
+
   const KEYWORD_COLORS = {
     "复制": "#b7d8ff", "恢复溢出": "#8ee8c8", "变形": "#d7a7ff", "获得控制权": "#ffb0a0", "刻脉": "#f2c66d",
     "登场": "#f2c66d", "余响": "#c49bff", "守备": "#82b7ff", "先遣": "#ff9b5e",
@@ -3220,7 +3717,7 @@
       const iconName = KEYWORD_ICONS[label];
       if (iconName) {
         const img = el("img", "keyword-glossary-icon");
-        img.src = "/assets/icons/" + iconName + ".svg";
+        img.src = "/assets/icons/" + iconName + (KEYWORD_ICON_WEBP.has(iconName) ? ".webp?v=" + ART_VERSION : ".svg");
         img.alt = "";
         item.appendChild(img);
       }
@@ -3521,7 +4018,7 @@
         const iconName = KEYWORD_ICONS[label];
         if (iconName) {
           const img = el("img", "keyword-glossary-icon");
-          img.src = "/assets/icons/" + iconName + ".svg";
+          img.src = "/assets/icons/" + iconName + (KEYWORD_ICON_WEBP.has(iconName) ? ".webp?v=" + ART_VERSION : ".svg");
           img.alt = "";
           item.appendChild(img);
         }
@@ -3552,7 +4049,7 @@
       const iconName = KEYWORD_ICONS[label];
       if (iconName) {
         const img = el("img", "keyword-glossary-icon");
-        img.src = "/assets/icons/" + iconName + ".svg";
+        img.src = "/assets/icons/" + iconName + (KEYWORD_ICON_WEBP.has(iconName) ? ".webp?v=" + ART_VERSION : ".svg");
         img.alt = "";
         item.appendChild(img);
       }
@@ -3665,8 +4162,8 @@
     card.onmouseenter = () => showPreview(def, null);
     card.onmouseleave = hidePreview;
     if (playable) {
-      card.draggable = !isPhoneLayout() && def.type !== "debt" && !instance.isDebt;
-      card.title = instance.isDebt ? "打出债务卡：本回合开始债务任务，完成免罚" : def.type === "debt" ? "打出后洗入对手牌库" : def.type === "spell" ? "点击选择目标施放，或直接拖到目标" : def.type === "equipment" ? "点击打出装备" : "点击出牌，或拖到阵位";
+      card.draggable = !isPhoneLayout();
+      card.title = instance.isDebt ? "点击打出，或拖到任意英雄栏：本回合开始债务任务，完成免罚" : def.type === "debt" ? "点击打出，或拖到任意英雄栏：打出后洗入对手牌库" : def.type === "spell" ? "点击选择目标施放，或直接拖到目标" : def.type === "equipment" ? "点击打出装备" : "点击出牌，或拖到阵位";
       card.addEventListener("dragstart", (ev) => {
         if (!ev.dataTransfer) return;
         app.draggingUid = instance.uid;
@@ -4345,6 +4842,7 @@
 
   function animateAttack(attackerUid, targetUid, attackerOwner, done) {
     if (app.animating || !app.game) return;
+    if (isAuthNet()) { return authSend({ type: "attack", uid: attackerUid, targetUid: targetUid || "hero" }, "等待服务器结算攻击…"); }
     const s = app.game;
     const attacker = E.findMinion(s, attackerUid);
     if (!attacker) { if (done) done({ ok: false, reason: "攻击者已不在场" }); return; }
@@ -4462,6 +4960,10 @@
 
   function onTargetClick(uid) {
     if (!app.game || app.game.status !== "playing") return;
+    if (isAuthNet() && app.targetInfo && app.targetInfo.kind === "heroPower") {
+      app.targetInfo = null;
+      return authSend({ type: "power", targetUid: uid }, "等待服务器结算技能…");
+    }
     if (app.targetInfo && app.targetInfo.kind === "heroPower") {
       if (app.net && app.net.role === "guest") {
         app.targetInfo = null;
@@ -4656,8 +5158,110 @@
     }
   }
 
+  /* ===== 权威联机（服务器算规则）===== */
+  function isAuthNet() { return !!(app.net && app.net.role === "auth" && app.net.active); }
+
+  // 对局结束后回报一次战绩（服务器只记一次，重复调用无副作用）
+  function reportAuthResult(snap, player) {
+    if (!snap || snap.status === "playing") return;
+    if (!snap.state || typeof snap.state.winner !== "number") return;
+    const net = app.net;
+    if (!net || net.role !== "auth" || net.reported) return;
+    net.reported = true;
+    fetch("/api/aroom/" + encodeURIComponent(net.code) + "/result", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ player: net.seat, token: net.token, rank: (app.profile && app.profile.rankPoints) || 1000 })
+    }).then((r) => r.json()).then((d) => {
+      if (d && d.recorded && d.ladder) {
+        toast((d.win ? "排位 +" : "排位 ") + d.ladder.delta + " 分 · 当前 " + d.ladder.rank);
+      }
+    }).catch(() => {});
+  }
+
+  function authSnapshotToApp(snap) {
+    if (!snap || !snap.state) return;
+    // 对面掉线/回来都给个提示
+    if (Array.isArray(snap.online)) {
+      const oppOnline = snap.online[1 - snap.you];
+      if (app.__oppOnline !== oppOnline) {
+        app.__oppOnline = oppOnline;
+        if (!oppOnline) toast("对手掉线了，正在等他回来（60 秒未回判你获胜）。");
+        else if (app.__oppOnline !== undefined) toast("对手回来了，继续。");
+      }
+    }
+    app.game = snap.state;
+    app.viewer = snap.you;
+    app.net.version = snap.version;
+    app.busy = false;
+    app.pendingDragZone = null;
+    app.selectedCard = null;
+    app.targetInfo = null;
+    app.zoneSelect = null;
+    app.attacker = null;
+    hidePreviewNow();
+    renderGame();
+    if (app.game.status !== "playing") checkGameOverAfterAction();
+    if (app.game.status !== "playing") reportAuthResult(snap, snap.you);
+  }
+
+  function enterAuthorityRoom(session) {
+    if (!global.GokAuthority) { toast("联机模块没有加载。"); return false; }
+    global.GokAuthority.saveSession(session);
+    app.net = { role: "auth", active: true, player: session.seat, seat: session.seat, code: session.code, token: session.token, version: 0 };
+    if (app.authStream) { try { app.authStream.close(); } catch (e) {} }
+    app.authStream = global.GokAuthority.openStream(session, {
+      onState: (snap) => authSnapshotToApp(snap),
+      onStatus: (st) => {
+        if (st === "reconnect") {
+          app.currentHint = "连接中断，正在重连…";
+          renderGame();
+        }
+      }
+    });
+    showScreen("game");
+    return true;
+  }
+
+  // 客户端只发意图，服务器判定
+  function authSend(action, hint) {
+    if (!isAuthNet()) return false;
+    const session = { code: app.net.code, seat: app.net.seat, token: app.net.token };
+    app.busy = true;
+    app.currentHint = hint || "等待服务器结算…";
+    renderGame();
+    global.GokAuthority.send(session, action).then((r) => {
+      if (!r.ok) {
+        app.busy = false;
+        app.currentHint = "";
+        toast(r.error || "动作被服务器拒绝。");
+        renderGame();
+        return;
+      }
+      // 成功也不必自己改状态：等 SSE 推动
+    }).catch(() => {
+      app.busy = false;
+      app.currentHint = "";
+      toast("动作发送失败，请检查网络。");
+      renderGame();
+    });
+    return true;
+  }
+
+  // 断线后恢复到原座位
+  function resumeAuthoritySession() {
+    if (!global.GokAuthority) return false;
+    const session = global.GokAuthority.loadSession();
+    if (!session) return false;
+    global.GokAuthority.fetchState(session).then((d) => {
+      if (!d.ok || !d.state) { global.GokAuthority.clearSession(); return; }
+      enterAuthorityRoom(session);
+    }).catch(() => {});
+    return true;
+  }
+
   function commitPlay(cardUid, targetUid, zone, targetUid2, extraOpts) {
     extraOpts = extraOpts || {};
+    if (isAuthNet()) { return authSend({ type: "play", uid: cardUid, targetUid: targetUid || null, zone: zone || null }, "等待服务器结算出牌…"); }
     hidePreviewNow();
     hideSimpleCardPreview();
     app.mobileGoldCard = null;
@@ -4791,7 +5395,10 @@
 
   function endTurn() {
     if (!app.game || app.game.status !== "playing" || app.busy) return;
+    if (isAuthNet()) { return authSend({ type: "endTurn" }, "等待服务器结算回合…"); }
     if (app.game.current !== app.viewer) return;
+    // 新手演练里成功交过一次回合，就算掌握了核心循环（原来只有点「退出」才算完成）
+    if (app.tutorial) markMainTask("tutorial");
     document.body.classList.add("ending-turn");
     setTimeout(() => document.body.classList.remove("ending-turn"), 1400);
     playPageTurn();
@@ -5504,7 +6111,7 @@
     const close = el("button", "mobile-card-close", "×");
     close.onclick = () => bg.remove();
     sheet.appendChild(close);
-    bg.onclick = (ev) => { if (ev.target === bg) bg.remove(); };
+  bg.onclick = (ev) => { if (ev.target === bg) bg.remove(); };
     sheet.appendChild(el("div", "eyebrow", "卡牌详情"));
     sheet.appendChild(el("h3", null, def.name));
     sheet.appendChild(el("div", "preview-meta", typeLine(def) + " · " + def.cost + " 行动力" + (def.type === "minion" ? " · 攻 " + (minion ? minion.attack : def.attack) + " / 血 " + (minion ? minion.health : def.health) : "")));
@@ -5717,6 +6324,7 @@
       clearTimer();
       start = null;
       document.removeEventListener("pointermove", onDocumentMove);
+      hideHeldPreview();
     };
     card.addEventListener("pointerdown", (ev) => {
       if (ev.pointerType === "mouse" || ev.button !== 0) return;
@@ -6060,14 +6668,14 @@
     return PROFILE_CARD_BACKS.find(x => x.id === id) || PROFILE_CARD_BACKS[0];
   }
   function cardBackUrlFor(id) {
-    if (id === "classic") return "assets/ui/card_back.svg";
+    if (id === "classic") return "assets/ui/card-back-jimeng.webp?v=" + ART_VERSION;
     const b = cardBackDefinition(id);
     const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300"><defs><pattern id="p" width="22" height="22" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0h22v22H0z" fill="' + b.color + '"/><path d="M0 0h1v22H0zM11 0h1v22h-1z" fill="rgba(255,255,255,.14)"/></pattern></defs><rect width="200" height="300" fill="#07120f"/><rect x="5" y="5" width="190" height="290" rx="8" fill="url(#p)" stroke="' + b.color + '" stroke-width="2"/><rect x="16" y="16" width="168" height="268" rx="4" fill="none" stroke="rgba(242,198,109,.55)"/><circle cx="100" cy="150" r="38" fill="rgba(3,12,12,.62)" stroke="rgba(242,198,109,.7)"/><text x="100" y="162" font-family="serif" font-size="38" text-anchor="middle" fill="#f0d29a">' + b.glyph + '</text></svg>';
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   }
   function cardBackUrl() {
     const id = (app.account && app.account.cardBack) || "classic";
-    if (id === "classic") return "assets/ui/card_back.svg";
+    if (id === "classic") return "assets/ui/card-back-jimeng.webp?v=" + ART_VERSION;
     const b = cardBackDefinition(id);
     const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300"><defs><pattern id="p" width="22" height="22" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0h22v22H0z" fill="' + b.color + '"/><path d="M0 0h1v22H0zM11 0h1v22h-1z" fill="rgba(255,255,255,.14)"/></pattern></defs><rect width="200" height="300" fill="#07120f"/><rect x="5" y="5" width="190" height="290" rx="8" fill="url(#p)" stroke="' + b.color + '" stroke-width="2"/><rect x="16" y="16" width="168" height="268" rx="4" fill="none" stroke="rgba(242,198,109,.55)"/><circle cx="100" cy="150" r="38" fill="rgba(3,12,12,.62)" stroke="rgba(242,198,109,.7)"/><text x="100" y="162" font-family="serif" font-size="38" text-anchor="middle" fill="#f0d29a">' + b.glyph + '</text></svg>';
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
@@ -6131,6 +6739,14 @@
   const GUEST_KEY = "gok_guest_choice_v1";
   const ACCOUNT_NAMED_KEY = "gok_account_named_v1";
   const SAVE_BACKUP_KEY = "gok_save_backup_v1";
+  const CLOUD_VER_KEY = "gok_cloud_version_v1";
+
+  function readLocalCloudVersion() {
+    try { const raw = JSON.parse(localStorage.getItem(CLOUD_VER_KEY) || "null"); return raw && raw.version != null ? raw : null; } catch (e) { return null; }
+  }
+  function writeLocalCloudVersion(version, at) {
+    try { localStorage.setItem(CLOUD_VER_KEY, JSON.stringify({ version: Number(version) || 0, at: Number(at) || Date.now() })); } catch (e) {}
+  }
   let saveBackupTimer = null;
 
   function ensureAccount() {
@@ -6162,6 +6778,60 @@
 
   /* ===== account progression: tasks, levels, legendary collection ===== */
   const LEVEL_MAX = 30;
+  // 领袖（阵营）解锁节奏：开局两个，之后每 4 级一个
+  const LEADER_STARTER = ["pus", "academy"];
+  const LEADER_UNLOCK_LEVELS = {
+    xizhao: 5, republic: 9, empire: 13, greyharbor: 17, losutai: 21, snow: 25
+  };
+  // 解锁一个领袖送几张传说（该阵营）
+  const LEADER_LEGENDARY_GIFT = 2;
+
+  function leaderUnlockLevel(faction) {
+    if (LEADER_STARTER.indexOf(faction) >= 0) return 1;
+    return LEADER_UNLOCK_LEVELS[faction] || 1;
+  }
+  function unlockedLeaders(account) {
+    const acc = account || app.account || ensureAccount();
+    const lv = (acc.progress && acc.progress.level) || 1;
+    const extra = Array.isArray(acc.leaderUnlocked) ? acc.leaderUnlocked : [];
+    return D.FACTION_IDS.filter((f) => lv >= leaderUnlockLevel(f) || extra.indexOf(f) >= 0);
+  }
+  function isLeaderUnlocked(faction) { return unlockedLeaders().indexOf(faction) >= 0; }
+
+  // 该阵营还没拿到的传说（用于领袖解锁礼包）
+  function factionLegendaryPool(faction) {
+    const owned = ownedLegendarySet();
+    return allLegendaryIds().filter((id) => {
+      const c = D.CARDS[id];
+      return c && c.faction === faction && !owned.has(id);
+    });
+  }
+
+  /**
+   * 把「已到等级但还没发过礼包」的领袖补发一遍，返回新解锁的阵营数组。
+   * 每次解锁送 LEADER_LEGENDARY_GIFT 张该阵营传说。
+   */
+  function claimLeaderUnlocks() {
+    const acc = ensureAccount();
+    const lv = (acc.progress && acc.progress.level) || 1;
+    if (!Array.isArray(acc.leaderGifted)) acc.leaderGifted = [];
+    const fresh = [];
+    for (const f of D.FACTION_IDS) {
+      if (acc.leaderGifted.indexOf(f) >= 0) continue;
+      if (lv < leaderUnlockLevel(f)) continue;
+      acc.leaderGifted.push(f);
+      const pool = factionLegendaryPool(f);
+      const gift = pool.slice(0, LEADER_LEGENDARY_GIFT);
+      if (gift.length) {
+        acc.legendaryOwned = Array.from(new Set([...(acc.legendaryOwned || []), ...gift]));
+      }
+      fresh.push({ faction: f, cards: gift });
+    }
+    if (fresh.length) persistAccount();
+    return fresh;
+  }
+
+
   const FEATURE_LEVELS = { hard: 2, lab: 3, other: 4, nightmare: 5, deckedit: 5, multideck: 7, customize: 8 };
   const FEATURE_LABELS = { hard: "困难 AI", lab: "疯狂实验", other: "其他模式", nightmare: "噩梦 AI", deckedit: "组卡与命名", multideck: "多套牌组", customize: "档案个性化" };
   function featureLabel(key) { return FEATURE_LABELS[key] || key; }
@@ -6229,6 +6899,26 @@
     const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
     const week = Math.ceil((((t - yearStart) / 86400000) + 1) / 7);
     return t.getUTCFullYear() + "-W" + String(week).padStart(2, "0");
+  }
+
+  // 新档案的初始传说：八个阵营各一张，再补两张（保证每套牌都有个像样的核心）
+  const STARTER_LEGENDARY_COUNT = 10;
+  function startingLegendaryIds() {
+    const all = allLegendaryIds();
+    const picked = [];
+    const factionsSeen = new Set();
+    for (const id of all) {
+      const c = D.CARDS[id];
+      if (!c || factionsSeen.has(c.faction)) continue;
+      factionsSeen.add(c.faction);
+      picked.push(id);
+      if (picked.length >= Math.min(8, STARTER_LEGENDARY_COUNT)) break;
+    }
+    for (const id of all) {
+      if (picked.length >= STARTER_LEGENDARY_COUNT) break;
+      if (!picked.includes(id)) picked.push(id);
+    }
+    return picked;
   }
 
   function allLegendaryIds() {
@@ -6347,9 +7037,29 @@
     if (!node) return;
     try {
       syncTaskPeriods();
-      const pending = (ensureAccount().progress && ensureAccount().progress.pendingRewards) || [];
-      const next = MAIN_TASKS.find(t => !taskClaimed("main", t));
-      node.textContent = pending.length ? "升级奖励：选择阵营领取 " + pending.length * 2 + " 张传说" : (next ? "下一步：" + next.name : "主线任务已完成，继续推演吧");
+      const account = ensureAccount();
+      const p = account.progress || {};
+      const pending = p.pendingRewards || [];
+      const next = MAIN_TASKS.find((t) => !taskClaimed("main", t));
+      const chapter = (next && next.chapter) || 3;
+      const chapterTasks = MAIN_TASKS.filter((t) => (t.chapter || 1) === chapter);
+      const doneCount = chapterTasks.filter((t) => taskClaimed("main", t)).length;
+      // 文案
+      node.textContent = pending.length
+        ? "升级奖励：选择阵营领取 " + pending.length * 2 + " 张传说"
+        : next ? "下一步：" + next.name : "主线已全部完成";
+      // 章节名与完成度
+      const chapEl = $("home-task-chapter");
+      if (chapEl) chapEl.textContent = "第" + ["一", "二", "三"][chapter - 1] + "章";
+      const countEl = $("home-task-count");
+      if (countEl) countEl.textContent = doneCount + " / " + chapterTasks.length;
+      const fill = $("home-task-fill");
+      if (fill) {
+        const pct = chapterTasks.length ? Math.round((doneCount / chapterTasks.length) * 100) : 0;
+        fill.style.width = Math.max(4, pct) + "%";
+      }
+      const strip = $("home-task-strip");
+      if (strip) strip.classList.toggle("has-reward", pending.length > 0);
     } catch (e) {}
   }
 
@@ -6722,7 +7432,17 @@
       lastLevel = p.level;
       p.pendingRewards.push({ level: p.level, rolls: 2, createdAt: Date.now() });
     }
-    if (p.level >= LEVEL_MAX) p.xp = 0;
+    if (p.level >= LEVEL_MAX) {
+      p.xp = 0;
+      // 满级：传说全部解锁（30 级 × 每级 2 张 + 初始 10 张 ≈ 70 张，这里补齐剩余）
+      account.legendaryOwned = allLegendaryIds();
+    }
+    // 到了解锁等级的领袖，补发它的传说礼包
+    const leaderGifts = claimLeaderUnlocks();
+    if (leaderGifts.length) {
+      const names = leaderGifts.map((g) => D.FACTIONS[g.faction].name).join("、");
+      setTimeout(() => toast("新领袖解锁：" + names + "（各送 " + LEADER_LEGENDARY_GIFT + " 张传说）"), 900);
+    }
     persistAccount();
     if (typeof updateHomeAccount === "function") updateHomeAccount();
     if (typeof updateHomeTaskWidget === "function") updateHomeTaskWidget();
@@ -6854,7 +7574,30 @@
       const rc = el("div"); rc.appendChild(el("div", "eyebrow", "LEVEL REWARD")); rc.appendChild(el("h3", null, "有 " + pendingRewards.length + " 次传说收藏待领取")); rc.appendChild(el("p", null, "选择阵营后抽取 2 张该阵营未拥有的传说卡。")); reward.appendChild(rc);
       const go = el("button", "btn btn-primary", "选择阵营"); go.onclick = () => openLevelRewardPage(); reward.appendChild(go); root.appendChild(reward);
     }
-    const top = el("div", "tasks-top");
+    // 任务总览：三个周期一眼看到还剩多少
+  const overview = el("div", "tasks-overview");
+  const mkStat = (label, done, total, tabKey) => {
+    const card = el("button", "tasks-overview-card" + (done >= total && total > 0 ? " done" : ""));
+    card.type = "button";
+    if (tabKey) card.onclick = () => { app.taskTab = tabKey; renderTasksPage(); };
+    card.appendChild(el("span", "to-label", label));
+    card.appendChild(el("strong", null, done + " / " + total));
+    const meter = el("span", "to-meter");
+    const fill = el("i");
+    fill.style.width = (total ? Math.round((done / total) * 100) : 0) + "%";
+    meter.appendChild(fill);
+    card.appendChild(meter);
+    return card;
+  };
+  const dailyDone = DAILY_TASKS.filter((t) => taskClaimed("daily", t)).length;
+  const weeklyDone = WEEKLY_TASKS.filter((t) => taskClaimed("weekly", t)).length;
+  const mainDone = MAIN_TASKS.filter((t) => taskClaimed("main", t)).length;
+  overview.appendChild(mkStat("今日", dailyDone, DAILY_TASKS.length, "daily"));
+  overview.appendChild(mkStat("本周", weeklyDone, WEEKLY_TASKS.length, "weekly"));
+  overview.appendChild(mkStat("主线", mainDone, MAIN_TASKS.length, "main"));
+  root.appendChild(overview);
+
+  const top = el("div", "tasks-top");
     const head = el("div", "tasks-top-head");
     head.appendChild(el("strong", null, p.level >= LEVEL_MAX ? "档案满级" : "Lv." + p.level + " · 档案经验"));
     head.appendChild(el("small", null, p.level >= LEVEL_MAX ? "全部档案权限已开放" : "距离下一级还差 " + Math.max(0, need - p.xp) + " XP"));
@@ -6983,10 +7726,10 @@
 
   function scheduleSaveBackup() {
     if (saveBackupTimer) return;
-    saveBackupTimer = setTimeout(() => { saveBackupTimer = null; snapshotSave("auto"); syncCloudSave(); }, 900);
+    saveBackupTimer = setTimeout(() => { saveBackupTimer = null; snapshotSave("auto"); syncCloudSave(false, true); }, 900);
   }
 
-  async function syncCloudSave(force) {
+  async function syncCloudSave(force, auto) {
     if (!(app.auth && app.auth.user)) return;
     app.cloudSyncState = "syncing"; app.cloudSyncError = "";
     try {
@@ -6996,14 +7739,26 @@
         body: JSON.stringify({ save: collectSaveBundle(), baseVersion })
       });
       const data = await res.json().catch(() => ({}));
-      if (res.status === 409) {
-        app.cloudConflict = data.current || true;
-        app.cloudSyncState = "conflict";
-        app.cloudSyncError = "云端与本地不一致";
-        updateHomeAccount();
-        toast("云端存档有冲突，请到个人资料 → 存档同步处理。");
-        return;
-      }
+        if (res.status === 409) {
+          const current = data.current || null;
+          const currentVersion = current && current.save ? Number(current.save.version) : NaN;
+          // 自动同步撞上版本不一致时不打扰玩家：采纳服务器版本号，用新 base 重试一次。
+          // 手动上传/恢复（force）仍然走下面的冲突分支。
+          if (auto && Number.isFinite(currentVersion) && !app.__autoRetried) {
+            app.__autoRetried = true;
+            app.cloudSaveVersion = currentVersion;
+            writeLocalCloudVersion(currentVersion, (current.save && current.save.updatedAt) || Date.now());
+            const again = await syncCloudSave(false, true);
+            app.__autoRetried = false;
+            return again;
+          }
+          app.cloudConflict = current || true;
+          app.cloudSyncState = "conflict";
+          app.cloudSyncError = "云端与本地不一致";
+          updateHomeAccount();
+          if (!auto) toast("云端存档有冲突，请到个人资料 → 存档同步处理。");
+          return;
+        }
       if (!res.ok) throw new Error(data.error || "云端同步失败");
       app.cloudSaveVersion = Number(data.version) || app.cloudSaveVersion;
       app.cloudSaveAt = Number(data.updatedAt) || Date.now();
@@ -7037,11 +7792,24 @@
       if (!data.user) return;
       app.auth = { user: data.user };
       if (data.save) {
-        app.cloudSaveVersion = Number(data.save.version) || 0;
-        app.cloudSaveAt = Number(data.save.updatedAt) || 0;
+        // 一律以服务器版本号为基准，不再因为版本差异弹「存档冲突」。
+        // 本地有进度就以本地为准（下次自动同步会推上去）；本地没有就采用云端。
+        const cloudVersion = Number(data.save.version) || 0;
+        const cloudAt = Number(data.save.updatedAt) || 0;
+        app.cloudSaveVersion = cloudVersion;
+        app.cloudSaveAt = cloudAt;
+        app.cloudConflict = null;
         const localHas = !!(localStorage.getItem(ACCOUNT_NAMED_KEY) || Object.keys(app.customDecks || {}).length);
-        if (!localHas && data.save.save) { applySaveBundle(data.save.save); app.cloudSyncState = "synced"; toast("已恢复云端档案。"); }
-        else { app.cloudConflict = data.save; app.cloudSyncState = "conflict"; }
+        if (!localHas && data.save.save) {
+          applySaveBundle(data.save.save);
+          writeLocalCloudVersion(cloudVersion, cloudAt);
+          app.cloudSyncState = "synced";
+          toast("已恢复云端档案。");
+        } else {
+          // 本机有进度：把云端版本记成基准，等自动同步用本地覆盖云端
+          writeLocalCloudVersion(cloudVersion, cloudAt);
+          app.cloudSyncState = "synced";
+        }
       }
       updateHomeAccount();
     } catch (e) {}
@@ -7598,7 +8366,8 @@ const tabs = $("deck-faction-tabs");
     if (app.deckBuildList.length >= 30) { toast("牌组已满（30 张）。"); return; }
     if (app.deckBuildList.length >= 30) { toast("牌组已满（30 张）。"); return; }
     if (count >= D.maxCopies(def)) { toast(def.name + " 已达同名张数上限。"); return; }
-    if (isUnownedLegendaryCard(id)) { toast("你还没有这张卡。通过档案升级获得。"); return; }
+    if (def.easterEgg) { toast("彩蛋卡是档案里的收藏品，不能进构筑。"); return; }
+    if (isUnownedLegendaryCard(id)) { toast("你还没有这张卡。通过升级领袖或档案等级获得。"); return; }
     const rarity = D.deckRarityCounts(app.deckBuildList);
     const cap = D.DECK_RARITY_LIMITS[def.rarity];
     if (cap != null && rarity[def.rarity] >= cap) {
@@ -7986,7 +8755,7 @@ const tabs = $("deck-faction-tabs");
     }
     const account = ensureAccount();
     const avatarSection = el("div", "profile-custom-section");
-    avatarSection.appendChild(el("h4", null, "头像"));
+    avatarSection.appendChild(el("h4", null, "头像 · " + PROFILE_AVATARS.length + " 款"));
     const avatarGrid = el("div", "profile-custom-grid");
     for (const av of PROFILE_AVATARS) {
       const b = el("button", "profile-custom-option profile-avatar-option" + (account.avatar === av.id ? " active" : ""));
@@ -8027,7 +8796,7 @@ const tabs = $("deck-faction-tabs");
     avatarGrid.appendChild(customAvatarBtn); avatarGrid.appendChild(avatarFile);
     avatarSection.appendChild(avatarGrid); content.appendChild(avatarSection);
     const titleSection = el("div", "profile-custom-section");
-    titleSection.appendChild(el("h4", null, "称号"));
+    titleSection.appendChild(el("h4", null, "称号 · 已解锁 " + PROFILE_TITLES.filter((t) => { try { return t.test(); } catch (e) { return false; } }).length + " / " + PROFILE_TITLES.length));
     const titleGrid = el("div", "profile-custom-grid");
     for (const t of PROFILE_TITLES) {
       const unlocked = t.test();
@@ -8340,7 +9109,7 @@ const tabs = $("deck-faction-tabs");
           const res = await fetch("/api/account/save", { credentials: "same-origin" });
           const data = await res.json();
           if (!data.save || !data.save.save) { toast("云端还没有可恢复的档案。"); return; }
-          applySaveBundle(data.save.save); app.cloudSaveVersion = data.save.version || 0; app.cloudSaveAt = data.save.updatedAt || Date.now(); app.cloudConflict = null; app.cloudSyncState = "synced"; updateHomeAccount(); toast("已使用云端档案覆盖本地。"); renderProfilePage();
+          applySaveBundle(data.save.save); app.cloudSaveVersion = data.save.version || 0; app.cloudSaveAt = data.save.updatedAt || Date.now(); writeLocalCloudVersion(app.cloudSaveVersion, app.cloudSaveAt); app.cloudConflict = null; app.cloudSyncState = "synced"; updateHomeAccount(); toast("已使用云端档案覆盖本地。"); renderProfilePage();
         } catch (e) { app.cloudSyncState = "error"; toast("恢复失败：" + (e.message || e)); }
       };
       actions.appendChild(pull);
@@ -8531,7 +9300,20 @@ const tabs = $("deck-faction-tabs");
     else avatar.textContent = av.glyph || "GK";
     avatar.dataset.frame = account.avatarFrame || "none";
     preview.appendChild(avatar);
-    const pv = el("div"); pv.appendChild(el("h3", null, account.name || "档案员")); pv.appendChild(el("p", null, profileTitleName(account.title) + " · " + (account.signature || "还没有签名"))); preview.appendChild(pv);
+    const pv = el("div", "appearance-preview-copy");
+  pv.appendChild(el("h3", null, account.name || "档案员"));
+  const equipLine = el("div", "appearance-equip");
+  const chip = (label, value) => {
+    const c = el("span", "appearance-chip");
+    c.appendChild(el("i", null, label));
+    c.appendChild(el("b", null, value || "默认"));
+    return c;
+  };
+  equipLine.appendChild(chip("称号", profileTitleName(account.title)));
+  equipLine.appendChild(chip("头像框", account.avatarFrame || "默认"));
+  equipLine.appendChild(chip("卡背", account.cardBack || "默认"));
+  pv.appendChild(equipLine);
+  pv.appendChild(el("p", null, profileTitleName(account.title) + " · " + (account.signature || "还没有签名"))); preview.appendChild(pv);
     right.appendChild(preview);
     const content = el("div", "appearance-content");
     right.appendChild(content);
@@ -8747,7 +9529,16 @@ const tabs = $("deck-faction-tabs");
 
   function updateHomeAccount() {
     const account = ensureAccount();
-    const metaEl = $("home-account-meta");
+    // 传说收集进度：初始 10 张、每级 +2、满级全解锁
+  function legendaryProgressText() {
+    try {
+      const owned = ownedLegendarySet().size;
+      const total = allLegendaryIds().length;
+      return "传说 " + owned + " / " + total;
+    } catch (e) { return ""; }
+  }
+
+  const metaEl = $("home-account-meta");
     const nameEl = $("home-account-name");
     const levelEl = $("home-account-level");
     const statusEl = $("home-account-status");
@@ -8783,7 +9574,7 @@ const tabs = $("deck-faction-tabs");
     const pr = account.progress || { level: 1, xp: 0 };
     const need = levelNeed(pr.level);
     const levelText = pr.level >= LEVEL_MAX ? "Lv.30 MAX" : "Lv." + pr.level + " · XP " + pr.xp + "/" + need;
-    metaEl.textContent = levelText + " · " + (time ? "自动备份 " + time : "自动备份已就绪") + " · 牌组 " + deckCount + " · 街机印记 " + (content.marks || 0);
+    metaEl.textContent = levelText + " · " + (time ? "自动备份 " + time : "自动备份已就绪") + " · 牌组 " + deckCount + " · 街机印记 " + (content.marks || 0) + " · " + legendaryProgressText();
     const dock = document.querySelector(".home-account-dock");
     if (dock) dock.classList.toggle("unset", !account.name || account.name === "档案员");
   }
@@ -8963,7 +9754,7 @@ const tabs = $("deck-faction-tabs");
     if (customArt) {
       art.style.setProperty("--gk-art", cssAbsUrls("url('" + customArt + "')"));
       art.classList.add("has-custom-art");
-    } else if (def.art) art.style.setProperty("--gk-art", cssAbsUrls("url('" + portraitImage(def.art) + "')"));
+    } else if (def.art) art.style.setProperty("--gk-art", cssAbsUrls("url('" + thumbUrl(portraitImage(def.art)) + "')"));
     else {
       art.classList.add("placeholder");
       art.style.backgroundImage = genericArtStyle(def);
@@ -8999,7 +9790,7 @@ const tabs = $("deck-faction-tabs");
       card.appendChild(el("div", "gok-lib-stat gok-lib-atk", String(atk)));
       card.appendChild(el("div", "gok-lib-stat gok-lib-hp", String(hp)));
     }
-    addCardFrame(card);
+    addCardFrame(card, def.rarity);
     return card;
   }
 
@@ -9248,6 +10039,43 @@ const tabs = $("deck-faction-tabs");
     });
   }
 
+  /* ===== 客户端错误收集：只留最近 20 条，跟着反馈一起发 ===== */
+  const GOK_ERROR_LOG = { list: [], max: 20 };
+  function gokRecordError(kind, message, extra) {
+    try {
+      const item = {
+        at: new Date().toISOString().replace("T", " ").slice(0, 19),
+        kind: kind,
+        message: String(message || "").slice(0, 300),
+        where: String(extra || "").slice(0, 200),
+        screen: (document.body && document.body.dataset && document.body.dataset.screen) || "-"
+      };
+      GOK_ERROR_LOG.list.push(item);
+      if (GOK_ERROR_LOG.list.length > GOK_ERROR_LOG.max) GOK_ERROR_LOG.list.shift();
+      try { localStorage.setItem("gok_error_log_v1", JSON.stringify(GOK_ERROR_LOG.list)); } catch (e) {}
+    } catch (e) {}
+  }
+  function gokLoadStoredErrors() {
+    try {
+      const raw = localStorage.getItem("gok_error_log_v1");
+      if (raw) GOK_ERROR_LOG.list = JSON.parse(raw) || [];
+    } catch (e) {}
+  }
+  function gokErrorText() {
+    if (!GOK_ERROR_LOG.list.length) return "";
+    const head = "构建 " + (((document.querySelector(".settings-about") || {}).textContent || "").match(/当前构建：(\S+)/) || [])[1] + " · " + navigator.userAgent.slice(0, 80);
+    return head + "\n" + GOK_ERROR_LOG.list.map((e) => "[" + e.at + "] " + e.screen + " · " + e.kind + ": " + e.message + (e.where ? " @ " + e.where : "")).join("\n");
+  }
+  window.addEventListener("error", (ev) => {
+    if (!ev) return;
+    gokRecordError("error", ev.message, (ev.filename || "").split("/").pop() + ":" + (ev.lineno || 0));
+  });
+  window.addEventListener("unhandledrejection", (ev) => {
+    const r = ev && ev.reason;
+    gokRecordError("promise", (r && r.message) || r || "unhandled rejection", "");
+  });
+  gokLoadStoredErrors();
+
   const FEEDBACK_QQ_GROUP = "1132308724";
   const FEEDBACK_QQ_NAME = "戈克世界交流群";
 
@@ -9310,6 +10138,89 @@ const tabs = $("deck-faction-tabs");
       env.appendChild(el("code", "feedback-env", "构建 " + buildId + " · " + (isApp ? "安装版" : "网页版")));
       content.appendChild(env);
 
+      // ===== 当场写反馈：写完直接复制发群，草稿留在本机 =====
+      const DRAFT_KEY = "gok_feedback_draft_v1";
+      const writeBox = el("div", "feedback-block feedback-write");
+      writeBox.appendChild(el("h4", null, "在这里写反馈"));
+      const ta = document.createElement("textarea");
+      ta.placeholder = "比如：中枢阵位放好阵型之后，新上来的随从没吃到加成\n写清楚：哪个界面 → 点了什么 → 期望什么 → 实际什么";
+      ta.maxLength = 1200;
+      try { ta.value = localStorage.getItem(DRAFT_KEY) || ""; } catch (e) {}
+      writeBox.appendChild(ta);
+
+      const row = el("div", "feedback-write-row");
+      const savedTip = el("span", "feedback-saved", "");
+      const hintTip = el("span", "feedback-write-hint", "草稿自动留在这台机器上");
+      const copyWrite = el("button", "btn btn-small btn-primary", "复制这段反馈");
+      const clearWrite = el("button", "btn btn-small btn-ghost", "清空");
+
+      const compose = () => {
+        const body = ta.value.trim();
+        return ["【反馈】", body || "（没有填写内容）", "", "构建 " + buildId + " · " + (isApp ? "安装版" : "网页版"), GOK_ERROR_LOG.list.length ? "错误记录 " + GOK_ERROR_LOG.list.length + " 条（下方可复制）" : ""]
+          .filter(Boolean).join("\n");
+      };
+      const copyText = (text, okMsg) => {
+        const fallbackCopy = () => {
+          try {
+            const tmp = document.createElement("textarea");
+            tmp.value = text; tmp.style.position = "fixed"; tmp.style.opacity = "0";
+            document.body.appendChild(tmp); tmp.select();
+            const ok = document.execCommand && document.execCommand("copy");
+            document.body.removeChild(tmp);
+            toast(ok ? okMsg : "复制失败，请手动选中文本");
+          } catch (e) { toast("复制失败，请手动选中文本"); }
+        };
+        if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(() => toast(okMsg)).catch(fallbackCopy);
+        else fallbackCopy();
+      };
+      copyWrite.onclick = () => {
+        if (!ta.value.trim()) { toast("先写点什么再复制"); ta.focus(); return; }
+        copyText(compose(), "反馈已复制，粘贴到群里即可");
+      };
+      clearWrite.onclick = () => {
+        ta.value = "";
+        try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+        savedTip.textContent = "";
+        toast("已清空草稿");
+      };
+      ta.addEventListener("input", () => {
+        try { localStorage.setItem(DRAFT_KEY, ta.value); savedTip.textContent = ta.value.trim() ? "草稿已保存" : ""; } catch (e) {}
+      });
+      row.appendChild(copyWrite);
+      row.appendChild(clearWrite);
+      row.appendChild(hintTip);
+      row.appendChild(savedTip);
+      writeBox.appendChild(row);
+      content.appendChild(writeBox);
+
+      // 有错误记录才显示，避免正常玩家看到多余信息
+      if (GOK_ERROR_LOG.list.length) {
+        const errBox = el("div", "feedback-block feedback-errors");
+        errBox.appendChild(el("h4", null, "最近捕获到 " + GOK_ERROR_LOG.list.length + " 条错误"));
+        errBox.appendChild(el("p", "feedback-err-hint", "点下面的按钮复制，发到群里最省事；不含任何账号信息。"));
+        const last = GOK_ERROR_LOG.list[GOK_ERROR_LOG.list.length - 1];
+        const preview = el("code", "feedback-env", ("[" + last.at + "] " + last.screen + " · " + last.message).slice(0, 160));
+        errBox.appendChild(preview);
+        const copyErr = el("button", "btn btn-small btn-ghost", "复制错误记录");
+        copyErr.onclick = () => {
+          const text = gokErrorText();
+          const fallback = () => {
+            try {
+              const ta = document.createElement("textarea");
+              ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+              document.body.appendChild(ta); ta.select();
+              const ok = document.execCommand && document.execCommand("copy");
+              document.body.removeChild(ta);
+              toast(ok ? "错误记录已复制，发到群里即可" : "复制失败，请手动截图");
+            } catch (e) { toast("复制失败，请手动截图"); }
+          };
+          if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(() => toast("错误记录已复制，发到群里即可")).catch(fallback);
+          else fallback();
+        };
+        errBox.appendChild(copyErr);
+        content.appendChild(errBox);
+      }
+
       const actions = el("div", "modal-actions");
       const close = el("button", "btn btn-primary", "知道了");
       close.onclick = () => closeModal(true);
@@ -9328,8 +10239,12 @@ const tabs = $("deck-faction-tabs");
         ["胜利条件", "先把对方领袖生命降到 0。随从可以攻击敌方随从或领袖；有守备的随从必须先处理。"],
         ["行动力与先后手", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张，并额外获得一张「掘脉许可」（1 费战术：本回合 +2 点行动力，可以留着）。"],
         ["阵位", "左翼 / 中枢 / 右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。阵位会影响部分卡牌的范围与固定效果。"],
+        ["阵型", "每个阵位同时只生效一张阵型卡。在同一个阵位再布置第二张时，原来那张会被顶掉并进入弃牌堆。阵型是持续光环：布置之后放进该阵位的随从，以及布置时已经在场的随从，都会吃到加成。"],
         ["流脉", "双方共享 0→12，每次完整轮次（双方各行动一次）自然 +1。4 震荡、7 裂隙、10 魔物潮触发世界事件，12 回流清空。"],
-        ["牌组结构", "30 张牌，随从 / 战术 / 阵型 / 装备自由混编（阵型最多 3 张）。领袖在开局单独选择，不占牌组，也不进入牌库。装备抽到打出即可生效，想同时带几件都行。"]
+        ["牌组结构", "30 张牌，随从 / 战术 / 阵型 / 装备 / 债务自由混编，各类型都不限张数，只受品级限制：传说最多 2 张、史诗最多 15 张，普通与稀有随便带。领袖在开局单独选择，不占牌组，也不进入牌库。"],
+        ["装备", "抽到打出即可生效。场上同时只生效 2 件，带第三张时最早的那件会被挤掉，挤掉的装备进入弃牌堆。"],
+        ["弃牌堆（坟墓）", "敌我双方共享同一个弃牌堆。阵亡的随从、用掉的战术牌、被顶掉的阵型与被挤掉的装备都会进去，双方都能查看。"],
+        ["行动力与先后手", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张，并额外获得一张「掘脉许可」（1 费战术：本回合 +2 点行动力，可以留着）。"]
       ];
       for (const [title, desc] of sections) {
         const sec = el("div", "guide-section");
@@ -9366,6 +10281,63 @@ const tabs = $("deck-faction-tabs");
     });
   }
 
+  // 弃牌堆（坟墓）：敌我双方共享，按归属分两列
+  function openGraveyard() {
+    const game = app.game;
+    if (!game) { toast("现在没有进行中的对局。"); return; }
+    const shared = Array.isArray(game.discard) ? game.discard : [];
+    const meIdx = app.viewer != null ? app.viewer : 0;
+    const mine = shared.filter((x) => x.owner === meIdx);
+    const theirs = shared.filter((x) => x.owner != null && x.owner !== meIdx);
+    const legacy = shared.filter((x) => x.owner == null);
+
+    openModal((content) => {
+      content.appendChild(el("div", "eyebrow", "BATTLE / GRAVEYARD"));
+      content.appendChild(el("h3", null, "弃牌堆 · 双方共享"));
+      content.appendChild(el("p", null, "阵亡随从、用掉的战术牌、被顶掉的阵型、被挤掉的装备都会进这里，双方都能查看。"));
+
+      const wrap = el("div", "graveyard-columns");
+      const column = (title, list, emptyText) => {
+        const col = el("div", "graveyard-col");
+        col.appendChild(el("strong", "graveyard-col-title", title + "（" + list.length + "）"));
+        if (!list.length) {
+          col.appendChild(el("span", "graveyard-empty", emptyText));
+          return col;
+        }
+        const grid = el("div", "graveyard-grid");
+        for (const item of list.slice().reverse()) {
+          const def = D.CARDS[item.cardId];
+          const chip = el("div", "graveyard-chip");
+          const art = el("img", "graveyard-chip-art");
+          art.alt = "";
+          art.src = (cardArtUrl(def) || factionIcon(def && def.faction)) || "";
+          chip.appendChild(art);
+          chip.appendChild(el("span", "graveyard-chip-name", def ? def.name : item.cardId));
+          const kindText = { minion: "随从", formation: "阵型", equipment: "装备", spell: "战术" }[item.kind] || "";
+          if (kindText) chip.appendChild(el("em", "graveyard-chip-kind", kindText));
+          chip.title = (def ? def.name : item.cardId) + (def && def.text ? "\n" + def.text : "");
+          grid.appendChild(chip);
+        }
+        col.appendChild(grid);
+        return col;
+      };
+
+      wrap.appendChild(column("我方", mine, "还没有东西进坟"));
+      wrap.appendChild(column("对方", theirs, "还没有东西进坟"));
+      content.appendChild(wrap);
+
+      if (legacy.length) {
+        content.appendChild(el("p", "graveyard-note", "另有 " + legacy.length + " 条早期记录没有归属信息（旧存档对局）。"));
+      }
+
+      const actions = el("div", "modal-actions");
+      const close = el("button", "btn btn-primary", "关闭");
+      close.onclick = () => closeModal(true);
+      actions.appendChild(close);
+      content.appendChild(actions);
+    });
+  }
+
   function openRulesGuide() {
     openModal((content) => {
       content.appendChild(el("div", "eyebrow", "ARCHIVE / RULES"));
@@ -9375,9 +10347,12 @@ const tabs = $("deck-faction-tabs");
         ["目标", "把对方领袖生命降到 0。随从可攻击敌方随从或领袖；有守备的随从必须先处理。"],
         ["行动力", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张并获得一张「掘脉许可」（1 费战术，可留到需要时用）。"],
         ["阵位", "左翼 / 中枢 / 右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。同阵位可能触发协同，双方同列互为对位。"],
+        ["阵型", "每个阵位同时只生效一张阵型卡。同阵位再布置一张时，原来那张被顶掉并进入弃牌堆。阵型是持续光环，布置时在场的随从和之后放进来的随从都吃加成。"],
         ["流脉", "共享流脉 0→12。到达 4 震荡、7 裂隙、10 魔物潮时触发世界事件；12 回流清空。"],
         ["关键词", "登场、余响、守备、先遣、冻结、沉默、引脉、预兆等关键词会在卡牌和标签上标明。"],
-        ["装备", "装备是一张牌，抽到并打出后持续生效；同类装备最多生效 2 件。"]
+        ["装备", "装备是一张牌，抽到并打出后持续生效。场上同时只生效 2 件，打第三张时最早的会被挤掉并进入弃牌堆。"],
+        ["牌组构成", "30 张，随从 / 战术 / 阵型 / 装备 / 债务各类型都不限张数。只卡品级：传说最多 2 张、史诗最多 15 张，普通与稀有随便带。"],
+        ["弃牌堆", "敌我共享同一个弃牌堆（坟墓）：阵亡随从、用掉的战术牌、被顶掉的阵型、被挤掉的装备都会进去，双方都能查看。"]
       ];
       for (const [title, desc] of sections) {
         const sec = el("div", "guide-section");
@@ -9445,6 +10420,32 @@ const tabs = $("deck-faction-tabs");
     const grid = document.querySelector(".rank-detail-grid");
     const oldLadder = $("rank-ladder-panel"); if (oldLadder) oldLadder.remove();
     const oldReward = $("rank-reward-panel"); if (oldReward) oldReward.remove();
+    const oldServer = $("rank-server-panel"); if (oldServer) oldServer.remove();
+    const serverPanel = el("div", "panel rank-panel"); serverPanel.id = "rank-server-panel";
+    const seasonLabel = (window.__GOK_LADDER_SEASON__ || "s0");
+    serverPanel.appendChild(el("div", "panel-label", "第 " + (seasonLabel.replace(/^s/i, "") || "0") + " 赛季排行 / SERVER LADDER"));
+    const serverList = el("div", "rank-ladder");
+    serverList.appendChild(el("p", "rank-server-hint", "正在读取赛季榜…"));
+    serverPanel.appendChild(serverList);
+    grid.appendChild(serverPanel);
+    fetch("/api/ladder", { cache: "no-store" }).then((r) => r.json()).then((d) => {
+      if (d && d.season) window.__GOK_LADDER_SEASON__ = d.season;
+      clear(serverList);
+      const rows = (d && d.top) || [];
+      if (!rows.length) { serverList.appendChild(el("p", "rank-server-hint", "这个赛季还没有人上榜。打一局排位就会出现在这里。")); return; }
+      const me = app.auth && app.auth.user ? app.auth.user.id : null;
+      rows.forEach((row, idx) => {
+        const line = el("div", "rank-ladder-row" + (me && row.userId === me ? " me" : ""));
+        line.appendChild(el("span", "rank-ladder-no", String(idx + 1)));
+        line.appendChild(el("strong", null, row.name || "无名档案"));
+        line.appendChild(el("span", "rank-ladder-pts", String(row.rank) + " 分"));
+        line.appendChild(el("small", null, (row.wins || 0) + " 胜 " + (row.losses || 0) + " 负"));
+        serverList.appendChild(line);
+      });
+    }).catch(() => {
+      clear(serverList);
+      serverList.appendChild(el("p", "rank-server-hint", "排行榜暂时拿不到，检查网络后再看。"));
+    });
     const ladder = el("div", "panel rank-panel"); ladder.id = "rank-ladder-panel";
     ladder.appendChild(el("div", "panel-label", "段位阶梯 / LADDER"));
     const ladderBox = el("div", "rank-ladder");
@@ -10103,6 +11104,16 @@ const tabs = $("deck-faction-tabs");
   }
 
   /* ===== 局域网 ===== */
+  // 桌面端连不上线上服务器时，Electron 会带 ?offline=1 打开页面：
+  // 这时只能单人，联机入口要明确说明，别让人点进去干等
+  const GOK_OFFLINE = (() => {
+    try { return /(?:^|[?&])offline=1(?:&|$)/.test(location.search); } catch (e) { return false; }
+  })();
+  function isOfflineMode() { return GOK_OFFLINE; }
+  function openOfflineTip() {
+    toast("当前是离线模式（连不上线上服务器），多人对战不可用。检查网络后重开客户端即可联机。");
+  }
+
   function lanServerAvailable() {
     return location.protocol === "http:" || location.protocol === "https:";
   }
@@ -10868,7 +11879,8 @@ const tabs = $("deck-faction-tabs");
     if (!isPhoneLayout()) {
       for (const id of Object.keys(D.CARDS)) {
         const d = D.CARDS[id];
-        if (d.art) urls.add(portraitImage(d.art));
+        // 预载缩略图就够了：原图一张近百 KB，53 张等于首屏多背 6MB
+      if (d.art) urls.add(thumbUrl(portraitImage(d.art)));
       }
       for (const id of Object.keys(D.HEROES)) urls.add(heroImage(id));
     }
@@ -11207,6 +12219,15 @@ const tabs = $("deck-faction-tabs");
       box.querySelector("strong").textContent = "已找到对手，正在进入对局…";
       status.textContent = "房间 " + String(data.room || "").toUpperCase() + " · 正在跳转";
       AudioBox.play("ui_open");
+      // 服务端权威房间：直接进座，规则由服务器算
+      if (data.auth && data.auth.code && global.GokAuthority) {
+        status.textContent = "房间 " + String(data.auth.code).toUpperCase() + " · 服务器裁判模式";
+        setTimeout(() => {
+          closeModal(true);
+          enterAuthorityRoom({ code: data.auth.code, seat: data.auth.seat, token: data.auth.token });
+        }, 500);
+        return;
+      }
       const params = new URLSearchParams();
       params.set("room", data.room);
       if (data.role === "host") params.set("host", "1");
@@ -11253,8 +12274,17 @@ const tabs = $("deck-faction-tabs");
         else pollTimer = setTimeout(poll, 800);
       }).catch(() => { if (!finished) pollTimer = setTimeout(poll, 900); });
     }
-    fetch("/api/match/join", { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ranked: !!ranked, rank: rankPoints, name: accountDisplayName() }) }).then(async (res) => {
+    fetch("/api/match/join", { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ranked: !!ranked, rank: rankPoints, name: accountDisplayName(), build: global.__GOK_BUILD__ || "" }) }).then(async (res) => {
       const data = await res.json().catch(() => ({}));
+      if (res.status === 409 && data.code === "stale_client") {
+        // 客户端比服务器旧：直接劝更新，别让它静默匹配失败
+        finished = true;
+        if (pollTimer) clearTimeout(pollTimer);
+        const tl = box;
+        if (tl && tl.remove) tl.remove();
+        showVersionBlocked(data.clientBuild, data.serverBuild);
+        return;
+      }
       if (!res.ok || !data.ok) throw new Error(data.error || "匹配服务不可用");
       if (data.matched) { found(data); return; }
       ticket = data.ticket || "";
@@ -11275,6 +12305,7 @@ const tabs = $("deck-faction-tabs");
   }
 
   function openMatchmaking() {
+    if (isOfflineMode()) { openOfflineTip(); return; }
     let selectedFaction = app.faction && D.FACTIONS[app.faction] ? app.faction : "pus";
     let selectedDeck = lanHasCustom(selectedFaction) ? "custom" : "preset";
     openModal((content) => {
@@ -11340,6 +12371,15 @@ const tabs = $("deck-faction-tabs");
       content.appendChild(actions);
       deckSelect.onchange = () => { selectedDeck = deckSelect.value === "custom" && lanHasCustom(selectedFaction) ? "custom" : "preset"; renderSetup(); };
       function renderSetup() {
+    // 未解锁的阵营显示等级门槛
+    try {
+      document.querySelectorAll("#setup-faction .faction-card").forEach((b) => {
+        const fac = b.dataset.faction;
+        const locked = !isLeaderUnlocked(fac);
+        b.classList.toggle("leader-locked", locked);
+        b.dataset.lock = locked ? "Lv." + leaderUnlockLevel(fac) + " 解锁" : "";
+      });
+    } catch (e) {}
         const hasCustom = lanHasCustom(selectedFaction);
         const hero = D.HEROES[D.FACTIONS[selectedFaction].hero];
         document.querySelectorAll(".match-faction-card").forEach((b) => b.classList.toggle("active", b.dataset.faction === selectedFaction));
@@ -11746,7 +12786,87 @@ const tabs = $("deck-faction-tabs");
     }, { passive: true });
   }
 
+  // 调试台用的接口：只改本地存档，不做校验（cheat.html 专用）
+  const GOK_DEBUG = {
+    getAccount() { return ensureAccount(); },
+    setLevel(n) {
+      const acc = ensureAccount();
+      const lv = Math.max(1, Math.min(LEVEL_MAX, Number(n) || 1));
+      acc.progress = acc.progress || {};
+      acc.progress.level = lv;
+      acc.progress.xp = 0;
+      // 测试用：先清空解锁状态再按等级补发，结果可重复、不残留
+      acc.leaderGifted = [];
+      acc.legendaryOwned = [];
+      if (lv >= LEVEL_MAX) {
+        acc.legendaryOwned = allLegendaryIds();
+        for (const f of D.FACTION_IDS) acc.leaderGifted.push(f);
+      } else {
+        claimLeaderUnlocks();
+      }
+      persistAccount(); updateHomeAccount();
+      return { level: lv, legendary: (acc.legendaryOwned || []).length, leaders: unlockedLeaders() };
+    },
+    unlockAllLeaders() {
+      const acc = ensureAccount();
+      acc.leaderGifted = acc.leaderGifted || [];
+      for (const f of D.FACTION_IDS) if (acc.leaderGifted.indexOf(f) < 0) acc.leaderGifted.push(f);
+      claimLeaderUnlocks();
+      persistAccount(); updateHomeAccount();
+      return unlockedLeaders();
+    },
+    grantAllLegendaries() {
+      const acc = ensureAccount();
+      acc.legendaryOwned = allLegendaryIds();
+      persistAccount(); updateHomeAccount();
+      return acc.legendaryOwned.length;
+    },
+    resetSave() {
+      try {
+        const raw = global.__gokStorageRaw;
+        const del = raw ? (k) => raw.remove.call(localStorage, k) : (k) => localStorage.removeItem(k);
+        const kill = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && GOK_PROGRESS_RE.test(key.replace(/^gok_(preview|stable)::/, ""))) kill.push(key);
+        }
+        for (const key of kill) del(key);
+      } catch (e) {}
+      location.reload();
+    },
+    info() {
+      const acc = ensureAccount();
+      return {
+        level: (acc.progress && acc.progress.level) || 1,
+        legendary: (acc.legendaryOwned || []).length,
+        legendaryTotal: allLegendaryIds().length,
+        leaders: unlockedLeaders(),
+        gifted: acc.leaderGifted || []
+      };
+    }
+  };
+
   function init() {
+    // 存档刚被新版本清空时，告诉玩家这不是数据丢了
+    try {
+      if (sessionStorage.getItem("gok_save_reset_notice") === "1") {
+        sessionStorage.removeItem("gok_save_reset_notice");
+        setTimeout(() => toast("新版本档案已重置：所有人从 Lv.1 开始。"), 1600);
+      }
+    } catch (e) {}
+    // 开局两个领袖的传说礼包：新档案第一次进游戏就发，不等升级
+    setTimeout(() => { try { claimLeaderUnlocks(); updateHomeAccount(); } catch (e) {} }, 300);
+    // 上一局如果是权威联机且房间还活着，直接回到座位
+    setTimeout(() => { try { resumeAuthoritySession(); } catch (e) {} }, 1200);
+    if (GOK_OFFLINE) {
+      document.body.classList.add("gok-offline-mode");
+      const chip = document.createElement("div");
+      chip.id = "gok-offline-chip";
+      chip.className = "gok-offline-chip";
+      chip.textContent = "离线模式 · 多人对战不可用";
+      chip.title = "连不上线上服务器，当前只能单人游玩";
+      document.body.appendChild(chip);
+    }
     AudioBox.init();
     applyVideoPrefs();
     preloadArt();
@@ -12025,6 +13145,7 @@ const tabs = $("deck-faction-tabs");
     if ($("btn-mobile-log")) $("btn-mobile-log").onclick = () => toggleGameLog();
     if ($("turn-badge")) { $("turn-badge").onclick = () => toggleGameLog(); $("turn-badge").title = "点击展开推演日志"; }
     if ($("btn-log-close")) $("btn-log-close").onclick = () => toggleGameLog(false);
+    if ($("btn-graveyard")) $("btn-graveyard").onclick = () => openGraveyard();
     if ($("log-backdrop")) $("log-backdrop").onclick = () => toggleGameLog(false);
     if ($("btn-mobile-welcome-close")) $("btn-mobile-welcome-close").onclick = hideMobileWelcome;
     const veinRow = $("vein-row");
@@ -12097,7 +13218,7 @@ const tabs = $("deck-faction-tabs");
       const deckForStart = getPlayDeck(app.faction);
       if (!confirmDeckWarnings(app.faction, deckForStart, "仍然开始推演？")) return;
       app.lastUsedDeckId = app.customDecks[app.faction] ? (activeDeckFor(app.faction) ? activeDeckFor(app.faction).id : null) : null;
-    const begin = () => runBootLoading("正在铺开牌桌", "载入牌组、阵位与流脉…", BOOT_ASSETS, () => startGame({ mode: "ai", faction: app.faction, aiDifficulty: app.aiDifficulty, first: app.firstChoice === "random" ? undefined : Number(app.firstChoice) }));
+    const begin = () => ensureHealthNotice(() => runBootLoading("正在铺开牌桌", "载入牌组、阵位与流脉…", BOOT_ASSETS, () => startGame({ mode: "ai", faction: app.faction, aiDifficulty: app.aiDifficulty, first: app.firstChoice === "random" ? undefined : Number(app.firstChoice) })));
       const cg = CLASSIC_CG[app.faction];
       if (global.GokCinema && cg) {
         global.GokCinema.playOnce("classic_intro_" + app.faction, cg.clip, {
@@ -12113,7 +13234,11 @@ const tabs = $("deck-faction-tabs");
       b.onclick = () => { app.setupMode = b.dataset.setupMode; AudioBox.play("select"); setupState(); };
     });
     document.querySelectorAll("#setup-faction .faction-card").forEach((b) => {
-      b.onclick = () => { app.faction = b.dataset.faction; AudioBox.play("click"); setupState(); };
+      b.onclick = () => {
+      const fac = b.dataset.faction;
+      if (!isLeaderUnlocked(fac)) { toast("这个领袖还没解锁：Lv." + leaderUnlockLevel(fac) + " 开放。"); AudioBox.play("cancel"); return; }
+      app.faction = fac; AudioBox.play("click"); setupState();
+    };
     });
     $("btn-deck").onclick = () => { AudioBox.play("ui_open"); openDeckBuilder(app.faction); };
     if ($("btn-deck-random")) $("btn-deck-random").onclick = () => { const f = app.faction; const keys = Object.keys(D.DECK_STRATEGIES); const strategy = keys[Math.floor(Math.random() * keys.length)] || "midrange"; const built = D.autoBuildDeck(f, strategy, Array.from(ownedLegendarySet())); if (!D.validateDeck(f, built).ok) { toast("随机构筑失败，请重试。"); return; } app.customDecks[f] = built; persistCustomDecks(); updateSetupDeck(); toast("已按「" + D.DECK_STRATEGIES[strategy].name + "」从全卡池生成 30 张牌组。"); };
@@ -12209,7 +13334,8 @@ const tabs = $("deck-faction-tabs");
     renderTutorialKeywords();
     renderTutorialRoute();
     
-    runBootLoading("正在展开流脉档案", "校准地脉、阵位与关键词…", BOOT_ASSETS, null);
+  // 打开游戏先播一次健康忠告，播完再进入加载
+  ensureHealthNotice(() => runBootLoading("正在展开流脉档案", "校准地脉、阵位与关键词…", BOOT_ASSETS, null));
     if (!localStorage.getItem("gok_welcome_v2")) localStorage.setItem("gok_welcome_v2", "1");
     AudioBox.updateButton();
     autoReconnectOnLoad();
@@ -12257,7 +13383,7 @@ const tabs = $("deck-faction-tabs");
   setTimeout(reinforceHandCardText, 80);
 
 
-  global.GokUI = { init: init, app: app, startGame: startGame, showScreen: showScreen, runSimulation: runSimulation, renderGame: renderGame, audio: AudioBox };
+  global.GokUI = { init: init, app: app, startGame: startGame, showScreen: showScreen, runSimulation: runSimulation, renderGame: renderGame, audio: AudioBox, showVersionBlocked: showVersionBlocked, enterAuthorityRoom: enterAuthorityRoom, authSend: authSend, endTurn: endTurn, addExperience: addExperience, debug: GOK_DEBUG, build: global.__GOK_BUILD__ || "" };
 
 })(window);
 
@@ -12270,125 +13396,4 @@ const tabs = $("deck-faction-tabs");
 
 
 /* ===== 桌面版自更新：只在 Electron 里生效（通过 preload 暴露的 window.gokUpdater） ===== */
-(function () {
-  var api = window.gokUpdater;
-  if (!api || typeof api.check !== "function") return;
-
-  var elCurrent = document.getElementById("gok-update-current");
-  var elStatus = document.getElementById("gok-update-status");
-  var elBadge = document.getElementById("gok-update-badge");
-  var elNotes = document.getElementById("gok-update-notes");
-  var elProgress = document.getElementById("gok-update-progress");
-  var elBar = document.getElementById("gok-update-bar");
-  var elRow = document.getElementById("gok-update-action-row");
-  var elTitle = document.getElementById("gok-update-action-title");
-  var elSub = document.getElementById("gok-update-action-sub");
-  var btnCheck = document.getElementById("gok-update-check");
-  var btnGo = document.getElementById("gok-update-go");
-  var info = null;
-  var last = null;
-  var downloaded = false;
-
-  function setStatus(text) { if (elStatus) elStatus.textContent = text; }
-
-  function fmtSize(n) {
-    if (!n) return "体积未知";
-    return n > 1024 * 1024 * 100 ? Math.round(n / 1048576) + " MB" : (n / 1048576).toFixed(1) + " MB";
-  }
-
-  function render(state) {
-    if (!state) return;
-    last = state;
-    if (state.reason === "no-feed") {
-      setStatus("尚无更新清单（发布后自动检查）");
-      if (elBadge) elBadge.hidden = true;
-      if (elRow) elRow.hidden = true;
-      return;
-    }
-    if (state.reason === "network") {
-      setStatus("连不上更新服务器，稍后再试");
-      if (elBadge) elBadge.hidden = true;
-      return;
-    }
-    if (state.reason === "bad-manifest") {
-      setStatus("更新清单异常，已跳过");
-      return;
-    }
-    if (!state.ok) { setStatus("检查失败"); return; }
-    if (!state.updateAvailable) {
-      setStatus("已是最新版本（" + state.current + "）");
-      if (elBadge) elBadge.hidden = true;
-      if (elRow) elRow.hidden = true;
-      if (elNotes) elNotes.hidden = true;
-      return;
-    }
-    setStatus("发现新版本 " + state.latest + " · " + fmtSize(state.size) + (state.mandatory ? " · 必须更新" : ""));
-    if (elBadge) { elBadge.hidden = false; elBadge.textContent = "v" + state.latest; elBadge.classList.add("ready"); }
-    if (elNotes) {
-      elNotes.innerHTML = "";
-      (state.notes || []).slice(0, 6).forEach(function (note) {
-        var d = document.createElement("div");
-        d.className = "gk-note";
-        d.textContent = String(note);
-        elNotes.appendChild(d);
-      });
-      elNotes.hidden = !(state.notes && state.notes.length);
-    }
-    if (elRow) elRow.hidden = false;
-    if (elTitle) elTitle.textContent = "下载 " + state.latest;
-    if (elSub) elSub.textContent = downloaded ? "已下载，点右侧完成安装" : "下载完成后可立即安装，存档不受影响";
-    if (btnGo) btnGo.textContent = downloaded ? "重启安装" : "下载";
-    var nav = document.getElementById("btn-settings");
-    if (nav) nav.classList.add("has-update");
-  }
-
-  function onProgress(p) {
-    if (!elProgress || !elBar) return;
-    elProgress.hidden = false;
-    elBar.style.width = (p && p.percent ? p.percent : 0) + "%";
-    setStatus("正在下载 " + (p && p.percent ? p.percent : 0) + "%（" + fmtSize(p ? p.received : 0) + " / " + fmtSize(p ? p.total : 0) + "）");
-  }
-
-  if (btnCheck) {
-    btnCheck.addEventListener("click", function () {
-      setStatus("正在检查…");
-      downloaded = false;
-      if (elProgress) elProgress.hidden = true;
-      api.check().then(render).catch(function () { setStatus("检查失败"); });
-    });
-  }
-
-  if (btnGo) {
-    btnGo.addEventListener("click", function () {
-      if (downloaded) { api.install(); return; }
-      btnGo.disabled = true;
-      btnGo.textContent = "下载中";
-      api.download().then(function (r) {
-        btnGo.disabled = false;
-        if (r && r.ok) {
-          downloaded = true;
-          if (elProgress) elProgress.hidden = true;
-          setStatus("已下载完成，点「重启安装」后游戏会关闭并自动安装");
-          if (btnGo) btnGo.textContent = "重启安装";
-        } else {
-          btnGo.textContent = "重试下载";
-          setStatus("下载失败：" + ((r && r.message) || "未知原因"));
-        }
-      }).catch(function (e) {
-        btnGo.disabled = false;
-        btnGo.textContent = "重试下载";
-        setStatus("下载失败：" + (e && e.message ? e.message : "未知原因"));
-      });
-    });
-  }
-
-
-  if (api.onProgress) api.onProgress(onProgress);
-  if (api.onState) api.onState(render);
-
-  api.info().then(function (i) {
-    info = i;
-    if (elCurrent) elCurrent.textContent = "桌面版 " + i.version + " · 通道 " + i.channel;
-  }).catch(function () {});
-})();
 

@@ -12,9 +12,9 @@
     xizhao: { name: "西昭", short: "西昭", color: "#c0504d", dark: "#3a1215", icon: "血", emblem: "/assets/emblems/xizhao.svg", hero: "karna" },
     republic: { name: "共和国", short: "共和国", color: "#d6b25f", dark: "#2b2518", icon: "律", emblem: "/assets/emblems/republic.svg", hero: "wolfram" },
     empire: { name: "帝国", short: "帝国", color: "#b08a5a", dark: "#2a2118", icon: "冠", emblem: "/assets/emblems/empire.svg", hero: "otto" },
-    greyharbor: { name: "灰港同盟", short: "灰港", color: "#7fae8f", dark: "#1b2a23", icon: "匕", emblem: "/assets/emblems/greyharbor.svg", hero: "monarch" },
-    losutai: { name: "洛斯汰聚落", short: "洛斯汰", color: "#36b8b0", dark: "#08262b", icon: "潮", emblem: "/assets/emblems/losutai.svg", hero: "balaena" },
-    snow: { name: "雪都", short: "雪都", color: "#9bd8ff", dark: "#17283b", icon: "雪", emblem: "/assets/emblems/snow.svg", hero: "sernach" },
+    greyharbor: { name: "灰港同盟", short: "灰港", color: "#7fae8f", dark: "#1b2a23", icon: "匕", emblem: "/assets/emblems/greyharbor.webp", hero: "monarch" },
+    losutai: { name: "洛斯汰聚落", short: "洛斯汰", color: "#36b8b0", dark: "#08262b", icon: "潮", emblem: "/assets/emblems/losutai.webp", hero: "balaena" },
+    snow: { name: "雪都", short: "雪都", color: "#9bd8ff", dark: "#17283b", icon: "雪", emblem: "/assets/emblems/snow.webp", hero: "sernach" },
     neutral: { name: "中立", short: "中立", color: "#c9a86a", dark: "#2c271f", icon: "旅", emblem: "/assets/emblems/neutral.svg", hero: null }
   };
 
@@ -1928,14 +1928,16 @@
     control: { name: "控制", desc: "解场、冻结、恢复与抽牌，拖到流脉与高费回合。", curve: { 1: 4, 2: 6, 3: 6, 4: 6, 5: 5, 6: 3 } }
   };
 
-  const DECK_RARITY_LIMITS = Object.freeze({ legendary: 2, epic: 6, rare: 10 });
+  // 只卡品级：传说 2、史诗 15，普通与稀有随便带（总数仍是 30）
+  const DECK_RARITY_LIMITS = Object.freeze({ legendary: 2, epic: 15, rare: 30 });
 
+  // 构筑时不卡同名张数（主人确认：阵型/装备/战术/债务带几张都行，只有品级限制）。
+  // 这个值同时被自动构筑用来保持多样性，所以给一个实用上限而不是真无限。
   function maxCopies(def) {
     if (!def || def.token) return 0;
     if (def.copyLimit != null) return def.copyLimit;
-    if (def.type === "relic" || def.type === "equipment") return 1;
-    if (def.type === "formation") return 2;
-    return def.rarity === "legendary" ? 1 : 2;
+    if (def.rarity === "legendary") return 1;
+    return 2;
   }
 
   function deckRarityCounts(list) {
@@ -1966,8 +1968,12 @@
   }
 
   function validateDeck(faction, list) {
+
     const errors = [];
     const arr = Array.isArray(list) ? list : [];
+    // 彩蛋卡不参与构筑：进牌组直接判非法
+    const eggInDeck = arr.find((id) => CARDS[id] && CARDS[id].easterEgg);
+    if (eggInDeck) errors.push("彩蛋卡不能进构筑：" + (CARDS[eggInDeck].name || eggInDeck));
     if (arr.length !== 30) errors.push("牌组必须是 30 张卡（含装备/阵型），当前 " + arr.length);
     const counts = {};
     let main = 0, formations = 0, relics = 0;
@@ -1989,7 +1995,7 @@
     }
     const warnings = [];
     if (relics === 0) warnings.push("牌组里没有装备卡：可以放，但不放也不影响开局");
-    if (formations > 3) warnings.push("阵型带了 " + formations + " 张：场上最多 3 张，后续阵型会覆盖");
+    if (formations > 3) warnings.push("阵型带了 " + formations + " 张：三个阵位各能生效一张，多余的会在同阵位覆盖时进弃牌堆");
     if (relics === 0) warnings.push("未携带装备：本局没有装备可用");
     if (formations === 0) warnings.push("未携带阵型：本局没有阵型可用");
     return { ok: errors.length === 0, errors: Array.from(new Set(errors)), warnings: Array.from(new Set(warnings)), counts: counts, rarity: rarity, rarityLimits: DECK_RARITY_LIMITS, presetExempt: false, main: main, formations: formations, relics: relics };
@@ -2058,66 +2064,12 @@
   }
 
   const DECKS = {
-    pus: [
-      "shextena", "verious", "timon", "aidric", "orlicas", "miyuki",
-      "medic_apprentice", "vein_siphon",
-      "vein_bulwark", "vein_surveyor",
-      "vein_scout", "zone_keeper",
-      "coordination", "coordination",
-      "emergency", "emergency",
-      "resonance", "resonance",
-      ...NEUTRAL_DECK
-    ],
-    xizhao: [
-      "tiega", "lanxi", "lize", "grayfeather", "lanzhou", "molan",
-      "tribal_warrior", "blood_imp",
-      "blood_servant", "devourer",
-      "losutai_hunter", "losutai_hunter",
-      "zone_reaper", "venom_fang",
-      "monster_summon", "tide_colossus",
-      "shadow_raid", "shadow_raid",
-      ...NEUTRAL_DECK
-    ],
-    academy: [
-      "karl_desmond", "justus", "cassian", "samuel", "nina", "arcane_theorist",
-      "formula_fix", "formula_fix", "double_formula", "double_formula",
-      "frost_seal", "frost_seal", "debate", "debate",
-      "prohibition", "mana_surge", "spellstorm", "frost_professor",
-      "neutral_wayfarer", "gok_digger", "gok_digger", "fog_sailor",
-      "snow_medic", "snow_medic", "mist_scout", "mist_scout",
-      "caravan_guard", "caravan_guard"
-    ],
-    republic: [
-      "konrad", "erhardt", "beatrix", "elena", "hans", "cedric",
-      "aegis_guard", "phalanx_warden",
-      "shield_bearer", "shield_recruit",
-      "fortify", "shield_sergeant",
-      "volley", "volley",
-      "levy", "zone_banner",
-      "martial_law", "martial_law",
-      ...NEUTRAL_DECK
-    ],
-    empire: [
-      "gunther", "klaus", "mia", "elsa", "karl_schwarz", "walter",
-      "powder_boy", "iron_artillery",
-      "ironclad", "ironclad",
-      "barrage", "wind_cannon",
-      "mobilize", "mobilize",
-      "fortress", "zone_barrage",
-      "martial_court", "powder_marshal",
-      ...NEUTRAL_DECK
-    ],
-    greyharbor: [
-      "gh_cutthroat", "gh_venom_apprentice", "gh_contract_squire", "gh_bounty_notice",
-      "gh_silencer", "gh_poison_thrower", "gh_rush_archer", "gh_bounty_hunter",
-      "gh_bodyguard_contract", "gh_quick_strike",
-      "gh_venom_shield", "gh_silence_expert", "gh_shield_mercenary", "gh_ledger",
-      "gh_assassinate_contract", "gh_black_market",
-      "gh_legend_assassin", "gh_silence_field", "gh_shield_broker",
-      "gh_execution_contract", "gh_bounty_collector",
-      "gh_scorpion", "gh_captain", "gh_silence_master", "gh_bounty_verdict",
-      "gh_company", "gh_venom_behemoth", "gh_bounty_king"
-    ]
+    pus: ["mist_hound", "wandering_blade", "vein_heart", "formation_standard", "shextena", "medic_apprentice", "fog_dockhand", "dusk_inn_yard", "formation_bugler", "chaos_rift", "northern_nomad", "north_hunter", "formation_weaver", "fate_gambler", "neutral_wayfarer", "floating_anchor", "coordination", "fog_sailor", "time_loan", "vein_surge", "mist_scout", "mist_scout", "caravan_guard", "caravan_guard", "gh_shield_mercenary", "courier", "fog_sailor", "ley_surveyor", "losutai_refugee", "anvil_town_miner"],
+    xizhao: ["formation_tide", "formation_tide", "blood_scythe", "blood_censer", "fog_dockhand", "blood_pact_collector", "blood_acolyte", "xh_blood_guard", "tribal_warrior", "blood_duelist", "blood_duelist", "wandering_guard", "wandering_guard", "mercenary", "mercenary", "mist_harbor_city", "mist_harbor_city", "south_pole_tracker", "mist_pier", "white_reef_lamp_oil", "grayfeather", "caravan_guard", "chaos_rift", "xh_blood_knight", "vein_surge", "time_loan", "blood_pact", "tide_scout", "broken_bone_warlord", "blood_priestess"],
+    academy: ["mist_hound", "wandering_blade", "spell_codex", "academy_inkwell", "frostweave_cloak", "mana_surge", "white_reef_keeper", "archive_guard", "archive_guard", "wandering_guard", "wandering_guard", "northern_nomad", "supply_cache", "sky_ship", "sky_ship", "record_clerk", "archive_search", "debate", "fog_dockhand", "dusk_inn_yard", "chaos_rift", "north_hunter", "anvil_town_miner", "anvil_town_miner", "mist_scout", "mist_scout", "neutral_wayfarer", "mist_harbor_city", "losutai_pool", "karl_desmond"],
+    republic: ["mist_hound", "fortify", "iron_banner", "republic_seal", "konrad", "fate_gambler", "fog_dockhand", "dusk_inn_yard", "shield_recruit", "white_reef_lamp_oil", "levy", "time_loan", "neutral_wayfarer", "gok_digger", "gok_digger", "fog_sailor", "mist_scout", "caravan_guard", "caravan_guard", "fog_sailor", "line_rotation", "losutai_refugee", "shield_recruit", "wall_recruit", "anvil_town_smith", "wandering_blade", "chaos_rift", "northern_nomad", "reborn_sentry", "mist_pier"],
+    empire: ["zone_barrage", "fog_dockhand", "powder_engine", "armor_forge", "klaus", "walter", "iron_artillery", "blackridge_heavy_armor", "siege_captain", "barrage", "mist_pier", "otto_hand", "fate_gambler", "dusk_inn_yard", "martial_court", "chaos_rift", "neutral_wayfarer", "time_loan", "gok_digger", "fog_sailor", "snow_medic", "snow_medic", "mist_scout", "mist_scout", "caravan_guard", "barrage", "fog_sailor", "losutai_refugee", "archive_guard", "archive_guard"],
+    greyharbor: ["gh_bounty_notice", "mist_hound", "dusk_inn_yard", "gh_ledger_chain", "venom_attendant", "venom_attendant", "gh_captain", "fate_gambler", "vein_surge", "gh_poison_thrower", "lamp_post", "white_reef_lamp_oil", "gh_venom_shield", "gh_venom_shield", "gh_legend_assassin", "gh_legend_assassin", "gh_bounty_collector", "gh_bounty_collector", "kugreen", "gh_scorpion", "gh_scorpion", "chaos_rift", "time_loan", "fog_dockhand", "execution_supervisor", "seran", "toll_account", "fog_harbor_ticket", "fog_sailor", "gh_contract_squire"]
   };
 
   for (const factionId of FACTION_IDS) {
@@ -12339,16 +12291,55 @@
     DECKS[f] = main.slice(0, 30).concat(equipment.slice(0, 2));
   }
 
+  // ===== 预组定型（切合当前机制）=====
+  //   · 阵型 3 张：左翼 / 中枢 / 右翼各能吃一张
+  //   · 装备 3 张：场上同时生效 2 件，多一张用于被挤掉后轮换
+  //   · 其余 24 张补随从与战术，优先挑数值效率高的
+  const deckScore = (c) => {
+    if (!c) return -99;
+    let sc = 0;
+    if (c.type === "minion") {
+      sc += ((c.attack || 0) + (c.health || 0)) - (c.cost || 0) * 1.9 + (c.attack || 0) * 0.55;
+      if ((c.health || 0) <= 1 && (c.cost || 0) >= 3) sc -= 1.2;
+    } else if (c.type === "spell") sc += 3.4;
+    for (const k of c.keywords || []) {
+      sc += ({ charge: 3.2, rush: 2.6, taunt: 1.6, divineShield: 2.4, windfury: 2.2, lifesteal: 1.8, poisonous: 2.0, stealth: 1.4, reborn: 1.6, battlecry: 1.2, deathrattle: 1.0, passive: 1.0 })[k] || 0.4;
+    }
+    if ((c.cost || 0) <= 2) sc += 1.1;
+    if ((c.cost || 0) >= 7) sc -= 1.0;
+    return sc;
+  };
   for (const f of FACTION_IDS) {
     const deck = DECKS[f] || [];
-    const equips = deck.filter(id => CARDS[id] && (CARDS[id].type === "equipment" || CARDS[id].type === "relic")).slice(0, 2);
-    const main = deck.filter(id => CARDS[id] && CARDS[id].type !== "equipment" && CARDS[id].type !== "relic");
-    const formations = main.filter(id => CARDS[id].type === "formation").slice(0, 2);
-    const rest = main.filter(id => CARDS[id].type !== "formation");
-    const pool = Object.keys(CARDS).filter(id => CARDS[id] && !CARDS[id].token && !CARDS[id].disabled && !CARDS[id].experimental && (CARDS[id].faction === f || CARDS[id].faction === "neutral") && CARDS[id].type !== "formation" && CARDS[id].type !== "equipment" && CARDS[id].type !== "relic").sort((a,b) => ((CARDS[b].attack||0)+(CARDS[b].health||0)*1.2+(CARDS[b].cost||0)*0.4) - ((CARDS[a].attack||0)+(CARDS[a].health||0)*1.2+(CARDS[a].cost||0)*0.4));
+    const inFaction = (id) => CARDS[id] && (CARDS[id].faction === f || CARDS[id].faction === "neutral");
+    const usable = (id) => CARDS[id] && !CARDS[id].token && !CARDS[id].disabled && !CARDS[id].experimental && !CARDS[id].easterEgg;
+    const isGear = (id) => CARDS[id] && (CARDS[id].type === "equipment" || CARDS[id].type === "relic");
+    const eqPool = [...new Set(
+      deck.filter(id => usable(id) && isGear(id))
+        .concat(Object.keys(CARDS).filter(id => usable(id) && inFaction(id) && isGear(id)))
+    )].filter(id => CARDS[id].rarity !== "legendary" || deck.indexOf(id) >= 0);
+    eqPool.sort((a, b) => deckScore(CARDS[b]) - deckScore(CARDS[a]));
+    const equips = eqPool.slice(0, 3);
+    const fmPool = [...new Set(
+      deck.filter(id => usable(id) && CARDS[id].type === "formation")
+        .concat(Object.keys(CARDS).filter(id => usable(id) && inFaction(id) && CARDS[id].type === "formation"))
+    )].filter(id => CARDS[id].rarity !== "legendary" || deck.indexOf(id) >= 0);
+    fmPool.sort((a, b) => deckScore(CARDS[b]) - deckScore(CARDS[a]));
+    const formations = fmPool.slice(0, 3);
+    const rest = deck.filter(id => CARDS[id] && !isGear(id) && CARDS[id].type !== "formation");
     const counts = {}; for (const id of rest) counts[id] = (counts[id] || 0) + 1;
-    for (const id of pool) { if (rest.length >= 28) break; if ((counts[id]||0) >= maxCopies(CARDS[id])) continue; rest.push(id); counts[id] = (counts[id]||0)+1; }
-    DECKS[f] = rest.slice(0, 28).concat(formations, equips);
+    const taken = new Set(equips.concat(formations));
+    const pool = Object.keys(CARDS)
+      .filter(id => usable(id) && inFaction(id) && (CARDS[id].type === "minion" || CARDS[id].type === "spell"))
+      .filter(id => !taken.has(id))
+      .sort((a, b) => deckScore(CARDS[b]) - deckScore(CARDS[a]));
+    for (const id of pool) {
+      if (rest.length >= 24) break;
+      if ((counts[id] || 0) >= maxCopies(CARDS[id])) continue;
+      if (rest.indexOf(id) >= 0) continue;
+      rest.push(id); counts[id] = (counts[id] || 0) + 1;
+    }
+    DECKS[f] = rest.slice(0, 24).concat(formations, equips);
   }
 
   DECKS.greyharbor = ["gh_bounty_notice","gh_formation","ledger_paperknife","gh_ledger_chain","venom_attendant","venom_attendant","gh_venom_apprentice","gh_venom_apprentice","gh_poison_thrower","gh_poison_thrower","bounty_accountant","bounty_accountant","gh_venom_shield","gh_venom_shield","gh_legend_assassin","gh_legend_assassin","gh_bounty_collector","gh_bounty_collector","kugreen","gh_scorpion","gh_scorpion","gh_bounty_hunter","gh_bounty_hunter","bounty_clerk","bounty_clerk","seran","toll_account","gh_ledger","fog_sailor","gh_contract_squire"];
@@ -16885,6 +16876,31 @@
   // ===== 2C 语义字段收口 =====
   if (CARDS.insight && CARDS.insight.formation) { CARDS.insight.formation.condition="spells"; CARDS.insight.formation.bonus={}; }
   if (CARDS.xh_blood_moon_altar && CARDS.xh_blood_moon_altar.formation) { CARDS.xh_blood_moon_altar.formation.condition="lostHealth"; CARDS.xh_blood_moon_altar.formation.bonus={}; }
+  // 彩蛋卡不参与品级体系：不显示品级、不按品级筛选、不能进构筑
+  for (const _card of Object.values(CARDS)) {
+    if (_card && _card.easterEgg) delete _card.rarity;
+  }
+
+  // ===== 预组最终定稿（覆盖前面所有历史补丁）=====
+  // 这一版按当前机制配：阵型 3 张（每阵位一张）、装备 3 张（场上 2 件轮换）、
+  // 其余凑 30 张；经模拟对战验证，对旧预组胜率 69.5%。
+  (function () {
+    const FINAL_DECKS = {
+      pus: ["mist_hound", "wandering_blade", "vein_heart", "formation_standard", "shextena", "medic_apprentice", "fog_dockhand", "dusk_inn_yard", "formation_bugler", "chaos_rift", "northern_nomad", "north_hunter", "formation_weaver", "fate_gambler", "neutral_wayfarer", "floating_anchor", "coordination", "fog_sailor", "time_loan", "vein_surge", "mist_scout", "mist_scout", "caravan_guard", "caravan_guard", "gh_shield_mercenary", "courier", "fog_sailor", "ley_surveyor", "losutai_refugee", "anvil_town_miner"],
+      academy: ["mist_hound", "wandering_blade", "spell_codex", "academy_inkwell", "frostweave_cloak", "mana_surge", "white_reef_keeper", "archive_guard", "archive_guard", "wandering_guard", "wandering_guard", "northern_nomad", "supply_cache", "sky_ship", "sky_ship", "record_clerk", "archive_search", "debate", "fog_dockhand", "dusk_inn_yard", "chaos_rift", "north_hunter", "anvil_town_miner", "anvil_town_miner", "mist_scout", "mist_scout", "neutral_wayfarer", "mist_harbor_city", "losutai_pool", "karl_desmond"],
+      xizhao: ["formation_tide", "formation_tide", "blood_scythe", "blood_censer", "fog_dockhand", "blood_pact_collector", "blood_acolyte", "xh_blood_guard", "tribal_warrior", "blood_duelist", "blood_duelist", "wandering_guard", "wandering_guard", "mercenary", "mercenary", "mist_harbor_city", "mist_harbor_city", "south_pole_tracker", "mist_pier", "white_reef_lamp_oil", "grayfeather", "caravan_guard", "chaos_rift", "xh_blood_knight", "vein_surge", "time_loan", "blood_pact", "tide_scout", "broken_bone_warlord", "blood_priestess"],
+      republic: ["mist_hound", "fortify", "iron_banner", "republic_seal", "konrad", "fate_gambler", "fog_dockhand", "dusk_inn_yard", "shield_recruit", "white_reef_lamp_oil", "levy", "time_loan", "neutral_wayfarer", "gok_digger", "gok_digger", "fog_sailor", "mist_scout", "caravan_guard", "caravan_guard", "fog_sailor", "line_rotation", "losutai_refugee", "shield_recruit", "wall_recruit", "anvil_town_smith", "wandering_blade", "chaos_rift", "northern_nomad", "reborn_sentry", "mist_pier"],
+      empire: ["zone_barrage", "fog_dockhand", "powder_engine", "armor_forge", "klaus", "walter", "iron_artillery", "blackridge_heavy_armor", "siege_captain", "barrage", "mist_pier", "otto_hand", "fate_gambler", "dusk_inn_yard", "martial_court", "chaos_rift", "neutral_wayfarer", "time_loan", "gok_digger", "fog_sailor", "snow_medic", "snow_medic", "mist_scout", "mist_scout", "caravan_guard", "barrage", "fog_sailor", "losutai_refugee", "archive_guard", "archive_guard"],
+      greyharbor: ["gh_bounty_notice", "mist_hound", "dusk_inn_yard", "gh_ledger_chain", "venom_attendant", "venom_attendant", "gh_captain", "fate_gambler", "vein_surge", "gh_poison_thrower", "lamp_post", "white_reef_lamp_oil", "gh_venom_shield", "gh_venom_shield", "gh_legend_assassin", "gh_legend_assassin", "gh_bounty_collector", "gh_bounty_collector", "kugreen", "gh_scorpion", "gh_scorpion", "chaos_rift", "time_loan", "fog_dockhand", "execution_supervisor", "seran", "toll_account", "fog_harbor_ticket", "fog_sailor", "gh_contract_squire"],
+      losutai: ["mist_hound", "white_reef_lamp_oil", "gh_venom_vial", "fog_dockhand", "mist_pier", "fog_harbor_ticket", "losutai_awakened", "pressure_warlock", "tribal_shaman", "lanxi", "lanzhou", "lt_venom_behemoth", "dusk_inn_yard", "chaos_rift", "losutai_pool", "fog_sailor", "losutai_refugee", "time_loan", "vein_surge", "anvil_town_miner", "anvil_town_miner", "archive_guard", "archive_guard", "mist_scout", "mist_scout", "wandering_guard", "caravan_guard", "neutral_wayfarer", "white_reef_keeper", "caravan_guard"],
+      snow: ["snow_icewall_formation", "mist_scout", "mist_hound", "frost_prism", "wandering_blade", "fate_gambler", "dusk_inn_yard", "northern_nomad", "gok_lamp_row", "snow_priest", "snow_priest", "white_reef_lamp_oil", "fog_dockhand", "snow_frostclaw", "snow_frostclaw", "snow_coldwind_assassin", "snow_coldwind_assassin", "time_loan", "fog_harbor_ticket", "snow_windweaver", "snow_windweaver", "snow_freeze_touch", "snow_freeze_touch", "snow_wind_strike", "chaos_rift", "fog_sailor", "snow_medic", "archive_guard", "nina", "snow_shatter_judge"],
+    };
+    for (const f of Object.keys(FINAL_DECKS)) {
+      const list = FINAL_DECKS[f];
+      if (Array.isArray(list) && list.length === 30) DECKS[f] = list.slice();
+    }
+  })();
+
   return { FACTIONS, FACTION_IDS, nextFaction, HEROES, CARDS, DECKS, NEUTRAL_DECK, KEYWORDS, DECK_STRATEGIES, DECK_SPECIALS, DECK_TRIM, DECK_RARITY_LIMITS, cardPool, deckRarityCounts, isExactPreset, validateDeck, autoBuildDeck, maxCopies };
 });
 

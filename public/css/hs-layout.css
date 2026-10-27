@@ -2068,7 +2068,6 @@ body[data-screen="game"] .board-card.library-board .gok-lib-stat {
 
 body[data-screen="game"] .board-label { display:none !important; }
 
-
 /* final board pass: larger tokens, denser rails, opposing sides */
 body[data-screen="game"] .board-card.library-board {
   width: 132px !important;
@@ -2351,7 +2350,6 @@ body[data-screen="game"] .turn-banner {
 body[data-screen="game"] .log-entry { animation: none; }
 body[data-screen="game"] .log-entry.log-new { animation: logIn .22s ease both; }
 
-
 /* P2: local status language (no popups) */
 body[data-screen="game"] .board-card.library-board { overflow: hidden; }
 body[data-screen="game"] .status-icons {
@@ -2601,7 +2599,6 @@ body[data-screen="game"] .deck-corner b { color: #f2d79b !important; }
 }
 
 body[data-screen="game"] .vein-title strong::after { content: none !important; }
-
 
 /* P3: drag intention trail */
 .drag-trail {
@@ -2984,15 +2981,11 @@ body[data-screen="game"] .hero-panel.has-relic .hs-hero-side::after {
 
 body[data-screen="game"] .hero-panel.has-relic .hs-hero-side { position: relative; }
 
-
 body[data-screen="game"] .end-modal .end-art { position: relative; overflow: hidden; }
-
 
 body[data-screen="game"] .vein-pip.threshold { clip-path: none !important; }
 
-
 body[data-screen="game"] .vein-pip.active.threshold { overflow: visible !important; }
-
 
 /* ===== P6: compact vein rail + responsive + access ===== */
 body[data-screen="game"] .vein-row {
@@ -4383,7 +4376,7 @@ body[data-screen="game"] .deck-rail-card {
   margin-left: -19px;
   border: 1px solid rgba(242,198,109,.35);
   border-radius: 2px;
-  background: #071214 url("/assets/ui/card_back.svg") center / cover no-repeat;
+  background: #071214 url("/assets/ui/card-back-jimeng.webp?v=20261027art15") center / cover no-repeat;
   box-shadow: 0 3px 7px rgba(0,0,0,.65), inset 0 0 0 1px rgba(0,0,0,.35);
 }
 body[data-screen="game"] .player-deck-rail .deck-rail-card { border-color: rgba(135,222,204,.34); }
@@ -4554,7 +4547,7 @@ body[data-screen="game"] .deck-rail-card {
   height: 52px !important;
   margin-left: -19px !important;
   border-color: rgba(242,198,109,.35) !important;
-  background: #071214 url("/assets/ui/card_back.svg") center / cover no-repeat !important;
+  background: #071214 url("/assets/ui/card-back-jimeng.webp?v=20261027art15") center / cover no-repeat !important;
 }
 body[data-screen="game"] .player-deck-rail .deck-rail-card { border-color: rgba(242,198,109,.35) !important; }
 body[data-screen="game"] .deck-rail-card:nth-child(1) { transform: translate(-8px, 7px) rotate(-8deg) !important; opacity: .62 !important; }

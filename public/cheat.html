@@ -84,7 +84,8 @@
     <button class="tab" data-tab="ai">AI 调试</button>
     <button class="tab" data-tab="vfx">VFX 测试</button>
     <button class="tab" data-tab="scenario">快速局面</button>
-    <button class="tab" data-tab="state">状态/日志</button>
+    <button class="tab" data-tab="progress">进度/解锁</button>
+<button class="tab" data-tab="state">状态/日志</button>
   </div>
   <div class="body">
     <div class="notice" id="notice"></div>
@@ -241,7 +242,40 @@
       <div class="box"><div class="box-title">测试提示</div><p class="hint">快速测试卡牌时：加入手牌 → 实际点击牌桌中的卡牌打出 → 观察。需要触发余响就击杀随从；需要测被动就先召唤/施法，再用对应动作触发。</p></div>
     </div>
 
-    <div class="section" id="tab-state">
+    
+<div class="section" id="tab-progress">
+  <div class="box">
+    <div class="box-title">档案等级 <span class="hint">改完立刻生效，传奇礼包按等级补发</span></div>
+    <div class="row">
+      <div><label>等级 1–30</label><input id="dbg-level" type="number" min="1" max="30" value="1"></div>
+      <button id="dbg-set-level">设为该等级</button>
+    </div>
+    <div class="grid">
+      <button id="dbg-lv1">Lv.1</button>
+      <button id="dbg-lv5">Lv.5</button>
+      <button id="dbg-lv10">Lv.10</button>
+      <button id="dbg-lv20">Lv.20</button>
+      <button id="dbg-lv30">Lv.30（满级全解锁）</button>
+    </div>
+    <p class="hint">等级影响：领袖解锁（Lv.1 两个 → Lv.25 全开）、每级 2 张传说礼包。</p>
+  </div>
+  <div class="box">
+    <div class="box-title">领袖与卡牌</div>
+    <div class="row">
+      <button id="dbg-unlock-leaders">解锁全部领袖</button>
+      <button id="dbg-all-legendary">发放全部传说</button>
+    </div>
+    <div id="dbg-progress-info" class="hint">—</div>
+  </div>
+  <div class="box">
+    <div class="box-title">存档</div>
+    <div class="row">
+      <button id="dbg-reset-save" class="danger">清空存档（回到 Lv.1）</button>
+    </div>
+    <p class="hint">只清进度，不清音量/画质这些设置。</p>
+  </div>
+</div>
+<div class="section" id="tab-state">
       <div class="box"><div class="box-title">最近日志</div><div class="log" id="log"></div></div>
       <div class="box"><div class="box-title">导出当前局面</div><div class="row"><button id="export-state">下载 JSON</button><button id="copy-state">复制 JSON</button><button id="refresh" class="primary">刷新面板</button></div></div>
       <div class="box"><div class="box-title">局面快照</div><div class="row"><button id="save-snapshot">保存当前局面</button><button id="restore-snapshot">恢复快照</button></div><p class="hint" id="snapshot-hint">尚未保存快照。</p></div>
@@ -711,6 +745,50 @@
   document.querySelectorAll(".owner").forEach(function(b){ b.onclick=function(){ state.owner=Number(b.dataset.owner); refresh(); }; });
   $("apply-hero").onclick=applyHero; $("hero-full").onclick=function(){if(!requireGame())return;var p=owner();p.mana=p.maxMana;sync();}; $("hero-reset-used").onclick=function(){if(!requireGame())return;owner().heroPowerUsed=false;sync();};
   $("apply-relic").onclick=applyRelic; $("clear-relic").onclick=function(){if(!requireGame())return;owner().relic=null;sync();};
+
+  /* ===== 进度/解锁（等级决定领袖与传说） ===== */
+  function dbgApi() {
+    try { var w = win(); return w && w.GokUI && w.GokUI.debug ? w.GokUI.debug : null; } catch (e) { return null; }
+  }
+  function dbgInfo() {
+    var d = dbgApi(); var el = $("dbg-progress-info"); if (!el) return;
+    if (!d) { el.textContent = "游戏还没载入…"; return; }
+    try {
+      var i = d.info();
+      el.textContent = "等级 " + i.level + " · 传说 " + i.legendary + "/" + i.legendaryTotal +
+        " · 已解锁领袖 " + i.leaders.length + "/8（" + i.leaders.join(" ") + "）";
+    } catch (e) { el.textContent = "读取失败：" + e.message; }
+  }
+  function dbgSetLevel(n) {
+    var d = dbgApi(); if (!d) { notice("游戏还没载入"); return; }
+    try {
+      var r = d.setLevel(n);
+      notice("等级 → " + r.level + "，传说 " + r.legendary + " 张，领袖 " + r.leaders.length + " 个");
+      dbgInfo(); refresh();
+    } catch (e) { notice("失败：" + e.message); }
+  }
+  if ($("dbg-set-level")) $("dbg-set-level").onclick = function () { dbgSetLevel($("dbg-level").value); };
+  [["dbg-lv1", 1], ["dbg-lv5", 5], ["dbg-lv10", 10], ["dbg-lv20", 20], ["dbg-lv30", 30]].forEach(function (pair) {
+    var el = $(pair[0]);
+    if (el) el.onclick = function () { dbgSetLevel(pair[1]); };
+  });
+  if ($("dbg-unlock-leaders")) $("dbg-unlock-leaders").onclick = function () {
+    var d = dbgApi(); if (!d) return notice("游戏还没载入");
+    notice("已解锁全部领袖：" + d.unlockAllLeaders().join(" "));
+    dbgInfo();
+  };
+  if ($("dbg-all-legendary")) $("dbg-all-legendary").onclick = function () {
+    var d = dbgApi(); if (!d) return notice("游戏还没载入");
+    notice("已发放全部传说：" + d.grantAllLegendaries() + " 张");
+    dbgInfo();
+  };
+  if ($("dbg-reset-save")) $("dbg-reset-save").onclick = function () {
+    var d = dbgApi(); if (!d) return notice("游戏还没载入");
+    if (!confirm("清空本地存档并回到 Lv.1？")) return;
+    d.resetSave();
+  };
+  (function pollInfo(n) { dbgInfo(); if (n < 15) setTimeout(function () { pollInfo(n + 1); }, 800); })(0);
+
   $("add-hand").onclick=function(){addHand($("card-select").value,1);}; $("add-hand-3").onclick=function(){addHand($("card-select").value,3);};
   $("spawn").onclick=function(){spawn($("minion-select").value,$("spawn-zone").value);};
   $("draw-1").onclick=function(){draw(1);}; $("draw-5").onclick=function(){draw(5);}; $("add-deck").onclick=addDeck; $("clear-deck").onclick=function(){if(!requireGame())return;owner().deck=[];sync();};

@@ -656,7 +656,6 @@ body[data-screen="game"] .hs-skill-cost.passive { font-size: 8px; color: #d8f6e9
   .turn-controls { width: 140px; }
 }
 
-
 /* ===== 体力与战斗反馈增强 ===== */
 .hero-vitals {
   display: flex; align-items: flex-end; justify-content: space-between; gap: 8px;
@@ -787,7 +786,6 @@ body[data-screen="game"] .hs-skill-cost.passive { font-size: 8px; color: #d8f6e9
   100% { opacity: 0; transform: translate(-50%, -58%) scale(1.02); }
 }
 
-
 /* ===== 局域网 ===== */
 .lan-grid { display: grid; grid-template-columns: minmax(420px, 1.1fr) minmax(320px, 0.9fr); gap: 18px; align-items: start; }
 .lan-panel, .lan-help { padding: 28px; }
@@ -808,7 +806,6 @@ body[data-screen="game"] .hs-skill-cost.passive { font-size: 8px; color: #d8f6e9
 .lan-steps li::marker { color: var(--gold); }
 [hidden] { display: none !important; }
 @media (max-width: 980px) { .lan-grid { grid-template-columns: 1fr; } }
-
 
 /* ===== 卡牌类型、数值与操作反馈 ===== */
 .card.type-spell {
@@ -908,7 +905,6 @@ body[data-screen="game"] .hs-skill-cost.passive { font-size: 8px; color: #d8f6e9
 .board-card.attack-up { animation: lungeUp 0.38s cubic-bezier(.2,.8,.3,1); }
 .board-card.attack-down { animation: lungeDown 0.38s cubic-bezier(.2,.8,.3,1); }
 .floating-number { font-size: 38px; }
-
 
 /* ===== 第二轮界面重构：牌桌、手牌安全区与卡牌质感 ===== */
 .game-shell {
@@ -1037,14 +1033,6 @@ body[data-screen="game"] .hs-skill-cost.passive { font-size: 8px; color: #d8f6e9
 .board-card .card-stats { flex-wrap: nowrap; }
 .opponent-side .board-label::after { content: " · 对方"; color: var(--dim); }
 .player-side .board-label::after { content: " · 你"; color: var(--dim); }
-.card-play-banner {
-  position: fixed; z-index: 175; left: 50%; top: 38%;
-  transform: translate(-50%,-50%); pointer-events: none;
-  font-family: var(--serif); color: var(--gold-soft); font-size: 26px;
-  text-shadow: 0 3px 18px rgba(0,0,0,0.9), 0 0 24px rgba(217,164,65,0.2);
-  opacity: 0; white-space: nowrap;
-}
-.card-play-banner.show { animation: cardPlayBanner 0.9s ease forwards; }
 @keyframes cardPlayBanner {
   0% { opacity: 0; transform: translate(-50%,-42%) scale(0.94); }
   18% { opacity: 1; transform: translate(-50%,-50%) scale(1); }
@@ -1077,7 +1065,6 @@ body[data-screen="game"] .hs-skill-cost.passive { font-size: 8px; color: #d8f6e9
   25% { opacity: 1; }
   100% { opacity: 0; }
 }
-
 
 /* ===== 拖拽攻击 / 法术落点 ===== */
 .board-card.draggable-attacker { cursor: grab; }
@@ -1149,7 +1136,6 @@ body[data-screen="game"] .hs-skill-cost.passive { font-size: 8px; color: #d8f6e9
 .hand-card.has-battlecry { border-color: rgba(232,190,110,0.52); }
 .hand-card.has-effect:not(.disabled) .card-art { filter: brightness(0.96) saturate(1.02); }
 
-
 /* ===== 法术目标指引 ===== */
 .targeting-prompt {
   position: fixed; z-index: 78; left: 50%; bottom: 252px;
@@ -1174,7 +1160,6 @@ body[data-screen="game"] .hs-skill-cost.passive { font-size: 8px; color: #d8f6e9
 
 .board-card.targetable, .hero-panel.targetable, .board-card.spell-target, .hero-panel.drag-target { cursor: crosshair; }
 .targeting-prompt { pointer-events: auto; }
-
 
 /* ===== 学院阵营 ===== */
 .faction-choice { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -1204,7 +1189,6 @@ body[data-screen="game"] .hs-skill-cost.passive { font-size: 8px; color: #d8f6e9
   .faction-card .faction-portrait { width: 80px; flex-basis: 80px; }
   .faction-card .faction-body strong { font-size: 15px; }
 }
-
 
 /* ===== 档案编成 ===== */
 .setup-deck-row {
@@ -1296,7 +1280,6 @@ body[data-screen="game"] .hs-skill-cost.passive { font-size: 8px; color: #d8f6e9
   .deck-pool { max-height: 480px; }
 }
 
-
 /* ===== 新手教程 ===== */
 .home-tutorial-link { color: var(--gold-soft) !important; }
 .tutorial-shell { max-width: 1180px; margin: 0 auto; padding: 56px 28px 70px; }
@@ -1358,7 +1341,6 @@ body[data-screen="game"] .hs-skill-cost.passive { font-size: 8px; color: #d8f6e9
   .tutorial-coach { width: calc(100% - 40px); }
 }
 
-
 /* ===== 技能提示 / 英雄技能按钮 ===== */
 .skill-badge {
   position: absolute; z-index: 9; left: 5px; top: 29px;
@@ -1419,7 +1401,6 @@ body[data-screen="game"] .hs-skill-cost.passive { font-size: 8px; color: #d8f6e9
 .hp-btn-state { color: #8fe4d7; font-size: 8px; position: absolute; z-index: 3; top: 5px; right: 6px; }
 @keyframes powerShine { 0%,70% { transform: translateX(-110%); } 88%,100% { transform: translateX(110%); } }
 .turn-controls { display: flex; flex-direction: column; gap: 7px; }
-
 
 /* ===== 图鉴 / 成就 / 设置 / 结算 ===== */
 .codex-shell { max-width: 1380px; }
@@ -2145,25 +2126,8 @@ body[data-screen="home"] #bg { animation: homeBgDrift 26s ease-in-out infinite a
 .deck-scope:hover { color: var(--gold-soft); border-color: rgba(217,164,65,0.4); }
 .deck-scope.active { color: #17110a; background: var(--gold-soft); border-color: var(--gold-soft); font-weight: 700; }
 
-.opponent-action {
-  position: fixed; z-index: 90; left: 50%; top: 17%; transform: translate(-50%, -8px);
-  padding: 10px 18px; border: 1px solid rgba(217,164,65,0.55);
-  background: linear-gradient(160deg, rgba(9,18,26,0.97), rgba(5,10,15,0.97));
-  color: #f0dfc0; font-family: var(--serif); font-size: 16px; letter-spacing: 0.04em;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5); opacity: 0; pointer-events: none;
-  transition: opacity .2s ease, transform .2s ease;
-}
-.opponent-action.show { opacity: 1; transform: translate(-50%, 0); }
-
 @keyframes freezeFlash { 0%,100% { filter:none; } 30% { filter: brightness(1.15) saturate(1.5) hue-rotate(8deg); } }
 body.freeze-flash .game-shell { animation: freezeFlash .36s ease; box-shadow: inset 0 0 80px rgba(90,210,255,0.25); }
-.deathrattle-pop {
-  position: fixed; z-index: 95; left: 50%; top: 24%; transform: translate(-50%,-50%);
-  color: #d9c7ff; font-family: var(--serif); font-size: 24px; letter-spacing: .1em;
-  padding: 10px 20px; border: 1px solid rgba(180,150,230,.55);
-  background: rgba(10,7,18,.9); box-shadow: 0 0 34px rgba(100,70,160,.35);
-  animation: deathPop 1.2s ease forwards;
-}
 @keyframes deathPop { 0% { opacity:0; transform: translate(-50%,-40%) scale(.8); } 20% { opacity:1; transform: translate(-50%,-50%) scale(1); } 80% { opacity:1; } 100% { opacity:0; transform: translate(-50%,-60%) scale(1.05); } }
 
 .deck-message.warn { color: #e6b26b; }
@@ -2673,18 +2637,14 @@ button:active, .btn:active { transform: translateY(1px) scale(.99); }
 .drag-ghost.attack .drag-sword { font-size: 34px; color: #ffdb8a; line-height: 1; filter: drop-shadow(0 2px 3px #000); }
 .drag-ghost.attack span { position: static; font-family: var(--serif); color: #f3d79b; font-size: 9px; max-width: 72px; }
 @media (prefers-reduced-motion: reduce) { .modal { animation: none; } .hand-card, .card, .board-card { transition: none; } }
-
-/* 出牌提示不再压住流脉与回合横幅 */
-.card-play-banner { top: 24%; font-size: 22px; }
 .board-card { background: linear-gradient(180deg, color-mix(in srgb, var(--accent, #c9a86a) 10%, #0c161d), #080d12 72%); }
 
-/* 简洁战斗特效 */
+//* 简洁战斗特效 */
 body.simple-fx .play-ghost,
 body.simple-fx .keyword-pop,
 body.simple-fx .death-puff,
 body.simple-fx .impact-flash,
-body.simple-fx .cast-ring,
-body.simple-fx .card-play-banner { display: none !important; }
+body.simple-fx .cast-ring { display: none !important; }
 body.simple-fx .screen-shake { animation: none !important; }
 body.simple-fx .freeze-flash { animation: none !important; }
 body.simple-fx.freeze-flash { animation: none !important; }
@@ -2724,7 +2684,6 @@ body.large-text .card-type { letter-spacing: 0; }
 
 .log-card-btn { margin-left:6px; padding:1px 5px; border:1px solid rgba(217,164,65,.35); background:transparent; color:var(--gold-soft); font:inherit; font-size:8px; cursor:pointer; vertical-align:middle; }
 .log-card-btn:hover { border-color:var(--gold); }
-.card-play-banner .play-effect { margin-top:5px; color:#b9c5cc; font-family:var(--sans); font-size:10px; line-height:1.5; max-width:270px; }
 
 .deck-hero-stats { color:#b8c6cd; font-size:10px; letter-spacing:.02em; }
 
@@ -2738,7 +2697,6 @@ body.large-text .card-type { letter-spacing: 0; }
 .deck-relic-pick { display:flex; align-items:center; gap:8px; margin:8px 0 0; padding:7px 12px; border:1px solid var(--line-soft); background:rgba(255,255,255,.02); }
 .deck-relic-pick span { color:var(--gold-soft); font-size:10px; letter-spacing:.06em; }
 
-
 /* Account and save */
 .account-line { display:flex; align-items:baseline; justify-content:space-between; gap:16px; padding:12px 14px; margin-top:12px; border:1px solid var(--line-soft); background:rgba(255,255,255,.025); }
 .account-line strong { color:var(--gold-soft); font-size:16px; letter-spacing:.04em; }
@@ -2751,7 +2709,6 @@ body.large-text .card-type { letter-spacing: 0; }
 .account-label { display:block; margin:8px 0 6px; color:var(--gold-soft); font-size:10px; letter-spacing:.1em; }
 .account-code { width:100%; min-height:86px; resize:vertical; padding:10px 12px; color:#cbd8dd; background:rgba(8,12,15,.75); border:1px solid var(--line-soft); font:10px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; word-break:break-all; }
 .account-actions { flex-wrap:wrap; }
-
 
 /* ===== 3D depth pass: cards, leaders, battlefield atmosphere ===== */
 .hand-card, .board-card, .codex-card, .card {
@@ -3246,7 +3203,6 @@ body.reduce-motion .hand-card, body.simple-fx .hand-card { --fan: 0deg; }
 .hero-power-btn:active { transform: translateY(1px); }
 .board-card.draggable-attacker { box-shadow: 0 0 0 1px rgba(242,198,109,.22), 0 0 18px rgba(217,164,65,.1); }
 
-
 /* Content modes */
 .content-shell { max-width: 1180px; }
 .content-root { padding: 8px 0 52px; }
@@ -3514,7 +3470,6 @@ body[data-screen="game"] .vein-pip.hot { background: rgba(217,164,65,.3); border
 body[data-screen="game"] .vein-title, body[data-screen="game"] .vein-thresholds { text-shadow: 0 1px 5px #000; }
 .vein-core-art { transition: opacity .3s; }
 
-
 /* Turn order intro */
 .turn-order-intro { position:fixed; inset:0; z-index:420; display:flex; align-items:center; justify-content:center; padding:24px; background:rgba(2,7,10,.72); backdrop-filter:blur(7px); opacity:0; transition:opacity .25s ease; }
 .turn-order-intro.in { opacity:1; }
@@ -3710,7 +3665,6 @@ body[data-screen="game"] .card-type-badge { background: rgba(62,42,24,.8); color
 body[data-screen="game"] .hand-card.disabled { opacity: .55; }
 body[data-screen="game"] .hand-card:not(.disabled):hover { box-shadow: 0 20px 38px rgba(67,43,20,.42), 0 0 26px rgba(190,145,78,.18), inset 0 0 0 1px rgba(255,250,235,.7); }
 
-
 /* Home table scene and mode selector */
 #screen-home { position:relative; overflow:hidden; min-height:100vh; min-height:100dvh; }
 .home-table-scene { position:absolute; inset:0; z-index:1; pointer-events:none; overflow:hidden; }
@@ -3776,7 +3730,6 @@ body[data-screen="game"] .hand-card .card-name, body[data-screen="game"] .board-
 body[data-screen="game"] .hand-card .card-type, body[data-screen="game"] .board-card .card-type { color: rgba(61,42,25,.8) !important; }
 body[data-screen="game"] .hand-card .card-text { color: #4a3623 !important; }
 
-
 /* Generated home table artwork */
 .home-table-bg { position:absolute; inset:0; z-index:0; background:url("../assets/ui/home-table.webp") center/cover no-repeat; filter:saturate(.86) brightness(.72) contrast(1.04); transform:scale(1.015); }
 .home-table-bg::after { content:""; position:absolute; inset:0; background:linear-gradient(90deg,rgba(2,7,10,.9) 0%,rgba(2,7,10,.66) 30%,rgba(2,7,10,.18) 58%,rgba(2,7,10,.35) 100%),linear-gradient(180deg,rgba(2,7,10,.42) 0%,transparent 22%,transparent 62%,rgba(2,7,10,.82) 100%); }
@@ -3833,14 +3786,12 @@ body[data-screen="game"] .zone { background: rgba(255,250,236,.26); border-color
 body[data-screen="game"] .zone::after { border-color: rgba(105,69,35,.24); }
 body[data-screen="game"] .card-frame-art { opacity: .78; }
 
-
 /* Codex card frame must stay behind text and badges */
 .codex-card .card-frame-art { z-index:1; }
 .codex-card .codex-art { position:relative; z-index:0; }
 .codex-card .codex-body { position:relative; z-index:3; padding:14px 18px 12px; }
 .codex-card .codex-cost, .codex-card .codex-faction { z-index:4; }
 .codex-card .codex-body strong { padding-right:2px; }
-
 
 /* Home account and save dock */
 .home-account-dock { position:absolute; z-index:5; right:0; bottom:188px; width:min(370px,42vw); display:flex; align-items:center; gap:11px; padding:10px 11px; border:1px solid rgba(217,164,65,.28); background:linear-gradient(135deg,rgba(11,21,24,.94),rgba(5,12,14,.9)); box-shadow:0 14px 34px rgba(0,0,0,.36), inset 0 0 0 1px rgba(255,238,190,.03); backdrop-filter:blur(8px); }
@@ -3853,7 +3804,6 @@ body[data-screen="game"] .card-frame-art { opacity: .78; }
 .home-account-btn:hover { color:#15100a; background:var(--gold-soft); border-color:var(--gold-soft); }
 @media (max-width:1000px) { .home-account-dock { position:relative; right:auto; bottom:auto; width:min(470px,100%); margin-top:-4px; grid-column:1 / -1; } }
 @media (max-width:640px) { .home-account-dock { width:100%; } .home-account-btn { padding:7px 8px; } }
-
 
 /* Codex cards: steel/teal frame to match the archive palette */
 .codex-card {
@@ -3933,7 +3883,6 @@ body[data-screen="game"] .hand-card:not(.disabled):hover { box-shadow: 0 22px 40
 .mulligan-text { color: #c9bca4; }
 .mulligan-modal .btn { color: #3b2918; border-color: rgba(111,73,35,.35); background: rgba(255,249,234,.42); }
 .mulligan-modal .btn-primary { background: linear-gradient(180deg, #d6ac62, #8e6129); color: #fff6df; border-color: rgba(255,232,181,.55); }
-
 
 /* Restore the ornate frame artwork, recolored to steel-teal and kept behind text */
 .codex-card .card-frame-art {
@@ -4104,7 +4053,6 @@ body[data-screen="game"] .hero-crest, body[data-screen="game"] .side-emblem { op
 /* setup lane gets the cold table too */
 body[data-screen="setup"] #bg, body[data-screen="lan"] #bg { background-image: url("../assets/ui/gray-teal-table.webp?v=20261020cc"); background-position: center; filter: brightness(.46) saturate(.82) blur(1px); }
 
-
 /* Unified illustrated card layout: large art, stats inside the frame */
 .codex-grid { grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px; }
 .gok-library-card { position:relative; width:100%; aspect-ratio:5 / 7.5; overflow:hidden; border:1px solid rgba(116,158,160,.4); background:#061215; cursor:pointer; isolation:isolate; box-shadow:0 12px 28px rgba(0,0,0,.42); transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
@@ -4148,7 +4096,6 @@ body[data-screen="setup"] #bg, body[data-screen="lan"] #bg { background-image: u
 .mulligan-stats span { min-width:30px; padding:3px 6px; display:inline-grid; place-items:center; border:1px solid rgba(198,157,91,.35); background:rgba(3,10,12,.72); font-size:10px; line-height:1; }
 .mulligan-atk { color:#f0c080; border-color:rgba(226,174,105,.45) !important; }
 .mulligan-hp { color:#f0a49e; border-color:rgba(230,126,118,.42) !important; }
-
 
 /* Leader hover dossier and relic gem */
 .hero-relic-gem { position:absolute; z-index:7; top:9px; right:9px; width:46px; height:46px; border-radius:50%; background-size:cover; background-position:center; border:2px solid rgba(217,164,65,.78); box-shadow:0 0 0 3px rgba(3,10,12,.72), 0 0 20px rgba(242,198,109,.42), inset 0 0 12px rgba(0,0,0,.7); cursor:help; animation:relicGemPulse 2.8s ease-in-out infinite; }
@@ -4401,7 +4348,6 @@ body[data-screen="game"] .mana-number { font-weight: 700; }
   .hand-meta-left .mana-display { min-width: 190px; }
 }
 
-
 /* Gameplay readability and layout pass */
 body[data-screen="game"] .game-top {
   flex-wrap:nowrap; gap:8px; padding:0 12px; overflow:hidden;
@@ -4538,7 +4484,6 @@ body[data-screen="game"] .hero-panel .hero-info {
 body[data-screen="game"] .hero-panel .hero-name { text-shadow: 0 2px 10px #000, 0 0 18px rgba(0,0,0,.8) !important; }
 body[data-screen="game"] .hero-panel .hero-crest { z-index: 4; opacity: .62; }
 body[data-screen="game"] .hero-panel { min-height: 210px; }
-
 
 /* Tall / portrait windows: use the vertical room for the board instead of dead space */
 @media (min-height:1000px) and (max-width:1250px) {
@@ -4883,7 +4828,6 @@ body[data-screen="game"] .hand-meta-left .hero-power-dock { display: block !impo
 
 .turn-order-intro.out { pointer-events: none !important; visibility: hidden !important; opacity: 0 !important; }
 
-
 /* Minimal in-game top bar: exit / log / settings */
 .vein-core-art { display:none !important; }
 body[data-screen="game"] .game-top { display:flex; align-items:center; gap:10px; padding:0 12px; }
@@ -4910,7 +4854,6 @@ body[data-screen="game"] .log-panel .log-line { color:#b8cfc9; }
 .game-concede-btn:hover { background:rgba(150,45,45,.25); border-color:rgba(230,126,118,.7); }
 
 body[data-screen="game"] .hand-meta-left .hero-power-dock { display:none !important; }
-
 
 /* Compact battle cards: art-first, keywords only, full text on hover preview */
 body[data-screen="game"] .hand-card .card-type { display:none !important; }
@@ -4940,7 +4883,6 @@ body[data-screen="game"] .board-card .card-tags, body[data-screen="game"] .hand-
   body[data-screen="game"] .hand-card.type-spell .card-name, body[data-screen="game"] .hand-card.type-relic .card-name, body[data-screen="game"] .hand-card.type-formation .card-name { bottom:7px !important; }
 }
 
-
 /* Battle cards: larger art, no rules prose in hand, stats stay inside */
 body[data-screen="game"] .hand-card .card-type-badge { display:none !important; }
 body[data-screen="game"] .board-card .card-type-badge { display:none !important; }
@@ -4968,7 +4910,6 @@ body[data-screen="game"] .board-card .card-tags { left:3px !important; right:aut
 body[data-screen="game"] .hand-card .card-stats { left:5px !important; right:5px !important; justify-content:space-between; }
 body[data-screen="game"] .board-card .card-stats { left:4px !important; right:4px !important; justify-content:space-between; }
 
-
 /* Quiet, monochrome action slot */
 body[data-screen="game"] .mana-display {
   min-width:0 !important; min-height:0 !important; padding:5px 8px !important;
@@ -4986,7 +4927,6 @@ body[data-screen="game"] .mana-pip {
 }
 body[data-screen="game"] .mana-pip.filled { background:#8fd8cc !important; border-color:#a9e9dd !important; box-shadow:none !important; }
 .mana-crystal-art { display:none !important; }
-
 
 /* Prominent leader skill button */
 .hero-skill-inline {
@@ -5021,7 +4961,6 @@ body[data-screen="game"] .mana-pip.filled { background:#8fd8cc !important; borde
 .hero-skill-inline.ready .hero-skill-state { color:#ffe1a3 !important; }
 .hero-skill-inline.enemy-skill { opacity:.72; border-color:rgba(159,207,196,.36) !important; }
 
-
 /* Bigger battle-card type: names, tags, cost and stats */
 body[data-screen="game"] .hand-card .card-name {
   font-size:16px !important; min-height:24px; bottom:35px !important;
@@ -5054,7 +4993,6 @@ body[data-screen="game"] .board-card .card-tags span { font-size:7.5px; padding:
   body[data-screen="game"] .hand-card .card-stat { width:26px; height:26px; font-size:12px; }
   body[data-screen="game"] .hand-card .card-cost { width:25px; height:25px; font-size:13px; }
 }
-
 
 /* Prominent action-slot HUD */
 body[data-screen="game"] .mana-display.mana-hud {
@@ -5132,7 +5070,6 @@ body[data-screen="game"] .hand-card.type-minion .card-text { right: 64px !import
 body[data-screen="game"] .hand-card .card-name { bottom: 72px !important; }
 body[data-screen="game"] .hand-card .card-type { bottom: 57px !important; }
 body[data-screen="game"] .hand-card .card-art { inset: 0 0 128px 0 !important; }
-
 
 /* FINAL battle-card rule: no prose in hand, art-first */
 body[data-screen="game"] .hand-card .card-type { display:none !important; }
@@ -5467,7 +5404,6 @@ body[data-screen="game"] .hand-card .card-stat.hp {
   background: linear-gradient(rgba(4,10,12,.2), rgba(4,10,12,.2)), url("../assets/ui/stat-hp.webp?v=20261020cs") center/82% no-repeat, radial-gradient(circle at 35% 28%, #ffb4a5, #c64b48 58%, #78211f 100%) !important;
 }
 
-
 /* Keyword and cost cleanup: keep cost inside the card, keywords readable below it */
 body[data-screen="game"] .hand-card .card-cost { top:5px !important; left:5px !important; width:30px !important; height:30px !important; font-size:15px !important; }
 body[data-screen="game"] .board-card .card-cost { top:3px !important; left:3px !important; width:25px !important; height:25px !important; font-size:13px !important; }
@@ -5621,7 +5557,6 @@ body[data-screen="game"] .hand-card .card-text {
 }
 body[data-screen="game"] .hand-card .stat-art { opacity: .82 !important; }
 
-
 /* Codex keyword chips use the same color language as battle cards */
 .codex-card .card-tags.lib-tags {
   position:absolute; top:44px; left:10%; right:10%; bottom:auto;
@@ -5694,7 +5629,6 @@ body[data-screen="game"] .hand-card.library-hand:last-child { margin-right: 8px 
   body[data-screen="game"] .hand-card.library-hand { margin-right: 10px !important; }
 }
 
-
 /* Deck-builder card pool keywords */
 .library-mini .card-tags.lib-tags {
   position:absolute; top:29px; left:5px; right:5px; bottom:auto;
@@ -5715,7 +5649,6 @@ body[data-screen="game"] .hand-card.library-hand:last-child { margin-right: 8px 
 .library-mini .card-tags.lib-tags .keyword-tag[data-tag="血祭"] { background:rgba(92,24,34,.96); color:#ffd8d6; border-color:#d47b73; }
 .library-mini .card-tags.lib-tags .keyword-tag[data-tag="登场"] { background:rgba(138,88,28,.96); color:#fff0c9; border-color:#e0b164; }
 
-
 /* End-turn button changes color by side */
 body[data-screen="game"] .vein-row .end-turn-btn.enemy-phase {
   background:linear-gradient(180deg,#574b39,#332b21 58%,#18140f) !important;
@@ -5730,7 +5663,6 @@ body[data-screen="game"] .vein-row .end-turn-btn.my-phase {
   opacity:1 !important; filter:none !important;
 }
 body[data-screen="game"] .vein-row .end-turn-btn.enemy-phase:hover { filter:saturate(.72) !important; cursor:default !important; }
-
 
 /* Action slot: show the cells, not a redundant 3 / 3 */
 body[data-screen="game"] .mana-display {
@@ -5787,7 +5719,6 @@ body[data-screen="game"] .deck-relic-pick { display: none !important; }
 #screen-deck .deck-auto-help { font-size: 10px; }
 #screen-deck .deck-message { font-size: 10px; line-height: 1.45; }
 
-
 /* action slot v2: no redundant numeric readout, cells fill the bar */
 body[data-screen="game"] .mana-display {
   display:grid !important; grid-template-columns:1fr !important; gap:7px !important;
@@ -5831,7 +5762,6 @@ body[data-screen="game"] .mana-pip.filled { background:#8fd8cc !important; borde
 
 #screen-deck .deck-loadout-bar { display: none !important; }
 
-
 /* Make the home save plate a first-class entry point */
 .home-account-dock {
   right:0 !important; bottom:clamp(150px,17vh,188px) !important; width:min(430px,44vw) !important;
@@ -5854,7 +5784,6 @@ body[data-screen="game"] .mana-pip.filled { background:#8fd8cc !important; borde
 .first-run-name { margin:14px 0 6px; width:100%; font-size:15px; padding:12px 14px; }
 @media (max-width:1000px) { .home-account-dock { width:min(470px,100%) !important; bottom:auto !important; } }
 
-
 /* Opponent remaining cards replaces the unusable enemy skill button */
 .hero-opponent-resources {
   display:grid; grid-template-columns:auto 1fr; grid-template-rows:auto auto;
@@ -5868,7 +5797,6 @@ body[data-screen="game"] .mana-pip.filled { background:#8fd8cc !important; borde
 .op-resource-count span { color:#c8a96e; font-size:8px; }
 .op-resource-label { color:#e6d3af; font-size:9px; letter-spacing:.08em; }
 .op-resource-hand { color:#a9c4bd; font-size:9px; }
-
 
 /* Bottom HUD: leader skill + remaining deck on the left, action slot on the right */
 body[data-screen="game"] #deck-left-badge { display:none !important; }
@@ -5896,7 +5824,6 @@ body[data-screen="game"] .hero-skill-inline { display:none !important; }
   body[data-screen="game"] .deck-dock strong { font-size:18px; }
   body[data-screen="game"] .hand-meta .hint { display:none !important; }
 }
-
 
 /* Always-visible in-game help actions */
 body[data-screen="game"] .game-help-actions { display:flex !important; align-items:center; gap:4px; flex:0 0 auto; margin-left:6px; }
@@ -6859,9 +6786,6 @@ body[data-screen="game"] .hero-panel.relic-just-equipped .hs-hero-portrait { ani
 .battler-game-log .panel-label { margin-bottom:2px; }
 @media(max-width:900px){.battler-pick-grid{grid-template-columns:repeat(4,minmax(0,1fr));}.battler-faction-row{grid-template-columns:repeat(3,minmax(0,1fr));}.battler-game-shell{height:auto;min-height:100vh;padding:8px 10px 16px;}.battler-duel-field{grid-template-columns:1fr;flex:none;min-height:0;}.battler-duel-center{flex-direction:row;padding:3px 0;}.battler-vs{width:34px;height:34px;font-size:12px;}.battler-duel-hero{height:92px;flex-basis:92px;}.battler-game-top{align-items:flex-start;flex-wrap:wrap;}.battler-game-stats{margin-left:0;}.battler-game-shop .battler-card{width:calc(33.33% - 5px);min-width:96px;}.battler-game-bottom{grid-template-columns:1fr;}.battler-game-bottom .battler-lobby{grid-column:auto;}}
 
-
-
-
 /* ===== arcade hub / dice / triage ===== */
 .arcade-page-shell { max-width:1000px; }
 .arcade-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
@@ -7041,11 +6965,10 @@ body.hide-zone-labels .board-label, body.hide-zone-labels .zone-name, body.hide-
 .profile-avatar-option b { font:500 18px/1 var(--font-display); color:#e6c77d; }
 .profile-cardback-preview { width:38px; height:54px; border-radius:3px; border:1px solid rgba(217,164,65,.42); background-size:cover; background-position:center; align-self:center; }
 @media(max-width:700px){.profile-custom-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
-:root { --card-back-image: url("/assets/ui/card_back.svg"); }
+:root { --card-back-image: url("/assets/ui/card-back-jimeng.webp?v=20261027art15"); }
 .card-back-edge, .hs-opp-hand-back, .deck-rail-card { background-image: var(--card-back-image) !important; }
 body[data-screen="game"] .deck-rail-card { background-image: var(--card-back-image) !important; }
 .account-name-row + .btn { width:100%; margin-top:8px; }
-
 
 /* ===== 债务卡 ===== */
 .hand-card.type-debt { border-color:#b46b8f; box-shadow:0 0 0 1px rgba(180,107,143,.35), 0 12px 30px rgba(0,0,0,.35); }

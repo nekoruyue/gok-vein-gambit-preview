@@ -281,7 +281,7 @@ function createAuth(opts) {
     }
     return false;
   }
-  return { handle, userFromReq, sessionUser, getSave, dbPath };
+  return { handle, userFromReq, sessionUser, getSave, dbPath, db };
 }
 
 module.exports = { createAuth };

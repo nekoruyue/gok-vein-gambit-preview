@@ -400,8 +400,11 @@
     var timer = setInterval(function () {
       tries++;
       var b = document.getElementById("boot-loading");
-      var visible = b && !b.hidden && getComputedStyle(b).display !== "none";
-      if (!visible || tries > 40) {
+      var bootVisible = b && !b.hidden && getComputedStyle(b).display !== "none";
+      // 健康游戏忠告要先播完，再上开场动画
+      var hp = document.getElementById("health-notice");
+      var hpVisible = hp && !hp.hidden;
+      if ((!bootVisible && !hpVisible) || tries > 80) {
         clearInterval(timer);
         setTimeout(function () { play(); }, 260);
       }

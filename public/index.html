@@ -5,25 +5,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, user-scalable=yes">
   <title>戈克世界：流脉牌局</title>
   <link rel="icon" href="favicon.ico">
-  <link rel="stylesheet" href="css/style.css?v=20261026e68">
-  <link rel="stylesheet" href="css/hs-layout.css?v=20261026e68">
-  <link rel="stylesheet" href="css/art-fixes.css?v=20261026e68">
-  <link rel="stylesheet" href="css/mobile.css?v=20261026e68">
-  <link rel="stylesheet" href="css/vfx.css?v=20261026e68">
+  <link rel="stylesheet" href="css/style.css?v=20261027e69">
+  <link rel="stylesheet" href="css/hs-layout.css?v=20261027e69">
+  <link rel="stylesheet" href="css/art-fixes.css?v=20261027e69">
+  <link rel="stylesheet" href="css/mobile.css?v=20261027e69">
+  <link rel="stylesheet" href="css/vfx.css?v=20261027e69">
   <link rel="stylesheet" href="css/archive.css?v=20261026ui1">
   <link rel="stylesheet" href="css/opening.css?v=20261026o1">
+    <link rel="stylesheet" href="css/card-stats.css?v=20261027s57">
 </head>
 <body data-screen="home">
   <div id="channel-badge" class="channel-badge" hidden></div>
-  <div id="boot-loading" class="boot-loading">
-    <div class="boot-panel">
-      <div class="boot-mark">GK</div>
-      <div class="boot-eyebrow">凯斯特档案 / 启动</div>
-      <h1>戈克世界</h1>
-      <p id="boot-title">正在展开流脉档案</p>
+  <div id="boot-loading" class="boot-loading hidden">
+    <div class="boot-card">
+      <i class="boot-corner tl"></i><i class="boot-corner tr"></i><i class="boot-corner bl"></i><i class="boot-corner br"></i>
+      <div class="boot-head">
+        <div class="boot-mark">GK</div>
+        <div class="boot-head-copy">
+          <div class="boot-eyebrow">凯斯特档案 / 启动</div>
+          <h1>戈克世界<span>流脉牌局</span></h1>
+        </div>
+      </div>
+      <div class="boot-status">
+        <p id="boot-title">正在展开流脉档案</p>
+        <span id="boot-status">正在校准地脉与阵位…</span>
+      </div>
       <div class="boot-progress"><i id="boot-progress"></i></div>
-      <div class="boot-meta"><span id="boot-percent">0%</span><small id="boot-tip">正在校准地脉与阵位…</small></div>
+      <div class="boot-meta">
+        <span id="boot-percent">0%</span>
+        <span class="boot-meta-note" id="boot-percent-note">正在读取</span>
+      </div>
+      <div class="boot-tipbar">
+        <span class="boot-tip-label">提示 / TIP</span>
+        <span id="boot-tip">正在校准地脉与阵位…</span>
+      </div>
       <div class="boot-server-hint">服务器位于新加坡。若加载缓慢，建议使用网络加速器。</div>
+    </div>
+  </div>
+  <div id="health-notice" class="health-notice" hidden>
+    <div class="health-card" role="dialog" aria-modal="true" aria-labelledby="health-title">
+      <div class="health-mark">GK</div>
+      <h2 id="health-title">健康游戏忠告</h2>
+      <div class="health-lines">
+        <p>抵制不良游戏，拒绝盗版游戏。</p>
+        <p>注意自我保护，谨防受骗上当。</p>
+        <p>适度游戏益脑，沉迷游戏伤身。</p>
+        <p>合理安排时间，享受健康生活。</p>
+      </div>
+      <div class="health-timer"><i></i></div>
+      <div class="health-foot">戈克世界 · 流脉牌局　|　凯斯特档案 · 启动须知</div>
     </div>
   </div>
   <div id="bg"></div>
@@ -119,8 +149,11 @@
             </div>
           </aside>
           <button id="home-task-strip" class="home-rail-task" type="button">
-            <span class="hr-task-kicker">主线</span>
+            <span class="hr-task-kicker">主线 · <b id="home-task-chapter">第一章</b></span>
             <strong id="home-task-next">下一步：查看任务</strong>
+            <span class="hr-task-meter" aria-hidden="true"><i id="home-task-fill"></i></span>
+            <span class="hr-task-count" id="home-task-count">0 / 0</span>
+            <span class="hr-task-go" aria-hidden="true">任务页 →</span>
           </button>
         </aside>
         
@@ -1095,7 +1128,8 @@
           <div class="panel settings-panel settings-about-panel">
             <div class="panel-label">关于 / ABOUT</div>
             <p class="settings-about">《戈克世界：流脉牌局》经典模式 2.0。八阵营、633 张卡牌 / 585 可收藏，支持起手调度、编成、单人 AI 与在线组队码房间。</p>
-            <p class="settings-about">当前构建：20261026e68</p>
+                        <p class="settings-about settings-keys-hint">键盘：Esc 返回 / 关闭弹窗 · 空格 结束回合（对局中）· / 聚焦图鉴搜索</p>
+            <p class="settings-about">当前构建：20261027e69</p>
             <button id="btn-settings-credits" class="btn btn-small btn-ghost">制作与素材说明</button>
             <button id="btn-settings-feedback" class="btn btn-small btn-ghost">反馈与交流</button>
           </div>
@@ -1285,7 +1319,7 @@
                 </div>
               </button>
               <button class="faction-card" data-faction="losutai">
-                <div class="faction-portrait" style="background-image:url('assets/portraits/balaena.webp?v=20261021art9')"></div>
+                <div class="faction-portrait" style="background-image:url('assets/portraits/balaena.webp?v=20261025art12')"></div>
                 <div class="faction-body">
                   <span class="faction-tag">洛斯汰聚落</span>
                   <strong>贝莱娜（Balaena）</strong>
@@ -1294,7 +1328,7 @@
                 </div>
               </button>
               <button class="faction-card" data-faction="snow">
-                <div class="faction-portrait" style="background-image:url('assets/portraits/sernach.webp?v=20261021art9')"></div>
+                <div class="faction-portrait" style="background-image:url('assets/portraits/sernach.webp?v=20261025art12')"></div>
                 <div class="faction-body">
                   <span class="faction-tag">雪都</span>
                   <strong>熙尔娜·张</strong>
@@ -1437,11 +1471,11 @@
                   </div>
                 </button>
                 <button class="faction-card" data-lan-faction="losutai">
-                  <div class="faction-portrait" style="background-image:url('assets/portraits/balaena.webp?v=20261021art9')"></div>
+                  <div class="faction-portrait" style="background-image:url('assets/portraits/balaena.webp?v=20261025art12')"></div>
                   <div class="faction-body"><span class="faction-tag">洛斯汰聚落</span><strong>贝莱娜（Balaena）</strong><small>召唤 / 余响 / 回潮 / 蚀毒</small></div>
                 </button>
                 <button class="faction-card" data-lan-faction="snow">
-                  <div class="faction-portrait" style="background-image:url('assets/portraits/sernach.webp?v=20261021art9')"></div>
+                  <div class="faction-portrait" style="background-image:url('assets/portraits/sernach.webp?v=20261025art12')"></div>
                   <div class="faction-body"><span class="faction-tag">雪都</span><strong>熙尔娜·张</strong><small>冻结 / 风系 / 冰墙</small></div>
                 </button>
               </div>
@@ -1481,8 +1515,8 @@
                 <button class="faction-card" data-guest-faction="republic"><div class="faction-portrait" style="background-image:url('assets/heroes/wolfram.webp')"></div><div class="faction-body"><span class="faction-tag">共和国</span><strong>沃尔夫拉姆·冯·施泰因</strong><small>护甲 / 守备 / 秩序</small></div></button>
                 <button class="faction-card" data-guest-faction="empire"><div class="faction-portrait" style="background-image:url('assets/heroes/otto_centered.webp')"></div><div class="faction-body"><span class="faction-tag">帝国</span><strong>奥托·汉瑟尔</strong><small>炮击 / 护甲 / 重装</small></div></button>
                 <button class="faction-card" data-guest-faction="greyharbor"><div class="faction-portrait" style="background-image:url('assets/heroes/monarch.webp')"></div><div class="faction-body"><span class="faction-tag">灰港同盟</span><strong>莫纳克</strong><small>悬赏 / 沉默 / 毒袭</small></div></button>
-                <button class="faction-card" data-guest-faction="losutai"><div class="faction-portrait" style="background-image:url('assets/portraits/balaena.webp?v=20261021art9')"></div><div class="faction-body"><span class="faction-tag">洛斯汰聚落</span><strong>贝莱娜（Balaena）</strong><small>召唤 / 余响 / 回潮 / 蚀毒</small></div></button>
-                <button class="faction-card" data-guest-faction="snow"><div class="faction-portrait" style="background-image:url('assets/portraits/sernach.webp?v=20261021art9')"></div><div class="faction-body"><span class="faction-tag">雪都</span><strong>熙尔娜·张</strong><small>冻结 / 风系 / 冰墙</small></div></button>
+                <button class="faction-card" data-guest-faction="losutai"><div class="faction-portrait" style="background-image:url('assets/portraits/balaena.webp?v=20261025art12')"></div><div class="faction-body"><span class="faction-tag">洛斯汰聚落</span><strong>贝莱娜（Balaena）</strong><small>召唤 / 余响 / 回潮 / 蚀毒</small></div></button>
+                <button class="faction-card" data-guest-faction="snow"><div class="faction-portrait" style="background-image:url('assets/portraits/sernach.webp?v=20261025art12')"></div><div class="faction-body"><span class="faction-tag">雪都</span><strong>熙尔娜·张</strong><small>冻结 / 风系 / 冰墙</small></div></button>
               </div>
               <div class="lan-guest-deck-row">
                 <div><span id="lan-guest-deck-label">预设牌组 · 30 张</span><small>加入后使用这套牌组</small></div>
@@ -1514,18 +1548,28 @@
 
     <section id="screen-game" class="screen">
       <div class="game-shell">
+      <!-- 牌桌装饰：纯视觉层，pointer-events:none -->
+      <i class="table-corner tl"></i><i class="table-corner tr"></i>
+      <i class="table-corner bl"></i><i class="table-corner br"></i>
+      <i class="table-emblem"></i>
+      <i class="table-rail left"></i><i class="table-rail right"></i>
+        <!-- 对局页两侧空白：左弃牌堆摘要 / 右生效状态（宽屏才显示） -->
+        <aside id="side-log" class="side-panel side-left" hidden></aside>
+        <aside id="side-pile" class="side-panel side-right" hidden></aside>
         <header class="game-top">
           <button id="btn-game-home" class="btn btn-small btn-ghost">← 退出</button>
           <div class="game-mode" id="game-mode-label">普卫岛 vs 学院</div>
           <div class="turn-badge" id="turn-badge">第 1 轮</div>
+          <div id="game-status-strip" class="game-status-strip"></div>
           <div id="game-room-code" class="game-room-code" hidden></div>
           <div id="game-connection-status" class="game-connection-status" hidden>对方已断线</div>
           <div id="game-experiment-badge" class="game-experiment-badge" hidden></div>
           <div id="log-mini" class="log-mini" title="点击查看完整推演日志">等待第一条推演记录…</div>
-          <div class="game-top-actions">
+                    <div class="game-top-actions">
             <button id="btn-concede" class="btn btn-small btn-ghost">认输</button>
             <button id="btn-rank-game" class="btn btn-small btn-ghost">排位</button>
             <button id="btn-toggle-log" class="btn btn-small btn-ghost">日志</button>
+            <button id="btn-graveyard" class="btn btn-small btn-ghost" title="查看双方共享的弃牌堆">弃牌堆</button>
             <button id="btn-sound" class="btn btn-small btn-ghost">声音：开</button>
           </div>
           <div class="game-help-actions" aria-label="帮助">
@@ -1622,6 +1666,7 @@
               </div>
             </div>
             <div class="hint" id="game-hint">点击手牌出牌；点击随从攻击。</div>
+        <div id="phase-strip" class="phase-strip" hidden></div>
           </div>
           <div class="mobile-hint">长按卡牌查看详情 · 左右滑动浏览手牌</div>
           <div class="gk-hand-curve" id="gk-hand-curve" aria-hidden="true"></div>
@@ -1672,17 +1717,19 @@
   <div id="toast" class="toast"></div>
 
   <script>window.__GOK_CHANNEL_VALUE__ = "__GOK_CHANNEL__";</script>
-  <script src="js/channel.js?v=20261026e68"></script>
-  <script src="js/data.js?v=20261026e68"></script>
-  <script src="js/engine.js?v=20261026e68"></script>
-  <script src="js/ai.js?v=20261026e68"></script>
-  <script src="js/cinematic.js?v=20261026e68"></script>
-  <script src="js/vfx.js?v=20261026e68"></script>
-  <script src="js/ui.js?v=20261026e68"></script>
-  <script src="js/content.js?v=20261026e68"></script>
-  <script src="js/battler.js?v=20261026e68"></script>
-  <script src="js/arcade.js?v=20261026e68"></script>
-  <script src="js/main.js?v=20261026e68"></script>
+  <script src="js/channel.js?v=20261027e69"></script>
+  <script src="js/data.js?v=20261027e69"></script>
+  <script src="js/engine.js?v=20261027e69"></script>
+  <script src="js/ai.js?v=20261027e69"></script>
+  <script src="js/cinematic.js?v=20261027e69"></script>
+  <script src="js/vfx.js?v=20261027e69"></script>
+  <script src="js/net-authority.js?v=20261027e69"></script>
+  <script src="js/ui.js?v=20261027e69"></script>
+  <script src="js/updater-ui.js?v=20261027e69"></script>
+  <script src="js/content.js?v=20261027e69"></script>
+  <script src="js/battler.js?v=20261027e69"></script>
+  <script src="js/arcade.js?v=20261027e69"></script>
+  <script src="js/main.js?v=20261027e69"></script>
 
   <!-- 开场动画：六幕，需要一次点击才允许出声，可跳过 -->
   <div id="gok-opening" class="gkopen" hidden data-scene="idle">

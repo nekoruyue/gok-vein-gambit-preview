@@ -824,7 +824,18 @@
     }
   }
 
-  function processDeaths(state) {
+  // 弃牌堆（坟墓）是双方共享的：统一从这里入葬，带归属信息
+function toGraveyard(state, owner, cardId, kind) {
+  if (!state.discard) state.discard = [];
+  state.discard.push({ cardId: cardId, kind: kind || "unknown", owner: owner == null ? null : owner.index, turn: state.turnNumber || 0 });
+  // 同时保留原来的 per-player 记录，兼容已有的读取逻辑
+  if (owner) {
+    if (!owner.discard) owner.discard = [];
+    owner.discard.push({ cardId: cardId, kind: kind || "unknown" });
+  }
+}
+
+function processDeaths(state) {
     if (state.deferDeaths) {
       state.deathsPending = true;
       return;
@@ -847,6 +858,8 @@
       for (const entry of dead) {
         const { p, z, m } = entry;
         p.board[z] = p.board[z].filter(x => x.uid !== m.uid);
+        // 阵亡的随从进共享弃牌堆
+        toGraveyard(state, p, m.cardId, "minion");
         state.events.push({ structured: true, kind: "death", targetUid: m.uid, player: p.index, zone: z });
         log(state, m.name + " 死亡。", p, "death");
         state.stats.minionsDied++;
@@ -1222,7 +1235,8 @@
       healHero(state, player, 2);
       log(state, "地脉之心：引脉触发，恢复领袖 2 点生命。", player, "heal");
     }
-    if (minion) log(state, "引脉 " + tier.vein + " 触发：" + minion.name + "。", player, "vein");
+    // veinBonus 这类 tier 没有 vein 字段，直接拼会打出「引脉 undefined」
+    if (minion) log(state, (tier.vein != null ? "引脉 " + tier.vein : "引脉") + " 触发：" + minion.name + "。", player, "vein");
     return true;
   }
 
@@ -1616,9 +1630,17 @@
       }
     } else if (def.type === "equipment" || def.type === "equipment") {
       const equipments = player.equipments || (player.equipments = []);
-      // 装备不设上限：想在牌组里塞几件就几件（玩家确认的规则）
+      // 装备上限 2 件：装第三张时挤掉最早的那张，被挤掉的进弃牌堆
       const hadRelic = player.relic;
-      if (equipments.indexOf(def.id) < 0) equipments.push(def.id);
+      if (equipments.indexOf(def.id) < 0) {
+        equipments.push(def.id);
+        while (equipments.length > 2) {
+          const droppedId = equipments.shift();
+          toGraveyard(state, player, droppedId, "equipment");
+          const droppedDef = D.CARDS[droppedId];
+          log(state, player.name + " 的装备位已满，弃掉「" + (droppedDef ? droppedDef.name : droppedId) + "」。", player, "discard");
+        }
+      }
       player.relic = equipments[0] || def.id;
       if (def.equipAura && def.equipAura.maxHp) { player.maxHp += def.equipAura.maxHp; player.hp += def.equipAura.maxHp; }
       recomputeAuras(state);
@@ -1645,6 +1667,17 @@
     } else if (def.type === "formation") {
       player.formations = player.formations || [];
       const already = (player.formations || []).some(f => f.cardId === def.id && f.zone === zone);
+      // 一个阵位只保留一张阵型：同阵位的旧阵型先移除（覆盖），再放新的
+      const replaced = (player.formations || []).filter(f => f.zone === zone);
+      if (replaced.length) {
+        player.formations = player.formations.filter(f => f.zone !== zone);
+        // 被顶掉的阵型进弃牌堆
+        for (const old of replaced) {
+          toGraveyard(state, player, old.cardId, "formation");
+          const oldDef = D.CARDS[old.cardId];
+          log(state, player.name + " 覆盖了" + ZONE_NAMES[zone] + "的「" + (oldDef ? oldDef.name : old.cardId) + "」，旧阵型进弃牌堆。", player, "formation");
+        }
+      }
       if (player.formations.length >= 3) player.formations.shift();
       player.formations.push({ cardId: def.id, zone: zone, turnsLeft: def.formation && def.formation.duration ? def.formation.duration : null });
       if (!already) applyFormationToZone(state, player, zone, def.formation);
@@ -3625,6 +3658,8 @@
     if (state.status !== "playing") return;
     const player = state.players[state.current];
     state.turnNumber++;
+    // 阶段 1：回合开始（自动增益、行动力、光环、阵型倒计时都在这一段结算）
+    state.phase = "start";
     for (const p of state.players) {
       for (const m of allMinions(p)) {
         if (m.passive && m.passive.expiresTurn && m.passive.expiresTurn < state.turnNumber) m.passive = null;
@@ -3705,6 +3740,8 @@
       }
     }
     log(state, "—— " + player.name + " 的回合开始（第 " + state.round + " 轮，行动力 " + player.mana + "/" + player.maxMana + "）——", player, "turn");
+    // 阶段 2：抽牌
+    state.phase = "draw";
     drawCard(state, player, 1);
     if (player.nextTurnDraw) {
       const extraDraw = player.nextTurnDraw;
@@ -3718,6 +3755,8 @@
       else if (roll === 2) { drawCard(state, player, 1); log(state, "混沌事件：抽 1 张牌。", player, "draw"); }
       else { const all = state.players.flatMap(p => aliveMinions(p)); if (all.length) { const pick = all[randomInt(state, all.length)]; damageMinion(state, pick, 2, null, "混沌事件"); log(state, "混沌事件：" + pick.name + " 受到 2 点伤害。", player, "damage"); processDeaths(state); } }
     }
+    // 阶段 3：出牌
+    state.phase = "play";
     checkGameOver(state);
   }
 
@@ -3814,6 +3853,8 @@
     if (state.pendingChoice) return { ok: false, reason: "请先完成当前选择" };
     if (state.pendingMinionTarget) return { ok: false, reason: "请先选择登场目标" };
     const player = state.players[playerIndex];
+    // 阶段 4：结束（债务结算、回合结束效果都在这一段）
+    state.phase = "end";
     player.nextCostReduction = 0;
     // 冻结解冻：控制者的回合结束时递减
     for (const m of allMinions(player)) {
@@ -4000,6 +4041,7 @@
       deferDeaths: 0,
       deathsPending: false,
       status: "playing",
+      phase: "play",
       winner: null,
       pendingChoice: null,
       log: [],

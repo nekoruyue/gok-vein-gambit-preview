@@ -660,9 +660,9 @@
 
   // 初始化
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => VFX.init(), { once: true });
+    document.addEventListener("DOMContentLoaded", () => { if (document.body && document.body.dataset.screen === "game") VFX.init(); }, { once: true });
   } else {
-    VFX.init();
+    if (document.body && document.body.dataset.screen === "game") VFX.init();
   }
 
   root.GokVFX = VFX;

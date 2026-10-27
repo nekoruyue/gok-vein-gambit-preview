@@ -1,6 +1,6 @@
 {
   "name": "gok-vein-gambit",
-  "version": "0.9.7",
+  "version": "0.9.8",
   "private": true,
   "description": "《戈克世界：流脉牌局》八阵营流脉卡牌对战",
   "author": "戈克世界",
@@ -14,7 +14,17 @@
     "sim": "node scripts/simulate.mjs",
     "assert:cards": "node tests/card-assertions.js",
     "test:cards": "node tests/card-assertions.js",
-    "test:embed": "node tests/embedded-server-check.js"
+    "test:embed": "node tests/embedded-server-check.js",
+    "test": "node tests/run-all.cjs",
+    "test:ui": "node tests/run-all.cjs --ui",
+    "test:engine": "node tests/run-all.cjs --engine",
+    "bump": "node tools/bump-build.cjs",
+    "smoke": "node tests/qa-sweep.js",
+    "scan:fixed": "node tools/scan-fixed.cjs",
+    "audit": "node tools/deep-audit.cjs && node tests/firefox-check.js",
+    "audit:deep": "node tools/deep-audit.cjs",
+    "audit:firefox": "node tests/firefox-check.js",
+    "load": "node tools/load-test.cjs"
   },
   "devDependencies": {
     "electron": "^44.9.0",
@@ -30,9 +40,7 @@
     "files": [
       "electron/**/*",
       "public/**/*",
-      "server/server.js",
-      "server/auth.js",
-      "server/auth_pg.js",
+      "server/**/*",
       "package.json",
       "!public/assets/generated/*-raw/**",
       "!public/assets/generated/jimeng-raw*/**"

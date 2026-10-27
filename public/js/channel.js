@@ -28,7 +28,16 @@
 
   // 同一域名下也隔离抢先版存档；两个 Render 域名则天然隔离。
   if (channel === "preview") {
-    const prefix = "gok_preview::";
+    // 打补丁前留一份原始方法：存档迁移要绕过前缀直接操作真实键
+  try {
+    window.__gokStorageRaw = {
+      get: Storage.prototype.getItem,
+      set: Storage.prototype.setItem,
+      remove: Storage.prototype.removeItem
+    };
+  } catch (e) {}
+
+  const prefix = "gok_preview::";
     window.GOK_STORAGE_PREFIX = prefix;
     try {
       for (const name of ["getItem", "setItem", "removeItem"]) {

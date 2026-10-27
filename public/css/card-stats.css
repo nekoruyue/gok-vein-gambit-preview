@@ -1,0 +1,2267 @@
+/* =========================================================
+   卡牌数值徽章（最后加载，终结所有历史覆盖）
+   参照炉石：数字当主角，小图标只做角标点缀
+   ========================================================= */
+body[data-screen="game"] .gok-lib-stat,
+#screen-codex .gok-lib-stat,
+#screen-deck .gok-lib-stat {
+  width: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: visible !important;
+  font-family: var(--serif), Georgia, serif !important;
+  font-size: 19px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+  color: #fff !important;
+  text-shadow: 0 0 3px #000, 0 2px 3px rgba(0, 0, 0, .95), 0 0 10px rgba(0, 0, 0, .85) !important;
+  border: 2px solid #d8bd82 !important;
+  box-sizing: border-box !important;
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, .72),
+    inset 0 2px 4px rgba(255, 255, 255, .3),
+    inset 0 -3px 7px rgba(0, 0, 0, .6) !important;
+}
+
+body[data-screen="game"] .gok-lib-atk,
+#screen-codex .gok-lib-atk,
+#screen-deck .gok-lib-atk {
+  background: radial-gradient(circle at 50% 28%, #d0a244 0%, #855c17 56%, #2b1c05 100%) !important;
+}
+body[data-screen="game"] .gok-lib-hp,
+#screen-codex .gok-lib-hp,
+#screen-deck .gok-lib-hp {
+  background: radial-gradient(circle at 50% 28%, #cf4a41 0%, #861d18 56%, #2e0705 100%) !important;
+}
+
+/* 角标图标：剑挂左上、心挂右上 */
+body[data-screen="game"] .gok-lib-stat::before,
+#screen-codex .gok-lib-stat::before,
+#screen-deck .gok-lib-stat::before {
+  content: "" !important;
+  position: absolute !important;
+  top: -11px !important;
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  flex: 0 0 auto !important;
+  display: block !important;
+  z-index: 3 !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: contain !important;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .95)) !important;
+  mix-blend-mode: normal !important;
+  pointer-events: none !important;
+}
+body[data-screen="game"] .gok-lib-atk::before,
+#screen-codex .gok-lib-atk::before,
+#screen-deck .gok-lib-atk::before {
+  left: -12px !important;
+  right: auto !important;
+  bottom: auto !important;
+  background-image: url("/assets/ui/badge-attack.webp") !important;
+}
+body[data-screen="game"] .gok-lib-hp::before,
+#screen-codex .gok-lib-hp::before,
+#screen-deck .gok-lib-hp::before {
+  right: -12px !important;
+  left: auto !important;
+  bottom: auto !important;
+  background-image: url("/assets/ui/badge-health.webp") !important;
+}
+
+/* 图鉴 / 构筑：小一号 */
+#screen-codex .gok-lib-stat,
+#screen-deck .gok-lib-stat {
+  width: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+  font-size: 15px !important;
+  border-width: 1.5px !important;
+}
+#screen-codex .gok-lib-stat::before,
+#screen-deck .gok-lib-stat::before {
+  width: 17px !important;
+  height: 17px !important;
+  top: -8px !important;
+}
+
+/* 手牌里 hs-layout.css 用了更具体的选择器定死字号，这里用同样具体的链压回去 */
+body[data-screen="game"] .hand .library-hand .gok-lib-atk,
+body[data-screen="game"] .hand .library-hand .gok-lib-hp,
+body[data-screen="game"] .hand .library-hand .gok-lib-stat,
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-atk,
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-hp,
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-stat {
+  font-size: 19px !important;
+  width: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
+}
+
+/* 角标别往外挑：徽章贴着卡牌边缘，往外会被卡牌 overflow 裁掉，改成往内上方叠 */
+body[data-screen="game"] .gok-lib-atk::before,
+#screen-codex .gok-lib-atk::before,
+#screen-deck .gok-lib-atk::before {
+  left: 1px !important;
+  right: auto !important;
+  top: -10px !important;
+}
+body[data-screen="game"] .gok-lib-hp::before,
+#screen-codex .gok-lib-hp::before,
+#screen-deck .gok-lib-hp::before {
+  right: 1px !important;
+  left: auto !important;
+  top: -10px !important;
+}
+
+/* 角标图标缩到 22px 后基本认不出形状，反而像噪点，先关掉；
+   要图标就用 HUD 里 32px 以上的尺寸（那里看得清） */
+body[data-screen="game"] .gok-lib-stat::before,
+#screen-codex .gok-lib-stat::before,
+#screen-deck .gok-lib-stat::before {
+  display: none !important;
+  content: none !important;
+}
+
+/* 回滚 archive.css 后，旧的 background-image（剑/心图）又回来了，
+   在圆盘上盖住数字。这里用同样具体的链把它们清掉，只留圆盘渐变。 */
+body[data-screen="game"] .hand .library-hand .gok-lib-atk {
+  background: radial-gradient(circle at 50% 28%, #d0a244 0%, #855c17 56%, #2b1c05 100%) !important;
+  background-image: radial-gradient(circle at 50% 28%, #d0a244 0%, #855c17 56%, #2b1c05 100%) !important;
+}
+body[data-screen="game"] .hand .library-hand .gok-lib-hp {
+  background: radial-gradient(circle at 50% 28%, #cf4a41 0%, #861d18 56%, #2e0705 100%) !important;
+  background-image: radial-gradient(circle at 50% 28%, #cf4a41 0%, #861d18 56%, #2e0705 100%) !important;
+}
+body[data-screen="game"] .hand .library-hand .gok-lib-stat::before,
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-stat::before {
+  display: none !important;
+  content: none !important;
+  background-image: none !important;
+}
+
+/* 圆盘上的小符号：剑挂左上、心挂右上（白色剪影，20px 仍可辨） */
+body[data-screen="game"] .hand-card .gok-lib-stat::before,
+body[data-screen="game"] .board-card .gok-lib-stat::before,
+#screen-codex .gok-library-card .gok-lib-stat::before,
+#screen-deck .gok-library-card .gok-lib-stat::before {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  top: -7px !important;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  flex: 0 0 auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  inset: auto !important;
+  z-index: 3 !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: contain !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .95)) !important;
+  mix-blend-mode: normal !important;
+  pointer-events: none !important;
+  opacity: .95 !important;
+}
+body[data-screen="game"] .hand-card .gok-lib-atk::before,
+body[data-screen="game"] .board-card .gok-lib-atk::before,
+#screen-codex .gok-library-card .gok-lib-atk::before,
+#screen-deck .gok-library-card .gok-lib-atk::before {
+  left: 50% !important;
+  margin-left: -9px !important;
+  background-image: url("/assets/ui/mark-attack.webp") !important;
+}
+body[data-screen="game"] .hand-card .gok-lib-hp::before,
+body[data-screen="game"] .board-card .gok-lib-hp::before,
+#screen-codex .gok-library-card .gok-lib-hp::before,
+#screen-deck .gok-library-card .gok-lib-hp::before {
+  left: 50% !important;
+  margin-left: -9px !important;
+  background-image: url("/assets/ui/mark-health.webp") !important;
+}
+
+/* 之前为关掉「AI 图标」写过 display:none，这里用更高特异性链重新打开 */
+body[data-screen="game"] .hand .library-hand .gok-lib-stat::before,
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-stat::before {
+  display: block !important;
+  content: "" !important;
+  position: absolute !important;
+  top: -7px !important;
+  left: 50% !important;
+  margin-left: -9px !important;
+  width: 18px !important;
+  height: 18px !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: contain !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .95)) !important;
+  z-index: 3 !important;
+  pointer-events: none;
+}
+body[data-screen="game"] .hand .library-hand .gok-lib-atk::before,
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-atk::before {
+  background-image: url("/assets/ui/mark-attack.webp") !important;
+}
+body[data-screen="game"] .hand .library-hand .gok-lib-hp::before,
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-hp::before {
+  background-image: url("/assets/ui/mark-health.webp") !important;
+}
+
+/* 符号缩小并上移，别压住数字 */
+body[data-screen="game"] .hand .library-hand .gok-lib-stat::before,
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-stat::before {
+  top: -10px !important;
+  width: 15px !important;
+  height: 15px !important;
+  margin-left: -7.5px !important;
+}
+
+/* =========================================================
+   数值徽章凸出卡牌外（炉石式）：卡牌不裁切，徽章用负偏移露在外面
+   ========================================================= */
+body[data-screen="game"] .gok-library-card,
+#screen-codex .gok-library-card,
+#screen-deck .gok-library-card {
+  overflow: visible !important;
+}
+/* 卡面美术自己裁圆角，避免失去圆边 */
+body[data-screen="game"] .gok-library-card .gok-lib-art,
+#screen-codex .gok-library-card .gok-lib-art,
+#screen-deck .gok-library-card .gok-lib-art {
+  border-radius: 3px 3px 0 0;
+  overflow: hidden;
+}
+
+/* 攻击：卡外左下 */
+body[data-screen="game"] .hand .library-hand .gok-lib-atk,
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-atk,
+#screen-codex .gok-library-card .gok-lib-atk,
+#screen-deck .gok-library-card .gok-lib-atk {
+  left: -13px !important;
+  right: auto !important;
+  bottom: -9px !important;
+  z-index: 6 !important;
+}
+/* 生命：卡外右下 */
+body[data-screen="game"] .hand .library-hand .gok-lib-hp,
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-hp,
+#screen-codex .gok-library-card .gok-lib-hp,
+#screen-deck .gok-library-card .gok-lib-hp {
+  right: -13px !important;
+  left: auto !important;
+  bottom: -9px !important;
+  z-index: 6 !important;
+}
+/* 费用水晶：卡外左上 */
+body[data-screen="game"] .hand .library-hand .gok-lib-cost,
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-cost,
+#screen-codex .gok-library-card .gok-lib-cost,
+#screen-deck .gok-library-card .gok-lib-cost {
+  top: -11px !important;
+  left: -11px !important;
+  z-index: 6 !important;
+}
+/* 手牌要留出溢出空间，不然外侧徽章被容器裁掉 */
+body[data-screen="game"] .hand {
+  padding: 22px 16px 14px !important;
+  overflow: visible !important;
+}
+
+/* =========================================================
+   三个数值统一：费用 / 攻击 / 生命 同尺寸 40×40、同字号 19px、同字体
+   ========================================================= */
+body[data-screen="game"] .hand .library-hand .gok-lib-cost,
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-cost,
+#screen-codex .gok-library-card .gok-lib-cost,
+#screen-deck .gok-library-card .gok-lib-cost {
+  width: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  font-family: var(--serif), Georgia, serif !important;
+  font-size: 19px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-shadow: 0 0 3px #000, 0 2px 3px rgba(0, 0, 0, .95) !important;
+  border-width: 2px !important;
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, .72),
+    inset 0 2px 4px rgba(255, 255, 255, .3),
+    inset 0 -3px 7px rgba(0, 0, 0, .6) !important;
+}
+/* 三者都贴同一圈边界：左上 / 左下 / 右下，外凸距离一致 */
+body[data-screen="game"] .hand .library-hand .gok-lib-cost { top: -11px !important; left: -11px !important; }
+body[data-screen="game"] .hand .library-hand .gok-lib-atk { left: -11px !important; bottom: -11px !important; }
+body[data-screen="game"] .hand .library-hand .gok-lib-hp { right: -11px !important; bottom: -11px !important; }
+
+/* 手牌别叠太狠：徽章在卡外，叠住就互相遮；留一点正间距 */
+body[data-screen="game"] .hand .card { margin-right: 2px !important; }
+body[data-screen="game"] .hand .card:last-child { margin-right: 0 !important; }
+/* 卡牌自身层叠：从左到右递进，右边压左边（炉石手感） */
+body[data-screen="game"] .hand .hand-card.library-hand { position: relative; }
+
+/* 场面上的随从卡是紧凑布局，数值不能外凸，回到卡内角标 */
+body[data-screen="game"] .board .board-card .gok-lib-stat,
+body[data-screen="game"] .board-card.library-board .gok-lib-stat {
+  width: 30px !important;
+  min-width: 30px !important;
+  max-width: 30px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  max-height: 30px !important;
+  font-size: 15px !important;
+  bottom: 3px !important;
+  top: auto !important;
+}
+body[data-screen="game"] .board .board-card .gok-lib-atk,
+body[data-screen="game"] .board-card.library-board .gok-lib-atk {
+  left: 3px !important;
+  right: auto !important;
+}
+body[data-screen="game"] .board .board-card .gok-lib-hp,
+body[data-screen="game"] .board-card.library-board .gok-lib-hp {
+  right: 3px !important;
+  left: auto !important;
+}
+/* 场面卡的符号也缩小 */
+body[data-screen="game"] .board .board-card .gok-lib-stat::before,
+body[data-screen="game"] .board-card.library-board .gok-lib-stat::before {
+  width: 11px !important;
+  height: 11px !important;
+  top: -7px !important;
+  margin-left: -5.5px !important;
+}
+
+/* 场面卡数值：用最高特异性链压过 hs-layout 里那串 20/22/25/28/30px 的覆盖 */
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-stat {
+  width: 30px !important;
+  min-width: 30px !important;
+  max-width: 30px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  max-height: 30px !important;
+  font-size: 15px !important;
+  line-height: 1 !important;
+  bottom: 3px !important;
+  top: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-atk {
+  left: 3px !important;
+  right: auto !important;
+}
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-hp {
+  right: 3px !important;
+  left: auto !important;
+}
+
+/* 场面卡数值：圆盘背景之前只在手牌规则里给，场面卡没背景就白字浮在画上看不清 */
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-atk {
+  background: radial-gradient(circle at 50% 28%, #d0a244 0%, #855c17 56%, #2b1c05 100%) !important;
+  background-image: radial-gradient(circle at 50% 28%, #d0a244 0%, #855c17 56%, #2b1c05 100%) !important;
+  color: #fff !important;
+  text-shadow: 0 0 3px #000, 0 1px 2px rgba(0, 0, 0, .95) !important;
+  border: 2px solid #d8bd82 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .7), inset 0 2px 4px rgba(255, 255, 255, .3) !important;
+}
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-hp {
+  background: radial-gradient(circle at 50% 28%, #cf4a41 0%, #861d18 56%, #2e0705 100%) !important;
+  background-image: radial-gradient(circle at 50% 28%, #cf4a41 0%, #861d18 56%, #2e0705 100%) !important;
+  color: #fff !important;
+  text-shadow: 0 0 3px #000, 0 1px 2px rgba(0, 0, 0, .95) !important;
+  border: 2px solid #d8bd82 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .7), inset 0 2px 4px rgba(255, 255, 255, .3) !important;
+}
+
+/* 场面卡底部的关键词条（登场/守备/余响）会压住圆盘下半，数值上移到条上方 */
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-stat {
+  bottom: 32px !important;
+}
+
+/* 场面卡数值：卡名条在中间会挡住，改贴左右下角（关键词条是居中的，两侧空着） */
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-stat {
+  bottom: 6px !important;
+}
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-atk {
+  left: 2px !important;
+}
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-hp {
+  right: 2px !important;
+}
+
+/* 卡框别压在文字上：降到美术之上、文字之下 */
+body[data-screen="game"] .hand-card .card-frame-art,
+body[data-screen="game"] .board-card .card-frame-art,
+#screen-codex .gok-library-card .card-frame-art,
+#screen-deck .gok-library-card .card-frame-art {
+  z-index: 1 !important;
+  opacity: 1 !important;
+}
+body[data-screen="game"] .gok-lib-name,
+body[data-screen="game"] .gok-lib-text,
+body[data-screen="game"] .gok-lib-kind,
+body[data-screen="game"] .gok-lib-faction,
+#screen-codex .gok-lib-name,
+#screen-codex .gok-lib-text,
+#screen-codex .gok-lib-kind,
+#screen-deck .gok-lib-name,
+#screen-deck .gok-lib-text,
+#screen-deck .gok-lib-kind {
+  z-index: 4 !important;
+}
+
+/* 场上的随从不再需要费用：藏掉左上角水晶，只留攻击与生命 */
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-cost {
+  display: none !important;
+}
+/* 费用没了，数值可以回到底部两角，和关键词条错开 */
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-stat {
+  bottom: 5px !important;
+}
+
+/* 场面卡：数值缩到 22px 贴最底部左右边缘，避开中间卡名条与居中关键词条 */
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-stat {
+  width: 22px !important;
+  min-width: 22px !important;
+  max-width: 22px !important;
+  height: 22px !important;
+  min-height: 22px !important;
+  max-height: 22px !important;
+  font-size: 13px !important;
+  bottom: 0 !important;
+  top: auto !important;
+  border-width: 1px !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, .8) !important;
+}
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-atk {
+  left: 0 !important;
+  right: auto !important;
+}
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-hp {
+  right: 0 !important;
+  left: auto !important;
+}
+/* 关键词条让出左右各 24px 给数值 */
+body[data-screen="game"] .board .zone .board-card.library-board [class*="keyword"] {
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+}
+
+/* 场面卡 116×138：卡名条在中间、关键词条在底部，中间只有 ~20px 空档
+   数值 20px 卡进这个空档，不再被任何一条压住 */
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-stat {
+  width: 20px !important;
+  min-width: 20px !important;
+  max-width: 20px !important;
+  height: 20px !important;
+  min-height: 20px !important;
+  max-height: 20px !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  bottom: 24px !important;
+  top: auto !important;
+}
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-atk {
+  left: 2px !important;
+  right: auto !important;
+}
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-hp {
+  right: 2px !important;
+  left: auto !important;
+}
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-stat::before {
+  width: 9px !important;
+  height: 9px !important;
+  top: -6px !important;
+  margin-left: -4.5px !important;
+}
+
+/* 血量改成「当前/上限」后字号收一点，圆盘略加宽，避免数字溢出 */
+body[data-screen="game"] .board .zone .board-card.library-board .gok-lib-hp {
+  width: 26px !important;
+  min-width: 26px !important;
+  max-width: 26px !important;
+  font-size: 11px !important;
+  letter-spacing: -0.3px !important;
+}
+body[data-screen="game"] .hand-card .gok-lib-hp,
+body[data-screen="game"] .xizhao-card .gok-lib-hp {
+  font-size: 15px !important;
+  letter-spacing: -0.4px !important;
+}
+body[data-screen="game"] .hs-vital.hs-hp b {
+  letter-spacing: -0.5px;
+}
+
+/* 35/35 比单个数字宽，血量块的字号收一点、右侧留白，别顶到框边 */
+body[data-screen="game"] .hs-vital.hs-hp b {
+  font-size: 0.82em !important;
+  letter-spacing: -0.6px !important;
+}
+body[data-screen="game"] .hs-vital.hs-hp {
+  padding-right: 8px !important;
+}
+body[data-screen="game"] .hs-vital.hs-hp small {
+  margin-left: 4px !important;
+}
+
+/* 上一条把「生命」挤成竖排了，让它别换行、框也别压 */
+body[data-screen="game"] .hs-vital.hs-hp {
+  padding-right: 10px !important;
+  min-width: 132px !important;
+}
+body[data-screen="game"] .hs-vital.hs-hp small {
+  white-space: nowrap !important;
+  margin-left: 5px !important;
+  display: inline-block !important;
+}
+
+/* 上一条给血量块加的 132px 最小宽把「手牌 4/8」挤出去了，撤回 */
+body[data-screen="game"] .hs-vital.hs-hp {
+  min-width: 0 !important;
+  padding-right: 8px !important;
+  flex: 0 0 auto !important;
+}
+
+/* 卡框撑满卡面：卡片的 padding 让 absolute 卡框内缩了 3px/1px，往外顶回来 */
+#screen-codex .gok-library-card .card-frame-art,
+#screen-deck .gok-library-card .card-frame-art,
+body[data-screen="game"] .hand-card .card-frame-art,
+body[data-screen="game"] .board-card .card-frame-art {
+  left: -3px !important;
+  top: -1px !important;
+  right: -3px !important;
+  bottom: -1px !important;
+  width: auto !important;
+  height: auto !important;
+  border-radius: 4px !important;
+  object-fit: fill !important;
+}
+
+/* 图鉴/牌库里的攻血：之前没有圆盘底色，白字浮在画上看不清 */
+#screen-codex .gok-library-card .gok-lib-atk,
+#screen-deck .gok-library-card .gok-lib-atk {
+  background: radial-gradient(circle at 50% 28%, #d0a244 0%, #855c17 56%, #2b1c05 100%) !important;
+  background-image: radial-gradient(circle at 50% 28%, #d0a244 0%, #855c17 56%, #2b1c05 100%) !important;
+  color: #fff !important;
+  font-size: 15px !important;
+  text-shadow: 0 0 3px #000, 0 1px 2px rgba(0, 0, 0, .95) !important;
+  border: 2px solid #d8bd82 !important;
+  border-radius: 50% !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .75) !important;
+}
+#screen-codex .gok-library-card .gok-lib-hp,
+#screen-deck .gok-library-card .gok-lib-hp {
+  background: radial-gradient(circle at 50% 28%, #cf4a41 0%, #861d18 56%, #2e0705 100%) !important;
+  background-image: radial-gradient(circle at 50% 28%, #cf4a41 0%, #861d18 56%, #2e0705 100%) !important;
+  color: #fff !important;
+  font-size: 15px !important;
+  text-shadow: 0 0 3px #000, 0 1px 2px rgba(0, 0, 0, .95) !important;
+  border: 2px solid #d8bd82 !important;
+  border-radius: 50% !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .75) !important;
+}
+
+/* 上一条 width:auto 让卡框用了图片原始尺寸(560x840)，改成 calc 补回 padding */
+#screen-codex .gok-library-card .card-frame-art,
+#screen-deck .gok-library-card .card-frame-art,
+#screen-deck .gok-lib-card .card-frame-art,
+body[data-screen="game"] .hand-card .card-frame-art,
+body[data-screen="game"] .board-card .card-frame-art {
+  width: calc(100% + 6px) !important;
+  height: calc(100% + 2px) !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+/* 构筑卡组界面同样要有攻血圆盘 */
+#screen-deck .gok-lib-card .gok-lib-atk,
+#screen-deck .gok-lib-card .gok-lib-hp {
+  width: 36px !important;
+  height: 36px !important;
+  font-size: 15px !important;
+  color: #fff !important;
+  border: 2px solid #d8bd82 !important;
+  border-radius: 50% !important;
+  text-shadow: 0 0 3px #000, 0 1px 2px rgba(0, 0, 0, .95) !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .75) !important;
+}
+#screen-deck .gok-lib-card .gok-lib-atk {
+  background: radial-gradient(circle at 50% 28%, #d0a244 0%, #855c17 56%, #2b1c05 100%) !important;
+}
+#screen-deck .gok-lib-card .gok-lib-hp {
+  background: radial-gradient(circle at 50% 28%, #cf4a41 0%, #861d18 56%, #2e0705 100%) !important;
+}
+
+/* 图鉴/构筑卡的攻血之前是外凸布局，网格容器把露在卡外的部分裁掉了 → 改到卡内两角 */
+#screen-codex .gok-library-card .gok-lib-atk,
+#screen-deck .gok-library-card .gok-lib-atk,
+#screen-deck .gok-lib-card .gok-lib-atk {
+  left: 3px !important;
+  right: auto !important;
+  bottom: 3px !important;
+  top: auto !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  max-width: 34px !important;
+  min-height: 34px !important;
+  max-height: 34px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 14px !important;
+}
+#screen-codex .gok-library-card .gok-lib-hp,
+#screen-deck .gok-library-card .gok-lib-hp,
+#screen-deck .gok-lib-card .gok-lib-hp {
+  right: 3px !important;
+  left: auto !important;
+  bottom: 3px !important;
+  top: auto !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  max-width: 34px !important;
+  min-height: 34px !important;
+  max-height: 34px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 14px !important;
+}
+
+/* 图鉴/构筑卡的 ::before 是 18px 大图标 + z-index:3 压在圆盘正中，把数字盖住了
+   改成小图标挂在圆盘上沿，数字露出来 */
+#screen-codex .gok-library-card .gok-lib-atk::before,
+#screen-codex .gok-library-card .gok-lib-hp::before,
+#screen-deck .gok-library-card .gok-lib-atk::before,
+#screen-deck .gok-library-card .gok-lib-hp::before,
+#screen-deck .gok-lib-card .gok-lib-atk::before,
+#screen-deck .gok-lib-card .gok-lib-hp::before {
+  width: 12px !important;
+  height: 12px !important;
+  inset: -7px auto auto 50% !important;
+  margin-left: -6px !important;
+  background-size: 12px 12px !important;
+  z-index: 3 !important;
+}
+
+/* 卡框精确等于卡片 border box：卡片 padding 是 1px 1px 1px 3px（不对称）
+   所以左 -3 / 右 -1 / 上 -1 / 下 -1，宽 calc(100%+4px)，高 calc(100%+2px) */
+#screen-codex .gok-library-card .card-frame-art,
+#screen-deck .gok-library-card .card-frame-art,
+#screen-deck .gok-lib-card .card-frame-art,
+body[data-screen="game"] .hand-card .card-frame-art,
+body[data-screen="game"] .board-card .card-frame-art {
+  left: -3px !important;
+  right: -1px !important;
+  top: -1px !important;
+  bottom: -1px !important;
+  width: calc(100% + 4px) !important;
+  height: calc(100% + 2px) !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+/* 卡面斜向扫光（悬停时那道白色反光）——用户觉得膈应，去掉。
+   注意只关 ::after 的扫光，不动 ::before 的阵营侧条 */
+body[data-screen="game"] .gok-library-card::after,
+#screen-codex .gok-library-card::after,
+#screen-deck .gok-library-card::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  opacity: 0 !important;
+  transform: none !important;
+  transition: none !important;
+}
+body[data-screen="game"] .gok-library-card:hover::after,
+#screen-codex .gok-library-card:hover::after,
+#screen-deck .gok-library-card:hover::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  opacity: 0 !important;
+  transform: none !important;
+}
+
+/* 新关键词图标是写实画风，20px 偏糊，速查面板放到 24px */
+.keyword-glossary-icon {
+  width: 24px !important;
+  height: 24px !important;
+  flex: 0 0 24px !important;
+  object-fit: contain !important;
+  filter: none !important;
+}
+/* 卡面小标签继续用矢量图标，别再压暗成黑块 */
+.keyword-tag-icon {
+  filter: none !important;
+}
+
+/* 场面卡状态条：图标 + 文字 */
+.attack-status-icon {
+  width: 13px !important;
+  height: 13px !important;
+  object-fit: contain !important;
+  vertical-align: -2px !important;
+  margin-right: 2px !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .8)) !important;
+}
+body[data-screen="game"] .board-card .attack-status {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 1px !important;
+}
+
+/* 悬赏印章：换成徽记图片 */
+.bounty-seal-art {
+  width: 22px !important;
+  height: 22px !important;
+  object-fit: contain !important;
+  display: block !important;
+  margin: 0 auto 1px !important;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .9)) !important;
+}
+
+/* 场上随从的格挡角标 */
+body[data-screen="game"] .board-card .shield-mark {
+  position: absolute !important;
+  right: 2px !important;
+  top: 24px !important;
+  width: 20px !important;
+  height: 20px !important;
+  z-index: 13 !important;
+  pointer-events: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+body[data-screen="game"] .board-card .shield-mark-art {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .9)) drop-shadow(0 0 5px rgba(120, 220, 255, .5)) !important;
+}
+
+/* 护盾角标挪到左上，避免和右上角的悬赏印章打架 */
+body[data-screen="game"] .board-card .shield-mark {
+  right: auto !important;
+  left: 2px !important;
+  top: 22px !important;
+}
+
+/* 场面卡只有 116×138，图文混排看不清：状态改成纯图标角标，放大到 22px 并加深色底衬 */
+body[data-screen="game"] .board-card .shield-mark {
+  left: 1px !important;
+  right: auto !important;
+  top: 20px !important;
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle at 50% 40%, rgba(10, 34, 46, .92), rgba(4, 12, 18, .96)) !important;
+  border: 1px solid rgba(120, 220, 255, .55) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .85) !important;
+}
+body[data-screen="game"] .board-card .shield-mark-art {
+  width: 17px !important;
+  height: 17px !important;
+}
+body[data-screen="game"] .bounty-seal {
+  top: 1px !important;
+  right: 1px !important;
+  background: none !important;
+  border: 0 !important;
+  padding: 0 !important;
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, .9) !important;
+}
+body[data-screen="game"] .bounty-seal-art {
+  width: 24px !important;
+  height: 24px !important;
+  margin: 0 !important;
+}
+body[data-screen="game"] .bounty-seal b {
+  display: none !important;
+}
+
+/* 桌面端装备徽记之前被 hs-layout 的媒体查询整片藏掉了（display:none !important），
+   玩家看不见已装备的牌，以为「只能装两张」 */
+@media (min-width: 821px) {
+  body[data-screen="game"] .hero-panel .hs-relic-chip {
+    display: flex !important;
+  }
+  /* 多件装备时挨着排，不压到领袖头像 */
+  body[data-screen="game"] .hero-panel .hs-relic-chip-art {
+    width: 18px !important;
+    height: 18px !important;
+  }
+  body[data-screen="game"] .hero-panel .hs-relic-chip-label {
+    display: none !important;
+  }
+}
+
+/* 弃牌堆（坟墓）面板：左右两列，我方 / 对方 */
+.graveyard-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 12px 0 4px;
+}
+.graveyard-col {
+  border: 1px solid rgba(217, 164, 65, .22);
+  background: rgba(255, 255, 255, .02);
+  padding: 10px 11px;
+  min-height: 120px;
+}
+.graveyard-col-title {
+  display: block;
+  font-family: var(--serif);
+  font-size: 12.5px;
+  letter-spacing: .08em;
+  color: var(--gold-soft, #f0cc84);
+  margin-bottom: 8px;
+}
+.graveyard-empty {
+  font-size: 11.5px;
+  color: rgba(170, 186, 194, .6);
+  letter-spacing: .04em;
+}
+.graveyard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
+  gap: 7px;
+}
+.graveyard-chip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 4px 6px;
+  border: 1px solid rgba(255, 255, 255, .07);
+  background: rgba(6, 14, 17, .72);
+  border-radius: 3px;
+}
+.graveyard-chip-art {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 2px;
+  filter: saturate(.55) brightness(.82);
+}
+.graveyard-chip-name {
+  font-size: 10px;
+  line-height: 1.3;
+  text-align: center;
+  color: #cbd7dd;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.graveyard-chip-kind {
+  font-size: 9px;
+  font-style: normal;
+  letter-spacing: .06em;
+  color: rgba(160, 178, 188, .7);
+}
+.graveyard-note {
+  font-size: 11px;
+  color: rgba(170, 186, 194, .6);
+  margin: 6px 0 0;
+}
+@media (max-width: 680px) {
+  .graveyard-columns { grid-template-columns: 1fr; }
+}
+
+/* ===== 对局页两侧空白：左弃牌堆摘要 / 右生效状态 ===== */
+.side-panel { display: none; }
+
+@media (min-width: 1500px) {
+  body[data-screen="game"] .side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: absolute;
+    top: 56px;
+    width: 186px;
+    max-height: calc(100vh - 130px);
+    padding: 10px 11px;
+    border: 1px solid rgba(217, 164, 65, .18);
+    background: linear-gradient(180deg, rgba(7, 18, 20, .82), rgba(4, 11, 13, .9));
+    box-shadow: 0 8px 26px rgba(0, 0, 0, .45);
+    backdrop-filter: blur(3px);
+    z-index: 8;
+    pointer-events: auto;
+    font-size: 10.5px;
+  }
+  body[data-screen="game"] .side-panel[hidden] { display: none; }
+  body[data-screen="game"] .side-left { left: 14px; }
+  body[data-screen="game"] .side-right { right: 14px; }
+}
+
+.side-panel-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(217, 164, 65, .16);
+}
+.side-panel-head strong {
+  font-family: var(--serif);
+  font-size: 12px;
+  letter-spacing: .12em;
+  color: var(--gold-soft, #f0cc84);
+}
+.side-panel-head em {
+  font-style: normal;
+  font-size: 11px;
+  color: rgba(180, 196, 204, .8);
+}
+.side-panel-meta {
+  display: flex; gap: 10px;
+  font-size: 10px;
+  color: rgba(160, 178, 188, .75);
+  letter-spacing: .04em;
+}
+.side-panel-list { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+.side-panel-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 3px 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, .025);
+}
+.side-panel-row.mine { border-left: 2px solid rgba(120, 220, 190, .5); }
+.side-panel-row.empty { opacity: .45; }
+.side-panel-art {
+  width: 20px; height: 20px; flex: 0 0 20px;
+  object-fit: cover; border-radius: 2px;
+  filter: saturate(.6) brightness(.85);
+}
+.side-panel-name {
+  flex: 1 1 auto; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: #cbd7dd;
+  font-size: 10.5px;
+}
+.side-panel-kind {
+  font-style: normal; font-size: 9px;
+  color: rgba(150, 170, 180, .7);
+  flex: 0 0 auto;
+}
+.side-panel-empty {
+  font-size: 10px;
+  color: rgba(150, 168, 178, .55);
+  padding: 3px 4px;
+}
+.side-panel-block { display: flex; flex-direction: column; gap: 4px; }
+.side-panel-label {
+  font-size: 9.5px;
+  letter-spacing: .08em;
+  color: rgba(150, 168, 178, .7);
+}
+.side-panel-open {
+  margin-top: auto;
+  padding: 5px 8px;
+  border: 1px solid rgba(217, 164, 65, .3);
+  background: rgba(217, 164, 65, .08);
+  color: #e6cf9a;
+  font-size: 10px;
+  letter-spacing: .06em;
+  cursor: pointer;
+}
+.side-panel-open:hover { background: rgba(217, 164, 65, .16); }
+
+/* 左侧日志列表 */
+.side-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-right: 2px;
+}
+.side-log-row {
+  display: flex;
+  gap: 5px;
+  align-items: baseline;
+  padding: 2px 3px;
+  border-radius: 2px;
+  line-height: 1.45;
+}
+.side-log-row:nth-child(odd) { background: rgba(255, 255, 255, .022); }
+.side-log-turn {
+  flex: 0 0 auto;
+  font-style: normal;
+  font-size: 9px;
+  color: rgba(150, 170, 180, .6);
+  letter-spacing: .04em;
+}
+.side-log-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 10.5px;
+  color: #c3d1d8;
+  word-break: break-word;
+}
+.side-log-damage .side-log-text { color: #e6a08c; }
+.side-log-heal .side-log-text { color: #93d9b0; }
+.side-log-death .side-log-text { color: #b9a8d6; }
+.side-log-summon .side-log-text { color: #a8cde6; }
+.side-log-formation .side-log-text { color: #e6cf9a; }
+.side-log-equipment .side-log-text { color: #e6cf9a; }
+.side-log-discard .side-log-text { color: #9aa7b0; }
+
+/* 右侧抽牌堆 */
+.side-pile-deck {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 8px;
+  border: 1px solid rgba(217, 164, 65, .2);
+  background: rgba(255, 255, 255, .025);
+  border-radius: 3px;
+}
+.side-pile-deck-art {
+  width: 30px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .6);
+}
+.side-pile-deck-copy {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+.side-pile-deck-copy small {
+  font-size: 9.5px;
+  letter-spacing: .08em;
+  color: rgba(160, 178, 188, .8);
+  margin-right: 4px;
+}
+.side-pile-deck-copy b {
+  font-family: var(--serif);
+  font-size: 22px;
+  line-height: 1;
+  color: var(--gold-soft, #f0cc84);
+}
+.side-pile-deck-copy em {
+  font-style: normal;
+  font-size: 10px;
+  color: rgba(160, 178, 188, .75);
+}
+.side-pile-gyhead { margin-top: 4px; }
+
+/* 牌库已经搬到右侧栏，英雄信息栏里那个徽章隐藏 */
+body[data-screen="game"] .hs-hero-deck {
+  display: none !important;
+}
+
+/* 加载页提示条：原来是 align-items: flex-start，单行文字会顶在上沿，看着不居中 */
+.boot-loading .boot-tipbar {
+  align-items: center !important;
+}
+.boot-loading #boot-tip {
+  display: flex !important;
+  align-items: center !important;
+  min-height: 1.6em !important;
+}
+.boot-loading .boot-tip-label {
+  align-self: center !important;
+}
+
+/* 左日志：折叠按钮 + 图标 + 可点卡名 */
+.side-log-toggle {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--serif);
+  font-size: 12px;
+  letter-spacing: .12em;
+  color: var(--gold-soft, #f0cc84);
+  cursor: pointer;
+}
+.side-log-toggle:hover { color: #ffe9b8; }
+.side-log-icon {
+  flex: 0 0 auto;
+  font-style: normal;
+  width: 11px;
+  text-align: center;
+  font-size: 10px;
+  color: rgba(150, 170, 180, .7);
+}
+.side-log-card {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 3px;
+  border: 0;
+  border-bottom: 1px dashed rgba(217, 164, 65, .45);
+  background: none;
+  color: #e6cf9a;
+  font-size: 10.5px;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.side-log-card:hover { color: #fff0c8; border-bottom-color: rgba(255, 233, 184, .9); }
+
+/* 折叠状态：只留标题条 */
+body[data-screen="game"] .side-panel.side-left.collapsed {
+  width: auto;
+  min-width: 104px;
+  max-height: none;
+  padding: 8px 10px;
+}
+body[data-screen="game"] .side-panel.side-left.collapsed .side-panel-head {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+/* 右侧两张牌库：对方在上、我方在下，中间是共享坟墓 */
+.side-pile-deck.foe { border-color: rgba(200, 110, 100, .24); }
+.side-pile-deck.mine { border-color: rgba(120, 200, 180, .26); }
+.side-pile-deck.foe .side-pile-deck-copy b { color: #e0a89c; }
+.side-pile-deck.mine .side-pile-deck-copy b { color: #a8e0cd; }
+.side-pile-gyhead { margin-top: 6px; }
+.side-panel-row[style*="pointer"]:hover { background: rgba(217, 164, 65, .1); }
+
+/* 顶栏日志已经由左侧栏取代 */
+body[data-screen="game"] #log-mini { display: none !important; }
+body[data-screen="game"] #btn-toggle-log { display: none !important; }
+
+/* ===== 回合阶段指示器（英雄信息栏右侧空白）===== */
+body[data-screen="game"] .phase-strip {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: flex-end;
+  pointer-events: none;
+  z-index: 9;
+}
+body[data-screen="game"] .phase-strip[hidden] { display: none; }
+.phase-strip-title small {
+  font-size: 9px;
+  letter-spacing: .14em;
+  color: rgba(160, 210, 190, .85);
+}
+body[data-screen="game"] .phase-strip.foe-turn .phase-strip-title small {
+  color: rgba(214, 150, 140, .85);
+}
+.phase-strip-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.phase-chip {
+  padding: 3px 7px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  background: rgba(6, 16, 18, .72);
+  border-radius: 2px;
+  opacity: .5;
+  transition: opacity .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+.phase-chip b {
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: .06em;
+  color: rgba(200, 214, 220, .85);
+  white-space: nowrap;
+}
+.phase-chip.done {
+  opacity: .75;
+  border-color: rgba(120, 200, 180, .3);
+}
+.phase-chip.active {
+  opacity: 1;
+  border-color: rgba(240, 204, 132, .8);
+  background: rgba(217, 164, 65, .16);
+  box-shadow: 0 0 12px rgba(240, 204, 132, .28);
+}
+.phase-chip.active b {
+  color: #ffe9b8;
+  font-weight: 600;
+}
+.phase-arrow {
+  font-style: normal;
+  font-size: 10px;
+  color: rgba(150, 170, 180, .45);
+}
+@media (max-width: 1400px) {
+  body[data-screen="game"] .phase-chip b { font-size: 8.5px; }
+  body[data-screen="game"] .phase-chip { padding: 2px 5px; }
+}
+
+/* 阶段条改挂顶栏：横排小条，不占牌桌空间 */
+body[data-screen="game"] .phase-strip {
+  position: static !important;
+  transform: none !important;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+  pointer-events: none;
+  z-index: 9;
+}
+body[data-screen="game"] .phase-strip[hidden] { display: none; }
+body[data-screen="game"] .phase-strip .phase-strip-title small {
+  font-size: 8.5px;
+  letter-spacing: .1em;
+  color: rgba(160, 210, 190, .8);
+  white-space: nowrap;
+}
+body[data-screen="game"] .phase-strip.foe-turn .phase-strip-title small {
+  color: rgba(214, 150, 140, .8);
+}
+body[data-screen="game"] .phase-strip .phase-strip-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+body[data-screen="game"] .phase-strip .phase-chip {
+  padding: 2px 5px;
+}
+body[data-screen="game"] .phase-strip .phase-chip b {
+  font-size: 8.5px;
+  letter-spacing: .04em;
+}
+body[data-screen="game"] .phase-strip .phase-arrow {
+  font-size: 9px;
+}
+
+/* 布阵光环反馈：同阵位随从亮起一圈琥珀色光 */
+@keyframes formationAuraFlash {
+  0%   { box-shadow: 0 0 0 0 rgba(240, 204, 132, .85), 0 0 0 0 rgba(240, 204, 132, .4); }
+  45%  { box-shadow: 0 0 0 4px rgba(240, 204, 132, .55), 0 0 22px 6px rgba(240, 204, 132, .5); }
+  100% { box-shadow: 0 0 0 0 rgba(240, 204, 132, 0), 0 0 0 0 rgba(240, 204, 132, 0); }
+}
+body[data-screen="game"] .board-card.formation-aura-flash {
+  animation: formationAuraFlash 1.15s ease-out both;
+}
+body[data-screen="game"] .board-card.formation-aura-flash .gok-lib-art {
+  filter: saturate(1.35) brightness(1.18) !important;
+  transition: filter .4s ease;
+}
+
+/* ===== 右侧三个独立框：对方牌库 / 坟墓 / 我方牌库 ===== */
+body[data-screen="game"] .side-panel.side-pile-stack {
+  gap: 8px;
+  padding: 9px 9px 11px;
+  justify-content: flex-start;
+}
+.pile-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 6px 7px;
+  border: 1px solid rgba(217, 164, 65, .22);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(255, 255, 255, .012));
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color .2s ease, background .2s ease, transform .18s ease;
+}
+.pile-box:hover { border-color: rgba(240, 204, 132, .5); background: rgba(217, 164, 65, .08); transform: translateY(-1px); }
+.pile-box.foe { border-color: rgba(200, 110, 100, .3); }
+.pile-box.mine { border-color: rgba(120, 200, 180, .32); }
+.pile-box-cover {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pile-box-art {
+  width: 72px;
+  height: 102px;
+  object-fit: cover;
+  border-radius: 3px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .7), 0 0 0 1px rgba(255, 240, 200, .14);
+  filter: saturate(.95) brightness(.95);
+}
+.pile-box.foe .pile-box-art { filter: saturate(.65) brightness(.82) hue-rotate(-8deg); }
+.pile-box.mine .pile-box-art { filter: saturate(1.05) brightness(1.02); }
+.pile-box-count {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  min-width: 22px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(3, 10, 12, .88);
+  border: 1px solid rgba(240, 204, 132, .45);
+  color: #ffe9b8;
+  font-family: var(--serif);
+  font-size: 14px;
+  line-height: 1.25;
+  text-align: center;
+}
+.pile-box-label {
+  font-size: 9.5px;
+  letter-spacing: .1em;
+  color: rgba(190, 204, 212, .85);
+}
+.grave {
+  width: 100%;
+  background: linear-gradient(180deg, rgba(30, 14, 16, .5), rgba(10, 8, 10, .6));
+  border-color: rgba(190, 120, 110, .34);
+}
+.grave:hover { border-color: rgba(230, 150, 130, .62); background: rgba(120, 60, 50, .16); }
+.grave-cover { height: 74px; }
+.grave-svg { width: 46px; height: 54px; display: block; }
+.grave .pile-box-count {
+  right: 8px;
+  bottom: 4px;
+  border-color: rgba(230, 150, 130, .5);
+  color: #ffd9c8;
+}
+.grave-meta {
+  font-size: 8.5px;
+  letter-spacing: .04em;
+  color: rgba(170, 186, 194, .65);
+}
+
+/* 日志：卡名全部高亮 + 隐藏按钮 */
+.side-log-hide {
+  padding: 1px 6px;
+  border: 1px solid rgba(217, 164, 65, .3);
+  background: rgba(217, 164, 65, .06);
+  color: rgba(200, 214, 220, .8);
+  font-size: 9px;
+  letter-spacing: .06em;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.side-log-hide:hover { background: rgba(217, 164, 65, .18); color: #ffe9b8; }
+.side-log-show {
+  padding: 5px 9px;
+  border: 1px solid rgba(217, 164, 65, .3);
+  background: rgba(7, 18, 20, .85);
+  color: #e6cf9a;
+  font-family: var(--serif);
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.side-log-show:hover { background: rgba(217, 164, 65, .16); }
+body[data-screen="game"] .side-panel.side-left.log-hidden {
+  width: auto;
+  min-width: 0;
+  max-height: none;
+  padding: 6px;
+}
+.side-log-text { color: #b9c8d0; }
+.side-log-row .side-log-icon { color: rgba(150, 170, 180, .55); }
+/* 卡名按钮更醒目 */
+.side-log-row .side-log-card {
+  color: #f0d79a !important;
+  font-weight: 600;
+  border-bottom: 1px dashed rgba(240, 204, 132, .5) !important;
+  background: rgba(240, 204, 132, .07);
+  border-radius: 2px;
+  padding: 0 3px !important;
+}
+.side-log-row .side-log-card:hover {
+  background: rgba(240, 204, 132, .2);
+  color: #fff6dd !important;
+  border-bottom-color: rgba(255, 233, 184, 1) !important;
+}
+
+/* ===== 阶段条：竖排放在英雄栏（牌库原来的位置）===== */
+body[data-screen="game"] .phase-strip.phase-strip--hero {
+  position: static;
+  transform: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: stretch;
+  width: 104px;
+  min-width: 104px;
+  padding: 4px 5px;
+  border: 1px solid rgba(217, 164, 65, .18);
+  background: linear-gradient(180deg, rgba(7, 18, 20, .82), rgba(4, 11, 13, .9));
+  border-radius: 3px;
+  order: 3;
+}
+body[data-screen="game"] .phase-strip.phase-strip--hero[hidden] { display: none; }
+body[data-screen="game"] .phase-strip--hero .phase-strip-title {
+  text-align: center;
+}
+body[data-screen="game"] .phase-strip--hero .phase-strip-title small {
+  font-size: 8px;
+  letter-spacing: .1em;
+  color: rgba(160, 210, 190, .9);
+}
+body[data-screen="game"] .phase-strip--hero.foe-turn .phase-strip-title small {
+  color: rgba(214, 150, 140, .9);
+}
+.phase-strip-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+body[data-screen="game"] .phase-strip--hero .phase-chip {
+  padding: 2px 4px;
+  text-align: center;
+  border-radius: 2px;
+}
+body[data-screen="game"] .phase-strip--hero .phase-chip b {
+  font-size: 8.5px;
+  letter-spacing: .04em;
+}
+
+/* ===== 顶栏信息条 ===== */
+.game-status-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+.game-status-strip[hidden] { display: none; }
+.status-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+.status-chip small {
+  font-size: 8.5px;
+  letter-spacing: .08em;
+  color: rgba(150, 170, 180, .7);
+}
+.status-chip b {
+  font-size: 10.5px;
+  color: rgba(214, 226, 232, .9);
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+.status-chip.good b { color: #93d9b0; }
+.status-chip.bad b { color: #e6a08c; }
+.status-chip.hot b { color: #f0c884; }
+.status-hint {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 9.5px;
+  color: rgba(170, 186, 194, .62);
+  letter-spacing: .03em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 1400px) {
+  .status-chip small { display: none; }
+  .status-chip b { font-size: 9.5px; }
+}
+
+/* 阶段条压到英雄栏高度以内 */
+body[data-screen="game"] .phase-strip.phase-strip--hero {
+  width: 92px !important;
+  min-width: 92px !important;
+  max-width: 92px !important;
+  max-height: 84px;
+  padding: 2px 4px !important;
+  gap: 1px !important;
+  overflow: hidden;
+}
+body[data-screen="game"] .phase-strip--hero .phase-strip-title small {
+  font-size: 7.5px !important;
+  letter-spacing: .06em !important;
+}
+body[data-screen="game"] .phase-strip--hero .phase-chip {
+  padding: 0 3px !important;
+  line-height: 1.35;
+}
+body[data-screen="game"] .phase-strip--hero .phase-chip b {
+  font-size: 8px !important;
+}
+.phase-strip-col { gap: 1px !important; }
+
+/* 阶段条：改成绝对定位，稳稳落在英雄栏中间偏右（牌库原来那一格） */
+body[data-screen="game"] .phase-strip.phase-strip--hero {
+  position: absolute !important;
+  right: 112px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  order: 0 !important;
+  z-index: 12;
+  max-height: 88px !important;
+}
+
+/* 三个框：加大间距 + 各自阴影，避免看起来粘成一整块；整体垂直居中 */
+body[data-screen="game"] .side-panel.side-pile-stack {
+  gap: 12px !important;
+  justify-content: center !important;
+  padding: 10px !important;
+}
+.pile-box {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .04);
+}
+.pile-box + .pile-box { margin-top: 0; }
+/* 框内元素整体居中，三块框左右完全对齐 */
+.pile-box-cover { justify-content: center; }
+.pile-box-label { text-align: center; width: 100%; }
+.grave .pile-box-cover { justify-content: center; }
+.grave-meta { text-align: center; width: 100%; }
+
+/* 右侧三个框：在整条侧栏里均匀分布、撑满高度 */
+body[data-screen="game"] .side-panel.side-pile-stack {
+  justify-content: space-evenly !important;
+  align-content: stretch !important;
+  gap: 0 !important;
+  height: calc(100vh - 130px);
+  max-height: calc(100vh - 130px);
+}
+/* 让三个框自身也稍微长高一点，视觉上更饱满 */
+.pile-box {
+  flex: 0 0 auto;
+  min-height: 148px;
+  justify-content: center;
+}
+.pile-box .pile-box-art { width: 78px; height: 110px; }
+.grave .grave-cover { height: 82px; }
+.grave .grave-svg { width: 50px; height: 58px; }
+
+/* 牌堆换到左边、日志换到右边 */
+body[data-screen="game"] .side-left { left: 14px; right: auto; }
+body[data-screen="game"] .side-right { right: 14px; left: auto; }
+/* 现在牌堆在左、日志在右 */
+body[data-screen="game"] #side-pile { left: 14px !important; right: auto !important; }
+body[data-screen="game"] #side-log { right: 14px !important; left: auto !important; }
+
+/* 侧栏撑到底：用上下定位代替固定高度，下面不再留空 */
+body[data-screen="game"] .side-panel {
+  top: 52px !important;
+  bottom: 12px !important;
+  height: auto !important;
+  max-height: none !important;
+}
+body[data-screen="game"] .side-panel.side-pile-stack {
+  justify-content: space-evenly !important;
+}
+/* 日志栏满高，列表自己滚 */
+body[data-screen="game"] .side-log-list {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
+.pile-box { min-height: 132px !important; }
+
+/* 三个框等分整条侧栏，彻底撑满 */
+body[data-screen="game"] .side-pile-stack .pile-box {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  justify-content: center !important;
+}
+/* 日志行统一高度，卡名按钮不撑高行 */
+.side-log-row {
+  align-items: baseline;
+  min-height: 17px;
+}
+.side-log-row .side-log-card {
+  display: inline;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: baseline;
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+.side-log-text {
+  display: inline;
+  word-break: break-word;
+}
+
+/* 阶段条最终形态：上方「你的回合」，下面横排 回合开始 › 抽牌 › 出牌 › 结束，整体居中撑满那一格 */
+body[data-screen="game"] .phase-strip.phase-strip--hero {
+  position: absolute !important;
+  right: 126px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 268px !important;
+  min-width: 268px !important;
+  max-width: 268px !important;
+  max-height: none !important;
+  height: auto !important;
+  padding: 6px 8px !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 5px !important;
+  background: linear-gradient(180deg, rgba(7, 18, 20, .86), rgba(4, 11, 13, .92)) !important;
+  border: 1px solid rgba(217, 164, 65, .26) !important;
+  border-radius: 4px !important;
+}
+body[data-screen="game"] .phase-strip--hero .phase-strip-title {
+  text-align: center !important;
+  width: 100%;
+}
+body[data-screen="game"] .phase-strip--hero .phase-strip-title small {
+  font-size: 10px !important;
+  letter-spacing: .16em !important;
+  color: #9ff3c4 !important;
+  font-weight: 600;
+}
+body[data-screen="game"] .phase-strip--hero.foe-turn .phase-strip-title small {
+  color: #e6a08c !important;
+}
+body[data-screen="game"] .phase-strip--hero .phase-strip-col {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  width: 100%;
+}
+body[data-screen="game"] .phase-strip--hero .phase-chip {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  padding: 3px 5px !important;
+  text-align: center !important;
+  border-radius: 2px !important;
+  opacity: .45;
+}
+body[data-screen="game"] .phase-strip--hero .phase-chip b {
+  font-size: 9px !important;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+body[data-screen="game"] .phase-strip--hero .phase-chip.done {
+  opacity: .72;
+  border-color: rgba(120, 200, 180, .32);
+}
+body[data-screen="game"] .phase-strip--hero .phase-chip.active {
+  opacity: 1;
+  border-color: rgba(240, 204, 132, .85);
+  background: rgba(217, 164, 65, .18);
+  box-shadow: 0 0 12px rgba(240, 204, 132, .3);
+}
+body[data-screen="game"] .phase-strip--hero .phase-chip.active b {
+  color: #ffe9b8;
+  font-weight: 700;
+}
+body[data-screen="game"] .phase-strip--hero .phase-arrow {
+  flex: 0 0 auto;
+  font-size: 9px;
+  color: rgba(150, 170, 180, .5);
+}
+
+/* 阶段条位置：让开领袖头像，落在头像左侧的空白区（x≈700~940） */
+body[data-screen="game"] .phase-strip.phase-strip--hero {
+  right: 368px !important;
+  width: 238px !important;
+  min-width: 238px !important;
+  max-width: 238px !important;
+  padding: 5px 7px !important;
+}
+body[data-screen="game"] .phase-strip--hero .phase-strip-title small {
+  font-size: 9.5px !important;
+}
+body[data-screen="game"] .phase-strip--hero .phase-chip {
+  padding: 2px 3px !important;
+}
+body[data-screen="game"] .phase-strip--hero .phase-chip b {
+  font-size: 8px !important;
+}
+
+/* 再收一点，确保不压领袖头像也不压手牌徽章 */
+body[data-screen="game"] .phase-strip.phase-strip--hero {
+  right: 402px !important;
+  width: 222px !important;
+  min-width: 222px !important;
+  max-width: 222px !important;
+}
+body[data-screen="game"] .phase-strip--hero .phase-chip b {
+  font-size: 7.5px !important;
+}
+body[data-screen="game"] .phase-strip--hero .phase-strip-title small {
+  font-size: 9px !important;
+  letter-spacing: .12em !important;
+}
+
+/* 阶段条最终定位：浮在英雄栏正上方，横跨居中，不压任何元素 */
+body[data-screen="game"] .phase-strip.phase-strip--hero {
+  position: absolute !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: 112px !important;
+  transform: translateX(-50%) !important;
+  width: auto !important;
+  min-width: 380px !important;
+  max-width: none !important;
+  padding: 6px 14px !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 4px !important;
+  background: linear-gradient(180deg, rgba(6, 16, 18, .92), rgba(3, 9, 11, .96)) !important;
+  border: 1px solid rgba(217, 164, 65, .3) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, .6) !important;
+  z-index: 20 !important;
+}
+body[data-screen="game"] .phase-strip--hero .phase-strip-title small {
+  font-size: 10px !important;
+  letter-spacing: .2em !important;
+}
+body[data-screen="game"] .phase-strip--hero .phase-strip-col {
+  gap: 6px !important;
+}
+body[data-screen="game"] .phase-strip--hero .phase-chip {
+  flex: 0 0 auto !important;
+  padding: 3px 12px !important;
+}
+body[data-screen="game"] .phase-strip--hero .phase-chip b {
+  font-size: 10px !important;
+}
+body[data-screen="game"] .phase-strip--hero .phase-arrow {
+  font-size: 11px;
+}
+
+/* 阶段条：改用「手牌计数」那块没用的位置（英雄栏内，头像左侧），不再浮在牌桌上压随从位 */
+body[data-screen="game"] .hs-hero-hand { display: none !important; }
+body[data-screen="game"] .phase-strip.phase-strip--hero {
+  position: absolute !important;
+  left: auto !important;
+  right: 396px !important;
+  top: 50% !important;
+  bottom: auto !important;
+  transform: translateY(-50%) !important;
+  width: 232px !important;
+  min-width: 232px !important;
+  max-width: 232px !important;
+  padding: 5px 8px !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 3px !important;
+  background: linear-gradient(180deg, rgba(6, 16, 18, .9), rgba(3, 9, 11, .95)) !important;
+  border: 1px solid rgba(217, 164, 65, .3) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, .55) !important;
+  z-index: 12 !important;
+}
+body[data-screen="game"] .phase-strip--hero .phase-strip-title small {
+  font-size: 9px !important;
+  letter-spacing: .14em !important;
+}
+body[data-screen="game"] .phase-strip--hero .phase-strip-col { gap: 4px !important; }
+body[data-screen="game"] .phase-strip--hero .phase-chip {
+  flex: 0 0 auto !important;
+  padding: 2px 7px !important;
+}
+body[data-screen="game"] .phase-strip--hero .phase-chip b { font-size: 8.5px !important; }
+body[data-screen="game"] .phase-strip--hero .phase-arrow { font-size: 9px; }
+
+/* 相对英雄栏定位：落在原手牌计数那一格（右 402px，宽 222） */
+body[data-screen="game"] .phase-strip.phase-strip--hero {
+  right: 402px !important;
+  width: 222px !important;
+  min-width: 222px !important;
+  max-width: 222px !important;
+}
+
+/* 阶段条：压在英雄栏底边的一条扁横条，单行 你的回合 | 回合开始 › 抽牌 › 出牌 › 结束 */
+body[data-screen="game"] .phase-strip.phase-strip--hero {
+  position: absolute !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: 3px !important;
+  transform: translateX(-50%) !important;
+  width: auto !important;
+  min-width: 430px !important;
+  max-width: none !important;
+  height: 26px !important;
+  padding: 0 12px !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  background: linear-gradient(180deg, rgba(6, 16, 18, .88), rgba(3, 9, 11, .94)) !important;
+  border: 1px solid rgba(217, 164, 65, .26) !important;
+  border-radius: 3px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .5) !important;
+  z-index: 12 !important;
+}
+body[data-screen="game"] .phase-strip--hero .phase-strip-title--inline {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  padding-right: 8px;
+  border-right: 1px solid rgba(217, 164, 65, .26);
+}
+body[data-screen="game"] .phase-strip--hero .phase-strip-title--inline small {
+  font-size: 9px !important;
+  letter-spacing: .1em !important;
+  white-space: nowrap;
+}
+body[data-screen="game"] .phase-strip--hero .phase-strip-col {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 3px !important;
+}
+body[data-screen="game"] .phase-strip--hero .phase-chip {
+  flex: 0 0 auto !important;
+  padding: 1px 7px !important;
+  line-height: 1.5;
+}
+body[data-screen="game"] .phase-strip--hero .phase-chip b { font-size: 8.5px !important; }
+body[data-screen="game"] .phase-strip--hero .phase-arrow { font-size: 9px; }
+
+/* 阶段条最终版：顶栏内横排 你的回合 | 回合开始 › 抽牌 › 出牌 › 结束 */
+body[data-screen="game"] .phase-strip {
+  position: static !important;
+  left: auto !important; right: auto !important; top: auto !important; bottom: auto !important;
+  transform: none !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 7px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: 26px !important;
+  padding: 0 9px !important;
+  margin-left: 6px;
+  pointer-events: none;
+  background: rgba(6, 16, 18, .72);
+  border: 1px solid rgba(217, 164, 65, .24);
+  border-radius: 3px;
+  z-index: 9;
+}
+body[data-screen="game"] .phase-strip[hidden] { display: none !important; }
+body[data-screen="game"] .phase-strip .phase-strip-title,
+body[data-screen="game"] .phase-strip .phase-strip-title--inline {
+  display: flex; align-items: center; flex: 0 0 auto;
+  padding-right: 7px;
+  border-right: 1px solid rgba(217, 164, 65, .24);
+  border-bottom: 0;
+}
+body[data-screen="game"] .phase-strip .phase-strip-title small {
+  font-size: 8.5px !important;
+  letter-spacing: .08em !important;
+  white-space: nowrap;
+}
+body[data-screen="game"] .phase-strip .phase-strip-col {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 2px !important;
+}
+body[data-screen="game"] .phase-strip .phase-chip {
+  flex: 0 0 auto !important;
+  padding: 1px 6px !important;
+  border-radius: 2px;
+  line-height: 1.5;
+}
+body[data-screen="game"] .phase-strip .phase-chip b { font-size: 8.5px !important; }
+body[data-screen="game"] .phase-strip .phase-arrow { font-size: 9px; }
+
+/* 阶段条：落进英雄栏与手牌之间那条缝，横排四格，不再有「你的回合」标题行 */
+body[data-screen="game"] .phase-strip {
+  position: absolute !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: -30px !important;
+  transform: translateX(-50%) !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: 24px !important;
+  padding: 0 10px !important;
+  margin: 0 !important;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(6, 16, 18, .9), rgba(3, 9, 11, .95));
+  border: 1px solid rgba(217, 164, 65, .22);
+  border-radius: 3px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, .5);
+  z-index: 14;
+}
+body[data-screen="game"] .phase-strip[hidden] { display: none !important; }
+/* 不再显示「你的回合」文字，只靠高亮与颜色区分 */
+body[data-screen="game"] .phase-strip .phase-strip-title,
+body[data-screen="game"] .phase-strip .phase-strip-title--inline { display: none !important; }
+body[data-screen="game"] .phase-strip .phase-strip-col {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 3px !important;
+}
+body[data-screen="game"] .phase-strip .phase-chip {
+  flex: 0 0 auto !important;
+  padding: 1px 9px !important;
+  border-radius: 2px;
+  line-height: 1.6;
+  opacity: .5;
+}
+body[data-screen="game"] .phase-strip .phase-chip b { font-size: 9px !important; }
+body[data-screen="game"] .phase-strip .phase-chip.active {
+  opacity: 1;
+  border-color: rgba(240, 204, 132, .85);
+  background: rgba(217, 164, 65, .18);
+  box-shadow: 0 0 10px rgba(240, 204, 132, .3);
+}
+body[data-screen="game"] .phase-strip .phase-chip.active b { color: #ffe9b8; font-weight: 700; }
+body[data-screen="game"] .phase-strip .phase-chip.done { opacity: .72; border-color: rgba(120, 200, 180, .3); }
+body[data-screen="game"] .phase-strip .phase-arrow { font-size: 9px; color: rgba(150, 170, 180, .45); }
+
+/* 顶栏：轮次 + tips 轮播 */
+.status-round { display: inline-flex; align-items: baseline; gap: 4px; flex: 0 0 auto; }
+.status-round small { font-size: 8.5px; letter-spacing: .08em; color: rgba(150, 170, 180, .7); }
+.status-round b { font-size: 10.5px; color: rgba(214, 226, 232, .92); font-weight: 600; }
+.status-tip {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 9.5px;
+  letter-spacing: .02em;
+  color: rgba(190, 208, 216, .72);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  animation: tipFadeIn .5s ease;
+}
+@keyframes tipFadeIn { from { opacity: 0; transform: translateX(6px); } to { opacity: 1; transform: none; } }
+
+/* 阶段条贴在英雄栏底边外（手牌上方那条缝），居中，四格横排 */
+body[data-screen="game"] .phase-strip {
+  position: absolute !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: -27px !important;
+  transform: translateX(-50%) !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: 23px !important;
+  padding: 0 10px !important;
+  margin: 0 !important;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(6, 16, 18, .92), rgba(3, 9, 11, .96));
+  border: 1px solid rgba(217, 164, 65, .24);
+  border-radius: 3px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, .55);
+  z-index: 16;
+}
+body[data-screen="game"] .phase-strip[hidden] { display: none !important; }
+body[data-screen="game"] .phase-strip .phase-strip-title { display: none !important; }
+body[data-screen="game"] .phase-strip .phase-strip-col {
+  display: flex !important; flex-direction: row !important; align-items: center !important; gap: 3px !important;
+}
+body[data-screen="game"] .phase-strip .phase-chip {
+  flex: 0 0 auto !important;
+  padding: 1px 9px !important;
+  border-radius: 2px;
+  line-height: 1.55;
+  opacity: .48;
+}
+body[data-screen="game"] .phase-strip .phase-chip b { font-size: 9px !important; }
+body[data-screen="game"] .phase-strip .phase-chip.done { opacity: .72; border-color: rgba(120, 200, 180, .3); }
+body[data-screen="game"] .phase-strip .phase-chip.active {
+  opacity: 1;
+  border-color: rgba(240, 204, 132, .85);
+  background: rgba(217, 164, 65, .18);
+  box-shadow: 0 0 10px rgba(240, 204, 132, .3);
+}
+body[data-screen="game"] .phase-strip .phase-chip.active b { color: #ffe9b8; font-weight: 700; }
+body[data-screen="game"] .phase-strip .phase-arrow { font-size: 9px; color: rgba(150, 170, 180, .45); }
+
+/* 英雄栏默认裁掉溢出内容，阶段条挂在它下沿外侧要放开 */
+body[data-screen="game"] .hero-panel.player-hero { overflow: visible !important; }
+body[data-screen="game"] .hero-panel { overflow: visible !important; }
+
+/* 阶段条最终版：顶栏内一行，横排四格，居中自然排布 */
+body[data-screen="game"] .phase-strip {
+  position: static !important;
+  left: auto !important; right: auto !important; top: auto !important; bottom: auto !important;
+  transform: none !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: 26px !important;
+  padding: 0 10px !important;
+  margin-left: 8px !important;
+  pointer-events: none;
+  background: rgba(6, 16, 18, .75);
+  border: 1px solid rgba(217, 164, 65, .24);
+  border-radius: 3px;
+  z-index: 9;
+}
+body[data-screen="game"] .phase-strip[hidden] { display: none !important; }
+body[data-screen="game"] .phase-strip .phase-strip-title { display: none !important; }
+body[data-screen="game"] .phase-strip .phase-strip-col {
+  display: flex !important; flex-direction: row !important; align-items: center !important; gap: 3px !important;
+}
+body[data-screen="game"] .phase-strip .phase-chip {
+  flex: 0 0 auto !important;
+  padding: 1px 9px !important;
+  border-radius: 2px;
+  line-height: 1.55;
+  opacity: .5;
+}
+body[data-screen="game"] .phase-strip .phase-chip b { font-size: 9px !important; }
+body[data-screen="game"] .phase-strip .phase-chip.done { opacity: .72; border-color: rgba(120, 200, 180, .3); }
+body[data-screen="game"] .phase-strip .phase-chip.active {
+  opacity: 1;
+  border-color: rgba(240, 204, 132, .85);
+  background: rgba(217, 164, 65, .18);
+  box-shadow: 0 0 10px rgba(240, 204, 132, .3);
+}
+body[data-screen="game"] .phase-strip .phase-chip.active b { color: #ffe9b8; font-weight: 700; }
+body[data-screen="game"] .phase-strip .phase-arrow { font-size: 9px; color: rgba(150, 170, 180, .45); }
+
+/* 手牌上方的「对手正在推演…」提示与费用计数条：信息重复且没实际作用，让位给阶段条 */
+body[data-screen="game"] #game-hint { display: none !important; }
+body[data-screen="game"] #gk-hand-curve { display: none !important; }
+
+/* 阶段条落进这块空出来的缝（手牌正上方），居中横排 */
+body[data-screen="game"] .phase-strip {
+  position: absolute !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: 118px !important;
+  transform: translateX(-50%) !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: 30px !important;
+  padding: 0 16px !important;
+  margin: 0 !important;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(6, 16, 18, .9), rgba(3, 9, 11, .95));
+  border: 1px solid rgba(217, 164, 65, .28);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .6);
+  z-index: 18;
+}
+body[data-screen="game"] .phase-strip[hidden] { display: none !important; }
+body[data-screen="game"] .phase-strip .phase-strip-title { display: none !important; }
+body[data-screen="game"] .phase-strip .phase-strip-col {
+  display: flex !important; flex-direction: row !important; align-items: center !important; gap: 4px !important;
+}
+body[data-screen="game"] .phase-strip .phase-chip {
+  flex: 0 0 auto !important;
+  padding: 2px 12px !important;
+  border-radius: 3px;
+  line-height: 1.6;
+  opacity: .52;
+}
+body[data-screen="game"] .phase-strip .phase-chip b { font-size: 10px !important; }
+body[data-screen="game"] .phase-strip .phase-chip.done { opacity: .74; border-color: rgba(120, 200, 180, .32); }
+body[data-screen="game"] .phase-strip .phase-chip.active {
+  opacity: 1;
+  border-color: rgba(240, 204, 132, .9);
+  background: rgba(217, 164, 65, .2);
+  box-shadow: 0 0 14px rgba(240, 204, 132, .35);
+}
+body[data-screen="game"] .phase-strip .phase-chip.active b { color: #ffe9b8; font-weight: 700; }
+body[data-screen="game"] .phase-strip .phase-arrow { font-size: 10px; color: rgba(150, 170, 180, .5); }
+
+/* 阶段条：就在手牌上方那条缝里，占满一行居中（替代原提示文字与费用曲线的位置） */
+body[data-screen="game"] .phase-strip {
+  position: static !important;
+  left: auto !important; right: auto !important; top: auto !important; bottom: auto !important;
+  transform: none !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  min-height: 26px !important;
+  padding: 0 10px !important;
+  margin: 0 !important;
+  pointer-events: none;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  z-index: 12;
+}
+body[data-screen="game"] .phase-strip[hidden] { display: none !important; }
+body[data-screen="game"] .phase-strip .phase-strip-title { display: none !important; }
+body[data-screen="game"] .phase-strip .phase-strip-col {
+  display: flex !important; flex-direction: row !important; align-items: center !important; gap: 5px !important;
+}
+body[data-screen="game"] .phase-strip .phase-chip {
+  flex: 0 0 auto !important;
+  padding: 2px 14px !important;
+  border-radius: 3px;
+  line-height: 1.6;
+  opacity: .55;
+  background: rgba(6, 16, 18, .72);
+}
+body[data-screen="game"] .phase-strip .phase-chip b { font-size: 10.5px !important; }
+body[data-screen="game"] .phase-strip .phase-chip.done { opacity: .76; border-color: rgba(120, 200, 180, .32); }
+body[data-screen="game"] .phase-strip .phase-chip.active {
+  opacity: 1;
+  border-color: rgba(240, 204, 132, .9);
+  background: rgba(217, 164, 65, .22);
+  box-shadow: 0 0 14px rgba(240, 204, 132, .35);
+}
+body[data-screen="game"] .phase-strip .phase-chip.active b { color: #ffe9b8; font-weight: 700; }
+body[data-screen="game"] .phase-strip .phase-arrow { font-size: 11px; color: rgba(160, 180, 190, .5); }
+
+/* 日志里的「×N」计数（合并后的连续隐私记录） */
+.side-log-count {
+  flex: 0 0 auto;
+  font-style: normal;
+  font-size: 9px;
+  padding: 0 4px;
+  border-radius: 2px;
+  background: rgba(217, 164, 65, .14);
+  color: rgba(240, 204, 132, .9);
+  letter-spacing: .02em;
+}
+
+/* ===== 反馈面板：当场写反馈的输入区 ===== */
+.feedback-write { display: flex; flex-direction: column; gap: 8px; }
+.feedback-write textarea {
+  width: 100%;
+  min-height: 96px;
+  max-height: 220px;
+  resize: vertical;
+  padding: 9px 11px;
+  border: 1px solid rgba(217, 164, 65, .28);
+  border-radius: 3px;
+  background: rgba(4, 12, 14, .8);
+  color: #dbe6ea;
+  font-size: 12.5px;
+  line-height: 1.65;
+  font-family: inherit;
+  letter-spacing: .02em;
+}
+.feedback-write textarea:focus {
+  outline: none;
+  border-color: rgba(240, 204, 132, .7);
+  box-shadow: 0 0 0 2px rgba(217, 164, 65, .12);
+}
+.feedback-write textarea::placeholder { color: rgba(150, 170, 180, .5); }
+.feedback-write-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.feedback-write-hint { font-size: 11px; color: rgba(160, 178, 188, .6); flex: 1 1 auto; }
+.feedback-saved { font-size: 11px; color: rgba(147, 217, 176, .9); }
+
+/* 修日志重叠：行改成 block 流式排版，图标/轮次/文字都在行内流动，
+   否则 split 出来的每个片段都会变成 flex 子项横向挤在一起 */
+body[data-screen="game"] .side-log-row {
+  display: block !important;
+  align-items: initial !important;
+  min-height: 17px;
+  padding: 2px 4px;
+  line-height: 1.55;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+body[data-screen="game"] .side-log-row .side-log-icon {
+  display: inline !important;
+  width: auto !important;
+  margin-right: 3px;
+  vertical-align: baseline;
+}
+body[data-screen="game"] .side-log-row .side-log-turn {
+  display: inline !important;
+  margin-right: 3px;
+  vertical-align: baseline;
+}
+body[data-screen="game"] .side-log-row .side-log-text {
+  display: inline !important;
+  vertical-align: baseline;
+}
+body[data-screen="game"] .side-log-row .side-log-card {
+  display: inline !important;
+  vertical-align: baseline;
+  max-width: none;
+  white-space: normal;
+}
+body[data-screen="game"] .side-log-row .side-log-count {
+  display: inline-block !important;
+  vertical-align: baseline;
+  margin-left: 3px;
+}
