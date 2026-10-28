@@ -962,15 +962,17 @@
       if (multi) multi.hidden = true;
       AudioBox.play("ui_open");
     };
-    if (global.GokCinema) {
-      global.GokCinema.playOnce("opening_classic_v1", "opening.mp4", {
-        eyebrow: "经典模式 / 进入档案",
-        title: "戈克降临",
-        text: "地脉在群山之下翻身，巨影自风暴中醒来。档案室记录下这一切，等待下一位执脉者。"
-      }).then(show);
-    } else {
-      show();
-    }
+    // 开场动画暂时不播：现在是占位素材，等美术做好再把下面这段换回来
+    // if (global.GokCinema) {
+    //   global.GokCinema.playOnce("opening_classic_v1", "opening.mp4", {
+    //     eyebrow: "经典模式 / 进入档案",
+    //     title: "戈克降临",
+    //     text: "地脉在群山之下翻身，巨影自风暴中醒来。档案室记录下这一切，等待下一位执脉者。"
+    //   }).then(show);
+    // } else {
+    //   show();
+    // }
+    show();
   }
 
   function closeStartMenu() {
@@ -1474,6 +1476,7 @@
     enforceBattleCardPresentation();
     renderStatusStrip();
     checkFormationChurn();
+    placeGraveyardButton();
     renderPhaseStrip();
     renderSidePanels();
     if (app.net && app.net.role === "host" && app.net.active) { scheduleNetBroadcast(); scheduleHostSave(); }
@@ -1537,38 +1540,85 @@
   }
 
   // 回合阶段指示器：英雄信息栏右侧的空白处
-  function renderPhaseStrip() {
+  // 阶段条：跟随引擎的真实 phaseLog 播放
+  //   引擎每一回合都会留下 start→draw→play（结束回合再加 end），
+  //   这里按顺序点亮，玩家就能看到「装备在回合开始结算 / 抽牌在抽牌阶段」。
+  var PHASE_ORDER = ["start", "draw", "play", "end"];
+  var PHASE_LABELS = { start: "回合开始", draw: "抽牌", play: "出牌", end: "结束" };
+  var PHASE_DWELL = 300;   // 每个阶段的停留时间
+  app.phaseShown = app.phaseShown || "play";
+  app.phaseSeenLen = app.phaseSeenLen || 0;
+  app.phaseQueue = app.phaseQueue || [];
+  app.phaseTimer = null;
+
+  function paintPhaseStrip() {
     const host = $("phase-strip");
     if (!host) return;
     const game = app.game;
     if (!game || game.status !== "playing") { host.hidden = true; return; }
-    const phase = game.phase || "play";
+    const shown = app.phaseShown || "play";
     const mineTurn = game.current === app.viewer;
-    const STEPS = [
-      { key: "start", label: "回合开始", hint: "行动力回复、自动增益、光环与阵型倒计时结算" },
-      { key: "draw", label: "抽牌", hint: "从抽牌堆抽 1 张" },
-      { key: "play", label: "出牌", hint: "放随从、用战术、上装备、摆阵型、结债务" },
-      { key: "end", label: "结束", hint: "结算债务卡与回合结束效果，交给对手" }
-    ];
-    clear(host);
-    host.classList.toggle("foe-turn", !mineTurn);
-    const title = el("div", "phase-strip-title");
-    title.appendChild(el("small", null, mineTurn ? "你的回合" : "对方回合"));
-    host.appendChild(title);
-    const curIdx = STEPS.findIndex((x) => x.key === phase);
-    const col = el("div", "phase-strip-col");
-    STEPS.forEach((step, i) => {
-      const chip = el("div", "phase-chip" + (i === curIdx ? " active" : "") + (i < curIdx ? " done" : ""));
-      chip.appendChild(el("b", null, step.label));
-      chip.title = step.label + "：" + step.hint;
-      col.appendChild(chip);
-      if (i < STEPS.length - 1) col.appendChild(el("i", "phase-arrow", "›"));
+    const curIdx = PHASE_ORDER.indexOf(shown);
+    let col = host.querySelector(".phase-strip-col");
+    if (!col) {
+      clear(host);
+      const title = el("div", "phase-strip-title");
+      title.appendChild(el("small", null, mineTurn ? "你的回合" : "对方回合"));
+      host.appendChild(title);
+      col = el("div", "phase-strip-col");
+      PHASE_ORDER.forEach((key, i) => {
+        const chip = el("div", "phase-chip");
+        chip.dataset.phase = key;
+        chip.appendChild(el("b", null, PHASE_LABELS[key]));
+        col.appendChild(chip);
+        if (i < PHASE_ORDER.length - 1) col.appendChild(el("i", "phase-arrow", "›"));
+      });
+      host.appendChild(col);
+    }
+    col.querySelectorAll(".phase-chip").forEach((chip) => {
+      const idx = PHASE_ORDER.indexOf(chip.dataset.phase);
+      chip.classList.toggle("active", idx === curIdx);
+      chip.classList.toggle("done", idx < curIdx);
     });
-    host.appendChild(col);
+    const titleEl = host.querySelector(".phase-strip-title small");
+    if (titleEl) titleEl.textContent = mineTurn ? "你的回合" : "对方回合";
+    host.classList.toggle("foe-turn", !mineTurn);
     host.hidden = false;
   }
 
-  // 顶栏信息条：回合 / 流脉 / 行动力 / 一句提示
+  function drainPhaseQueue() {
+    if (app.phaseTimer) return;
+    if (!app.phaseQueue.length) return;
+    const step = () => {
+      const next = app.phaseQueue.shift();
+      if (!next) { app.phaseTimer = null; return; }
+      app.phaseShown = next;
+      paintPhaseStrip();
+      if (app.phaseQueue.length) app.phaseTimer = setTimeout(step, PHASE_DWELL);
+      else { app.phaseTimer = setTimeout(() => { app.phaseTimer = null; drainPhaseQueue(); }, PHASE_DWELL); }
+    };
+    step();
+  }
+
+  var PHASE_TIPS = [
+    "守备会保护同阵位的友方随从，想打穿就先处理守备。",
+    "阵型是持续光环：布阵之后放进那个阵位的随从一样吃加成。",
+    "每个阵位同时只生效一张阵型，同阵位再布一张会把旧的顶进弃牌堆。",
+    "装备场上同时生效 2 件，打第三张会挤掉最早的那张。",
+    "弃牌堆是双方共享的，对手死了什么你都看得到。",
+    "流脉到 4 震荡、7 裂隙、10 魔物潮会触发全场事件，12 回流清空。",
+    "先遣随从当回合就能攻击，但打不了领袖。",
+    "余响在随从死亡时触发，配合阵型能反复赚节奏。",
+    "牌组只卡品级：传说 2 张、史诗 15 张，普通和稀有随便带。",
+    "点左侧日志里的卡名，可以直接看那张牌的效果。",
+    "起手调度别留太多 4 费以上，先把前两回合铺稳。"
+  ];
+  var phaseTipIndex = -1;
+  function nextPhaseTip() {
+    phaseTipIndex = (phaseTipIndex + 1) % PHASE_TIPS.length;
+    return PHASE_TIPS[phaseTipIndex];
+  }
+
   function renderStatusStrip() {
     const host = $("game-status-strip");
     if (!host) return;
@@ -1583,28 +1633,44 @@
     host.hidden = false;
   }
 
-  // 顶栏 tips：按顺序轮播，讲的都是这版本真正用得上的机制
-  var PHASE_TIPS = [
-    "守备会保护同阵位的友方随从，想打穿就先处理守备。",
-    "阵型是持续光环：布阵之后放进那个阵位的随从一样吃加成。",
-    "每个阵位同时只生效一张阵型，同阵位再布一张会把旧的顶进弃牌堆。",
-    "装备场上同时生效 2 件，打第三张会挤掉最早的那张。",
-    "弃牌堆是双方共享的，对手死了什么你都看得到。",
-    "流脉到 4 震荡、7 裂隙、10 魔物潮会触发全场事件，12 回流清空。",
-    "先遣随从当回合就能攻击，但打不了领袖。",
-    "余响在随从死亡时触发，配合阵型能反复赚节奏。",
-    "牌组只卡品级：传说 2、张、史诗 15 张，普通和稀有随便带。",
-    "点左侧日志里的卡名，可以直接看那张牌的效果。",
-    "起手调度别留太多 4 费以上，先把前两回合铺稳。"
-  ];
-  var phaseTipIndex = -1;
-  function nextPhaseTip() {
-    phaseTipIndex = (phaseTipIndex + 1) % PHASE_TIPS.length;
-    return PHASE_TIPS[phaseTipIndex];
+  // 手机端：把弃牌堆按钮挂到 body 下，脱离 .game-top 的定位上下文
+  function placeGraveyardButton() {
+    const btn = $("btn-graveyard");
+    if (!btn) return;
+    const onPhone = isPhoneLayout();
+    if (onPhone && btn.parentElement !== document.body) document.body.appendChild(btn);
+    btn.classList.toggle("mobile-grave-btn", onPhone);
   }
 
+  function renderPhaseStrip() {
 
-  // 对局页两侧空白：左侧推演日志（可折叠、卡牌可点开看效果），右侧双方牌库夹共享坟墓
+    const host = $("phase-strip");
+    const game = app.game;
+    if (!game || game.status !== "playing") {
+      if (host) host.hidden = true;
+      app.logSig = null;
+      app.phaseQueue = [];
+      app.phaseSeenLen = 0;
+      return;
+    }
+    const log = Array.isArray(game.phaseLog) ? game.phaseLog : [];
+    // 新一局或 phaseLog 被裁过 → 重置游标
+    if (log.length < app.phaseSeenLen) { app.phaseSeenLen = 0; app.phaseQueue = []; }
+    if (log.length > app.phaseSeenLen) {
+      const fresh = log.slice(app.phaseSeenLen);
+      app.phaseSeenLen = log.length;
+      for (const item of fresh) {
+        // 同一阶段连着出现（比如两个回合都是 play）就只留一次，避免卡住
+        const last = app.phaseQueue[app.phaseQueue.length - 1];
+        if (last !== item.phase) app.phaseQueue.push(item.phase);
+      }
+      drainPhaseQueue();
+      return;
+    }
+    // 没有新阶段：保持当前显示，不重建 DOM
+    if (!app.phaseTimer) paintPhaseStrip();
+  }
+
   function renderSidePanels() {
     const left = $("side-log");
     const right = $("side-pile");
@@ -1651,26 +1717,35 @@
       left.appendChild(head);
 
       if (!app.sideLogCollapsed) {
-        const list = el("div", "side-log-list");
+        // 日志列表只建一次，新条目逐条追加并淡入（原来是整表重建，动画一帧就被抹掉）
+        const MAX_ROWS = 40;
+        let list = app.logListEl;
+        if (!list || app.logListOwner !== game) {
+          list = el("div", "side-log-list");
+          app.logListEl = list;
+          app.logListOwner = game;
+          app.logDrawnTo = -1;
+        }
         const privateTypes = ["draw", "discover", "burn", "mulligan"];
-        const shown = entries.slice(-60).map((entry) => {
+        const baseIdx = Math.max(0, entries.length - 60);
+        const shown = entries.slice(-60).map((entry, k) => {
           const hid = entry.player != null && entry.player !== meIdx && privateTypes.indexOf(entry.type) >= 0;
-          if (!hid) return entry;
+          if (!hid) return Object.assign({}, entry, { __i: baseIdx + k });
           const hiddenText = entry.type === "draw" ? "对手抽了一张牌。"
             : entry.type === "discover" ? "对手预兆了一张牌。"
             : entry.type === "mulligan" ? "对手完成了起手调度。"
             : "对手手牌已满，一张牌被烧掉。";
-          return Object.assign({}, entry, { text: hiddenText, hidden: true });
+          return Object.assign({}, entry, { text: hiddenText, hidden: true, __i: baseIdx + k });
         });
-        // 连续的隐私占位（对手抽牌/预兆/调度/烧牌）合并成一条带计数的，否则连着 4 条一样的
-        if (!shown.length) list.appendChild(el("span", "side-panel-empty", "还没有记录"));
-        else {
+        // 连续的同内容隐私占位合并成一条带计数
+        {
           const merged = [];
           for (const e of shown) {
             if (e.hidden) {
               const last = merged[merged.length - 1];
               if (last && last.hidden && last.text === e.text) {
                 last.count = (last.count || 1) + 1;
+                last.__i = Math.max(last.__i, e.__i);
                 continue;
               }
               merged.push(Object.assign({}, e, { count: 1 }));
@@ -1682,15 +1757,14 @@
           for (const e of merged) shown.push(e);
         }
 
-        // 卡名索引只建一次；匹配用「预编译正则 + split」，一次扫描完所有卡名
-        // （之前是每个卡名各自 indexOf，60 条日志 × 600 多卡名 = 三万多次数不清的搜索，会卡死）
+        // 卡名索引只建一次；匹配用预编译正则 + split，一次扫描完
         if (!app.logNameIndex) {
           const idxMap = new Map();
           for (const c of Object.values(D.CARDS)) {
             if (!c || !c.name || c.token) continue;
-            if (c.name.length < 2) continue;                      // 单字名容易误伤正文
-            if (/^(你|我|他|它|她|对手)$/.test(c.name)) continue;   // 代词不当卡名高亮
-            if (idxMap.has(c.name)) continue;                      // 同名只留一个，避免重复匹配
+            if (c.name.length < 2) continue;
+            if (/^(你|我|他|它|她|对手)$/.test(c.name)) continue;
+            if (idxMap.has(c.name)) continue;
             idxMap.set(c.name, c);
           }
           app.logNameIndex = idxMap;
@@ -1701,16 +1775,28 @@
         const nameMap = app.logNameIndex;
         const nameRe = app.logNameRe;
 
-        // 日志最多渲染最近 40 条：再多也没人翻，纯属拖慢渲染
-        const MAX_ROWS = 40;
-        const rows = shown.slice(-MAX_ROWS);
-        for (const entry of rows) {
+        // 新一局（日志被重置）→ 清空重来
+        const lastIdx = shown.length ? shown[shown.length - 1].__i : -1;
+        if (app.logDrawnTo > lastIdx) { clear(list); app.logDrawnTo = -1; }
+
+        const oldList = left.querySelector(".side-log-list");
+        if (oldList && oldList !== list) oldList.remove();
+
+        if (!shown.length && !list.children.length) list.appendChild(el("span", "side-panel-empty", "还没有记录"));
+
+        let stagger = 0;
+        for (const entry of shown) {
+          if (entry.__i <= app.logDrawnTo) continue;
           const row = el("div", "side-log-row" + (entry.hidden ? " hidden-info" : ""));
+          if (app.logDrawnTo >= 0 || stagger > 0) {
+            row.classList.add("log-new");
+            row.style.setProperty("--stagger", String(stagger));
+          }
+          stagger++;
           row.appendChild(el("i", "side-log-icon", LOG_ICONS[entry.type] || "·"));
           if (entry.round != null) row.appendChild(el("em", "side-log-turn", "R" + entry.round));
 
           const text = entry.text || "";
-          // split 带捕获组会保留分隔符，天然不重叠也不会重复切
           const segs = nameRe ? text.split(nameRe) : [text];
           let appended = 0;
           for (const seg of segs) {
@@ -1729,8 +1815,12 @@
           if (!appended) row.appendChild(el("span", "side-log-text", text));
           if (entry.count > 1) row.appendChild(el("em", "side-log-count", "×" + entry.count));
           list.appendChild(row);
+          app.logDrawnTo = entry.__i;
         }
-        left.appendChild(list);
+
+        while (list.children.length > MAX_ROWS) list.removeChild(list.firstChild);
+
+        if (list.parentNode !== left) left.appendChild(list);
         const listEl = list;
         requestAnimationFrame(() => { listEl.scrollTop = listEl.scrollHeight; });
       }
@@ -3365,6 +3455,8 @@
     const chooseSound = (name) => {
       if (!eventSound || (soundPriority[name] || 0) > (soundPriority[eventSound] || 0)) eventSound = name;
     };
+    app.floatSeq = 0;   // 每批事件重新计数，飘字才能逐条错开
+    app.drawSeq = 0;
     for (const ev of fresh) {
       if (!ev.structured) continue;
       if (ev.kind === "damage") {
@@ -3372,7 +3464,13 @@
         chooseSound(String(ev.targetUid || "").indexOf("hero:") === 0 ? "hero_hit" : "damage");
         if (!app.damageNumbers) continue;
         const pt = eventPoint(ev.targetUid);
-        showFloatingNumber("-" + (ev.amount || 0), pt.x, pt.y, pt.hero ? "damage hero-damage" : "damage");
+        // 一批里有多个伤害时逐条错开 110ms，并轻微散开，别全叠在一个点上
+        {
+          const seq = (app.floatSeq = (app.floatSeq || 0) + 1) - 1;
+          const px = pt.x + ((seq % 3) - 1) * 13;
+          const py = pt.y - Math.floor(seq / 3) * 15;
+          setTimeout(() => showFloatingNumber("-" + (ev.amount || 0), px, py, pt.hero ? "damage hero-damage" : "damage"), seq * 110);
+        }
         if (pt.node) { pt.node.classList.add("hit"); setTimeout(() => pt.node.classList.remove("hit"), 360); }
         if (pt.hero) { pt.node.classList.add("hero-hit"); setTimeout(() => pt.node.classList.remove("hero-hit"), 420); shakeScreen(); flashScreen("damage"); showHeroImpact(pt.x, pt.y); }
         else if ((ev.amount || 0) >= 4) flashScreen("damage");
@@ -3400,6 +3498,37 @@
         showKeywordPop("格挡", pt.x, pt.y, "shield");
         pulseStatus(ev.targetUid, "shield");
         chooseSound("shield");
+      } else if (ev.kind === "debtTaskDone" || ev.kind === "debtPenalty" || ev.kind === "debt") {
+        // 债务相关的三类事件原来完全没视觉反馈，玩家只能从日志里读字
+        const done = ev.kind === "debtTaskDone";
+        const penalty = ev.kind === "debtPenalty";
+        const heroPt = eventPoint("hero:" + (ev.player != null ? ev.player : app.viewer));
+        const text = done ? "债务达成" : penalty ? "债务惩罚" : "债务生效";
+        showKeywordPop(text, heroPt.x, heroPt.y, done ? "debt-ok" : penalty ? "debt-bad" : "debt");
+        if (heroPt.node) {
+          const cls = done ? "debt-flash-ok" : penalty ? "debt-flash-bad" : "debt-flash";
+          heroPt.node.classList.add(cls);
+          setTimeout(() => heroPt.node.classList.remove(cls), 900);
+        }
+        if (penalty) { flashScreen("damage"); shakeScreen(); chooseSound("hero_hit"); }
+        else if (done) { flashScreen("heal"); chooseSound("heal"); }
+        else chooseSound("armor");
+      } else if (ev.kind === "destroy") {
+        // 摧毁比普通死亡更重：暗红爆点 + 强震
+        const pt = eventPoint(ev.targetUid);
+        showKeywordPop("摧毁", pt.x, pt.y, "destroy");
+        if (global.GokVFX) global.GokVFX.impact(pt.x, pt.y, { count: 9 });
+        if (pt.node) {
+          pt.node.classList.add("destroy-hit");
+          setTimeout(() => pt.node.classList.remove("destroy-hit"), 700);
+        }
+        flashScreen("damage");
+        shakeScreen();
+        chooseSound("damage");
+      } else if (ev.kind === "bounty") {
+        const pt = eventPoint("hero:" + (ev.player != null ? ev.player : app.viewer));
+        showKeywordPop("悬赏", pt.x, pt.y, "bounty");
+        chooseSound("armor");
       } else if (ev.kind === "poison") {
         const pt = eventPoint(ev.targetUid);
         showKeywordPop("蚀毒", pt.x, pt.y, "poison");
@@ -3419,7 +3548,13 @@
         chooseSound(ev.tone === "heal" ? "heal" : ev.tone === "freeze" ? "freeze" : "summon");
       } else if (ev.kind === "draw") {
         chooseSound("draw");
-        AudioBox.play("select");
+        // 只有自己抽牌才飞卡背；敌人抽牌不播动画——
+        // 原来不分敌我都飞向 #hand，看起来像自己连续抽了好几张
+        if (ev.player == null || ev.player === app.viewer) {
+          AudioBox.play("select");
+          const seq = (app.drawSeq = (app.drawSeq || 0) + 1) - 1;
+          setTimeout(() => flyDrawCard(app.viewer), seq * 120);
+        }
       } else if (ev.kind === "summon") {
         const pt = zonePoint(ev.player, ev.zone);
         const summonOwner = app.game && app.game.players[ev.player];
@@ -4284,7 +4419,7 @@
     if (!zone || E.ZONES.indexOf(zone) < 0) return false;
     if (side === "top") return def.type === "spell" || def.type === "equipment";
     if (def.type === "minion") return p.board[zone].length < 3 && p.mana >= E.getCardCost(app.game, p, c);
-    if (def.type === "formation") return (p.formations || []).length < 2 && p.mana >= E.getCardCost(app.game, p, c);
+    if (def.type === "formation") return (p.formations || []).length < 3 && p.mana >= E.getCardCost(app.game, p, c);
     return true;
   }
 
@@ -4723,12 +4858,71 @@
 
   function showAbilityFeedback(name, point) {
     if (global.GokVFX) global.GokVFX.cast(point.x, point.y, {});
-    const ring = el("div", "cast-ring summon-ring");
-    ring.style.left = point.x + "px";
-    ring.style.top = point.y + "px";
-    document.body.appendChild(ring);
-    setTimeout(() => { if (ring.parentNode) ring.parentNode.removeChild(ring); }, 700);
+    // 双层光环：外圈扩散 + 内圈收束，比单个环更有「技能发动」的份量
+    [["cast-ring hero-power-ring", 0], ["cast-ring hero-power-ring inner", 130]].forEach(([cls, delay]) => {
+      const ring = el("div", cls);
+      ring.style.left = point.x + "px";
+      ring.style.top = point.y + "px";
+      ring.style.animationDelay = delay + "ms";
+      document.body.appendChild(ring);
+      setTimeout(() => { if (ring.parentNode) ring.parentNode.removeChild(ring); }, 1150 + delay);
+    });
+    // 技能名向上飘出，一眼看到用了什么
+    const label = el("div", "hero-power-label", name || "领袖技能");
+    label.style.left = point.x + "px";
+    label.style.top = (point.y - 26) + "px";
+    document.body.appendChild(label);
+    setTimeout(() => { if (label.parentNode) label.parentNode.removeChild(label); }, 1450);
+    // 我方英雄头像脉动一下
+    const heroEl = document.querySelector(".hero-panel.player-hero .hs-hero-portrait");
+    if (heroEl) {
+      heroEl.classList.remove("hero-power-pulse");
+      void heroEl.offsetWidth;
+      heroEl.classList.add("hero-power-pulse");
+      setTimeout(() => heroEl.classList.remove("hero-power-pulse"), 900);
+    }
     AudioBox.play("hero_power");
+  }
+
+  // 抽牌动画：一张卡背从牌堆飞到手上，配合手牌区微光
+  function flyDrawCard(playerIndex) {
+    if (!app.fxOn && !app.motionOn) return;
+    const isMe = playerIndex == null ? true : playerIndex === app.viewer;
+    const pileBoxes = document.querySelectorAll("#side-pile .pile-box, .deck-rail .deck-corner");
+    let fromEl = null;
+    // 手机端没有侧栏，退化成从屏幕边缘飞出
+    if (pileBoxes.length >= 3) fromEl = pileBoxes[isMe ? 2 : 0];
+    let from;
+    if (fromEl) {
+      const r = fromEl.getBoundingClientRect();
+      from = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    } else {
+      from = { x: isMe ? window.innerWidth - 30 : window.innerWidth - 30, y: isMe ? window.innerHeight - 40 : 60 };
+    }
+    const handEl = document.getElementById("hand") || document.querySelector(".hand-zone, .hand-row");
+    let to;
+    if (handEl) {
+      const hr = handEl.getBoundingClientRect();
+      to = { x: hr.left + hr.width / 2, y: hr.top + Math.min(30, hr.height / 2) };
+    } else {
+      to = { x: window.innerWidth / 2, y: window.innerHeight - 90 };
+    }
+    const fly = el("div", "draw-fly" + (isMe ? "" : " foe"));
+    const backImg = cardBackUrl();
+    fly.style.backgroundImage = "url('" + backImg + "')";
+    fly.style.left = from.x + "px";
+    fly.style.top = from.y + "px";
+    fly.style.setProperty("--dx", (to.x - from.x).toFixed(0) + "px");
+    fly.style.setProperty("--dy", (to.y - from.y).toFixed(0) + "px");
+    document.body.appendChild(fly);
+    setTimeout(() => { if (fly.parentNode) fly.parentNode.removeChild(fly); }, 620);
+    // 落到手上时手牌区亮一下
+    if (handEl) {
+      handEl.classList.remove("draw-glow");
+      void handEl.offsetWidth;
+      handEl.classList.add("draw-glow");
+      setTimeout(() => handEl.classList.remove("draw-glow"), 640);
+    }
   }
 
   function showImpact(x, y, opts) {
@@ -4760,7 +4954,18 @@
     turnBannerText = text;
     turnBannerAt = now;
     if (text === "你的回合" || text === "对方回合") playPageTurn();
-    banner.textContent = text;
+    // 横幅带副标题：主行是你的/对方回合，次行补轮次与行动力
+    const game = app.game;
+    banner.textContent = "";
+    banner.appendChild(el("b", "turn-banner-main", text));
+    if (game && game.status === "playing") {
+      const cur = game.players[game.current];
+      const sub = el("small", "turn-banner-sub");
+      sub.textContent = "第 " + (game.round || 1) + " 轮 · 行动力 " + (cur ? (cur.mana || 0) + "/" + (cur.maxMana || 0) : "-");
+      banner.appendChild(sub);
+    }
+    banner.classList.toggle("mine", text === "你的回合");
+    banner.classList.toggle("foe", text === "对方回合");
     banner.classList.remove("show");
     const veinRow = $("vein-row");
     if (veinRow) {
@@ -4909,8 +5114,12 @@
       const r = E.attack(s, attackerOwner, attackerUid, targetUid);
       renderGame();
       if (targetMinion && targetMinion.dead && targetGhost) showDeathGhost(targetGhost, rect);
+      if (!r.ok) {
+        // 攻击没结算成功：把原因说出来，别让人以为伤害被吞了
+        toast(r.reason || "这次攻击没有生效。");
+      }
       if (r.ok) {
-        showFloatingNumber("-" + damage, cx, cy, targetUid === "hero" ? "damage hero-damage" : "damage");
+        // 主伤害的飘字由 renderGame 按 damage 事件统一出，这里不再重复飘
         if (counterDamage > 0 && attackerRect) {
           showFloatingNumber("-" + counterDamage, attackerRect.left + attackerRect.width / 2, attackerRect.top + attackerRect.height / 2, "damage");
           const attackerNow = document.querySelector('.board-card[data-minion="' + attackerUid + '"]');
@@ -4952,6 +5161,11 @@
 
   function showPendingDiscoverIfNeeded() {
     const s = app.game;
+    // 坟场回收的选牌优先级单独判断
+    if (s && s.pendingChoice && s.pendingChoice.type === "gravePick" && s.pendingChoice.player === app.viewer) {
+      if (!app.modalOpen) showGravePick();
+      return true;
+    }
     if (!s || !s.pendingChoice || s.pendingChoice.type !== "discover") return false;
     if (s.pendingChoice.player !== app.viewer) return false;
     if (!app.modalOpen) showDiscover();
@@ -5618,6 +5832,69 @@
     if (app.screen === "home" && isPhoneLayout() && !app.mobileWelcomeShown) {
       setTimeout(() => { if (app.screen === "home" && !app.modalOpen) showMobileWelcome(); }, 280);
     }
+  }
+
+  // 坟场回收选牌：玩家打出「拾荒者」「黑市之主」时弹出
+  function showGravePick() {
+    const s = app.game;
+    if (!s || !s.pendingChoice || s.pendingChoice.type !== "gravePick") return;
+    if (s.pendingChoice.player !== app.viewer) return;
+    app.busy = true;
+    AudioBox.play("discover");
+    const options = s.pendingChoice.options.slice();
+    const penalty = s.pendingChoice.costPenalty || 1;
+    openModal((content) => {
+      content.appendChild(el("div", "eyebrow", "坟场 / 回收"));
+      content.appendChild(el("h3", null, "从坟场选择一张牌"));
+      content.appendChild(el("p", null, "选中的牌会加入手牌，其行动力消耗 +" + penalty + "。衍生物无法回收。"));
+      const grid = el("div", "discover-grid");
+      for (const id of options) {
+        const def = D.CARDS[id];
+        if (!def) continue;
+        const card = el("div", "choice-card discover-card grave-pick-card");
+        const art = el("div", "preview-art");
+        if (def.art) art.style.backgroundImage = "url('" + portraitImage(def.art) + "')";
+        else {
+          art.classList.add("placeholder", "generic-art");
+          art.style.setProperty("--gk-art", cssAbsUrls(genericArtStyle(def)));
+          art.dataset.icon = def.type === "spell" ? "术" : factionIcon(def.faction);
+          addGenericGlyph(art, def);
+          addGeneratedArt(art, def);
+        }
+        card.appendChild(art);
+        card.appendChild(el("strong", null, def.name));
+        card.appendChild(el("small", null, (def.type === "spell" ? "战术" : def.type === "formation" ? "阵型" : def.type === "equipment" ? "装备" : "随从") + " · " + ((def.cost || 0) + penalty) + " 行动力"));
+        const txt = el("p", null, def.text || "—");
+        card.appendChild(txt);
+        card.onclick = () => {
+          if (app.net && app.net.role === "guest") {
+            closeModal(true);
+            guestSendAction({ kind: "gravePick", cardId: id });
+            return;
+          }
+          const r = E.resolveGravePick(s, s.pendingChoice.player, id);
+          closeModal(true);
+          app.busy = false;
+          if (!r.ok) toast(r.reason || "回收失败。");
+          else AudioBox.play("select");
+          renderGame();
+          if (s.pendingChoice) showGravePick();
+        };
+        grid.appendChild(card);
+      }
+      content.appendChild(grid);
+      const actions = el("div", "modal-actions");
+      const skip = el("button", "btn btn-ghost", "放弃回收");
+      skip.onclick = () => {
+        s.pendingChoice = null;
+        s.pendingGraveDraw = null;
+        closeModal(true);
+        app.busy = false;
+        renderGame();
+      };
+      actions.appendChild(skip);
+      content.appendChild(actions);
+    });
   }
 
   function showDiscover() {
@@ -10236,14 +10513,16 @@ const tabs = $("deck-faction-tabs");
       content.appendChild(el("p", null, "先看这份速查；完整规则、卡牌类型与关键词解析在「完整教程」里。"));
       const intro = el("div", "guide-sections");
       const sections = [
+        ["回合阶段", "你的回合按固定顺序推进四个阶段。「回合开始」与「抽牌」是自动的，你没得选；「出牌」是唯一能操作的窗口；「结束」也是自动的。\r\n① 回合开始（自动）：行动力回满、装备光环结算、随从的每回合成长、阵型倒计时 -1。\r\n② 抽牌（自动）：抽 1 张。牌库空了会受到疲劳伤害。\r\n③ 出牌（你能操作）：可放置随从、布置阵型、施放战术、装备装备、打出债务卡、指挥随从攻击。每个随从每回合只能攻击 1 次。\r\n④ 结束（自动）：债务任务到期结算、回合结束类被动触发、冻结层数 -1。\r\n对手回合里你只能看。手牌、行动力、攻击次数都只在你的出牌阶段可用。"],
         ["胜利条件", "先把对方领袖生命降到 0。随从可以攻击敌方随从或领袖；有守备的随从必须先处理。"],
         ["行动力与先后手", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张，并额外获得一张「掘脉许可」（1 费战术：本回合 +2 点行动力，可以留着）。"],
         ["阵位", "左翼 / 中枢 / 右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。阵位会影响部分卡牌的范围与固定效果。"],
         ["阵型", "每个阵位同时只生效一张阵型卡。在同一个阵位再布置第二张时，原来那张会被顶掉并进入弃牌堆。阵型是持续光环：布置之后放进该阵位的随从，以及布置时已经在场的随从，都会吃到加成。"],
+        ["手牌上限", "手牌最多 8 张。到 8 张时再抽到的牌会被直接烧掉（进入弃牌堆）；被移回手牌的随从也会因为手牌满而被烧掉。"],
         ["流脉", "双方共享 0→12，每次完整轮次（双方各行动一次）自然 +1。4 震荡、7 裂隙、10 魔物潮触发世界事件，12 回流清空。"],
-        ["牌组结构", "30 张牌，随从 / 战术 / 阵型 / 装备 / 债务自由混编，各类型都不限张数，只受品级限制：传说最多 2 张、史诗最多 15 张，普通与稀有随便带。领袖在开局单独选择，不占牌组，也不进入牌库。"],
+        ["牌组结构", "30 张牌，随从 / 战术 / 阵型 / 装备 / 债务自由混编，各类型都不限张数，只受品级限制：传说最多 2 张、史诗最多 15 张，普通与稀有随便带。同名卡也有上限：传说 1 张，其余最多 2 张。领袖在开局单独选择，不占牌组，也不进入牌库。"],
         ["装备", "抽到打出即可生效。场上同时只生效 2 件，带第三张时最早的那件会被挤掉，挤掉的装备进入弃牌堆。"],
-        ["弃牌堆（坟墓）", "敌我双方共享同一个弃牌堆。阵亡的随从、用掉的战术牌、被顶掉的阵型与被挤掉的装备都会进去，双方都能查看。"],
+        ["坟场", "敌我双方共享同一个坟场。死掉的随从会留在这里，双方都能查看。战术牌、阵型、装备、债务卡用掉就是没了，不进坟场。\r\n坟场里能做的事只有两种：招魂（从坟场拉回场上，回来的是沉默状态，只有原身材）和复活（完整身材与效果，目前只有提蒙）。谁都能招对面的尸体。\r\n灰港不招魂：它把死前被悬赏的尸体当账本，读数量换伤害、抽牌、加护甲；用掉的那具尸体会被取下悬赏标记，变成普通尸体留在坟场。"],
         ["行动力与先后手", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张，并额外获得一张「掘脉许可」（1 费战术：本回合 +2 点行动力，可以留着）。"]
       ];
       for (const [title, desc] of sections) {
@@ -10293,8 +10572,20 @@ const tabs = $("deck-faction-tabs");
 
     openModal((content) => {
       content.appendChild(el("div", "eyebrow", "BATTLE / GRAVEYARD"));
-      content.appendChild(el("h3", null, "弃牌堆 · 双方共享"));
-      content.appendChild(el("p", null, "阵亡随从、用掉的战术牌、被顶掉的阵型、被挤掉的装备都会进这里，双方都能查看。"));
+      content.appendChild(el("h3", null, "坟场 · 双方共享"));
+      content.appendChild(el("p", null, "死掉的随从会留在这里。战术牌、阵型、装备用掉就是没了，不进坟场。"));
+
+      // 计数行：总数 + 已献祭（除外）数
+      const banishedN = game.banished || 0;
+      const statRow = el("div", "graveyard-stats");
+      statRow.appendChild(el("span", "graveyard-stat-main", "坟场 " + shared.length + " 张"));
+      // 坟场被消耗的牌不单独显示（没有「除外」这个说法，用掉就是用掉了）
+      // 只有帝国 / 灰港的牌组能读坟场
+      const fac = app.faction || (game.players && game.players[app.viewer || 0] && game.players[app.viewer || 0].faction);
+      if (fac === "empire" || fac === "greyharbor") {
+        statRow.appendChild(el("span", "graveyard-stat-tag", fac === "empire" ? "内卫部可读取" : "收尸渠道"));
+      }
+      content.appendChild(statRow);
 
       const wrap = el("div", "graveyard-columns");
       const column = (title, list, emptyText) => {
@@ -10307,7 +10598,7 @@ const tabs = $("deck-faction-tabs");
         const grid = el("div", "graveyard-grid");
         for (const item of list.slice().reverse()) {
           const def = D.CARDS[item.cardId];
-          const chip = el("div", "graveyard-chip");
+          const chip = el("div", "graveyard-chip" + (item.token ? " is-token" : ""));
           const art = el("img", "graveyard-chip-art");
           art.alt = "";
           art.src = (cardArtUrl(def) || factionIcon(def && def.faction)) || "";
@@ -10315,15 +10606,18 @@ const tabs = $("deck-faction-tabs");
           chip.appendChild(el("span", "graveyard-chip-name", def ? def.name : item.cardId));
           const kindText = { minion: "随从", formation: "阵型", equipment: "装备", spell: "战术" }[item.kind] || "";
           if (kindText) chip.appendChild(el("em", "graveyard-chip-kind", kindText));
-          chip.title = (def ? def.name : item.cardId) + (def && def.text ? "\n" + def.text : "");
+          if (item.wasBounty) { chip.classList.add("was-bounty"); }
+        const tokenTip = item.token ? "（衍生物，无法回收）" : "";
+        const bountyTip = item.wasBounty ? "（死前是悬赏目标）" : "";
+        chip.title = (def ? def.name : item.cardId) + tokenTip + bountyTip + (def && def.text ? "\n" + def.text : "");
           grid.appendChild(chip);
         }
         col.appendChild(grid);
         return col;
       };
 
-      wrap.appendChild(column("我方", mine, "还没有东西进坟"));
-      wrap.appendChild(column("对方", theirs, "还没有东西进坟"));
+      wrap.appendChild(column("我方", mine, "这一侧没有牌"));
+      wrap.appendChild(column("对方", theirs, "这一侧没有牌"));
       content.appendChild(wrap);
 
       if (legacy.length) {
@@ -10344,6 +10638,7 @@ const tabs = $("deck-faction-tabs");
       content.appendChild(el("h3", null, "规则速查"));
       const box = el("div", "guide-sections");
       const sections = [
+        ["回合阶段", "你的回合按固定顺序推进四个阶段。「回合开始」与「抽牌」是自动的；「出牌」是唯一能操作的窗口；「结束」也是自动的。\r\n① 回合开始：行动力回满、装备光环结算、随从的每回合成长、阵型倒计时 -1。\r\n② 抽牌：抽 1 张。牌库空了会受疲劳伤害。\r\n③ 出牌：可放置随从、布置阵型、施放战术、装备装备、打出债务卡、指挥随从攻击。每个随从每回合攻击 1 次。\r\n④ 结束：债务任务到期结算、回合结束类被动触发、冻结层数 -1。\r\n对手回合里你只能看。手牌、行动力、攻击次数只在你的出牌阶段可用。"],
         ["目标", "把对方领袖生命降到 0。随从可攻击敌方随从或领袖；有守备的随从必须先处理。"],
         ["行动力", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张并获得一张「掘脉许可」（1 费战术，可留到需要时用）。"],
         ["阵位", "左翼 / 中枢 / 右翼三个阵位，每个阵位最多 3 个随从，全场最多 6 个。同阵位可能触发协同，双方同列互为对位。"],
@@ -10351,8 +10646,8 @@ const tabs = $("deck-faction-tabs");
         ["流脉", "共享流脉 0→12。到达 4 震荡、7 裂隙、10 魔物潮时触发世界事件；12 回流清空。"],
         ["关键词", "登场、余响、守备、先遣、冻结、沉默、引脉、预兆等关键词会在卡牌和标签上标明。"],
         ["装备", "装备是一张牌，抽到并打出后持续生效。场上同时只生效 2 件，打第三张时最早的会被挤掉并进入弃牌堆。"],
-        ["牌组构成", "30 张，随从 / 战术 / 阵型 / 装备 / 债务各类型都不限张数。只卡品级：传说最多 2 张、史诗最多 15 张，普通与稀有随便带。"],
-        ["弃牌堆", "敌我共享同一个弃牌堆（坟墓）：阵亡随从、用掉的战术牌、被顶掉的阵型、被挤掉的装备都会进去，双方都能查看。"]
+        ["牌组构成", "30 张，随从 / 战术 / 阵型 / 装备 / 债务各类型都不限张数。只卡品级：传说最多 2 张、史诗最多 15 张，普通与稀有随便带。同名上限：传说 1 张，其余 2 张。"],
+        ["坟场", "敌我共享同一个坟场：只有死掉的随从会进去。战术牌、阵型、装备、债务卡用掉就是没了，不进坟场。\r\n① 招魂：从坟场拿走一个随从召唤回场，回来是沉默状态——只有原身材，关键词、登场、余响、被动全都没有。可以招对面的尸体。默认拿最后进入坟场的那张；内卫部招魂师、黑弥撒执事、招魂这三张会优先召唤城主·永夜。\r\n② 复活：从坟场拿走一个随从，按完整状态回场（身材、关键词、余响都在）。目前只有普卫岛的提蒙会复活。\r\n③ 城主·永夜：每次死亡进坟场永久 +1/+1，只有招魂能把它带回来，它免疫沉默。\r\n④ 灰港读悬赏尸体：死于悬赏的随从带金色标记。拾荒者、黑市之主、收尸结算、黑市拍卖、验尸官、销赃人、坟场账簿都按「有几具悬赏尸体」结算；用掉的效果会取下标记，尸体变普通尸体。\r\n⑤ 衍生物（召唤出来的亡灵之类）也会进坟场，但带虚框标记，不能被招魂。"]
       ];
       for (const [title, desc] of sections) {
         const sec = el("div", "guide-section");
@@ -13219,16 +13514,18 @@ const tabs = $("deck-faction-tabs");
       if (!confirmDeckWarnings(app.faction, deckForStart, "仍然开始推演？")) return;
       app.lastUsedDeckId = app.customDecks[app.faction] ? (activeDeckFor(app.faction) ? activeDeckFor(app.faction).id : null) : null;
     const begin = () => ensureHealthNotice(() => runBootLoading("正在铺开牌桌", "载入牌组、阵位与流脉…", BOOT_ASSETS, () => startGame({ mode: "ai", faction: app.faction, aiDifficulty: app.aiDifficulty, first: app.firstChoice === "random" ? undefined : Number(app.firstChoice) })));
-      const cg = CLASSIC_CG[app.faction];
-      if (global.GokCinema && cg) {
-        global.GokCinema.playOnce("classic_intro_" + app.faction, cg.clip, {
-          eyebrow: "CLASSIC · " + factionName(app.faction),
-          title: cg.title,
-          text: cg.text
-        }).then(begin);
-      } else {
-        begin();
-      }
+      // 阵营开场 CG 同样先不播（占位素材），素材好了把下面这段换回来
+      // const cg = CLASSIC_CG[app.faction];
+      // if (global.GokCinema && cg) {
+      //   global.GokCinema.playOnce("classic_intro_" + app.faction, cg.clip, {
+      //     eyebrow: "CLASSIC · " + factionName(app.faction),
+      //     title: cg.title,
+      //     text: cg.text
+      //   }).then(begin);
+      // } else {
+      //   begin();
+      // }
+      begin();
     };
     document.querySelectorAll("[data-setup-mode]").forEach((b) => {
       b.onclick = () => { app.setupMode = b.dataset.setupMode; AudioBox.play("select"); setupState(); };

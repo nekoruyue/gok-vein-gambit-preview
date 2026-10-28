@@ -201,6 +201,14 @@ function act(room, player, action) {
     } else if (type === "repay") {
       const r = E.repayDebt(g, player, action.uid);
       if (r && r.ok === false) return r;
+    } else if (type === "discover") {
+      // 预兆选牌（原来漏了这个分支，联机时选牌必然失败）
+      const r = E.resolveDiscover(g, player, action.cardId);
+      if (r && r.ok === false) return r;
+    } else if (type === "gravePick") {
+      // 坟场回收选牌
+      const r = E.resolveGravePick(g, player, action.cardId);
+      if (r && r.ok === false) return r;
     } else {
       return { ok: false, error: "未知动作：" + type };
     }

@@ -161,7 +161,8 @@
     if (cond === "freeze") return player.freezeCastTurn === state.turnNumber;
     if (cond === "spells") return (player.spellsCastThisTurn || 0) > 0;
     if (cond === "hp15") return player.hp <= 15;
-    if (cond === "zhenmai") return player.zhenmaiTurn != null;
+    if (cond === "grave5") return (state.discard || []).length >= 5;
+  if (cond === "zhenmai") return player.zhenmaiTurn != null;
     if (cond === "carve") return !!player.lastSpellWasCarve;
     return false;
   }
@@ -261,12 +262,21 @@
     for (const f of player.formations || []) {
       const d = card(f.cardId); const e = d && d.formation && d.formation.onEvent;
       if (!e || e.event !== event) continue;
+      // 每回合只触发一次
       if (f.lastEventTurn === state.turnNumber) continue;
+      // 坟场门槛：坟场账簿要求坟场里够 N 具悬赏尸体；其他阵型用 graveMin 读坟场总数
+      if (e.graveMin != null && graveCount(state) < e.graveMin) continue;
+      if (e.bountyMin != null && bountyGraveCount(state) < e.bountyMin) continue;
       f.lastEventTurn = state.turnNumber;
       const allies = aliveMinions(player).filter(m => m.zone === f.zone);
       if (e.effect === "buffZoneRandom" && allies.length) buffMinion(state, allies[randomInt(state, allies.length)], e.attack || 0, e.health || 1, "阵型", true);
       else if (e.effect === "draw") drawCard(state, player, e.amount || 1);
       else if (e.effect === "summon") summonMinion(state, player, e.token || "losutai_imp", openZones(player)[0], null);
+      else if (e.effect === "armor") {
+        player.armor += e.amount || 1;
+        player.armorGainedTurn = state.turnNumber;
+        log(state, (d.name || "阵型") + "：领袖获得 " + (e.amount || 1) + " 点护甲。", player, "armor");
+      }
     }
   }
 
@@ -538,6 +548,7 @@
     const spent = Math.min(state.vein, need);
     log(state, "逆脉 " + need + " 触发：消耗 " + spent + " 点流脉。", player, "vein");
     addVein(state, -spent, "逆脉"); player.refluxTurn = state.turnNumber;
+    player.refluxGain = spent;   // 记录本次实际消耗，供「若实际消耗 N」类卡牌判断
     return true;
   }
 
@@ -561,6 +572,8 @@
     if (!need) return;
     const gain = Math.min(state.vein || 0, need);
     if (gain > 0) addVein(state, -gain, "镇脉");
+    player.zhenmaiTurn = state.turnNumber;   // 记录本回合镇脉过
+    player.zhenmaiGain = gain;   // 记录本次实际消耗，供「若实际消耗 N」类卡牌判断
     player.armor += gain;
     state.events.push({ structured: true, kind: "armor", player: player.index, amount: gain });
     log(state, "镇脉 " + need + "：消耗 " + gain + " 点流脉，获得 " + gain + " 点护甲。", player, "armor");
@@ -771,6 +784,11 @@
 
   function silenceMinion(state, m) {
     if (!m || m.dead) return;
+    // 白银城城主：不老不死，沉默不了
+    if (m.cardId === "eldlich_lord") {
+      log(state, m.name + " 无法被沉默。", state.players[m.owner], "silence");
+      return;
+    }
     m.silenced = true;
     m.taunt = false;
     m.charge = false;
@@ -825,14 +843,200 @@
   }
 
   // 弃牌堆（坟墓）是双方共享的：统一从这里入葬，带归属信息
-function toGraveyard(state, owner, cardId, kind) {
+// ===== 坟场接口（只有帝国 / 灰港的卡会读）=====
+// 坟场总数：不含已除外的
+function graveCount(state, filter) {
+  const pile = Array.isArray(state.discard) ? state.discard : [];
+  if (!filter) return pile.length;
+  return pile.filter(function (e) {
+    if (filter.token === false && e.token) return false;
+    if (filter.wasBounty && !e.wasBounty) return false;
+    if (filter.kinds && filter.kinds.indexOf(e.kind) < 0) return false;
+    return true;
+  }).length;
+}
+
+// 可回收的牌（排除衍生物）
+function graveCards(state, filter) {
+  const pile = Array.isArray(state.discard) ? state.discard : [];
+  return pile.filter(function (e) {
+    if (e.token) return false;
+    if (filter && filter.kinds && filter.kinds.indexOf(e.kind) < 0) return false;
+    return true;
+  });
+}
+
+// 献祭 / 除外 N 张：从尾部开始吃，返回实际除掉的数量
+function banishGrave(state, n, filter) {
+  const pile = Array.isArray(state.discard) ? state.discard : [];
+  if (!state.banished) state.banished = 0;
+  let done = 0;
+  for (let i = pile.length - 1; i >= 0 && done < n; i--) {
+    const e = pile[i];
+    if (filter && filter.wasBounty && !e.wasBounty) continue;
+    pile.splice(i, 1);
+    done++;
+    state.banished++;
+  }
+  return done;
+}
+
+function toGraveyard(state, owner, cardId, kind, wasBounty) {
+  // 坟墓只收死掉的随从。战术、阵型、装备用掉就是没了，不进来。
+  if (kind !== "minion") return;
   if (!state.discard) state.discard = [];
-  state.discard.push({ cardId: cardId, kind: kind || "unknown", owner: owner == null ? null : owner.index, turn: state.turnNumber || 0 });
+  if (state.banished == null) state.banished = 0;
+  // 白银城城主：每死一次，层数 +1（永久累积，跨对局存在 state 里）
+  if (cardId === "eldlich_lord" && owner) {
+    if (!state.eldlichStacks) state.eldlichStacks = {};
+    state.eldlichStacks[owner.index] = (state.eldlichStacks[owner.index] || 0) + 1;
+  }
+  state.discard.push({
+    cardId: cardId,
+    kind: kind || "unknown",
+    owner: owner == null ? null : owner.index,
+    turn: state.turnNumber || 0,
+    token: !!(D.CARDS[cardId] && D.CARDS[cardId].token),
+    wasBounty: !!wasBounty
+  });
   // 同时保留原来的 per-player 记录，兼容已有的读取逻辑
   if (owner) {
     if (!owner.discard) owner.discard = [];
     owner.discard.push({ cardId: cardId, kind: kind || "unknown" });
   }
+  // 焚尸炉：坟场里的随从数每达到 per 的倍数，有焚尸炉的一方抽 1 张
+  for (const p of state.players) {
+    if (!p) continue;
+    const furnace = aliveMinions(p).find(function (m) { return !m.silenced && m.passive && m.passive.type === "graveMilestoneDraw"; });
+    if (!furnace) continue;
+    const per = furnace.passive.per || 3;
+    const total = state.discard.length;
+    if (p.graveMilestone == null) p.graveMilestone = Math.floor(total / per);
+    const reached = Math.floor(total / per);
+    if (reached > p.graveMilestone) {
+      const n = reached - p.graveMilestone;
+      p.graveMilestone = reached;
+      drawCard(state, p, n);
+      log(state, "焚尸炉：坟场已有 " + total + " 个随从，抽 " + n + " 张牌。", p, "draw");
+    }
+  }
+}
+
+// ===== 悬赏尸体：计数与消耗 =====
+// 消耗 = 把悬赏标记取下来，尸体留在坟场变普通尸体
+function bountyGraveCount(state) {
+  const pile = Array.isArray(state.discard) ? state.discard : [];
+  let n = 0;
+  for (const e of pile) if (e.wasBounty) n++;
+  return n;
+}
+
+function consumeBountyTags(state, n, player) {
+  const pile = Array.isArray(state.discard) ? state.discard : [];
+  const want = n == null ? Infinity : n;
+  let done = 0;
+  for (let i = pile.length - 1; i >= 0 && done < want; i--) {
+    if (!pile[i].wasBounty) continue;
+    pile[i].wasBounty = false;
+    done++;
+  }
+  if (done) log(state, "处理掉 " + done + " 具悬赏尸体的标记，它们变成普通尸体留在坟场。", player || null, "grave");
+  return done;
+}
+
+// ===== 招魂 =====
+// 招魂：从共享坟场取一个随从召唤回场，回来的是沉默状态（只有原身材）。
+// 城主免疫沉默，所以它回来还是完整城主，并按层数加身材。
+// 默认取「最后进入坟场」且符合费用条件的那张；只有卡面写明 preferLord 的才优先城主。
+function silenceSummonedMinion(state, m) {
+  if (!m) return;
+  if (m.cardId === "eldlich_lord") return;   // 城主免疫沉默
+  m.silenced = true;
+  m.taunt = false;
+  m.charge = false;
+  m.stealth = false;
+  m.frozenTurns = 0;
+  m.keywords = [];
+  m.passive = null;
+  m.deathrattle = null;
+  m.deathrattles = [];
+  m.divineShield = false;
+  m.windfury = false;
+  m.poisonous = false;
+  m.lifesteal = false;
+  m.rush = false;
+  m.reborn = false;
+  m.formationVein = false;
+  m.dynAttack = 0;
+  m.dynHealth = 0;
+  m.attack = m.baseAttack;
+  m.maxHealth = m.baseHealth;
+  m.health = m.baseHealth;
+  m.attacksLeft = 0;
+}
+
+function sepulchreSummon(state, player, opts) {
+  opts = opts || {};
+  const pile = Array.isArray(state.discard) ? state.discard : [];
+  const maxCost = opts.maxCost == null ? null : opts.maxCost;
+  const usable = function (e) {
+    const d = card(e.cardId);
+    if (!d || d.type !== "minion" || d.token || d.disabled) return false;
+    if (maxCost != null && (d.cost || 0) > maxCost) return false;
+    return true;
+  };
+  let idx = -1;
+  if (opts.preferLord) {
+    // 优先城主：无视卡面的费用上限（城主 5 费也能被 3 费的招魂拉回来）
+    for (let i = pile.length - 1; i >= 0; i--) {
+      if (pile[i].cardId !== "eldlich_lord") continue;
+      const d = card(pile[i].cardId);
+      if (!d || d.token || d.disabled) continue;
+      idx = i;
+      break;
+    }
+  }
+  if (idx < 0) {
+    for (let i = pile.length - 1; i >= 0; i--) {
+      if (usable(pile[i])) { idx = i; break; }
+    }
+  }
+  if (idx < 0) {
+    if (opts.log !== false) log(state, "坟场里没有可招魂的随从。", player, "grave");
+    return null;
+  }
+  const entry = pile[idx];
+  const zone = openZones(player)[0];
+  if (!zone) {
+    if (opts.log !== false) log(state, "阵位已满，招魂失败，尸体留在坟场。", player, "grave");
+    return null;
+  }
+  pile.splice(idx, 1);
+  if (Array.isArray(player.discard)) {
+    const k = player.discard.findIndex(function (x) { return x.cardId === entry.cardId; });
+    if (k >= 0) player.discard.splice(k, 1);
+  }
+  const m = summonMinion(state, player, entry.cardId, zone, null);
+  if (!m) {
+    pile.push(entry);
+    return null;
+  }
+  silenceSummonedMinion(state, m);
+  if (entry.cardId === "eldlich_lord") {
+    const stacks = (state.eldlichStacks && state.eldlichStacks[player.index]) || 0;
+    if (stacks > 0) buffMinion(state, m, stacks, stacks, "永夜", true);
+    log(state, "招魂：城主·永夜从坟场站起来了（" + stacks + " 层永夜，+" + stacks + "/+" + stacks + "）。", player, "summon");
+  } else {
+    log(state, "招魂：「" + (card(entry.cardId) || {}).name + "」以沉默状态回到战场。", player, "summon");
+  }
+  // 尸术师：每招魂一个随从，自己 +1/+1
+  for (const ally of aliveMinions(player)) {
+    if (ally.silenced || !ally.passive || ally.passive.type !== "sepulchreGrowth") continue;
+    buffMinion(state, ally, ally.passive.attack || 1, ally.passive.health || 1, "尸术", true);
+    log(state, ally.name + " 因招魂获得 +" + (ally.passive.attack || 1) + "/+" + (ally.passive.health || 1) + "。", player, "buff");
+  }
+  recomputeAuras(state);
+  return m;
 }
 
 function processDeaths(state) {
@@ -858,13 +1062,31 @@ function processDeaths(state) {
       for (const entry of dead) {
         const { p, z, m } = entry;
         p.board[z] = p.board[z].filter(x => x.uid !== m.uid);
-        // 阵亡的随从进共享弃牌堆
-        toGraveyard(state, p, m.cardId, "minion");
+        // 阵亡的随从进共享坟场
+        // 亡者契约：该阵位友方死亡时，城主·永夜永久 +1/+1（不设每回合次数上限）
+        const contractF = (p.formations || []).find(function (f) { return f.cardId === "armor_drive" && f.zone === z; });
+        toGraveyard(state, p, m.cardId, "minion", m.bounty != null);
+        if (contractF) {
+          if (!state.eldlichStacks) state.eldlichStacks = {};
+          state.eldlichStacks[p.index] = (state.eldlichStacks[p.index] || 0) + 1;
+          log(state, "亡者契约：城主·永夜永久获得 +1/+1（当前 " + state.eldlichStacks[p.index] + " 层）。", p, "grave");
+        }
         state.events.push({ structured: true, kind: "death", targetUid: m.uid, player: p.index, zone: z });
         log(state, m.name + " 死亡。", p, "death");
         state.stats.minionsDied++;
         state.deathsThisTurn = (state.deathsThisTurn || 0) + 1;
+        triggerFormationEvent(state, p, "death");   // 收尸队：随从死亡时加护甲
+
         p.friendlyDeathsThisTurn = (p.friendlyDeathsThisTurn || 0) + 1;
+        // 铁流冲锋：被标记的随从本回合阵亡时，其控制者抽 1 张
+        if (m.deathDrawOwner != null && m.deathDrawTurn === state.turnNumber) {
+          const dOwner = state.players[m.deathDrawOwner];
+          if (dOwner && state.status === "playing") {
+            drawCard(state, dOwner, 1);
+            log(state, "铁流冲锋：随从阵亡，抽 1 张。", dOwner, "draw");
+          }
+          m.deathDrawOwner = null;
+        }
         if (m.cardId === "losutai_imp") {
           const spore = aliveMinions(p).find(x => x.passive && x.passive.type === "firstImpDeathSummon" && !x.silenced);
           if (spore && p.sporePathfinderTurn !== state.turnNumber) {
@@ -1636,7 +1858,7 @@ function processDeaths(state) {
         equipments.push(def.id);
         while (equipments.length > 2) {
           const droppedId = equipments.shift();
-          toGraveyard(state, player, droppedId, "equipment");
+          // 装备卸下不进坟墓（坟墓只放随从）
           const droppedDef = D.CARDS[droppedId];
           log(state, player.name + " 的装备位已满，弃掉「" + (droppedDef ? droppedDef.name : droppedId) + "」。", player, "discard");
         }
@@ -1673,7 +1895,7 @@ function processDeaths(state) {
         player.formations = player.formations.filter(f => f.zone !== zone);
         // 被顶掉的阵型进弃牌堆
         for (const old of replaced) {
-          toGraveyard(state, player, old.cardId, "formation");
+          // 阵型被顶掉不进坟墓
           const oldDef = D.CARDS[old.cardId];
           log(state, player.name + " 覆盖了" + ZONE_NAMES[zone] + "的「" + (oldDef ? oldDef.name : old.cardId) + "」，旧阵型进弃牌堆。", player, "formation");
         }
@@ -1804,6 +2026,24 @@ function processDeaths(state) {
     if (c === "controlFormation") return (player.formations || []).length > 0;
     if (c === "bountyCompleted") return (player.bountyCompleted || 0) > 0;
     if (c === "vein") return (state.vein || 0) >= (cond.value || 1);
+    // ---- 补齐的条件 ----
+    if (c === "reflux") return player.refluxedTurn === state.turnNumber;
+    // ---- 战术牌条件补齐（这些条件原本不存在，导致对应 if 永远不触发）----
+    if (c === "controlFox") return aliveMinions(player).some(m => /雪狐|fox/i.test(m.name || ""));
+    if (c === "enemyNoMinions") return aliveMinions(opponentOf(state, player)).length === 0;
+    if (c === "targetDamaged") return !!target && !target.dead && (target.health || 0) < (target.maxHealth || 0);
+    if (c === "targetDead") return !target || !!target.dead;
+    if (c === "carveCard") return !!player.lastSpellWasCarve;
+    if (c === "zhenmai") return player.zhenmaiTurn === state.turnNumber;
+    if (c === "graveCount") return graveCount(state) >= (cond.value || 1);
+    if (c === "graveHasBounty") return graveCount(state, { wasBounty: true }) > 0;
+    if (c === "attacked") return player.attackedThisTurn === state.turnNumber;
+    if (c === "bountyTargetDead") return (player.bountyClaimsThisTurn || 0) > 0;
+    if (c === "refluxFull") return (player.refluxGain || 0) >= (cond.value || 0);
+    if (c === "zhenmaiFull") return (player.zhenmaiGain || 0) >= (cond.value || 0);
+    if (c === "handSpell") return (player.hand || []).some(h => { const d = card(h.cardId); return d && d.type === "spell"; });
+    if (c === "spells2") return (player.spellsCastThisTurn || 0) >= 2;
+    if (c === "otherCards") return (player.cardsPlayedThisTurn || 0) > 1;
     if (c === "hand") return player.hand.length <= (cond.value || 5);
     if (c === "targetFrozen") return !!target && target.frozenTurns > 0;
     if (c === "freezeCast") return player.freezeCastTurn === state.turnNumber;
@@ -1849,9 +2089,123 @@ function processDeaths(state) {
         else if (op.op === "grantRushAll") { for (const m of aliveMinions(player)) grantRush(state, m); }
         else if (op.op === "buffSelf" && minion) buffMinion(state, minion, op.attack || 0, op.health || 0, "补丁", true);
         else if (op.op === "buffZone" && minion) { for (const m of aliveMinions(player).filter(x => x.zone === minion.zone)) buffMinion(state, m, op.attack || 0, op.health || 0, "补丁", true); }
-        else if (op.op === "zhenmai") resolveZhenmai(state, player, { zhenmai: op.amount || 1 });
+        // ===== 坟场相关（帝国招魂 / 灰港悬赏尸体）=====
+    else if (op.op === "graveDraw") {
+      // 从坟场拿牌到手上，费用 +N；玩家操作时进入选牌模式
+      const kinds = op.kinds ? { kinds: op.kinds } : null;
+      const pool = graveCards(state, kinds);
+      if (!pool.length) { log(state, "坟场没有可回收的牌。", player, "grave"); }
+      else {
+        const penalty = op.costPenalty == null ? 1 : op.costPenalty;
+        const wantCount = op.count == null ? 1 : op.count;
+        // 玩家的第 1 张牌走选牌 UI；AI 或不支持时自动取最后一张
+        if (!op.__auto && !state.aiControlled && pool.length > 1 && !state.pendingChoice) {
+          state.pendingChoice = {
+            type: "gravePick",
+            player: player.index,
+            options: pool.map(function (e) { return e.cardId; }),
+            remain: wantCount,
+            costPenalty: penalty
+          };
+          state.pendingGraveDraw = { player: player.index, costPenalty: penalty, remain: wantCount };
+          log(state, "坟场回收：请从坟场选择一张牌。", player, "grave");
+        } else {
+          const pick = pool[pool.length - 1];
+          state.discard.splice(state.discard.lastIndexOf(pick), 1);
+          player.hand.push({ uid: uid("c"), cardId: pick.cardId, generated: true, discount: -penalty });
+          log(state, "从坟场回收了「" + (card(pick.cardId) || {}).name + "」（行动力消耗 +" + penalty + "）。", player, "grave");
+        }
+      }
+    }
+    else if (op.op === "graveSummonTokens") {
+      // 坟场每 per 个随从召唤一个 token，不消耗坟场
+      const per = op.per || 3;
+      const cap = op.max == null ? 6 : op.max;
+      const token = op.token || "empire_undead";
+      const total = graveCount(state);
+      let n = Math.floor(total / per);
+      if (n > cap) n = cap;
+      let summoned = 0;
+      for (let i = 0; i < n; i++) {
+        const z = openZones(player)[0];
+        if (!z) break;
+        summonMinion(state, player, token, z, null);
+        summoned++;
+      }
+      log(state, "坟场 " + total + " 个随从：每 " + per + " 个召唤一个，" + (summoned ? "召出了 " + summoned + " 个亡灵。" : "不够 " + per + " 个，没召出亡灵。"), player, "grave");
+    }
+    else if (op.op === "graveSummon") {
+      // 招魂：默认拿最后进入坟场的那张；op.preferLord 时优先城主（只给指定卡用）
+      const count = op.count || 1;
+      for (let i = 0; i < count; i++) {
+        const summoned = sepulchreSummon(state, player, { maxCost: op.maxCost, preferLord: !!op.preferLord && i === 0 });
+        if (!summoned) break;
+        if (op.hpCost) {
+          const loss = (card(summoned.cardId) || {}).cost || 1;
+          damageHero(state, player, loss, null, "招魂", true);
+          log(state, "招魂的代价：你失去 " + loss + " 点生命。", player, "grave");
+        }
+      }
+    }
+    else if (op.op === "bountyCorpseBuff" && minion) {
+      const n = bountyGraveCount(state);
+      if (n <= 0) { log(state, "坟场里没有悬赏尸体，" + minion.name + " 没有获得加成。", player, "grave"); }
+      else {
+        const counted = op.max == null ? n : Math.min(n, op.max);
+        const atk = (op.attack || 0) * counted;
+        const hp = (op.health || 0) * counted;
+        buffMinion(state, minion, atk, hp, "悬赏尸体", true);
+        log(state, "坟场有 " + n + " 具悬赏尸体：" + minion.name + " 获得 +" + atk + "/+" + hp + "。", player, "buff");
+      }
+    }
+    else if (op.op === "bountyCorpseDraw") {
+      const n = bountyGraveCount(state);
+      if (n <= 0) { log(state, "坟场里没有悬赏尸体，抽不到牌。", player, "grave"); }
+      else {
+        const want = op.max == null ? n : Math.min(n, op.max);
+        drawCard(state, player, want);
+        log(state, "坟场有 " + n + " 具悬赏尸体，抽 " + want + " 张牌。", player, "draw");
+        if (op.consume) consumeBountyTags(state, op.consume === "counted" ? Math.min(n, want) : op.consume, player);
+      }
+    }
+    else if (op.op === "bountyCorpseArmor") {
+      const n = bountyGraveCount(state);
+      if (n <= 0) { log(state, "坟场里没有悬赏尸体，领袖没有获得护甲。", player, "grave"); }
+      else {
+        player.armor += op.amount || 1;
+        player.armorGainedTurn = state.turnNumber;
+        log(state, "销赃：领袖获得 " + (op.amount || 1) + " 点护甲。", player, "armor");
+        if (op.consume) consumeBountyTags(state, op.consume === "counted" ? n : op.consume, player);
+      }
+    }
+    else if (op.op === "bountyCorpseDamageHero") {
+      const n = bountyGraveCount(state);
+      if (n <= 0) { log(state, "坟场里没有悬赏尸体，收尸结算打不出伤害。", player, "grave"); }
+      else {
+        const dmg = op.max == null ? n : Math.min(n, op.max);
+        damageHero(state, opponentOf(state, player), dmg, null, "收尸结算", true);
+        log(state, "收尸结算：" + n + " 具悬赏尸体，对敌方领袖造成 " + dmg + " 点伤害。", player, "damage");
+        if (op.consume) consumeBountyTags(state, op.consume === "counted" ? dmg : op.consume, player);
+      }
+    }
+    else if (op.op === "zhenmai") resolveZhenmai(state, player, { zhenmai: op.amount || 1 });
+    // ---- 以下是补齐的实现：这些操作在卡牌数据里被使用，但引擎原本没接 ----
+    else if (op.op === "mana") { player.mana += op.amount || 1; log(state, "本回合获得 " + (op.amount || 1) + " 点行动力。", player, "mana"); }
+    else if (op.op === "nextMana") { player.nextManaBonus = (player.nextManaBonus || 0) + (op.amount || 1); log(state, "下回合开始时获得 " + (op.amount || 1) + " 点行动力。", player, "mana"); }
+    else if (op.op === "damageHero") { damageHero(state, opponentOf(state, player), op.amount || 1, minion, "战术", true); }
+    else if (op.op === "damageAllMinions") { for (const p2 of state.players) for (const m of aliveMinions(p2)) damageMinion(state, m, op.amount || 1, null, "战术"); }
+    // 铁流冲锋：给目标挂「本回合死亡时抽 1 张」的标记
+    // 北境唤潮者的「掘脉」：抽 1 张并加 1 点流脉
+    else if (op.op === "flowDraw") { if (op.draw) drawCard(state, player, op.draw); if (op.vein) addVein(state, op.vein, "掘脉"); }
+    else if (op.op === "grantDeathDraw" && target && !target.dead) { target.deathDrawOwner = player.index; target.deathDrawTurn = state.turnNumber; }
+    else if (op.op === "discover") { log(state, "预兆一张战术牌。", player, "discover"); player.discoverPending = (player.discoverPending || 0) + (op.amount || 1); }
         else if (op.op === "refluxHeal") { const need=op.reflux||1; if ((state.vein||0)>0) { addVein(state,-Math.min(state.vein,need),"逆脉"); healHero(state,player,op.amount||1); } }
-      } catch (e) { /* keep one card from breaking the whole game */ }
+      } catch (e) {
+      // 一个 op 出错不该拖垮整局，但也不能完全吞掉——留痕便于排查
+      if (!Array.isArray(state.opErrors)) state.opErrors = [];
+      state.opErrors.push({ op: (op && op.op) || "?", msg: String(e && e.message ? e.message : e).slice(0, 140) });
+      if (state.opErrors.length > 20) state.opErrors.shift();
+    }
     }
     processDeaths(state);
   }
@@ -2552,12 +2906,30 @@ function processDeaths(state) {
       player.nextSpellTriple = 3;
       log(state, "维里欧斯：下一张战术牌将施放三次。", player, "buff");
     } else if (b.type === "reviveHighestCost") {
-      const dead = (player.discard || []).filter(x => x.cardId && card(x.cardId).type === "minion" && !card(x.cardId).token);
-      dead.sort((a, b2) => (card(b2.cardId).cost || 0) - (card(a.cardId).cost || 0));
-      const pick = dead.find(x => !aliveMinions(player).some(m => m.cardId === x.cardId));
+      // 复活必须从共享坟场里取，取走就删掉——否则同一张牌会被复制成两份
+      const pile = Array.isArray(state.discard) ? state.discard : [];
+      const mine = pile
+        .map((entry, i) => ({ entry, i }))
+        .filter((x) => {
+          const d = card(x.entry.cardId);
+          return d && d.type === "minion" && !d.token && x.entry.owner === player.index;
+        })
+        .sort((a, b2) => (card(b2.entry.cardId).cost || 0) - (card(a.entry.cardId).cost || 0));
       const z = openZones(player)[0];
-      if (pick && z) { summonMinion(state, player, pick.cardId, z, null); player.discard = player.discard.filter(x => x.uid !== pick.uid); log(state, "提蒙复活了 " + card(pick.cardId).name + "。", player, "summon"); }
-      else log(state, "提蒙没有可复活的随从。", player, "summon");
+      if (mine.length && z) {
+        const pick = mine[0].entry;
+        // 先按 index 从共享坟场删（从后往前删，避免索引错位）
+        pile.splice(mine[0].i, 1);
+        // 同步清掉私有记录里的那一张
+        if (Array.isArray(player.discard)) {
+          const k = player.discard.findIndex((x) => x.cardId === pick.cardId);
+          if (k >= 0) player.discard.splice(k, 1);
+        }
+        summonMinion(state, player, pick.cardId, z, null);
+        log(state, "提蒙复活了 " + card(pick.cardId).name + "。", player, "summon");
+      } else {
+        log(state, "提蒙没有可复活的随从。", player, "summon");
+      }
     } else if (b.type === "destroyGainHealth") {
       if (target && !target.dead) {
         const hp = target.health;
@@ -2606,8 +2978,21 @@ function processDeaths(state) {
       fx(state, player, "换回起始手牌", null, "summon");
       log(state, "米娅交换了起始手牌。", player, "draw");
     } else if (b.type === "triggerDeadDeathrattles3") {
-      const dead=(player.discard||[]).filter(x=>card(x.cardId).type==="minion").slice(-3);
-      for(const x of dead){const d=card(x.cardId).deathrattle; if(d) triggerDeathrattle(state,player,{name:card(x.cardId).name,cardId:x.cardId,zone:"center",uid:x.uid},d);}
+      // 流脉利维坦：触发坟场（双方共享）里最近进入的、带余响的 3 个随从
+      const pile = Array.isArray(state.discard) ? state.discard : [];
+      const picks = [];
+      for (let i = pile.length - 1; i >= 0 && picks.length < 3; i--) {
+        const d = card(pile[i].cardId);
+        const dr = d && (d.deathrattle || (d.deathrattles && d.deathrattles.length));
+        if (!d || d.type !== "minion" || !dr) continue;
+        picks.push({ cardId: pile[i].cardId, uid: pile[i].uid || ("dead" + i) });
+      }
+      if (!picks.length) log(state, "坟场里没有带余响的随从，流脉利维坦的呼唤没有响应。", player, "grave");
+      for (const x of picks) {
+        const d = card(x.cardId);
+        const list = d.deathrattles && d.deathrattles.length ? d.deathrattles : [d.deathrattle];
+        for (const dr of list) triggerDeathrattle(state, player, { name: d.name, cardId: x.cardId, zone: "center", uid: x.uid }, dr);
+      }
     } else if (b.type === "grantDeathrattleSameCost") {
       for(const ally of aliveMinions(player)){ if(ally.uid===minion.uid) continue; addDeathrattleEffect(ally,{type:"summonRandomCost",cost:card(ally.cardId).cost||0},"余响：召唤同费随从"); }
       log(state, "施泰因议长使其他友方随从获得同费召唤余响。", player, "deathrattle");
@@ -3362,6 +3747,33 @@ function processDeaths(state) {
     resumePendingEndTurn(state);
   }
 
+  // 坟场选牌：玩家从 pendingChoice.options 里选一张收进手牌
+  function resolveGravePick(state, playerIndex, cardId) {
+    const pc = state.pendingChoice;
+    if (!pc || pc.type !== "gravePick") return { ok: false, reason: "没有待处理的坟场回收" };
+    if (pc.player !== playerIndex) return { ok: false, reason: "不是你的选择" };
+    if (pc.options.indexOf(cardId) < 0) return { ok: false, reason: "不在坟场可选列表里" };
+    const player = state.players[playerIndex];
+    const pile = state.discard || [];
+    // 从后往前找第一张匹配且非衍生物的
+    let at = -1;
+    for (let i = pile.length - 1; i >= 0; i--) {
+      if (pile[i].cardId === cardId && !pile[i].token) { at = i; break; }
+    }
+    if (at < 0) return { ok: false, reason: "坟场里已经没有这张牌" };
+    pile.splice(at, 1);
+    player.hand.push({ uid: uid("c"), cardId: cardId, generated: true, discount: -(pc.costPenalty || 1) });
+    log(state, "从坟场回收了「" + (card(cardId) || {}).name + "」（行动力消耗 +" + (pc.costPenalty || 1) + "）。", player, "grave");
+    pc.remain = (pc.remain || 1) - 1;
+    if (pc.remain > 0) {
+      const left = graveCards(state, null);
+      if (left.length) { pc.options = left.map(function (e) { return e.cardId; }); return { ok: true, pending: "gravePick" }; }
+    }
+    state.pendingChoice = null;
+    state.pendingGraveDraw = null;
+    return { ok: true };
+  }
+
   function resolveDiscover(state, playerIndex, cardId) {
     if (!state.pendingChoice || state.pendingChoice.type !== "discover") return { ok: false, reason: "没有待处理的预兆" };
     if (state.pendingChoice.player !== playerIndex) return { ok: false, reason: "不是你的选择" };
@@ -3484,12 +3896,16 @@ function processDeaths(state) {
     let atk = attacker.attack;
     if (attacker.windfury && !attacker.hasAttacked && aliveMinions(player).some(x => x.uid !== attacker.uid && x.zone === attacker.zone)) atk += 1;
     if (defender.frozenTurns > 0) atk += formationBonus(player, attacker.zone).attackVsFrozen || 0;
-    if (defender.bounty != null && attacker.passive && attacker.passive.type === "attackBountyBonus" && !attacker.silenced) atk += attacker.passive.attack || 0;
+    // 处刑督办：文字写「获得+1/+1」（永久），先记下这次是否打中悬赏目标，
+    // 伤害结算后再给永久加成——原来只在算攻击力时临时 +1，生命从来没加过。
+    const bountyHit = defender.bounty != null && attacker.passive && attacker.passive.type === "attackBountyBonus" && !attacker.silenced;
+    if (bountyHit) atk += attacker.passive.attack || 0;
     if (attacker.passive && attacker.passive.type === "armorAttack" && !attacker.silenced && attacker.owner != null && state.players[attacker.owner].armorGainedTurn === state.turnNumber) atk += attacker.passive.attack || 0;
     const def = defender.attack;
     damageMinion(state, defender, atk, attacker, "战斗");
     damageMinion(state, attacker, def, defender, "反击");
     processDeaths(state);
+    if (bountyHit && !attacker.dead) buffMinion(state, attacker, attacker.passive.attack || 0, attacker.passive.health != null ? attacker.passive.health : 1, "悬赏处刑", true);
     if (attacker.windfury && !attacker.windfuryExtraUsed && !attacker.dead) { attacker.windfuryExtraUsed = true; attacker.attacksLeft = Math.max(attacker.attacksLeft, 1); }
     checkGameOver(state);
     return { ok: true };
@@ -3581,6 +3997,9 @@ function processDeaths(state) {
       state.lastAction = { type: "heroPower", player: playerIndex, heroId: player.heroId, powerName: player.hero.power.name, targetUid: null, seq: ((state.lastAction && state.lastAction.seq) || 0) + 1 };
       log(state, player.name + " 使用领袖技能「潮生」。", player, "heroPower");
       summonMinion(state, player, "losutai_imp", zone, null);
+      // 文字写「若你控制其他魔物，抽 1 张牌」——原来漏了这段
+      const otherDemons = aliveMinions(player).filter(m => /魔物|imp|demon/i.test(m.name || ""));
+      if (otherDemons.length > 1) { drawCard(state, player, 1); log(state, "潮生：控制其他魔物，抽 1 张牌。", player, "draw"); }
       return { ok: true };
     }
     if (player.heroId === "wolfram") {
@@ -3654,12 +4073,22 @@ function processDeaths(state) {
     return { ok: true };
   }
 
+  // 阶段留痕：UI 靠它知道这一回合真实走过哪几个阶段（含装备结算、抽牌的实际顺序）
+  function setPhase(state, phase) {
+    state.phase = phase;
+    if (!Array.isArray(state.phaseLog)) state.phaseLog = [];
+    state.phaseLog.push({ phase: phase, turn: state.turnNumber || 0, player: state.current, at: Date.now() });
+    if (state.phaseLog.length > 60) state.phaseLog.splice(0, state.phaseLog.length - 60);
+  }
+
   function startTurn(state) {
     if (state.status !== "playing") return;
     const player = state.players[state.current];
     state.turnNumber++;
     // 阶段 1：回合开始（自动增益、行动力、光环、阵型倒计时都在这一段结算）
-    state.phase = "start";
+    setPhase(state, "start");
+    // 回合开始：被动光环按当前阵位重新结算一遍（阵型倒计时、装备光环紧跟其后）
+    recomputeAuras(state);
     for (const p of state.players) {
       for (const m of allMinions(p)) {
         if (m.passive && m.passive.expiresTurn && m.passive.expiresTurn < state.turnNumber) m.passive = null;
@@ -3702,6 +4131,11 @@ function processDeaths(state) {
     if (hasEquipment(player, "iron_banner")) { const as=aliveMinions(player); if(as.length) grantDivineShield(state, as[randomInt(state,as.length)]); fx(state, player, "铁壁军旗", null, "shield"); }
     if (hasEquipment(player, "gh_bounty_board")) { const hadBounty=state.players.some(p=>aliveMinions(p).some(m=>m.bounty)); const es=aliveMinions(opponentOf(state,player)).filter(m=>m.bounty==null); if(es.length) markBounty(state,player,es[randomInt(state,es.length)]); if(hadBounty) drawCard(state,player,1); fx(state, player, "悬赏", null, "damage"); }
     if (hasEquipment(player, "sealing_wax")) { const es=aliveMinions(opponentOf(state,player)); if(es.length){const t=es[randomInt(state,es.length)]; damageMinion(state,t,t.bounty?2:1,null,"封口蜡印"); fx(state,player,"封口蜡印",t.uid,"damage");} }
+    // 禁术卷轴：回合开始时招魂一个 1 费随从（不优先城主）
+    for (const eqId of activeEquipment(player)) {
+      const aura = D.CARDS[eqId] && D.CARDS[eqId].equipAura;
+      if (aura && aura.sepulchreTurn != null) sepulchreSummon(state, player, { maxCost: aura.sepulchreTurn });
+    }
     if (auraArmor) { player.armor += auraArmor; log(state, "装备：获得 " + auraArmor + " 点护甲。", player, "armor"); }
     if (auraHeal) healHero(state, player, auraHeal);
     if (auraDamage) { for (const m of aliveMinions(opponentOf(state, player))) damageMinion(state, m, auraDamage, null, "装备"); processDeaths(state); }
@@ -3741,7 +4175,8 @@ function processDeaths(state) {
     }
     log(state, "—— " + player.name + " 的回合开始（第 " + state.round + " 轮，行动力 " + player.mana + "/" + player.maxMana + "）——", player, "turn");
     // 阶段 2：抽牌
-    state.phase = "draw";
+    triggerFormationEvent(state, player, "turnStart");   // 阵型的回合开始效果
+    setPhase(state, "draw");
     drawCard(state, player, 1);
     if (player.nextTurnDraw) {
       const extraDraw = player.nextTurnDraw;
@@ -3756,7 +4191,7 @@ function processDeaths(state) {
       else { const all = state.players.flatMap(p => aliveMinions(p)); if (all.length) { const pick = all[randomInt(state, all.length)]; damageMinion(state, pick, 2, null, "混沌事件"); log(state, "混沌事件：" + pick.name + " 受到 2 点伤害。", player, "damage"); processDeaths(state); } }
     }
     // 阶段 3：出牌
-    state.phase = "play";
+    setPhase(state, "play");
     checkGameOver(state);
   }
 
@@ -3775,12 +4210,19 @@ function processDeaths(state) {
     const speaker = aliveMinions(player).find(m => m.passive && m.passive.type === "repeatLastSpell" && !m.silenced);
     const last = player.lastSpell;
     if (!speaker || !last || state.status !== "playing") return;
+    // 防无限递归：如果复诵的是一张会结束回合的牌（比如「终末钟声」），
+    // 它又会触发回合结束 → 再复诵 → 栈溢出。用标记打断循环。
+    if (state.__repeatingSpell) return;
     const def = card(last.cardId);
     if (!def || def.type !== "spell") return;
     const temp = { uid: uid("c"), cardId: last.cardId, generated: true };
     player.hand.push(temp);
     log(state, speaker.name + " 复诵「" + def.name + "」。", player, "spell");
-    const res = playCard(state, player.index, temp.uid, { targetUid: last.targetUid, targetUid2: last.targetUid2, zone: last.zone, payBlood: !!last.payBlood, freeCast: true });
+    state.__repeatingSpell = true;
+    let res;
+    try {
+      res = playCard(state, player.index, temp.uid, { targetUid: last.targetUid, targetUid2: last.targetUid2, zone: last.zone });
+    } finally { state.__repeatingSpell = false; }
     player.hand = player.hand.filter(c => c.uid !== temp.uid);
     if (!res.ok) log(state, "复诵失败：" + (res.reason || "目标已失效"), player, "error");
   }
@@ -3854,7 +4296,7 @@ function processDeaths(state) {
     if (state.pendingMinionTarget) return { ok: false, reason: "请先选择登场目标" };
     const player = state.players[playerIndex];
     // 阶段 4：结束（债务结算、回合结束效果都在这一段）
-    state.phase = "end";
+    setPhase(state, "end");
     player.nextCostReduction = 0;
     // 冻结解冻：控制者的回合结束时递减
     for (const m of allMinions(player)) {
@@ -3909,7 +4351,7 @@ function processDeaths(state) {
     }
     const canArmor = def.id !== "armor_mortar" || (player.armor || 0) >= 3;
     const canBlood = def.bloodCost == null || player.hp > def.bloodCost;
-    const canBoard = def.type === "minion" ? boardCount(player) < 6 : def.type === "formation" ? (player.formations || []).length < 2 : true;
+    const canBoard = def.type === "minion" ? boardCount(player) < 6 : def.type === "formation" ? (player.formations || []).length < 3 : true;
     const canTarget = !targetType || targets.length > 0 || !!def.optionalTarget || def.type === "minion" || (def.id === "miyuki" && state.vein >= 6);
     const canTarget2 = !target2Type || target2Targets.length > 0 || !!def.optionalTarget2;
     const canZone = !zoneType || zones.length > 0;
@@ -4046,6 +4488,9 @@ function processDeaths(state) {
       pendingChoice: null,
       log: [],
       events: [],
+      discard: [],          // 双方共享坟场（帝国 / 灰港会读取）
+      banished: 0,          // 已献祭 / 除外的张数
+      eldlichStacks: {},    // 白银城城主：各玩家的死亡累积层数
       stats: {
         veinPeak: 0,
         thresholds: { 4: 0, 7: 0, 10: 0 },
@@ -4158,7 +4603,7 @@ function processDeaths(state) {
     endTurn: endTurn,
     startTurn: startTurn,
     processDeaths: processDeaths,
-    resolveDiscover: resolveDiscover,
+    resolveDiscover: resolveDiscover, resolveGravePick: resolveGravePick,
     mulliganPlayer: mulliganPlayer,
     retreatMinion: retreatMinion,
     getPlayOptions: getPlayOptions,

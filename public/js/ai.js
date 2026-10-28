@@ -472,9 +472,30 @@
     else if (action.type === "repayDebt") result = E.repayDebt(s, playerIndex, action.cardUid);
     else if (action.type === "attack") result = E.attack(s, playerIndex, action.attackerUid, action.targetUid);
     else if (action.type === "heroPower") result = E.useHeroPower(s, playerIndex, action.targetUid);
+    else if (action.type === "discover") result = E.resolveDiscover(s, playerIndex, action.cardId);
+    else if (action.type === "gravePick") result = E.resolveGravePick(s, playerIndex, action.cardId);
     else return null;
     let guard = 0;
     while (result && result.ok !== false && s.pendingChoice && s.pendingChoice.player === playerIndex && guard++ < 8) {
+      // 坟场回收的选择：AI 拿费用最高的那张
+      if (s.pendingChoice.type === "gravePick") {
+        const pc = s.pendingChoice;
+        const pile = s.discard || [];
+        let best = null, bestCost = -1;
+        for (const id of pc.options) {
+          for (let k = pile.length - 1; k >= 0; k--) {
+            if (pile[k].cardId === id && !pile[k].token) {
+              const def = D.CARDS[id];
+              const cost = def ? (def.cost || 0) : 0;
+              if (cost > bestCost) { bestCost = cost; best = id; }
+              break;
+            }
+          }
+        }
+        if (!best) break;
+        result = E.resolveGravePick(s, playerIndex, best);
+        continue;
+      }
       const pick = chooseDiscover(s);
       if (!pick) break;
       result = E.resolveDiscover(s, playerIndex, pick.cardId);
@@ -494,10 +515,21 @@
     if (action.type === "attack") {
       const attacker = E.findMinion(state, action.attackerUid);
       if (!attacker) return 0;
-      if (action.targetUid === "hero") return 3 + attacker.attack * 1.2;
+      const foe = state.players[1 - p.index] || state.players[0];
+      if (action.targetUid === "hero") {
+        // 能斩杀就打脸，否则打脸的优先级要低于换随从——
+        // 原来是 3 + attack*1.2，恒高于换随从的评分，导致 AI 永远不交换。
+        const lethal = foe && attacker.attack >= (foe.hp + (foe.armor || 0));
+        return lethal ? 100 : 1.2 + attacker.attack * 0.6;
+      }
       const target = E.findMinion(state, action.targetUid);
       if (!target) return 0;
-      return (attacker.attack >= target.health ? minionValue(target) : target.attack * 0.4) - (target.attack >= attacker.health ? minionValue(attacker) * 0.5 : 0);
+      // 换随从：清掉对方场面是长期收益，杀掉时给加成
+      const kills = attacker.attack >= target.health;
+      const dies = target.attack >= attacker.health;
+      const ownValue = minionValue(attacker) * (dies ? 0.6 : 0);
+      if (kills) return minionValue(target) * 1.3 - ownValue;          // 能换掉：优先
+      return target.attack * 0.5 - ownValue;                           // 打残：小收益
     }
     if (action.type === "heroPower") return 3.5;
     return 0;
@@ -540,6 +572,24 @@
     if (state.aiDifficulty === "easy" && Math.random() < 0.22) return { type: "end", reason: "easy" };
     if (state.pendingChoice) {
       if (state.pendingChoice.type === "discover") return chooseDiscover(state);
+      if (state.pendingChoice.type === "gravePick") {
+        // 坟场回收：AI 优先拿费用最高的那张
+        const pc = state.pendingChoice;
+        const pile = state.discard || [];
+        let best = null, bestCost = -1;
+        for (const id of pc.options) {
+          for (let i = pile.length - 1; i >= 0; i--) {
+            if (pile[i].cardId === id && !pile[i].token) {
+              const def = D.CARDS[id];
+              const cost = def ? (def.cost || 0) : 0;
+              if (cost > bestCost) { bestCost = cost; best = id; }
+              break;
+            }
+          }
+        }
+        if (best) return { type: "gravePick", cardId: best };
+        return { type: "end" };
+      }
       return { type: "end" };
     }
     const p = state.players[playerIndex];
@@ -593,6 +643,8 @@
 
   function autoPlayGame(config) {
     const state = E.createGame(config || {});
+    // 双方都交给 AI 时，坟场回收直接自动取牌，不弹选择（否则会停在 pendingChoice 上）
+    state.aiControlled = true;
     let steps = 0;
     while (state.status === "playing" && steps < 1500) {
       takeAction(state, state.current);
