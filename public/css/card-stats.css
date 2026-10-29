@@ -2406,7 +2406,7 @@ body[data-screen="game"] .board-card.formation-aura-flash {
 /* 生命值爱心：几何居中但心形视觉重心偏上，往下补 1.5px 才看着正 */
 body[data-screen="game"] .hs-vital-art {
   top: 50% !important;
-  transform: translateY(-50%) translateY(-1.5px) !important;
+  transform: translateY(-50%) !important;
 }
 /* 护甲盾牌是正圆，不需要偏移 */
 body[data-screen="game"] .hs-armor-art {
@@ -2740,4 +2740,21 @@ body[data-screen="game"] .board-card .bounty-seal img {
     width: 23px !important;
     height: 23px !important;
   }
+}
+
+/* 生命/护甲图标放大一档（桌面端；手机端仍用 mobile.css 的尺寸），数字整体右移保持视觉居中 */
+@media (min-width: 821px) {
+  body[data-screen="game"] .hs-vital {
+    padding-left: 44px !important;
+  }
+  body[data-screen="game"] .hs-vital-art {
+    width: 32px !important;
+    height: 32px !important;
+    left: 7px !important;
+  }
+}
+
+/* 生命爱心视觉居中：主人拍板 -6px（心形下尖让几何居中看起来偏低），别再改回去；护甲盾牌仍几何居中 */
+body[data-screen="game"] .hs-hp-art { /* hud-heart-nudge */
+  transform: translateY(-50%) translateY(-6px) !important;
 }

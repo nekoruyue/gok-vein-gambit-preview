@@ -281,7 +281,13 @@ function createAuth(opts) {
     }
     return false;
   }
-  return { handle, userFromReq, sessionUser, getSave, dbPath, db };
+  function stats() {
+    let users = 0;
+    try { users = db.prepare("SELECT COUNT(*) AS n FROM users").get().n; } catch (e) {}
+    return { backend: "sqlite", users, dataDir };
+  }
+
+  return { handle, userFromReq, sessionUser, getSave, dbPath, db, stats };
 }
 
 module.exports = { createAuth };

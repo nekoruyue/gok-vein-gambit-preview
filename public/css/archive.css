@@ -2971,3 +2971,109 @@ body[data-screen="game"] .hand-card .gok-lib-atk::before,
 #screen-deck .gok-library-card .gok-lib-atk::before {
   background-size: auto 112% !important;
 }
+
+/* ===== 问题反馈弹窗（F1 / 设置入口）===== */
+.feedback-form { display: flex; flex-direction: column; gap: 10px; margin: 14px 0 4px; }
+.feedback-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #cfe3dc; }
+.feedback-input { width: 100%; box-sizing: border-box; padding: 9px 11px; border-radius: 8px;
+  border: 1px solid rgba(159, 207, 196, .28); background: rgba(6, 18, 20, .86); color: #eaf5f1;
+  font-size: 14px; font-family: inherit; }
+.feedback-input:focus { outline: none; border-color: rgba(120, 214, 196, .7); box-shadow: 0 0 0 2px rgba(120, 214, 196, .16); }
+.feedback-text { resize: vertical; min-height: 120px; line-height: 1.5; }
+.feedback-row .feedback-input { width: auto; min-width: 110px; }
+
+/* ===== 外观选项的实际效果（原来只有数据、没有样式）===== */
+/* 牌套：给手牌/场上随从加一圈光边，不覆盖原有阴影 */
+body[data-screen="game"][data-card-frame="gold"] .hand-card, body[data-screen="game"][data-card-frame="gold"] .board-card { filter: drop-shadow(0 0 5px rgba(217,164,65,.75)) !important; }
+body[data-screen="game"][data-card-frame="vein"] .hand-card, body[data-screen="game"][data-card-frame="vein"] .board-card { filter: drop-shadow(0 0 5px rgba(95,211,196,.75)) !important; }
+body[data-screen="game"][data-card-frame="frost"] .hand-card, body[data-screen="game"][data-card-frame="frost"] .board-card { filter: drop-shadow(0 0 5px rgba(120,185,220,.75)) !important; }
+body[data-screen="game"][data-card-frame="blood"] .hand-card, body[data-screen="game"][data-card-frame="blood"] .board-card { filter: drop-shadow(0 0 5px rgba(192,80,77,.75)) !important; }
+body[data-screen="game"][data-card-frame="iron"] .hand-card, body[data-screen="game"][data-card-frame="iron"] .board-card { filter: drop-shadow(0 0 5px rgba(143,154,164,.7)) !important; }
+
+/* 牌桌主题：换桌面中心的环境光 */
+body[data-screen="game"][data-table-theme="pus"] .game-shell { background: radial-gradient(ellipse at 50% 46%, rgba(74,183,177,.22), transparent 55%), linear-gradient(180deg, rgba(2,8,10,.3), rgba(2,7,9,.6)) !important; }
+body[data-screen="game"][data-table-theme="academy"] .game-shell { background: radial-gradient(ellipse at 50% 46%, rgba(92,154,206,.22), transparent 55%), linear-gradient(180deg, rgba(2,8,10,.3), rgba(2,7,9,.6)) !important; }
+body[data-screen="game"][data-table-theme="snow"] .game-shell { background: radial-gradient(ellipse at 50% 46%, rgba(132,210,224,.22), transparent 55%), linear-gradient(180deg, rgba(2,8,10,.3), rgba(2,7,9,.6)) !important; }
+body[data-screen="game"][data-table-theme="greyharbor"] .game-shell { background: radial-gradient(ellipse at 50% 46%, rgba(111,157,122,.2), transparent 55%), linear-gradient(180deg, rgba(2,8,10,.3), rgba(2,7,9,.6)) !important; }
+
+/* 对局顶栏常驻的 F1 反馈提示 */
+.game-f1-hint { margin-left: auto; padding: 3px 9px; border-radius: 999px; border: 1px solid rgba(159,207,196,.22);
+  background: rgba(6,18,20,.55); color: rgba(207,227,220,.74); font-size: 11px; letter-spacing: .03em;
+  white-space: nowrap; cursor: pointer; font-family: inherit; }
+.game-f1-hint:hover { color: #bff0e4; border-color: rgba(120,214,196,.55); }
+@media (max-width: 820px) { .game-f1-hint { display: none; } }
+
+
+/* 外观预览里的「卡背 + 牌套」实样卡 */
+.appearance-sample-card { order: 3; margin-left: auto; width: 78px; height: 110px; border-radius: 8px;
+  border: 2px solid rgba(159, 207, 196, .3); background: #0b1416 center/cover no-repeat; position: relative;
+  transition: border-color .15s, box-shadow .15s; }
+.appearance-sample-card .appearance-sample-label { position: absolute; left: -6px; right: -6px; bottom: -17px;
+  text-align: center; font-size: 10px; color: rgba(193, 204, 210, .55); letter-spacing: .04em; }
+
+/* ===== 2026-10-29: 行动力水晶改用卡面同款六边形 ===== */
+body[data-screen="game"] .hs-action-pip {
+  clip-path: polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%) !important;
+  border-radius: 0 !important;
+}
+body[data-screen="game"] .hs-action-pip.filled {
+  background: linear-gradient(160deg, #e6fffb 0%, #7fe6d6 32%, #35a99c 68%, #0d5a57 100%);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.65), inset 0 -2px 2px rgba(0,0,0,.45), 0 0 6px rgba(95,211,196,.5);
+}
+
+/* ===== 领袖信息栏右侧资源条 ===== */
+.hs-hero-res { display: flex; gap: 6px; margin-right: 8px; align-items: center; justify-self: end; }
+.hs-res-item {
+  display: grid; place-items: center; gap: 1px; min-width: 44px; padding: 3px 7px; border-radius: 5px;
+  background: linear-gradient(180deg, rgba(30,46,50,.9), rgba(9,15,17,.94));
+  border: 1px solid rgba(159,207,196,.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 2px 6px rgba(0,0,0,.4);
+}
+.hs-res-item b { font-size: 15px; line-height: 1; color: #e9f3ee; font-variant-numeric: tabular-nums; }
+.hs-res-item small { font-size: 9px; line-height: 1; color: rgba(170,195,190,.62); letter-spacing: .04em; }
+.hs-res-item.res-hand b { color: #9fd7ff; }
+.hs-res-item.res-deck b { color: #d8c690; }
+.hs-res-item.res-grave b { color: #c49bff; }
+
+/* ===== 立体感 ===== */
+body[data-screen="game"] button:not(:disabled),
+body[data-screen="game"] .btn:not(:disabled),
+body[data-screen="game"] .deck-filter:not(:disabled) {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.09), inset 0 -2px 0 rgba(0,0,0,.45), 0 2px 0 rgba(0,0,0,.35), 0 4px 10px rgba(0,0,0,.35);
+  transition: transform .1s ease, box-shadow .1s ease, filter .12s ease;
+}
+body[data-screen="game"] button:not(:disabled):hover,
+body[data-screen="game"] .btn:not(:disabled):hover { filter: brightness(1.06); transform: translateY(-1px); }
+body[data-screen="game"] button:not(:disabled):active,
+body[data-screen="game"] .btn:not(:disabled):active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.55);
+}
+body[data-screen="game"] .hs-hero {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 6px 18px rgba(0,0,0,.45);
+}
+
+/* 玩家英雄栏是 row-reverse：order 越小越靠右 */
+body[data-screen="game"] .player-hero .hs-hero-res { order: -1; }
+
+/* 资源条：绝对定位到「头像右侧、右侧图标左边」的空位（面板是 grid，普通流会落进左栏） */
+body[data-screen="game"] .hero-panel .hs-hero-res {
+  position: absolute; left: 50%; margin-left: 58px; top: 50%; transform: translateY(-50%);
+  z-index: 5; margin-right: 0;
+}
+
+/* ===== 墓地 / 弃牌堆 弹窗 tab ===== */
+.pile-tabs { display: flex; gap: 8px; margin: 6px 0 10px; }
+.pile-tab {
+  padding: 6px 14px; border-radius: 5px; cursor: pointer;
+  background: linear-gradient(180deg, rgba(30,46,50,.9), rgba(9,15,17,.94));
+  border: 1px solid rgba(159,207,196,.2); color: rgba(210,225,220,.75);
+  font-size: 13px; box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 2px 6px rgba(0,0,0,.35);
+  transition: transform .1s, filter .12s;
+}
+.pile-tab:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.pile-tab.active {
+  color: #f4ead4; border-color: rgba(217,164,65,.6);
+  background: linear-gradient(180deg, rgba(64,50,26,.95), rgba(18,14,8,.96));
+}
+.pile-group-title { margin: 12px 0 6px; font-size: 13px; color: rgba(200,214,210,.8); letter-spacing: .04em; }

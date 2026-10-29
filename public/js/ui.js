@@ -37,7 +37,7 @@
   const D = global.GokData;
   const E = global.GokEngine;
   const AI = global.GokAI;
-  const ART_VERSION = "20261027art22";
+  const ART_VERSION = "20261029art1";
 
   // 经典模式：每个阵营首次开局播放一段对应 CG（可跳过）
   const CLASSIC_CG = {
@@ -1846,7 +1846,7 @@
         const cover = el("div", "pile-box-cover");
         const art = el("img", "pile-box-art");
         art.alt = "";
-        art.src = cardBackUrl();
+        art.src = cls === "foe" ? cardBackUrlFor("classic") : cardBackUrl();
         cover.appendChild(art);
         cover.appendChild(el("b", "pile-box-count", String(count)));
         box.appendChild(cover);
@@ -1859,7 +1859,7 @@
       // 中间：坟墓（只有图标 + 按钮，不列具体牌）
       const gy = el("button", "pile-box grave");
       gy.type = "button";
-      gy.title = "弃牌堆（坟墓）：敌我共享 " + shared.length + " 张";
+      gy.title = "墓地：敌我共享 " + shared.length + " 张";
       const graveIco = el("div", "pile-box-cover grave-cover");
       const gi = el("img", "pile-box-art grave-art");
       gi.alt = "";
@@ -1874,11 +1874,28 @@
         '</svg>';
       graveIco.appendChild(el("b", "pile-box-count", String(shared.length)));
       gy.appendChild(graveIco);
-      gy.appendChild(el("small", "pile-box-label", "弃牌堆 · 共享"));
+      gy.appendChild(el("small", "pile-box-label", "墓地 · 共享"));
       const gm = el("span", "grave-meta", "我方 " + mineN + " · 对方 " + foeN);
       gy.appendChild(gm);
-      gy.onclick = () => openGraveyard();
+      gy.onclick = () => openPiles("grave");
       right.appendChild(gy);
+
+      // 弃牌堆：打出/顶掉的战术、装备、阵型（不进墓地）
+      const usedCount = (game.players || []).reduce((n, p) => n + ((p && Array.isArray(p.discard)) ? p.discard.filter((x) => x && x.kind !== "minion").length : 0), 0);
+      const dbox = el("div", "pile-box discard");
+      dbox.title = "弃牌堆：用过的战术 / 装备 / 阵型，敌我合计 " + usedCount + " 张";
+      const dcover = el("div", "pile-box-cover discard-cover");
+      dcover.innerHTML =
+        '<svg viewBox="0 0 48 56" aria-hidden="true" class="grave-svg">' +
+        '<rect x="10" y="10" width="28" height="38" rx="3" fill="rgba(12,20,24,.9)" stroke="rgba(150,170,180,.5)" stroke-width="1.6"/>' +
+        '<path d="M16 20h16M16 27h16M16 34h10" stroke="rgba(200,214,220,.55)" stroke-width="2" stroke-linecap="round"/>' +
+        '</svg>';
+      dcover.appendChild(el("b", "pile-box-count", String(usedCount)));
+      dbox.appendChild(dcover);
+      dbox.appendChild(el("small", "pile-box-label", "弃牌堆 · 用完的牌"));
+      dbox.style.cursor = "pointer";
+      dbox.onclick = () => openPiles("discard");
+      right.appendChild(dbox);
 
       right.appendChild(deckBox("我方牌库", countOf(me), "mine"));
 
@@ -2394,7 +2411,8 @@
 
     const body = el("div", "hs-hero-body");
     const identity = el("div", "hs-hero-identity");
-    identity.appendChild(el("strong", "hs-hero-name", player.name));
+    const heroLabel = side === "bottom" ? ((app.account && app.account.name) || player.name) : player.name;
+    identity.appendChild(el("strong", "hs-hero-name", heroLabel));
     const heroBadges = el("span", "hs-hero-badges");
     const heroEquipped = Array.isArray(player.equipments) && player.equipments.length ? player.equipments : (player.relic ? [player.relic] : []);
     const heroFormationCount = (player.formations || []).filter((f) => f.turnsLeft == null || f.turnsLeft > 0).length;
@@ -2469,6 +2487,15 @@
       heroBadges.appendChild(hint);
     }
     body.appendChild(identity);
+    // 领袖栏右侧：手牌 / 牌库 / 墓地 三个即时数
+    const res = el("div", "hs-hero-res");
+    const resItem = (label, value, tone) => {
+      const it = el("span", "hs-res-item" + (tone ? " " + tone : ""));
+      it.appendChild(el("b", null, String(value)));
+      it.appendChild(el("small", null, label));
+      return it;
+    };
+    res.appendChild(resItem("墓地", ((app.game && Array.isArray(app.game.discard)) ? app.game.discard : []).length, "res-grave"));
 
     const vitals = el("div", "hs-hero-vitals");
     const hp = el("span", "hs-vital hs-hp");
@@ -2492,7 +2519,7 @@
     const handMeta = el("span", "hs-hero-count hs-hero-hand");
     const handIcon = el("img", "hs-hero-hand-icon");
     handIcon.alt = "";
-    handIcon.src = cardBackUrl();
+    handIcon.src = side === "bottom" ? cardBackUrl() : cardBackUrlFor("classic");
     handMeta.appendChild(handIcon);
     handMeta.appendChild(el("small", null, "手牌"));
     handMeta.appendChild(el("b", null, player.hand.length + "/8"));
@@ -2556,22 +2583,8 @@
     container.classList.toggle("has-relic", equippedIds.length > 0);
     if (side === "bottom") document.body.classList.toggle("low-hp-warning", hpPct <= 25 && app.screen === "game");
     container.appendChild(body);
-    if (!isPhoneLayout()) {
-      equippedIds.forEach((eid, idx) => {
-        const rd = D.CARDS[eid];
-        if (!rd) return;
-        const chip = el("div", "hs-relic-chip");
-        chip.style.right = (76 + idx * 26) + "px";
-        const chipArt = el("img", "hs-relic-chip-art");
-        chipArt.alt = "";
-        chipArt.src = cardArtUrl(rd) || factionIcon(rd.faction);
-        chip.appendChild(chipArt);
-        chip.appendChild(el("span", "hs-relic-chip-label", rd.name));
-        chip.title = "已装备：" + rd.name + "\n" + (rd.text || "");
-        chip.setAttribute("aria-label", "已装备 " + rd.name);
-        container.appendChild(chip);
-      });
-    }
+    // 装备信息只在英雄栏的金色描边上体现；面板里不再画遗物小图标（会和技能图标挤在一起）
+    void equippedIds;
 
     const sideCol = el("div", "hs-hero-side");
     const skill = el("button", "hs-skill");
@@ -2600,7 +2613,7 @@
       const shown = Math.min(5, player.hand.length);
       for (let i = 0; i < shown; i++) {
         const back = el("i", "hs-opp-hand-back");
-        back.style.backgroundImage = "url('" + cardBackUrl() + "')";
+        back.style.backgroundImage = "url('" + cardBackUrlFor("classic") + "')";
         backs.appendChild(back);
       }
       if (player.hand.length > shown) backs.appendChild(el("span", "hs-opp-hand-more", "+" + (player.hand.length - shown)));
@@ -2611,7 +2624,7 @@
     container.appendChild(sideCol);
     const heroDeckBadge = el("span", "hs-hero-deck");
     heroDeckBadge.id = side === "bottom" ? "player-hero-deck" : "opponent-hero-deck";
-    heroDeckBadge.innerHTML = "<img class=\"hs-hero-deck-art\" alt=\"\" src=\"" + cardBackUrl() + "\"><span class=\"hs-hero-deck-copy\"><span class=\"hs-hero-deck-label\">牌库</span><b>" + player.deck.length + "<small class=\"hs-hero-deck-total\">/30</small>" + "</b></span>";
+    heroDeckBadge.innerHTML = "<img class=\"hs-hero-deck-art\" alt=\"\" src=\"" + (side === "bottom" ? cardBackUrl() : cardBackUrlFor("classic")) + "\"><span class=\"hs-hero-deck-copy\"><span class=\"hs-hero-deck-label\">牌库</span><b>" + player.deck.length + "<small class=\"hs-hero-deck-total\">/30</small>" + "</b></span>";
     heroDeckBadge.title = "牌库剩余 " + player.deck.length + " 张";
     heroDeckBadge.setAttribute("aria-label", "牌库剩余 " + player.deck.length + " 张");
     container.appendChild(heroDeckBadge);
@@ -2671,6 +2684,7 @@
       action.title = "行动力 " + player.mana + " / " + Math.max(player.maxMana, player.mana);
       action.setAttribute("aria-label", "行动力 " + player.mana + " / " + Math.max(player.maxMana, player.mana));
       container.appendChild(action);
+      if (action.parentElement) action.parentElement.insertBefore(res, action); else container.appendChild(res);
     }
 
     const powerNote = el("div", "hs-hero-power-note");
@@ -3442,19 +3456,31 @@
   }
 
   function processStateEvents(s) {
+    // 事件游标用「绝对序号」：引擎每回合会把旧事件裁到 60 条，
+    // 用数组下标做游标时下标会整体前移，导致旧事件被当成新事件重放
+    // —— 表现就是「打战术牌 / 敌方随从攻击时莫名其妙飞卡背」。
+    const dropped = s.eventsDropped || 0;
+    const totalEvents = dropped + s.events.length;
     if (app.eventSeed !== s.seed) {
       app.eventSeed = s.seed;
-      app.eventCursor = s.events.length;
+      app.eventSeen = totalEvents;
+      app.lastHandCounts = null;
       return;
     }
-    if (app.eventCursor == null || app.eventCursor > s.events.length) app.eventCursor = 0;
-    const fresh = s.events.slice(app.eventCursor);
-    app.eventCursor = s.events.length;
+    let freshCount = totalEvents - (app.eventSeen == null ? totalEvents : app.eventSeen);
+    app.eventSeen = totalEvents;
+    if (freshCount <= 0) return;                 // 没有新事件（或联机重同步回退），不播任何动画
+    if (freshCount > s.events.length) freshCount = s.events.length;
+    const fresh = s.events.slice(s.events.length - freshCount);
     let eventSound = null;
     const soundPriority = { hero_hit: 90, death: 80, deathrattle: 70, damage: 60, freeze: 50, shield: 40, poison: 40, armor: 30, heal: 20, summon: 10, draw: 5 };
     const chooseSound = (name) => {
       if (!eventSound || (soundPriority[name] || 0) > (soundPriority[eventSound] || 0)) eventSound = name;
     };
+    // 本批事件开始时的手牌数：飞牌动画只认「手牌真的变多」，防止旧事件被重放时乱飞
+    const handCounts = {};
+    for (const pl of s.players) handCounts[pl.index] = pl.hand.length;
+    const flownCount = {};
     app.floatSeq = 0;   // 每批事件重新计数，飘字才能逐条错开
     app.drawSeq = 0;
     for (const ev of fresh) {
@@ -3548,12 +3574,19 @@
         chooseSound(ev.tone === "heal" ? "heal" : ev.tone === "freeze" ? "freeze" : "summon");
       } else if (ev.kind === "draw") {
         chooseSound("draw");
-        // 只有自己抽牌才飞卡背；敌人抽牌不播动画——
-        // 原来不分敌我都飞向 #hand，看起来像自己连续抽了好几张
-        if (ev.player == null || ev.player === app.viewer) {
-          AudioBox.play("select");
-          const seq = (app.drawSeq = (app.drawSeq || 0) + 1) - 1;
-          setTimeout(() => flyDrawCard(app.viewer), seq * 120);
+        // 我抽飞向我的手牌，敌抽飞向敌方手牌；
+        // 并且只放行「手牌真的变多」的那几张，避免旧事件重放时乱飞
+        {
+          const who = ev.player == null ? app.viewer : ev.player;
+          const last = app.lastHandCounts ? app.lastHandCounts[who] : null;
+          const grew = last == null ? 0 : Math.max(0, (handCounts[who] || 0) - last);
+          const already = flownCount[who] || 0;
+          if (already < grew) {
+            flownCount[who] = already + 1;
+            if (who === app.viewer) AudioBox.play("select");
+            const seq = (app.drawSeq = (app.drawSeq || 0) + 1) - 1;
+            setTimeout(() => flyDrawCard(who), seq * 120);
+          }
         }
       } else if (ev.kind === "summon") {
         const pt = zonePoint(ev.player, ev.zone);
@@ -3563,6 +3596,7 @@
         chooseSound("summon");
       }
     }
+    app.lastHandCounts = handCounts;
     if (eventSound) AudioBox.play(eventSound);
   }
 
@@ -3654,8 +3688,13 @@
       const fan = Math.max(-3, Math.min(3, offset * (total >= 6 ? 0.9 : 1.6)));
       card.style.setProperty("--fan", fan.toFixed(2) + "deg");
       const isNew = !!(previous && previous.indexOf(c.uid) < 0);
+      // 「手牌进场」动画只在这一手牌真的变多时播：开局、读档、联机重同步、换屏重绘都不播
+      const drewThisRender = !!(previous && previous.length) && app.screen === "game" && total > previous.length;
       if (isNew) {
-        card.classList.add("draw-in");
+        if (drewThisRender && freshIndex < 2) {
+          card.classList.add("draw-in");
+          freshIndex++;
+        }
         if (isPhoneLayout()) {
           const badge = el("span", "new-card-badge", "新");
           card.appendChild(badge);
@@ -3663,11 +3702,8 @@
         }
       }
       hand.appendChild(card);
-      if (isNew) {
-        const delay = freshIndex * 150;
-        freshIndex++;
-        setTimeout(() => animateDrawToCard(card), delay);
-      }
+      // 飞牌动画统一交给 processStateEvents 的 flyDrawCard（按真实抽牌事件播）；
+      // 这里只负责手牌进场，不再重复飞卡背
     }
     app.lastHandUids = display.map((c) => c.uid);
     requestAnimationFrame(() => { fitHandToWidth(); enforceBattleCardPresentation(); });
@@ -3805,6 +3841,13 @@
     "heal", "passive", "silence", "vein", "excavate", "blood", "discover", "damage"
   ]);
 
+  // 卡面 chip 用哪套图：即梦新图标里亮度够的（太暗的继续用 SVG）
+  const KEYWORD_ICON_AI = new Set([
+    "battlecry","deathrattle","charge","rush","freeze","stealth","silence","vein","discover",
+    "excavate","blood","devour","divineShield","windfury","lifesteal","reborn","lock","reverse","zhen",
+    "pressure","bounty","equip","carve","copy","overflow","morph","control","mana","health","armor",
+    "heal","damage","summon","action","spell","minion","trap"
+  ]);
   const KEYWORD_COLORS = {
     "复制": "#b7d8ff", "恢复溢出": "#8ee8c8", "变形": "#d7a7ff", "获得控制权": "#ffb0a0", "刻脉": "#f2c66d",
     "登场": "#f2c66d", "余响": "#c49bff", "守备": "#82b7ff", "先遣": "#ff9b5e",
@@ -4088,7 +4131,7 @@
       const iconName = KEYWORD_ICONS[tag];
       if (iconName) {
         const img = el("img", "keyword-tag-icon");
-        img.src = "/assets/icons/" + iconName + ".svg";
+        img.src = "/assets/icons/" + iconName + (KEYWORD_ICON_AI.has(iconName) ? ".webp?v=" + ART_VERSION : ".svg");
         img.alt = "";
         img.style.filter = "none";
         span.appendChild(img);
@@ -4114,7 +4157,7 @@
       const iconName = KEYWORD_ICONS[tag];
       if (iconName) {
         const img = el("img", "keyword-tag-icon");
-        img.src = "/assets/icons/" + iconName + ".svg";
+        img.src = "/assets/icons/" + iconName + (KEYWORD_ICON_AI.has(iconName) ? ".webp?v=" + ART_VERSION : ".svg");
         img.alt = "";
         img.style.filter = "none";
         chip.appendChild(img);
@@ -4683,36 +4726,6 @@
     setTimeout(() => { if (pop.parentNode) pop.parentNode.removeChild(pop); }, 900);
   }
 
-  function animateDrawToCard(card) {
-    if (!card || !document.body.contains(card)) return;
-    AudioBox.play("draw", { gain: 0.42 });
-    if (isPhoneLayout()) return;
-    if (document.body.classList.contains("simple-fx") || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
-    const deck = $("player-hero-deck") || $("player-deck-rail") || $("deck-corner");
-    if (!deck) return;
-    const d = deck.getBoundingClientRect();
-    const h = card.getBoundingClientRect();
-    if (!d.width || !h.width) return;
-    const ghost = el("div", "draw-fly");
-    ghost.style.backgroundImage = "url('" + cardBackUrl() + "')";
-    ghost.style.left = (d.left + d.width / 2) + "px";
-    ghost.style.top = (d.top + d.height / 2) + "px";
-    ghost.style.width = "38px";
-    ghost.style.height = "54px";
-    document.body.appendChild(ghost);
-    requestAnimationFrame(() => {
-      ghost.style.left = (h.left + h.width / 2) + "px";
-      ghost.style.top = (h.top + h.height / 2) + "px";
-      ghost.style.transform = "translate(-50%, -50%) scale(1.18) rotate(-3deg)";
-      ghost.style.opacity = "0";
-    });
-    setTimeout(() => { if (ghost.parentNode) ghost.parentNode.removeChild(ghost); }, animMs(2000));
-    deck.classList.remove("deck-draw");
-    void deck.offsetWidth;
-    deck.classList.add("deck-draw");
-    setTimeout(() => deck.classList.remove("deck-draw"), animMs(900));
-  }
-
   function showPlayArc(def, sourceRect, point) {
     if (!sourceRect) return;
     const ghost = el("div", "play-ghost type-" + def.type);
@@ -4899,7 +4912,9 @@
     } else {
       from = { x: isMe ? window.innerWidth - 30 : window.innerWidth - 30, y: isMe ? window.innerHeight - 40 : 60 };
     }
-    const handEl = document.getElementById("hand") || document.querySelector(".hand-zone, .hand-row");
+    const handEl = isMe
+      ? (document.getElementById("hand") || document.querySelector(".hand-zone, .hand-row"))
+      : (document.querySelector("#opponent-hero .hs-hero-portrait") || document.querySelector("#opponent-hero .hs-opp-hand"));
     let to;
     if (handEl) {
       const hr = handEl.getBoundingClientRect();
@@ -4908,7 +4923,7 @@
       to = { x: window.innerWidth / 2, y: window.innerHeight - 90 };
     }
     const fly = el("div", "draw-fly" + (isMe ? "" : " foe"));
-    const backImg = cardBackUrl();
+    const backImg = isMe ? cardBackUrl() : cardBackUrlFor("classic");
     fly.style.backgroundImage = "url('" + backImg + "')";
     fly.style.left = from.x + "px";
     fly.style.top = from.y + "px";
@@ -6950,9 +6965,12 @@
     const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300"><defs><pattern id="p" width="22" height="22" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0h22v22H0z" fill="' + b.color + '"/><path d="M0 0h1v22H0zM11 0h1v22h-1z" fill="rgba(255,255,255,.14)"/></pattern></defs><rect width="200" height="300" fill="#07120f"/><rect x="5" y="5" width="190" height="290" rx="8" fill="url(#p)" stroke="' + b.color + '" stroke-width="2"/><rect x="16" y="16" width="168" height="268" rx="4" fill="none" stroke="rgba(242,198,109,.55)"/><circle cx="100" cy="150" r="38" fill="rgba(3,12,12,.62)" stroke="rgba(242,198,109,.7)"/><text x="100" y="162" font-family="serif" font-size="38" text-anchor="middle" fill="#f0d29a">' + b.glyph + '</text></svg>';
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   }
+  // 即梦出的图片卡背（存在就用图，没生成好就回落 SVG）
+  const CARD_BACK_IMAGE_IDS = new Set(["pus", "academy", "xizhao", "republic", "empire", "greyharbor", "snow", "losutai", "neutral", "gold"]);
   function cardBackUrl() {
     const id = (app.account && app.account.cardBack) || "classic";
     if (id === "classic") return "assets/ui/card-back-jimeng.webp?v=" + ART_VERSION;
+    if (CARD_BACK_IMAGE_IDS.has(id)) return "assets/ui/cardback-" + id + ".webp?v=" + ART_VERSION;
     const b = cardBackDefinition(id);
     const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300"><defs><pattern id="p" width="22" height="22" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0h22v22H0z" fill="' + b.color + '"/><path d="M0 0h1v22H0zM11 0h1v22h-1z" fill="rgba(255,255,255,.14)"/></pattern></defs><rect width="200" height="300" fill="#07120f"/><rect x="5" y="5" width="190" height="290" rx="8" fill="url(#p)" stroke="' + b.color + '" stroke-width="2"/><rect x="16" y="16" width="168" height="268" rx="4" fill="none" stroke="rgba(242,198,109,.55)"/><circle cx="100" cy="150" r="38" fill="rgba(3,12,12,.62)" stroke="rgba(242,198,109,.7)"/><text x="100" y="162" font-family="serif" font-size="38" text-anchor="middle" fill="#f0d29a">' + b.glyph + '</text></svg>';
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
@@ -6960,6 +6978,49 @@
   function saveAccountCosmetics() {
     try { localStorage.setItem(ACCOUNT_KEY, JSON.stringify(app.account)); } catch (e) {}
     snapshotSave("cosmetics");
+    // 选完立刻生效：牌桌/牌套写进 body，主页与外观预览同步重画
+    try { applyProfileCosmetics(); } catch (e) {}
+    try { refreshAppearancePreview(); } catch (e) {}
+  }
+
+  // 外观页右上角的预览：选项一点就重画，不用等保存/离开页面
+  function refreshAppearancePreview() {
+    const host = document.querySelector(".appearance-preview");
+    if (!host) return;
+    const account = ensureAccount();
+    const avatar = host.querySelector(".home-account-avatar");
+    if (avatar) {
+      clear(avatar);
+      const av = PROFILE_AVATARS.find(x => x.id === account.avatar) || PROFILE_AVATARS[0];
+      if (account.avatar === "custom" && account.customAvatar) {
+        const img = el("img"); img.src = account.customAvatar; img.alt = "自传头像"; avatar.appendChild(img);
+      } else if (av.emblem) {
+        const img = el("img"); img.src = av.emblem; img.alt = av.name; avatar.appendChild(img);
+      } else {
+        avatar.textContent = av.glyph || "GK";
+      }
+      avatar.dataset.frame = account.avatarFrame || "none";
+    }
+    const sample = host.querySelector(".appearance-sample-card");
+    if (sample) {
+      sample.style.backgroundImage = "url('" + cardBackUrl() + "')";
+      const frame = PROFILE_CARD_FRAMES.find(x => x.id === (account.cardFrame || "none")) || PROFILE_CARD_FRAMES[0];
+      sample.style.borderColor = frame.color;
+      sample.style.boxShadow = "0 0 0 1px " + frame.color + ", 0 6px 18px rgba(0,0,0,.45)";
+    }
+    const pv = host.querySelector(".appearance-preview-copy");
+    if (!pv) return;
+    const name = pv.querySelector("h3");
+    if (name) {
+      name.textContent = account.name || "档案员";
+      name.style.color = (PROFILE_NAME_COLORS.find(x => x.id === account.nameColor) || PROFILE_NAME_COLORS[0]).color;
+    }
+    const chips = pv.querySelectorAll(".appearance-chip b");
+    if (chips[0]) chips[0].textContent = profileTitleName(account.title);
+    if (chips[1]) chips[1].textContent = (PROFILE_AVATAR_FRAMES.find(x => x.id === account.avatarFrame) || {}).name || "默认";
+    if (chips[2]) chips[2].textContent = (PROFILE_CARD_BACKS.find(x => x.id === account.cardBack) || {}).name || "默认";
+    const line = pv.querySelector("p");
+    if (line) line.textContent = profileTitleName(account.title) + " · " + (account.signature || "还没有签名");
   }
   function applyProfileCosmetics() {
     document.documentElement.style.setProperty("--card-back-image", "url('" + cardBackUrl() + "')");
@@ -7800,7 +7861,7 @@
     const nextUnlocks = Object.entries(FEATURE_LEVELS).filter(([, lv]) => lv === Math.min(LEVEL_MAX, p.level + 1)).map(([key]) => featureLabel(key));
     if (p.level < LEVEL_MAX && nextUnlocks.length) content.appendChild(el("p", "fine-print", "下一等级解锁：" + nextUnlocks.join("、")));
     const owned = ownedLegendarySet().size;
-    content.appendChild(el("p", "fine-print", "传说收集 " + owned + " / " + allLegendaryIds().length + " · 普通/稀有/史诗与彩蛋卡已全部解锁"));
+    content.appendChild(el("p", "fine-print", "传说收集 " + owned + " / " + allLegendaryIds().length + " · 普通/稀有/史诗已全部解锁"));
 
     const section = (title, period, defs) => {
       content.appendChild(el("h4", "task-section-title", title));
@@ -8299,17 +8360,8 @@
     return getPlayDeck(faction);
   }
 
-  function deckContainsEaster(list) {
-    return (list || []).some(id => D.CARDS[id] && D.CARDS[id].easterEgg);
-  }
 
   function allowMultiplayerDeck(faction, deckMode) {
-    if (deckMode !== "custom") return true;
-    const list = getSelectedPlayDeck(faction, "custom");
-    if (deckContainsEaster(list)) {
-      toast("彩蛋卡只能用于单人 AI 推演，不能进入匹配或联机房间。");
-      return false;
-    }
     return true;
   }
 
@@ -8643,7 +8695,6 @@ const tabs = $("deck-faction-tabs");
     if (app.deckBuildList.length >= 30) { toast("牌组已满（30 张）。"); return; }
     if (app.deckBuildList.length >= 30) { toast("牌组已满（30 张）。"); return; }
     if (count >= D.maxCopies(def)) { toast(def.name + " 已达同名张数上限。"); return; }
-    if (def.easterEgg) { toast("彩蛋卡是档案里的收藏品，不能进构筑。"); return; }
     if (isUnownedLegendaryCard(id)) { toast("你还没有这张卡。通过升级领袖或档案等级获得。"); return; }
     const rarity = D.deckRarityCounts(app.deckBuildList);
     const cap = D.DECK_RARITY_LIMITS[def.rarity];
@@ -9174,7 +9225,8 @@ const tabs = $("deck-faction-tabs");
     for (const cb of PROFILE_CARD_BACKS) {
       const b = el("button", "profile-custom-option" + (account.cardBack === cb.id ? " active" : ""));
       const preview = el("div", "profile-cardback-preview");
-      preview.style.backgroundImage = "url('" + (cb.id === "classic" ? "assets/ui/card_back.svg" : cardBackUrlFor(cb.id)) + "')";
+      const backSrc = cb.id === "classic" ? "assets/ui/card-back-jimeng.webp?v=" + ART_VERSION : (CARD_BACK_IMAGE_IDS.has(cb.id) ? "assets/ui/cardback-" + cb.id + ".webp?v=" + ART_VERSION : cardBackUrlFor(cb.id));
+      preview.style.backgroundImage = "url('" + backSrc + "')";
       b.appendChild(preview);
       b.appendChild(el("strong", null, cb.name));
       b.dataset.optionId = cb.id;
@@ -9244,8 +9296,12 @@ const tabs = $("deck-faction-tabs");
     avatar.onclick = () => openAppearancePage();
     hero.appendChild(avatar);
     const copy = el("div", "profile-hero-copy");
-    copy.appendChild(el("h3", null, account.name || "档案员"));
-    copy.appendChild(el("p", null, profileTitleName(account.title) + " · Lv." + pr.level + " · " + (rank.tier || "青铜")));
+    const profileName = el("h3", null, account.name || "档案员");
+    profileName.style.color = (PROFILE_NAME_COLORS.find(x => x.id === account.nameColor) || PROFILE_NAME_COLORS[0]).color;
+    copy.appendChild(profileName);
+    const profileTitle = el("p", null, profileTitleName(account.title) + " · Lv." + pr.level + " · " + (rank.tier || "青铜"));
+    profileTitle.dataset.plate = account.titlePlate || "none";
+    copy.appendChild(profileTitle);
     const meta = el("div", "profile-hero-meta");
     meta.appendChild(el("span", null, app.auth && app.auth.user ? "已登录 · " + app.auth.user.username : "本地访客"));
     meta.appendChild(el("span", null, "档案局数 " + ((app.profile && app.profile.games) || 0)));
@@ -9570,6 +9626,15 @@ const tabs = $("deck-faction-tabs");
     layout.appendChild(side);
     const right = el("div", "appearance-main");
     const preview = el("div", "appearance-preview");
+    const sample = el("div", "appearance-sample-card");
+    sample.style.backgroundImage = "url('" + cardBackUrl() + "')";
+    {
+      const f0 = PROFILE_CARD_FRAMES.find(x => x.id === (account.cardFrame || "none")) || PROFILE_CARD_FRAMES[0];
+      sample.style.borderColor = f0.color;
+      sample.style.boxShadow = "0 0 0 1px " + f0.color + ", 0 6px 18px rgba(0,0,0,.45)";
+    }
+    sample.appendChild(el("span", "appearance-sample-label", "卡背 / 牌套"));
+    preview.appendChild(sample);
     const avatar = el("div", "home-account-avatar");
     const av = PROFILE_AVATARS.find(x => x.id === account.avatar) || PROFILE_AVATARS[0];
     if (account.avatar === "custom" && account.customAvatar) { const img = el("img"); img.src = account.customAvatar; img.alt = "自传头像"; avatar.appendChild(img); }
@@ -9588,7 +9653,7 @@ const tabs = $("deck-faction-tabs");
   };
   equipLine.appendChild(chip("称号", profileTitleName(account.title)));
   equipLine.appendChild(chip("头像框", account.avatarFrame || "默认"));
-  equipLine.appendChild(chip("卡背", account.cardBack || "默认"));
+  equipLine.appendChild(chip("卡背", (PROFILE_CARD_BACKS.find(x => x.id === account.cardBack) || {}).name || "默认"));
   pv.appendChild(equipLine);
   pv.appendChild(el("p", null, profileTitleName(account.title) + " · " + (account.signature || "还没有签名"))); preview.appendChild(pv);
     right.appendChild(preview);
@@ -9819,7 +9884,10 @@ const tabs = $("deck-faction-tabs");
     const nameEl = $("home-account-name");
     const levelEl = $("home-account-level");
     const statusEl = $("home-account-status");
-    if (nameEl) nameEl.textContent = account.name || "档案员";
+    if (nameEl) {
+      nameEl.textContent = account.name || "档案员";
+      nameEl.style.color = (PROFILE_NAME_COLORS.find(x => x.id === account.nameColor) || PROFILE_NAME_COLORS[0]).color;
+    }
     if (levelEl) levelEl.textContent = "Lv." + ((account.progress && account.progress.level) || 1);
     if (statusEl) {
       const sync = app.cloudSyncState === "conflict" ? "存档冲突" : app.cloudSyncState === "syncing" ? "同步中" : app.cloudSyncState === "error" ? "同步失败" : "已同步";
@@ -9827,7 +9895,19 @@ const tabs = $("deck-faction-tabs");
       statusEl.dataset.sync = app.auth && app.auth.user ? app.cloudSyncState : "local";
     }
     const titleEl = $("home-account-title");
-    if (titleEl) titleEl.textContent = profileTitleName(account.title);
+    if (titleEl) {
+      titleEl.textContent = profileTitleName(account.title);
+      titleEl.dataset.plate = account.titlePlate || "none";
+    }
+    const homeBadges = $("home-account-badges");
+    if (homeBadges) {
+      clear(homeBadges);
+      (account.badges || []).map(id => ACHIEVEMENTS.find(a => a.id === id)).filter(Boolean).forEach(a => {
+        const chip = el("span", "home-account-badge", a.icon + " " + a.name);
+        chip.title = a.desc;
+        homeBadges.appendChild(chip);
+      });
+    }
     const avatarEl = $("home-account-avatar");
     if (avatarEl) {
       clear(avatarEl);
@@ -9837,9 +9917,15 @@ const tabs = $("deck-faction-tabs");
         img.src = account.customAvatar;
         img.alt = "";
         avatarEl.appendChild(img);
+      } else if (av && av.emblem) {
+        const img = document.createElement("img");
+        img.src = av.emblem;
+        img.alt = av.name || "头像";
+        avatarEl.appendChild(img);
       } else {
         avatarEl.textContent = (av && av.glyph) || "GK";
       }
+      avatarEl.dataset.frame = account.avatarFrame || "none";
     }
     if (!metaEl) return;
     let content = {};
@@ -10158,9 +10244,9 @@ const tabs = $("deck-faction-tabs");
       b.onclick = () => { app.codexFilter = b.dataset.codexFilter; app.codexLimit = 60; renderCodex(); };
     });
     document.querySelectorAll("[data-codex-rarity]").forEach((b) => {
-      const isSpecial = app.codexFilter === "token" || app.codexFilter === "easter";
+      const isSpecial = app.codexFilter === "token";
       b.disabled = isSpecial;
-      b.title = isSpecial ? "衍生卡 / 彩蛋卡是独立分类，不按品级筛选" : "";
+      b.title = isSpecial ? "衍生卡是独立分类，不按品级筛选" : "";
       b.classList.toggle("active", !isSpecial && b.dataset.codexRarity === (app.codexRarity || "all"));
       b.onclick = () => { if (isSpecial) return; app.codexRarity = b.dataset.codexRarity; app.codexLimit = 60; renderCodex(); };
     });
@@ -10192,17 +10278,7 @@ const tabs = $("deck-faction-tabs");
         renderCodex();
       };
     }
-    const easterQuick = $("codex-easter-quick");
-    if (easterQuick) {
-      easterQuick.textContent = "彩蛋卡 " + allCards.filter(d => d.easterEgg).length;
-      easterQuick.classList.toggle("active", app.codexFilter === "easter");
-      easterQuick.onclick = () => {
-        app.codexFilter = "easter";
-        app.codexRarity = "all";
-        app.codexLimit = 60;
-        renderCodex();
-      };
-    }
+
     const favButton = $("codex-favorites");
     if (favButton) {
       const n = app.codexFavorites ? app.codexFavorites.size : 0;
@@ -10210,12 +10286,11 @@ const tabs = $("deck-faction-tabs");
       favButton.classList.toggle("active", !!app.codexFavoritesOnly);
     }
     const query = (app.codexSearch || "").trim().toLowerCase();
+    const specialCategory = app.codexFilter === "token";
     const list = allCards.filter((d) => {
       if (app.codexFaction !== "all" && d.faction !== app.codexFaction) return false;
       const category = app.codexFilter || "all";
-      const specialCategory = category === "token" || category === "easter";
       if (category === "token" && !d.token) return false;
-      if (category === "easter" && !d.easterEgg) return false;
       if (category === "all" && (d.token || d.easterEgg)) return false;
       if (!specialCategory && category !== "all") {
         if (d.type !== category) return false;
@@ -10242,8 +10317,7 @@ const tabs = $("deck-faction-tabs");
     const seenCount = allCards.filter(d => app.codexSeen && app.codexSeen[d.id]).length;
     const collectible = allCards.filter(d => !d.token && !d.easterEgg).length;
     const tokenCount = allCards.filter(d => d.token).length;
-    const easterCount = allCards.filter(d => d.easterEgg).length;
-    $("codex-count").innerHTML = '<span class="codex-count-total">可收藏 <b>' + collectible + '</b> 张</span><span class="codex-count-sep"> · </span><span class="codex-count-token">衍生 ' + tokenCount + '</span><span class="codex-count-sep"> · </span><span class="codex-count-easter">彩蛋 ' + easterCount + '</span><span class="codex-count-sep"> · </span><span class="codex-count-seen">已阅 ' + seenCount + '</span><span class="codex-count-sep"> · </span><span class="codex-count-fav">收藏 ' + (app.codexFavorites ? app.codexFavorites.size : 0) + '</span><span class="codex-count-sep"> · </span><span class="codex-count-hit">当前 <b>' + list.length + '</b> 张</span>' + (list.length > shown.length ? '<span class="codex-count-sep"> · </span><span class="codex-count-shown">已显示 ' + shown.length + '</span>' : "");
+    $("codex-count").innerHTML = '<span class="codex-count-total">可收藏 <b>' + collectible + '</b> 张</span><span class="codex-count-sep"> · </span><span class="codex-count-token">衍生 ' + tokenCount + '</span><span class="codex-count-sep"> · </span><span class="codex-count-seen">已阅 ' + seenCount + '</span><span class="codex-count-sep"> · </span><span class="codex-count-fav">收藏 ' + (app.codexFavorites ? app.codexFavorites.size : 0) + '</span><span class="codex-count-sep"> · </span><span class="codex-count-hit">当前 <b>' + list.length + '</b> 张</span>' + (list.length > shown.length ? '<span class="codex-count-sep"> · </span><span class="codex-count-shown">已显示 ' + shown.length + '</span>' : "");
     const more = $("codex-more");
     if (more) { more.hidden = list.length <= shown.length; more.onclick = () => { app.codexLimit = (app.codexLimit || 60) + 60; renderCodex(); }; }
     const empty = $("codex-empty");
@@ -10360,7 +10434,7 @@ const tabs = $("deck-faction-tabs");
     openModal((content) => {
       content.appendChild(el("div", "eyebrow", "ARCHIVE / 反馈"));
       content.appendChild(el("h3", null, "反馈与交流"));
-      content.appendChild(el("p", null, "卡牌数值、bug、UI 问题都可以直接说；带上版本号和截图，我改起来最快。"));
+      content.appendChild(el("p", null, "卡牌数值、bug、UI 问题都可以直接说。写好后点「发送反馈」会直接提交到服务器（作者在后台看），也可以复制到群里。"));
 
       const group = el("div", "feedback-group");
       group.appendChild(el("div", "feedback-group-kicker", "交流群 / QQ"));
@@ -10428,7 +10502,8 @@ const tabs = $("deck-faction-tabs");
       const row = el("div", "feedback-write-row");
       const savedTip = el("span", "feedback-saved", "");
       const hintTip = el("span", "feedback-write-hint", "草稿自动留在这台机器上");
-      const copyWrite = el("button", "btn btn-small btn-primary", "复制这段反馈");
+      const copyWrite = el("button", "btn btn-small btn-ghost", "复制这段反馈");
+      const sendWrite = el("button", "btn btn-small btn-primary", "发送反馈");
       const clearWrite = el("button", "btn btn-small btn-ghost", "清空");
 
       const compose = () => {
@@ -10454,6 +10529,34 @@ const tabs = $("deck-faction-tabs");
         if (!ta.value.trim()) { toast("先写点什么再复制"); ta.focus(); return; }
         copyText(compose(), "反馈已复制，粘贴到群里即可");
       };
+      // 直接发到服务器：作者在 /feedback.html 里看
+      sendWrite.onclick = async () => {
+        const body = ta.value.trim();
+        if (!body) { toast("先写点什么再发"); ta.focus(); return; }
+        if (sendWrite.disabled) return;
+        sendWrite.disabled = true;
+        sendWrite.textContent = "发送中…";
+        try {
+          const res = await fetch("/api/feedback", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "反馈", content: body, contact: "", build: buildId, screen: app.screen })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || "发送失败");
+          savedTip.textContent = "反馈已收到，感谢你的建议";
+          savedTip.style.color = "#7fd8c5";
+          try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+          toast("反馈已收到，感谢你的建议");
+        } catch (err) {
+          savedTip.textContent = "没发出去：" + (err && err.message ? err.message : "网络异常");
+          savedTip.style.color = "#ff9b91";
+          toast("没发出去，可以复制到群里");
+        } finally {
+          sendWrite.disabled = false;
+          sendWrite.textContent = "发送反馈";
+        }
+      };
       clearWrite.onclick = () => {
         ta.value = "";
         try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
@@ -10463,6 +10566,7 @@ const tabs = $("deck-faction-tabs");
       ta.addEventListener("input", () => {
         try { localStorage.setItem(DRAFT_KEY, ta.value); savedTip.textContent = ta.value.trim() ? "草稿已保存" : ""; } catch (e) {}
       });
+      row.appendChild(sendWrite);
       row.appendChild(copyWrite);
       row.appendChild(clearWrite);
       row.appendChild(hintTip);
@@ -10561,6 +10665,97 @@ const tabs = $("deck-faction-tabs");
   }
 
   // 弃牌堆（坟墓）：敌我双方共享，按归属分两列
+  // 墓地 / 弃牌堆 合并弹窗（带 tab）
+  function openPiles(initialTab) {
+    const game = app.game;
+    if (!game) { toast("现在没有进行中的对局。"); return; }
+    const meIdx = app.viewer != null ? app.viewer : 0;
+    const grave = Array.isArray(game.discard) ? game.discard : [];
+    const discards = [];
+    (game.players || []).forEach((p, i) => {
+      for (const c of (p && Array.isArray(p.discard) ? p.discard : [])) {
+        if (!c || c.kind === "minion") continue;
+        discards.push({ cardId: c.cardId, kind: c.kind || "spell", owner: i });
+      }
+    });
+
+    const chipFor = (item, extraClass) => {
+      const def = D.CARDS[item.cardId];
+      const chip = el("div", "graveyard-chip" + (extraClass ? " " + extraClass : ""));
+      const art = el("img", "graveyard-chip-art");
+      art.alt = "";
+      art.src = (cardArtUrl(def) || factionIcon(def && def.faction)) || "";
+      chip.appendChild(art);
+      chip.appendChild(el("span", "graveyard-chip-name", def ? def.name : item.cardId));
+      const kindText = { minion: "随从", formation: "阵型", equipment: "装备", spell: "战术" }[item.kind] || "";
+      if (kindText) chip.appendChild(el("em", "graveyard-chip-kind", kindText));
+      chip.title = (def ? def.name : item.cardId) + (def && def.text ? "\n" + def.text : "");
+      return chip;
+    };
+
+    openModal((content) => {
+      let tab = initialTab === "discard" ? "discard" : "grave";
+      const render = () => {
+        clear(content);
+        content.appendChild(el("div", "eyebrow", "BATTLE / PILES"));
+        content.appendChild(el("h3", null, "墓地与弃牌堆"));
+        const tabs = el("div", "pile-tabs");
+        const mkTab = (id, label, n) => {
+          const b = el("button", "pile-tab" + (tab === id ? " active" : ""), label + "（" + n + "）");
+          b.type = "button";
+          b.onclick = () => { tab = id; render(); };
+          return b;
+        };
+        tabs.appendChild(mkTab("grave", "墓地", grave.length));
+        tabs.appendChild(mkTab("discard", "弃牌堆", discards.length));
+        content.appendChild(tabs);
+
+        if (tab === "grave") {
+          content.appendChild(el("p", "graveyard-note", "死掉的随从会留在这里，双方共享。战术、装备、阵型不会进来。"));
+          const mineList = grave.filter((x) => x.owner === meIdx);
+          const theirList = grave.filter((x) => x.owner != null && x.owner !== meIdx);
+          const wrap = el("div", "graveyard-columns");
+          const col = (title, list) => {
+            const c = el("div", "graveyard-col");
+            c.appendChild(el("strong", "graveyard-col-title", title + "（" + list.length + "）"));
+            if (!list.length) { c.appendChild(el("span", "graveyard-empty", "这一侧没有牌")); return c; }
+            const grid = el("div", "graveyard-grid");
+            for (const item of list.slice().reverse()) grid.appendChild(chipFor(item, item.wasBounty ? "was-bounty" : ""));
+            c.appendChild(grid);
+            return c;
+          };
+          wrap.appendChild(col("我方", mineList));
+          wrap.appendChild(col("对方", theirList));
+          content.appendChild(wrap);
+        } else {
+          content.appendChild(el("p", "graveyard-note", "打出或顶掉的战术、装备、阵型都在这里，用掉就不再回来。"));
+          const groups = [
+            ["战术", "spell"],
+            ["装备", "equipment"],
+            ["阵型", "formation"]
+          ];
+          let any = false;
+          for (const [label, kind] of groups) {
+            const list = discards.filter((x) => x.kind === kind);
+            if (!list.length) continue;
+            any = true;
+            content.appendChild(el("h4", "pile-group-title", label + "（" + list.length + "）"));
+            const grid = el("div", "graveyard-grid");
+            for (const item of list.slice().reverse()) grid.appendChild(chipFor(item, ""));
+            content.appendChild(grid);
+          }
+          if (!any) content.appendChild(el("p", "graveyard-note", "还没有用掉的战术 / 装备 / 阵型。"));
+        }
+
+        const actions = el("div", "modal-actions");
+        const close = el("button", "btn btn-primary", "关闭");
+        close.onclick = () => closeModal(true);
+        actions.appendChild(close);
+        content.appendChild(actions);
+      };
+      render();
+    });
+  }
   function openGraveyard() {
     const game = app.game;
     if (!game) { toast("现在没有进行中的对局。"); return; }
@@ -11749,8 +11944,6 @@ const tabs = $("deck-faction-tabs");
   }
 
   async function hostStartLan() {
-    if (app.lanHostUseCustom && deckContainsEaster(getPlayDeck(app.lanFaction || "pus"))) { toast("彩蛋卡只能用于单人 AI 推演，不能进入联机房间。"); return; }
-    if (app.lanGuestUseCustom && app.lanGuestDecks && Object.values(app.lanGuestDecks).some(deckContainsEaster)) { toast("挑战者牌组含彩蛋卡，不能开始联机对局。"); return; }
     if (!app.lanGuestOnline) { toast("挑战者还没有连接。"); return; }
     if (!app.lanGuestReady) { toast("挑战者还没有准备。"); return; }
     if (!app.lanGuestDecksReady) { toast("挑战者还没有同步牌组。"); return; }
@@ -11813,7 +12006,6 @@ const tabs = $("deck-faction-tabs");
   }
 
   async function joinLanRoom() {
-    if (app.lanGuestUseCustom && deckContainsEaster(getPlayDeck(app.lanFaction || "pus"))) { toast("彩蛋卡只能用于单人 AI 推演，不能进入联机房间。"); return; }
     if (!lanServerAvailable()) { toast("当前不是局域网模式。"); return; }
     const join = $("btn-lan-join");
     if (join) { join.disabled = true; join.textContent = "连接中…"; }
@@ -13348,6 +13540,8 @@ const tabs = $("deck-faction-tabs");
     if ($("btn-settings-bgvideo")) $("btn-settings-bgvideo").onclick = toggleBgVideo;
     if ($("btn-settings-cinema")) $("btn-settings-cinema").onclick = toggleCinema;
     if ($("btn-settings-replay-cg")) $("btn-settings-replay-cg").onclick = replayOpening;
+    if ($("btn-settings-feedback")) $("btn-settings-feedback").onclick = openFeedback;
+    if ($("btn-feedback-hint")) $("btn-feedback-hint").onclick = openFeedback;
     if ($("btn-settings-motion")) $("btn-settings-motion").onclick = () => toggleMotion();
     if ($("btn-settings-damage")) $("btn-settings-damage").onclick = () => { app.damageNumbers = !app.damageNumbers; localStorage.setItem("gok_damage_numbers", app.damageNumbers ? "1" : "0"); updateSettingsUI(); };
     if ($("btn-settings-fx")) $("btn-settings-fx").onclick = () => { app.fxOn = !app.fxOn; localStorage.setItem("gok_fx", app.fxOn ? "1" : "0"); updateSettingsUI(); };
@@ -13612,18 +13806,26 @@ const tabs = $("deck-faction-tabs");
       AudioBox.play("click");
     }, { passive: true });
     document.addEventListener("keydown", (e) => {
-      if (e.key === "/" && app.screen === "codex" && !app.modalOpen && !(e.target.closest && e.target.closest("input, textarea, select"))) {
-        const search = $("codex-search");
-        if (search) { e.preventDefault(); search.focus(); search.select(); return; }
+      // 全游戏只保留三个键：Esc = 退出/关闭，Tab = 开关战斗日志，F1 = 反馈
+      // 空格换回合、/ 搜图鉴等快捷键全部移除（容易误按）
+      if (e.key === "F1") {
+        e.preventDefault();
+        openFeedback();
+        return;
       }
       if (e.key === "Escape") {
         e.preventDefault();
         goBack();
         return;
       }
-      if (e.code === "Space" && app.screen === "game" && !app.modalOpen && !$("btn-end-turn").disabled) {
+      if (e.key === "Tab") {
+        const tag = (e.target && e.target.tagName ? e.target.tagName : "").toLowerCase();
+        const typing = tag === "input" || tag === "textarea" || tag === "select" || (e.target && e.target.isContentEditable);
+        if (typing) return;                       // 输入框里保留正常的 Tab 切换焦点
+        if (app.screen !== "game" || !app.game) return;
         e.preventDefault();
-        endTurn();
+        toggleGameLog();
+        return;
       }
     });
     initDepthVisuals();

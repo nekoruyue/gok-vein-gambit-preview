@@ -392,16 +392,20 @@
   }
 
   function boot() {
+    // 开场 CG 不再自动播放：只有 URL 带 ?opening=1 或 localStorage gok_cg_force=1 时才播
+    // （设置里的「重播开场」走 play({force:true}) 直接播，不经过这里）
+    var forced = false;
+    try {
+      forced = location.search.indexOf("opening=1") >= 0 || localStorage.getItem("gok_cg_force") === "1";
+    } catch (e) {}
+    if (!forced) { markSeenEarly(); return; }
     if (!build()) return;
-    if (!shouldPlay()) return;
-    markSeenEarly();   // 决定要播就先记账，中途刷新也不会重播
-    // 等启动进度条走完再上开场，避免两层遮罩打架
+    markSeenEarly();
     var tries = 0;
     var timer = setInterval(function () {
       tries++;
       var b = document.getElementById("boot-loading");
       var bootVisible = b && !b.hidden && getComputedStyle(b).display !== "none";
-      // 健康游戏忠告要先播完，再上开场动画
       var hp = document.getElementById("health-notice");
       var hpVisible = hp && !hp.hidden;
       if ((!bootVisible && !hpVisible) || tries > 80) {

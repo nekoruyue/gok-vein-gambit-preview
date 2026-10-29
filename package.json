@@ -1,6 +1,6 @@
 {
   "name": "gok-vein-gambit",
-  "version": "0.9.11",
+  "version": "1.0.0",
   "private": true,
   "description": "《戈克世界：流脉牌局》八阵营流脉卡牌对战",
   "author": "戈克世界",
@@ -11,7 +11,7 @@
     "build:win": "electron-builder --win nsis",
     "package": "electron-builder --win nsis",
     "release": "pwsh -NoProfile -File tools/build-release.ps1",
-    "sim": "node scripts/simulate.mjs",
+    "sim": "node tools/balance-all.cjs",
     "assert:cards": "node tests/card-assertions.js",
     "test:cards": "node tests/card-assertions.js",
     "test:embed": "node tests/embedded-server-check.js",

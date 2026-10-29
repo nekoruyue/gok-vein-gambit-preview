@@ -13,6 +13,54 @@ const { createAuth } = process.env.DATABASE_URL ? require("./auth_pg") : require
 const PORT = Number(process.env.PORT || 4173);
 
 const PUBLIC = path.join(__dirname, "..", "public");
+// 本地开发热更新：默认开启（线上 Render 自动关闭）。文件一变就让浏览器自动刷新。
+const LIVE = process.env.GOK_LIVE === "1" ? true : (process.env.GOK_EMBEDDED === "1" || process.env.RENDER ? false : process.env.GOK_LIVE !== "0");
+const liveClients = new Set();
+let liveTimer = null;
+function liveBroadcast() {
+  for (const res of liveClients) { try { res.write("data: reload\n\n"); } catch (e) {} }
+}
+if (LIVE) {
+  // 用「mtime+大小」快照做变更检测，不用 fs.watch：
+  // Windows 上 fs.watch 会因为读写/访问时间抖动误报，导致页面反复自己刷新。
+  const watchDirs = ["js", "css", "assets/ui", "assets/generated", "assets/icons", "assets/emblems"]
+    .map((p) => path.join(PUBLIC, p)).filter((p) => fs.existsSync(p));
+  const watchFiles = [path.join(PUBLIC, "index.html")].filter((p) => fs.existsSync(p));
+  const seen = /[.](js|css|html|json|webp|png|svg|woff2?|ttf)$/i;
+  const listFiles = (dir, out) => {
+    let entries = [];
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return out; }
+    for (const ent of entries) {
+      const full = path.join(dir, ent.name);
+      if (ent.isDirectory()) listFiles(full, out);
+      else if (seen.test(ent.name)) out.push(full);
+    }
+    return out;
+  };
+  const snapshot = () => {
+    const parts = [];
+    for (const file of watchFiles.concat(...watchDirs.map((d) => listFiles(d, [])))) {
+      try { const st = fs.statSync(file); parts.push(file + ":" + st.mtimeMs + ":" + st.size); } catch (e) {}
+    }
+    return parts.sort().join("|");
+  };
+  let last = snapshot();
+  const timer = setInterval(() => {
+    const next = snapshot();
+    if (next === last) return;
+    last = next;
+    clearTimeout(liveTimer);
+    liveTimer = setTimeout(liveBroadcast, 300);
+  }, 1200);
+  if (timer.unref) timer.unref();
+  console.log("[live] 热更新已开启（快照比对，静默无事件）");
+}
+// 玩家反馈：JSONL 落盘 + 查看密钥（环境变量 GOK_FEEDBACK_KEY 优先，否则自动生成到 data/feedback-key.txt）
+const FEEDBACK_DIR = process.env.GOK_DATA_DIR || path.join(__dirname, "data");
+const FEEDBACK_FILE = path.join(FEEDBACK_DIR, "feedback.jsonl");
+const FEEDBACK_KEY_FILE = path.join(FEEDBACK_DIR, "feedback-key.txt");
+// 反馈查看密码：默认 21425678（可用环境变量 GOK_FEEDBACK_KEY 覆盖）
+const FEEDBACK_PASSWORD = process.env.GOK_FEEDBACK_KEY || "21425678";
 let BUILD_ID = "";
 try {
   const html = fs.readFileSync(require("path").join(PUBLIC, "index.html"), "utf8");
@@ -171,9 +219,10 @@ function serveStatic(req, res, pathname) {
       fs.readFile(file, "utf8", (readErr, html) => {
         if (readErr) { res.writeHead(500); res.end("read error"); return; }
         const health = process.env.GOK_SKIP_HEALTH === "1" ? "true" : "false";
-        const body = html
+        let body = html
           .replaceAll("__GOK_CHANNEL__", CHANNEL)
           .replace("</head>", "<script>window.__GOK_SKIP_HEALTH__ = " + health + "; window.__GOK_BUILD__ = \"" + BUILD_ID + "\";<\/script></head>");
+        if (LIVE) body = body.replace("</body>", "<script src=\"/live-reload.js\"></script></body>");
         res.writeHead(200, {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "no-cache"
@@ -187,7 +236,7 @@ function serveStatic(req, res, pathname) {
     let hasVersion = false;
     try { hasVersion = !!new URL(req.url, "http://localhost").searchParams.get("v"); } catch (e) {}
     const isText = /^\.(html|js|css|json|svg|txt|map)$/i.test(ext);
-    const cacheControl = isUpdateFeed
+    const cacheControl = LIVE ? "no-store" : isUpdateFeed
       ? "no-store"
       : hasVersion
         ? "public, max-age=31536000, immutable"
@@ -247,7 +296,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (p === "/api/health") {
-      json(res, 200, { ok: true, service: "gok-vein-gambit", channel: CHANNEL, time: Date.now(), rooms: rooms.size });
+      json(res, 200, { ok: true, service: "gok-vein-gambit", channel: CHANNEL, time: Date.now(), rooms: rooms.size, auth: (typeof auth.stats === "function" ? await auth.stats() : null) });
       return;
     }
     if (await auth.handle(req, res, u)) return;
@@ -594,6 +643,66 @@ const server = http.createServer(async (req, res) => {
       setTimeout(() => process.exit(0), 200);
       return;
     }
+    /* ===== 玩家反馈 ===== */
+    if (p === "/api/feedback" && req.method === "POST") {
+      let body = {};
+      try { body = JSON.parse((await readBody(req)) || "{}"); } catch (e) {
+        json(res, 400, { ok: false, error: "请求格式不对" });
+        return;
+      }
+      const content = String(body.content || "").trim().slice(0, 2000);
+      if (content.length < 1) { json(res, 400, { ok: false, error: "内容不能为空" }); return; }
+      const rec = {
+        at: new Date().toISOString(),
+        type: String(body.type || "其他").slice(0, 20),
+        content: content,
+        contact: String(body.contact || "").slice(0, 120),
+        build: String(body.build || "").slice(0, 40),
+        screen: String(body.screen || "").slice(0, 20),
+        ua: String(req.headers["user-agent"] || "").slice(0, 180)
+      };
+      try {
+        fs.mkdirSync(FEEDBACK_DIR, { recursive: true });
+        fs.appendFileSync(FEEDBACK_FILE, JSON.stringify(rec) + "\n");
+      } catch (e) {
+        json(res, 500, { ok: false, error: "保存失败" });
+        return;
+      }
+      console.log("收到反馈（" + rec.type + "）：" + content.slice(0, 60));
+      json(res, 200, { ok: true });
+      return;
+    }
+    if (p === "/api/feedback" && req.method === "GET") {
+      const key = u.searchParams.get("key") || "";
+      if (!key || key !== FEEDBACK_PASSWORD) {
+        res.writeHead(401, { "Content-Type": "text/plain; charset=utf-8" });
+        res.end("密码不对");
+        return;
+      }
+      let items = [];
+      try {
+        if (fs.existsSync(FEEDBACK_FILE)) {
+          items = fs.readFileSync(FEEDBACK_FILE, "utf8").split("\n").filter(Boolean).map((line) => {
+            try { return JSON.parse(line); } catch (e) { return null; }
+          }).filter(Boolean);
+        }
+      } catch (e) {}
+      json(res, 200, { ok: true, count: items.length, items: items.slice(-500).reverse() });
+      return;
+    }
+    if (LIVE && p === "/api/live") {
+      res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-store", Connection: "keep-alive" });
+      res.write("retry: 800\n\n");
+      liveClients.add(res);
+      const ping = setInterval(() => { try { res.write(": ping\n\n"); } catch (e) {} }, 25000);
+      req.on("close", () => { clearInterval(ping); liveClients.delete(res); });
+      return;
+    }
+    if (LIVE && p === "/live-reload.js") {
+      res.writeHead(200, { "Content-Type": "application/javascript; charset=utf-8", "Cache-Control": "no-store" });
+      res.end("(function(){if(!window.EventSource)return;var es=new EventSource(\"/api/live\");es.onmessage=function(e){if(e.data!=='reload')return;var g=window.GokUI,app=g&&g.app;var inGame=app&&app.screen==='game'&&app.game&&!app.game.over;if(inGame){document.title='● 有新版本，退出对局后刷新';return;}location.reload();};})();");
+      return;
+    }
     if (p.startsWith("/api/")) { json(res, 404, { ok: false }); return; }
     serveStatic(req, res, p);
   } catch (e) {
@@ -634,6 +743,10 @@ function close() {
 }
 
 if (require.main === module) {
+  // 账号后端告警：没有 DATABASE_URL 时，账号存在本地 SQLite，容器重建就会丢
+  if (!process.env.DATABASE_URL && (process.env.RENDER || process.env.NODE_ENV === "production")) {
+    console.warn("[auth] 警告：未配置 DATABASE_URL，账号会写进本地 SQLite，部署重建后会全部丢失。请按 README-DEPLOY.md 配置 Postgres。");
+  }
   server.listen(PORT, "0.0.0.0", () => {
     console.log("Gok Vein Gambit LAN server");
     console.log("http://" + lanIp() + ":" + PORT + "/");

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>玩家反馈 · 戈克世界</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 28px 20px 60px; background: #071114; color: #dbe9e4;
+    font-family: "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif; }
+  h1 { font-size: 20px; margin: 0 0 6px; letter-spacing: .04em; }
+  .hint { color: #8fa9a2; font-size: 13px; margin: 0 0 18px; line-height: 1.7; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  input { padding: 9px 11px; border-radius: 8px; border: 1px solid rgba(159,207,196,.3);
+    background: #0b1a1d; color: #eaf5f1; font-size: 14px; min-width: 260px; }
+  button { padding: 9px 16px; border-radius: 8px; border: 1px solid rgba(120,214,196,.5);
+    background: rgba(120,214,196,.12); color: #bff0e4; font-size: 14px; cursor: pointer; }
+  button:hover { background: rgba(120,214,196,.2); }
+  .stat { color: #8fa9a2; font-size: 13px; margin: 0 0 14px; }
+  .item { border: 1px solid rgba(159,207,196,.18); border-radius: 10px; padding: 12px 14px;
+    margin-bottom: 10px; background: rgba(12,26,30,.7); }
+  .item .meta { display: flex; gap: 10px; flex-wrap: wrap; color: #86a59d; font-size: 12px; margin-bottom: 6px; }
+  .item .type { color: #f2c66d; }
+  .item .body { white-space: pre-wrap; line-height: 1.6; font-size: 14px; }
+  .item .contact { margin-top: 6px; color: #9fd0c4; font-size: 12px; }
+  .empty { color: #7d938d; padding: 24px 0; }
+  .err { color: #ff9b91; }
+</style>
+</head>
+<body>
+  <h1>玩家反馈</h1>
+  <p class="hint">反馈存在服务器的 data/feedback.jsonl。输入密码即可查看。</p>
+  <div class="bar">
+    <input id="key" type="password" placeholder="查看密码">
+    <button id="load">读取</button>
+    <button id="refresh">刷新</button>
+  </div>
+  <p class="stat" id="stat"></p>
+  <div id="list"></div>
+<script>
+(function () {
+  var keyInput = document.getElementById("key");
+  var list = document.getElementById("list");
+  var stat = document.getElementById("stat");
+  try { keyInput.value = localStorage.getItem("gok_feedback_key") || ""; } catch (e) {}
+
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+  }); }
+
+  async function load() {
+    var key = keyInput.value.trim();
+    if (!key) { stat.className = "stat err"; stat.textContent = "先填密码"; return; }
+    try { localStorage.setItem("gok_feedback_key", key); } catch (e) {}
+    stat.className = "stat"; stat.textContent = "读取中…";
+    try {
+      var res = await fetch("/api/feedback?key=" + encodeURIComponent(key));
+      if (!res.ok) { stat.className = "stat err"; stat.textContent = await res.text(); list.innerHTML = ""; return; }
+      var data = await res.json();
+      var items = (data.items || []);
+      stat.textContent = "共 " + data.count + " 条，显示最近 " + items.length + " 条";
+      if (!items.length) { list.innerHTML = '<div class="empty">还没有反馈</div>'; return; }
+      list.innerHTML = items.map(function (it) {
+        return '<div class="item"><div class="meta"><span class="type">' + esc(it.type) + '</span>' +
+          '<span>' + esc((it.at || "").replace("T", " ").slice(0, 19)) + '</span>' +
+          (it.build ? '<span>版本 ' + esc(it.build) + '</span>' : '') +
+          (it.screen ? '<span>界面 ' + esc(it.screen) + '</span>' : '') +
+          '</div><div class="body">' + esc(it.content) + '</div>' +
+          (it.contact ? '<div class="contact">联系：' + esc(it.contact) + '</div>' : '') +
+          '</div>';
+      }).join("");
+    } catch (e) {
+      stat.className = "stat err"; stat.textContent = "读取失败：" + e.message;
+    }
+  }
+  document.getElementById("load").onclick = load;
+  document.getElementById("refresh").onclick = load;
+  keyInput.addEventListener("keydown", function (e) { if (e.key === "Enter") load(); });
+  if (keyInput.value) load();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "channel": "stable",
+  "version": "1.0.0",
+  "build": "20261029e1",
+  "publishedAt": "2026-10-29T19:50:12+08:00",
+  "mandatory": false,
+  "minSupportedVersion": "0.9.0",
+  "size": 282495706,
+  "sha256": "d461271271ca0884c8051ae0a52862977b6e67ef28ad6ab696ab93378a53d501",
+  "url": "https://gok-vein-gambit-preview.onrender.com/downloads/GokVeinGambit-Setup-1.0.0.exe",
+  "title": "e1 更新",
+  "notes": []
+}

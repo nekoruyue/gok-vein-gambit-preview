@@ -149,6 +149,16 @@ function createAuth(opts) {
     catch (e) { return null; }
   }
 
+  async function stats() {
+    try {
+      await ready;
+      const r = await pool.query("SELECT COUNT(*)::int AS n FROM users");
+      return { backend: "postgres", users: r.rows[0] ? r.rows[0].n : 0 };
+    } catch (e) {
+      return { backend: "postgres", users: null, error: String(e && e.message || e).slice(0, 120) };
+    }
+  }
+
   async function handle(req, res, u) {
     const p = u.pathname;
     if (p === "/api/auth/register" && req.method === "POST") {
@@ -302,7 +312,7 @@ function createAuth(opts) {
     }
     return false;
   }
-  return { handle, sessionUser, getSave, pool };
+  return { handle, sessionUser, getSave, pool, stats };
 }
 
 module.exports = { createAuth };
