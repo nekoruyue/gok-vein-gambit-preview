@@ -8092,3 +8092,94 @@ body[data-screen="home"] .toast.show { transform: translateY(0); }
 #gok-update-badge.ready { color: #0a1017; background: linear-gradient(160deg, var(--gold-soft), var(--gold)); border-color: transparent; }
 #btn-settings.has-update { position: relative; }
 #btn-settings.has-update::after { content: ""; position: absolute; top: 10px; right: 12px; width: 7px; height: 7px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 3px rgba(192,80,77,.22); }
+
+/* 刻脉：盖在对方判定区的延时牌，走紫青色 */
+.hand-card.type-pulse { border-color:#7f7fd8; box-shadow:0 0 0 1px rgba(127,127,216,.35), 0 6px 18px rgba(40,30,90,.35); }
+.hand-card.type-pulse .card-art { filter:saturate(.9) hue-rotate(28deg); }
+.hand-card.type-pulse .card-type { color:#c9c9ff; }
+/* ===== 演出层：右下方结算条 ===== */
+.settle-strip {
+  position: fixed;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  bottom: 208px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  z-index: 55;
+}
+.settle-line {
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #f0e6d4;
+  background: rgba(20,17,14,.82);
+  border-left: 3px solid rgba(214,190,140,.7);
+  opacity: 0;
+  transform: translateX(14px);
+  transition: opacity .16s ease, transform .2s ease;
+  max-width: 44vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.settle-line.in { opacity: 1; transform: translateX(0); }
+.settle-line.out { opacity: 0; transform: translateX(-10px); }
+.settle-line.damage, .settle-line.bad { border-left-color: #d5675c; color: #ffd9d2; }
+.settle-line.heal, .settle-line.armor { border-left-color: #7fc0d6; color: #d7f0f8; }
+.settle-line.good { border-left-color: #9ac98a; color: #e2f5d8; }
+.settle-line.death { border-left-color: #8a8a8a; color: #d8d8d8; }
+@media (max-width: 720px) {
+  .settle-strip { left: 50%; right: auto; transform: translateX(-50%); bottom: 150px; }
+  .settle-line { font-size: 11.5px; max-width: 62vw; }
+}
+/* 演出层：结算条正在演的那一条日志会亮起来 */
+.log-entry.log-playing {
+  background: linear-gradient(90deg, rgba(214,190,140,.18), rgba(214,190,140,.02));
+  border-left: 2px solid rgba(214,190,140,.85);
+  padding-left: 6px;
+  border-radius: 3px;
+  transition: background .16s ease, border-color .16s ease;
+}
+.side-log-row.log-playing {
+  background: linear-gradient(90deg, rgba(214,190,140,.20), rgba(214,190,140,.02));
+  border-left: 2px solid rgba(214,190,140,.9);
+  border-radius: 3px;
+  transition: background .16s ease, border-color .16s ease;
+}
+/* 类型页签配色：不看顺序，按类型定色（刻脉蓝、债务卡红） */
+.codex-type-row .deck-filter[data-codex-filter="minion"] { color: #9fc3ff; }
+.codex-type-row .deck-filter[data-codex-filter="spell"] { color: #d6a8ff; }
+.codex-type-row .deck-filter[data-codex-filter="formation"] { color: #8fe4d2; }
+.codex-type-row .deck-filter[data-codex-filter="equipment"] { color: #e4c57f; }
+.codex-type-row .deck-filter[data-codex-filter="pulse"] { color: #7fb4ff; }
+.codex-type-row .deck-filter[data-codex-filter="debt"] { color: #ff9d9d; }
+
+/* 卡牌类型从五类变六类 */
+.manual-grid-6{grid-template-columns:repeat(5,minmax(0,1fr))}
+/* 关键词分组标题（规则手册里按六类分） */
+.keyword-group-title {
+  grid-column: 1 / -1;
+  margin: 14px 0 4px;
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: rgba(214,190,140,.85);
+  border-left: 3px solid rgba(214,190,140,.55);
+  padding-left: 8px;
+}
+/* 日志面板打开时，结算条整体左移，不压住日志 */
+@media (max-width: 900px) {
+}
+
+/* 新日志逐条出现 */
+.log-entry.log-in {
+  animation: log-line-in 0.22s ease-out both;
+}
+@keyframes log-line-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}

@@ -1,19 +1,13 @@
 {
   "channel": "preview",
-  "version": "0.9.12",
-  "build": "20261028e77",
-  "publishedAt": "2026-10-28T22:29:18+08:00",
+  "version": "1.0.1",
+  "build": "20261030e5",
+  "publishedAt": "2026-10-30T21:57:47+08:00",
   "mandatory": false,
   "minSupportedVersion": "0.9.0",
-  "size": 271161505,
-  "sha256": "a0e79653e19ccd19edfa739a69886b6381d6cad0a3972923df9b6f6a181aff5e",
-  "url": "https://gok-vein-gambit-preview.onrender.com/downloads/GokVeinGambit-Setup-0.9.12.exe",
-  "title": "e77 HUD 与开场修复",
-  "notes": [
-    "修复领袖栏生命爱心不居中：原来向上偏 1.5px，现在与护甲盾牌对齐",
-    "删除技能图标左侧的遗物小图标（装备信息只在英雄栏金色描边和长按信息里体现）",
-    "修复抽牌动画乱触发：手牌进场和真实抽牌两条动画合并成一条，一次抽牌只飞 1 张卡背",
-    "开场 CG 不再自动播放，只在设置里手动「重播开场」时才播",
-    "桌面版内嵌服务改用固定端口（47831），localStorage 不再每次启动清空：声音/演出等设置和「已看过开场」记录都能保留"
-  ]
+  "size": 282474944,
+  "sha256": "4c725c5a96bb362cc4bc98412912ccd17f28fd894ebfd6c1f438319c0a244b13",
+  "url": "https://gok-vein-gambit-preview.onrender.com/downloads/GokVeinGambit-Setup-1.0.1.exe",
+  "title": "1.0.1 布局修正",
+  "notes": []
 }

@@ -345,7 +345,7 @@
     mobileClickArmed: null,
     mobileWelcomeShown: false,
     mobilePreviewUid: null,
-    animSpeed: isPhoneLayout() ? 1.25 : (parseFloat(localStorage.getItem("gok_anim_speed")) || 0.7),
+    animSpeed: isPhoneLayout() ? 0.9 : (parseFloat(localStorage.getItem("gok_anim_speed")) || 0.7),
     tutorialCoachCollapsed: false,
     opponentOnline: true,
     onlineTurnKey: "",
@@ -513,7 +513,7 @@
       const hash = cardSoundHash(def.id);
       const rate = 0.90 + (hash % 13) / 100;
       const type = def.type;
-      const base = type === "spell" ? "spell" : type === "formation" ? "wave" : type === "equipment" ? "relic" : type === "debt" ? "coin" : "summon";
+      const base = type === "spell" ? "spell" : type === "pulse" ? "pulse" : type === "formation" ? "wave" : type === "equipment" ? "relic" : type === "debt" ? "coin" : "summon";
       // 战术牌执行时音效更轻，避免盖过日志与目标反馈。
       const gain = type === "spell" ? 0.38 : type === "formation" ? 0.46 : type === "equipment" ? 0.62 : 0.56;
       this.play(base, { rate, gain });
@@ -698,7 +698,7 @@
     const sm = $("start-menu");
     if (sm && !sm.hidden) { closeStartMenu(); return; }
     if (app.modalOpen) { closeModal(true); app.busy = false; if (app.screen === "game") renderGame(); return; }
-    if (app.logOpen) { app.logOpen = false; $("log-panel").classList.remove("open"); return; }
+    if (app.logOpen) { app.logOpen = false; $("log-panel").classList.remove("open"); document.body.classList.remove("log-open"); return; }
     if (app.settingsReturn === "game" && app.screen === "settings" && app.game) {
       app.settingsReturn = null; showScreen("game"); renderGame(); return;
     }
@@ -864,7 +864,7 @@
     const name = $("home-legendary-name");
     if (name) name.textContent = pick.name;
     const faction = $("home-legendary-faction");
-    const typeText = pick.type === "spell" ? "战术" : pick.type === "formation" ? "阵型" : pick.type === "equipment" ? "装备" : pick.type === "debt" ? "债务" : "随从";
+    const typeText = pick.type === "pulse" ? "刻脉卡" : pick.type === "spell" ? "战术卡" : pick.type === "formation" ? "阵型卡" : pick.type === "equipment" ? "装备卡" : pick.type === "debt" ? "债务" : "随从";
     const rarityText = pick.token ? "衍生卡" : (RARITY_NAMES[pick.rarity] || "档案卡");
     if (faction) faction.textContent = factionName(pick.faction) + " · " + rarityText + " · " + typeText + " · " + (pick.cost || 0) + " 行动力";
     const aside = $("home-legendary");
@@ -1543,14 +1543,15 @@
   // 阶段条：跟随引擎的真实 phaseLog 播放
   //   引擎每一回合都会留下 start→draw→play（结束回合再加 end），
   //   这里按顺序点亮，玩家就能看到「装备在回合开始结算 / 抽牌在抽牌阶段」。
-  var PHASE_ORDER = ["start", "draw", "play", "end"];
-  var PHASE_LABELS = { start: "回合开始", draw: "抽牌", play: "出牌", end: "结束" };
+  var PHASE_ORDER = ["start", "verdict", "draw", "play", "end"];
+  var PHASE_LABELS = { start: "回合开始", verdict: "判定", draw: "抽牌", play: "出牌", end: "结束" };
   var PHASE_DWELL = 300;   // 每个阶段的停留时间
   app.phaseShown = app.phaseShown || "play";
   app.phaseSeenLen = app.phaseSeenLen || 0;
   app.phaseQueue = app.phaseQueue || [];
   app.phaseTimer = null;
 
+  // 阶段演出已移除：卡牌区上方的阶段条已经显示当前阶段
   function paintPhaseStrip() {
     const host = $("phase-strip");
     if (!host) return;
@@ -1584,18 +1585,174 @@
     if (titleEl) titleEl.textContent = mineTurn ? "你的回合" : "对方回合";
     host.classList.toggle("foe-turn", !mineTurn);
     host.hidden = false;
+
   }
 
+  // ===== 演出层：阶段印章横幅 / 结算条 / 快进（引擎不等动画，这里只负责好看） =====
+  var SETTLE_MAX = 5;
+  app.settleTimers = app.settleTimers || [];
+  app.fastForward = !!app.fastForward;
+
+  function settleRoot() {
+    let host = $("settle-strip");
+    if (host) return host;
+    host = el("div", "settle-strip");
+    host.id = "settle-strip";
+    document.body.appendChild(host);
+    return host;
+  }
+
+  function pushSettleLine(text, tone) {
+    if (!text) return;
+    if (app.animSpeed <= 0.01) return;          // 关动画时不演
+    const host = settleRoot();
+    const line = el("div", "settle-line " + (tone || ""), text);
+    host.appendChild(line);
+    while (host.children.length > SETTLE_MAX) host.removeChild(host.firstChild);
+    requestAnimationFrame(() => line.classList.add("in"));
+    const life = animMs(app.fastForward ? 500 : 1800);
+    setTimeout(() => {
+      line.classList.remove("in");
+      line.classList.add("out");
+      setTimeout(() => { if (line.parentElement) line.parentElement.removeChild(line); }, 260);
+    }, life);
+  }
+
+  // 把一批事件折成结算条：同父级同类连在一起只出一条（群伤不再刷屏）
+  function planSettleLines(fresh) {
+    const out = [];
+    const nameOf = (uid) => {
+      if (!uid) return "";
+      if (String(uid).indexOf("hero:") === 0) return "领袖";
+      const game = app.game;
+      if (!game) return "随从";
+      for (const pl of game.players) {
+        for (const m of pl.minions || []) {
+          if (m && m.uid === uid) return (D.CARDS[m.cardId] && D.CARDS[m.cardId].name) || "随从";
+        }
+      }
+      return "随从";
+    };
+    let lastKey = null, lastLine = null;
+    for (const ev of fresh) {
+      if (!ev.structured) continue;
+      const kind = ev.kind || "";
+      let text = null, tone = kind;
+      if (kind === "damage") {
+        text = (ev.label && ev.label !== "战斗" ? ev.label + " → " : "") + nameOf(ev.targetUid) + " -" + (ev.amount || 0);
+      } else if (kind === "armor") {
+        text = (ev.label ? ev.label + " → " : "") + "护甲 +" + (ev.amount || 0);
+      } else if (kind === "heal") {
+        text = (ev.label ? ev.label + " → " : "") + nameOf(ev.targetUid) + " +" + (ev.amount || 0);
+      } else if (kind === "draw") {
+        text = (ev.label ? ev.label + " → " : "") + "抽牌";
+      } else if (kind === "summon") {
+        text = (ev.label ? ev.label + " → " : "") + "入场";
+      } else if (kind === "death") {
+        text = nameOf(ev.targetUid) + " 阵亡";
+      } else if (kind === "freeze") {
+        text = (ev.label ? ev.label + " → " : "") + "冻结";
+      } else if (kind === "verdict") {
+        const def = D.CARDS[ev.cardId];
+        text = "判定「" + ((def && def.name) || "刻脉") + "」：" + (ev.ok ? "成立" : "不成立");
+        tone = ev.ok ? "bad" : "good";
+      }
+      if (!text) continue;
+      const key = kind + "|" + (ev.label || "") + "|" + tone;
+      if (key === lastKey && lastLine && /-\d+$/.test(lastLine.text)) {
+        // 同一批同类（如群伤）：并成一条，标数量
+        const m = lastLine.text.match(/x(\d+)$/);
+        if (m) lastLine.text = lastLine.text.replace(/x\d+$/, "x" + (Number(m[1]) + 1));
+        else lastLine.text = lastLine.text + " x2";
+        continue;
+      }
+      lastKey = key;
+      lastLine = { text: text, tone: tone };
+      out.push(lastLine);
+    }
+    return out;
+  }
+
+  // 结算条与日志联动：第 i 条结算出现时，点亮第 i 条「本轮新增」日志
+  // 高亮记在状态里，日志重渲染时按状态补上（否则刚点亮就被刷新冲掉）
+  // 日志逐条出现时，高亮就落在最新出现的那一行上
+  function highlightNewestRow() {
+    const host = $("side-log");
+    const list = $("log-list");
+    const rows = (host && host.querySelectorAll(".side-log-row")) || [];
+    const entries = list ? list.querySelectorAll(".log-entry") : [];
+    const picks = [];
+    if (rows.length) picks.push(rows[rows.length - 1]);
+    if (entries.length) picks.push(entries[entries.length - 1]);
+    app.logHiUntil = Date.now() + animMs(app.fastForward ? 420 : 900);
+    if (!picks.length) return;
+    for (const pick of picks) pick.classList.add("log-playing");
+    setTimeout(() => { for (const pick of picks) pick.classList.remove("log-playing"); }, animMs(app.fastForward ? 420 : 900));
+  }
+  function highlightLogRow(idx, total) {
+    app.logHiIdx = idx;
+    app.logHiTotal = Math.max(1, total || 1);
+    app.logHiUntil = Date.now() + animMs(app.fastForward ? 420 : 900);
+    applyLogHighlight();
+    setTimeout(() => { app.logHiIdx = -1; applyLogHighlight(); }, animMs(app.fastForward ? 420 : 900));
+  }
+
+  function applyLogHighlight() {
+    const host = $("side-log");
+    if (!host) return;
+    const rows = host.querySelectorAll(".side-log-row, .log-entry");
+    rows.forEach((r, k) => {
+      const want = app.logHiIdx >= 0 && Date.now() < (app.logHiUntil || 0)
+        ? rows.length - (app.logHiTotal || 1) + app.logHiIdx
+        : -1;
+      r.classList.toggle("log-playing", k === want);
+    });
+  }
+
+  function playSettleLines(fresh) {
+    const plan = planSettleLines(fresh);
+    if (!plan.length) return;
+    // 新一批结算开始：先清掉上一批还没走完的，避免新旧混在一起
+    const __host = $("settle-strip");
+    if (__host && app.settleTimers.length) { for (const t of app.settleTimers) clearTimeout(t); app.settleTimers = []; clear(__host); }
+    const gap = animMs(app.fastForward ? 90 : 320);
+    plan.forEach((item, i) => {
+      const t = setTimeout(() => { pushSettleLine(item.text, item.tone); highlightNewestRow(); }, i * gap);
+      app.settleTimers.push(t);
+    });
+  }
+
+  // 点一下：跳过剩下的结算条；按住空格：4 倍速；松手恢复
+  if (!app.settleBound) {
+    app.settleBound = true;
+    document.addEventListener("pointerdown", () => {
+      if (!app.settleTimers.length) return;
+      for (const t of app.settleTimers) clearTimeout(t);
+      app.settleTimers = [];
+      const host = $("settle-strip");
+      if (host) clear(host);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space" && e.target === document.body) { app.fastForward = true; }
+    });
+    document.addEventListener("keyup", (e) => {
+      if (e.code === "Space") app.fastForward = false;
+    });
+  }
   function drainPhaseQueue() {
     if (app.phaseTimer) return;
     if (!app.phaseQueue.length) return;
     const step = () => {
       const next = app.phaseQueue.shift();
       if (!next) { app.phaseTimer = null; return; }
+      // 这一阶段有没有产生结算：下一阶段的 logLen 与它相同就是安静的，快闪过去
+      const after = app.phaseQueue[0];
+      const quiet = !!(after && after.logLen != null && next.logLen != null && after.logLen === next.logLen);
+      const dwell = app.fastForward ? 80 : (quiet ? 120 : PHASE_DWELL);
       app.phaseShown = next;
       paintPhaseStrip();
-      if (app.phaseQueue.length) app.phaseTimer = setTimeout(step, PHASE_DWELL);
-      else { app.phaseTimer = setTimeout(() => { app.phaseTimer = null; drainPhaseQueue(); }, PHASE_DWELL); }
+      if (app.phaseQueue.length) app.phaseTimer = setTimeout(step, dwell);
+      else { app.phaseTimer = setTimeout(() => { app.phaseTimer = null; drainPhaseQueue(); }, dwell); }
     };
     step();
   }
@@ -2514,6 +2671,14 @@
     armor.appendChild(el("b", null, String(player.armor)));
     armor.appendChild(el("small", null, "护甲"));
     vitals.appendChild(armor);
+    const verdictN = (player.verdictZone || []).length;
+    if (verdictN > 0) {
+      const vbox = el("span", "hs-vital hs-verdict");
+      vbox.appendChild(el("b", null, String(verdictN)));
+      vbox.appendChild(el("small", null, "刻脉"));
+      vbox.title = "判定区有 " + verdictN + " 张刻脉，下回合开始翻开判定";
+      vitals.appendChild(vbox);
+    }
     vitals.appendChild(heroBadges);
     const meta = el("span", "hs-hero-counts");
     const handMeta = el("span", "hs-hero-count hs-hero-hand");
@@ -2665,7 +2830,7 @@
       });
       const debtEntry = (player.hand || []).find((c) => c.isDebt);
       const debtCards = debtEntry ? [D.CARDS[debtEntry.cardId]].filter(Boolean) : [];
-      loadout.appendChild(makeGroup("装备", "equip", 2, equipCards));
+      loadout.appendChild(makeGroup("装备卡", "equip", 2, equipCards));
       loadout.appendChild(makeGroup("阵位", "formation", 3, formationCards));
       if (debtCards.length) loadout.appendChild(makeGroup("债务卡", "debt", 1, debtCards));
       container.appendChild(loadout);
@@ -2736,8 +2901,9 @@
       }
     }
 
-    container.onmouseenter = () => { if (!isPhoneLayout()) showHeroTooltip(container, player); };
-    container.onmouseleave = hideHeroTooltip;
+    // 悬停不再弹出大块信息（挡视野），点一下看详情即可
+    container.onmouseenter = null;
+    container.onmouseleave = null;
     let heroPress = null;
     let heroPressTimer = null;
     const clearHeroPress = () => {
@@ -2781,7 +2947,7 @@
       container.addEventListener("dragover", (ev) => {
         const attackOk = app.draggingAttacker && canDropAttackOn("hero");
         const cardDef = app.draggingUid ? handDef(app.draggingUid) : null;
-        const cardOk = !!(cardDef && (cardDef.type === "spell" || cardDef.type === "equipment" || cardDef.type === "debt") &&
+        const cardOk = !!(cardDef && (cardDef.type === "spell" || cardDef.type === "pulse" || cardDef.type === "equipment" || cardDef.type === "debt") &&
           E.getPlayOptions(app.game, app.game.current, app.draggingUid).ok);
         if (!attackOk && !cardOk) return;
         ev.preventDefault();
@@ -2795,7 +2961,7 @@
         container.classList.remove("drop-hover");
         if (app.draggingAttacker && canDropAttackOn("hero")) { performDragAttack("hero"); return; }
         const cardDef = app.draggingUid ? handDef(app.draggingUid) : null;
-        if (cardDef && (cardDef.type === "spell" || cardDef.type === "equipment" || cardDef.type === "debt")) {
+        if (cardDef && (cardDef.type === "spell" || cardDef.type === "pulse" || cardDef.type === "equipment" || cardDef.type === "debt")) {
           playCardFromDrop(app.draggingUid);
           return;
         }
@@ -2856,12 +3022,6 @@
         const slot = el("div", "zone-slot");
         slot.dataset.slot = String(i);
         zone.appendChild(slot);
-      }
-      const seal = (app.game && Array.isArray(app.game.seals) ? app.game.seals : []).find(s => s.owner === player.index && s.lane === z);
-      if (seal) {
-        const badge = el("div", "lane-seal", "刻脉 " + (seal.threshold || 4));
-        badge.title = "脉痕：流脉达到 " + (seal.threshold || 4) + " 时触发刻脉";
-        zone.appendChild(badge);
       }
       const minions = player.board[z] || [];
       const laneName = E.ZONE_NAMES[z];
@@ -3267,7 +3427,7 @@
   }
 
   function typeLine(def, m) {
-    return def.type === "spell" ? "战术" : (def.type === "equipment" || def.type === "relic") ? "装备" : def.type === "formation" ? "阵型" : def.type === "debt" ? "债务卡" : def.type === "leader" ? "领袖" : "随从";
+    return def.type === "pulse" ? "刻脉卡" : def.type === "spell" ? "战术卡" : (def.type === "equipment" || def.type === "relic") ? "装备卡" : def.type === "formation" ? "阵型卡" : def.type === "debt" ? "债务卡" : def.type === "leader" ? "领袖" : "随从卡";
   }
 
 
@@ -3481,6 +3641,7 @@
     const handCounts = {};
     for (const pl of s.players) handCounts[pl.index] = pl.hand.length;
     const flownCount = {};
+    try { playSettleLines(fresh); } catch (err) { /* 演出失败不影响对局 */ }
     app.floatSeq = 0;   // 每批事件重新计数，飘字才能逐条错开
     app.drawSeq = 0;
     for (const ev of fresh) {
@@ -3764,7 +3925,7 @@
   const KEYWORD_HELP = {
     "登场": "打出时触发一次。",
     "余响": "死亡时触发一次。",
-    "守备": "保护同阵位其他友方随从；自身仍可被攻击。",
+    "守备": "保护同阵位友方；对位有守备时打不到领袖。",
     "先遣": "登场当回合可攻击，但不能攻击敌方领袖。",
     "被动": "满足条件时自动生效。",
     "冻结": "目标失去下一次攻击。",
@@ -3776,8 +3937,8 @@
     "涨脉": "本回合行动力 +X，流脉 +X；行动力不保留到下一回合。",
     "血祭": "支付生命来触发。",
     "吞噬": "消灭一个友方随从，获得其攻击和生命。",
-    "格挡": "下一次伤害 -2，然后移除。",
-    "连携": "同阵位有友方随从时，本回合首次攻击 +1；不增加攻击次数。",
+    "格挡": "先抵掉 2 点伤害；每回合开始自动刷新。",
+    "连携": "同阵位有另一个友方随从时，每次攻击 +1。",
     "蚀毒": "伤害直接消灭随从。",
     "血偿": "溢出伤害转化为护甲。",
     "回潮": "第一次死亡后以 1 血回场一次。",
@@ -3785,11 +3946,11 @@
     "逆脉": "消耗流脉触发；不足时消耗到 0 仍可触发，0 点无效。",
     "镇脉": "消耗流脉换等量护甲；不足时只获得剩余部分。",
     "压脉": "消耗流脉对敌方领袖造成等量伤害；不足时整张无效。",
-    "悬赏": "将一个目标标记为悬赏名单；该标记本身不触发死亡效果。",
-    "装备": "打出后持续生效，不设件数上限，想带几件都行。",
+    "悬赏": "给随从打上悬赏标记，它死亡时按卡面结算。",
+    "装备": "打出后持续生效；场上最多同时 2 件，第 3 件挤掉最早的。",
     "复制": "复制体默认继承目标当前攻击、最大生命、关键词和效果，不复制已受伤；复制体进场通常不触发登场。",
-    "恢复溢出": "治疗超过生命上限的部分默认消失；卡面写明“溢出转护甲”时，未恢复的点数改为护甲。",
-    "刻脉": "在目标阵位刻下脉痕；共享流脉首次达到或越过阈值时触发该阵位的效果，然后脉痕消失。每个阵位最多一道脉痕。",
+    "刻脉": "盖在对手判定区的暗牌，最多 1 张。对方完整过一个回合后翻开，条件成立就吃惩罚，判完进弃牌堆。",
+    "墓地": "随从死亡后进的地方，双方共用；战术、阵型、装备用完不进墓地。",
     "变形": "用新随从或衍生物替换目标；被替换的随从不视为死亡，不触发余响。",
     "获得控制权": "把敌方随从移到自己的空阵位；没有空阵位时无法获得。"
   };
@@ -3797,7 +3958,7 @@
     "格挡": "格挡会先替你挡下下一次伤害 2 点，然后消失。它适合保护关键随从或领袖，但不是永久免疫；连续的小伤害会先磨掉格挡，再用真实伤害打进来。",
     "守备": "守备随从像一堵门，会挡在同阵位其他友方随从前面。想攻击后面的目标，必须先处理守备；守备自己仍然可以被攻击，也会受到战术牌和效果伤害。",
     "先遣": "先遣随从登场当回合就能攻击，但只能打随从，不能直接打敌方领袖。它适合抢节奏、换掉对方小随从，不要把它当成直接斩杀。",
-    "连携": "连携要求同阵位有另一个友方随从。满足时，本回合第一次攻击额外 +1 攻击，但不会增加攻击次数；孤零零站一个随从时不会触发。",
+    "连携": "连携要同阵位有另一个友方随从。满足时这个随从每次攻击都额外 +1 攻击力，攻击次数不变；阵位只剩它自己时不会触发。",
     "血偿": "血偿会把溢出的伤害转化成护甲。比如 5 点攻击打 3 血随从，多出的 2 点会变成你的护甲，适合用大随从清理小随从。",
     "蚀毒": "蚀毒随从造成伤害时，目标会被直接消灭，不管目标还剩多少生命。它对高血量大随从特别有效，但打领袖不会直接获胜，别把毒伤浪费在脸上。",
     "隐匿": "隐匿让敌方无法选中这个随从。它适合安全铺场、等待增益或躲开解牌；一旦主动攻击或造成伤害，隐匿就会解除。",
@@ -3820,15 +3981,15 @@
     "装备": "装备会持续生效，最多同时装备两件。装备不占手牌，但会被拆装备效果克制；同名装备通常不重复叠加，先看清卡面说明。",
     "被动": "被动不需要主动使用，满足条件时自动生效。它可能影响出牌、攻击、抽牌或阵位，读卡时要优先确认触发条件；没有满足条件时就不生效。",
     "复制": "复制会生成一张与目标相同或相近的卡。复制体通常继承目标当前攻击、最大生命、关键词和效果，但不复制已经受到的伤害；复制体进场不会触发登场。复制进手牌时，按目标卡牌的基础数值生成，卡面标注的行动力调整优先。",
-    "恢复溢出": "治疗会先把生命补到上限，多出的部分默认消失。若卡面写明“溢出转护甲”，未实际恢复的点数会变成等量护甲；满血时使用也能拿到护甲，但不会超过卡面数值。",
     "变形": "变形会用新的随从或衍生物替换目标。被替换的随从不算死亡，不会触发余响；新单位留在原阵位，并替换原卡的关键词、攻击和生命。",
-    "刻脉": "刻脉会在目标阵位刻下一道脉痕。共享流脉首次达到或越过标注数字时，触发该阵位的刻脉效果，然后脉痕消失；每个阵位最多一道脉痕，刻脉不会被沉默或偷取。",
+    "刻脉": "刻脉是一种延迟生效的敌方惩罚牌：打出时暗置在对手的判定区，对手那一回合看不见条件也判定不了。要等对方完整过完一个回合，再下一次回合开始才翻开判定：卡面条件成立就吃惩罚，不成立则什么都没有。判完的牌进弃牌堆，不会留在场上。判定区同时只放 1 张，新盖的会把旧的挤掉——所以别在对手已经有一张时急着再盖。",
+    "墓地": "墓地只收死掉的随从，双方共用一个墓地，牌库里用过的战术、阵型、装备不会进去。现在有些中立卡按墓地里的随从数量结算（比如余响看墓地里够不够 3 / 4 个随从），所以清场和交换也会影响这些卡的收益。",
     "获得控制权": "获得控制权会把敌方随从移到你的场上；目标必须有一个空的阵位，否则无法获得。控制权转移不是复制，原随从不会留在敌方场上。",
   };
   const KEYWORD_ICONS = {
     "登场": "battlecry", "余响": "deathrattle", "守备": "taunt", "先遣": "charge",
     "被动": "passive", "冻结": "freeze", "沉默": "silence", "隐匿": "stealth",
-    "复制": "passive", "恢复溢出": "heal", "变形": "damage", "获得控制权": "damage", "刻脉": "vein",
+    "复制": "passive", "恢复溢出": "heal", "变形": "damage", "获得控制权": "damage", "刻脉": "vein", "判定": "vein", "判定区": "vein", "墓地": "passive",
     "引脉": "vein", "预兆": "discover", "掘脉": "excavate", "涨脉": "vein", "血祭": "blood",
     "吞噬": "damage", "格挡": "armor", "连携": "windfury", "蚀毒": "deathrattle",
     "血偿": "heal", "回潮": "passive", "固定": "passive", "逆脉": "vein",
@@ -3849,7 +4010,7 @@
     "heal","damage","summon","action","spell","minion","trap"
   ]);
   const KEYWORD_COLORS = {
-    "复制": "#b7d8ff", "恢复溢出": "#8ee8c8", "变形": "#d7a7ff", "获得控制权": "#ffb0a0", "刻脉": "#f2c66d",
+    "复制": "#b7d8ff", "恢复溢出": "#8ee8c8", "变形": "#d7a7ff", "获得控制权": "#ffb0a0", "刻脉": "#7fb4ff", "判定": "#7fb4ff", "判定区": "#7fb4ff", "墓地": "#c9b08a",
     "登场": "#f2c66d", "余响": "#c49bff", "守备": "#82b7ff", "先遣": "#ff9b5e",
     "被动": "#8fd9cd", "冻结": "#8de8ff", "沉默": "#b6c0cc", "隐匿": "#d1a1ff",
     "引脉": "#4fe0c0", "预兆": "#9cc7ff", "掘脉": "#ffc86b", "涨脉": "#f2c66d", "血祭": "#ff7a7a",
@@ -3878,19 +4039,33 @@
 
   const TUTORIAL_KEYWORD_ORDER = [
     "格挡", "守备", "先遣", "连携", "血偿", "蚀毒", "隐匿", "回潮", "冻结", "沉默",
-    "登场", "余响", "引脉", "掘脉", "涨脉", "血祭", "预兆", "吞噬", "复制", "恢复溢出", "变形", "获得控制权", "刻脉",
+    "登场", "余响", "引脉", "掘脉", "涨脉", "血祭", "预兆", "吞噬", "复制", "变形", "获得控制权", "刻脉", "墓地",
     "逆脉", "镇脉", "压脉", "悬赏", "固定", "装备", "被动"
   ];
   const CARD_TAG_ALLOWLIST = new Set(TUTORIAL_KEYWORD_ORDER);
   const TUTORIAL_KEYWORD_ALIASES = {};
 
+  // 关键词分组：跟规则手册的六类一致
+  var KEYWORD_GROUP_ORDER = [
+    { title: "出场", keys: ["登场", "余响", "先遣", "连携", "被动"] },
+    { title: "防守", keys: ["守备", "格挡", "隐匿", "冻结", "沉默"] },
+    { title: "流脉", keys: ["引脉", "掘脉", "涨脉", "逆脉", "镇脉", "压脉"] },
+    { title: "资源与代价", keys: ["血祭", "吞噬", "血偿", "蚀毒", "回潮", "复制"] },
+    { title: "牌库与判定", keys: ["预兆", "刻脉", "墓地", "变形", "获得控制权"] },
+    { title: "站场与装备", keys: ["装备", "固定", "悬赏"] }
+  ];
   function renderTutorialKeywords(hostEl) {
     const host = hostEl || $("tutorial-keywords");
     if (!host) return;
     clear(host);
-    for (const label of TUTORIAL_KEYWORD_ORDER) {
-      const desc = KEYWORD_TUTORIAL[label] || KEYWORD_HELP[label];
-      if (!desc) continue;
+    const listed = new Set();
+    for (const group of KEYWORD_GROUP_ORDER) {
+      const head = el("div", "keyword-group-title", group.title);
+      host.appendChild(head);
+      for (const label of group.keys) {
+        listed.add(label);
+        const desc = KEYWORD_TUTORIAL[label] || KEYWORD_HELP[label];
+        if (!desc) continue;
       const item = el("div", "keyword-glossary-item");
       const iconName = KEYWORD_ICONS[label];
       if (iconName) {
@@ -3905,6 +4080,19 @@
       applyKeywordColor(glossaryName, label);
       applyKeywordColor(item, label);
       body.appendChild(glossaryName);
+      body.appendChild(el("span", null, desc));
+        item.appendChild(body);
+        host.appendChild(item);
+      }
+    }
+    // 分组里没列到的关键词兜底追加，避免以后新增词条看不到
+    for (const label of TUTORIAL_KEYWORD_ORDER) {
+      if (listed.has(label)) continue;
+      const desc = KEYWORD_TUTORIAL[label] || KEYWORD_HELP[label];
+      if (!desc) continue;
+      const item = el("div", "keyword-glossary-item");
+      const body = el("div", "keyword-glossary-copy");
+      body.appendChild(el("strong", null, label));
       body.appendChild(el("span", null, desc));
       item.appendChild(body);
       host.appendChild(item);
@@ -4626,12 +4814,53 @@
     end.onclick = () => endTurn();
   }
 
+  const LOG_STREAM_INTERVAL = 110;
+  function logStreamGap() { return app.fastForward ? 40 : LOG_STREAM_INTERVAL; }
+  function logRowFor(entry, extraClass) {
+    const icons = { turn: "◈", play: "▸", summon: "▣", buff: "↑", attack: "⚔", damage: "✸", heal: "✚", armor: "◈", death: "✝", deathrattle: "◌", trigger: "◇", vein: "≈", draw: "▤", discover: "◇", mulligan: "↻", burn: "✕", blood: "♨", heroPower: "✦", spell: "✦", effect: "·" };
+    const row = el("div", "log-entry " + (entry.type || "") + (entry.hidden ? " hidden-info" : "") + (extraClass ? " " + extraClass : ""));
+    row.appendChild(el("span", "log-icon", icons[entry.type] || "·"));
+    row.appendChild(el("span", "log-round", "R" + entry.round));
+    row.appendChild(document.createTextNode(entry.text));
+    const logDef = entry.cardId && D.CARDS[entry.cardId];
+    if (logDef) {
+      const info = el("button", "log-card-btn", "查看效果");
+      info.title = logDef.name + "：\n" + (logDef.text || "—");
+      info.onclick = (ev) => { ev.stopPropagation(); openCodexCard(logDef, "关闭"); };
+      row.appendChild(info);
+    }
+    return row;
+  }
+  function pumpLogQueue() {
+    if (app.logPumpTimer) return;
+    const step = () => {
+      const list = $("log-list");
+      const queue = app.logQueue || [];
+      if (!list || !queue.length) { app.logPumpTimer = null; return; }
+      const entry = queue.shift();
+      list.appendChild(logRowFor(entry, "log-in"));
+      // 结算条正在播放时，后到的行也要亮
+      if (Date.now() < (app.logHiUntil || 0)) {
+        const rows2 = list.querySelectorAll(".log-entry");
+        const last = rows2[rows2.length - 1];
+        if (last) {
+          last.classList.add("log-playing");
+          setTimeout(() => last.classList.remove("log-playing"), animMs(app.fastForward ? 420 : 900));
+        }
+      }
+      list.scrollTop = list.scrollHeight;
+      // 新追加的日志行也要跟着结算条高亮
+      try { applyLogHighlight(); } catch (err) {}
+      const mini = $("log-mini");
+      if (mini) mini.textContent = entry.text;
+      app.logPumpTimer = setTimeout(step, logStreamGap());
+    };
+    app.logPumpTimer = setTimeout(step, 0);
+  }
   function renderLog(s) {
     const list = $("log-list");
     if (!list) return;
-    clear(list);
     const privateTypes = ["draw", "discover", "burn", "mulligan"];
-    const icons = { turn: "◈", play: "▸", summon: "▣", buff: "↑", attack: "⚔", damage: "✸", heal: "✚", armor: "◈", death: "✝", deathrattle: "◌", trigger: "◇", vein: "≈", draw: "▤", discover: "◇", mulligan: "↻", burn: "✕", blood: "♨", heroPower: "✦", spell: "✦" };
     const entries = s.log.slice(-100).map((entry) => {
       const hidden = entry.player != null && entry.player !== app.viewer && privateTypes.indexOf(entry.type) >= 0;
       if (!hidden) return entry;
@@ -4641,45 +4870,25 @@
         : "对手手牌已满，一张牌被烧掉。";
       return Object.assign({}, entry, { text: hiddenText, hidden: true });
     });
-    const before = app.logEntriesSeen == null ? s.log.length : app.logEntriesSeen;
-    const fresh = Math.max(0, Math.min(entries.length, s.log.length - before));
-    app.logEntriesSeen = s.log.length;
-    entries.forEach((entry, index) => {
-      const row = el("div", "log-entry " + (entry.type || "") + (entry.hidden ? " hidden-info" : "") + (index >= entries.length - fresh ? " log-new" : ""));
-      row.appendChild(el("span", "log-icon", icons[entry.type] || "·"));
-      row.appendChild(el("span", "log-round", "R" + entry.round));
-      row.appendChild(document.createTextNode(entry.text));
-      const logDef = entry.cardId && D.CARDS[entry.cardId];
-      if (logDef) {
-        const info = el("button", "log-card-btn", "查看效果");
-        info.title = logDef.name + "：\n" + (logDef.text || "—");
-        info.onclick = (ev) => { ev.stopPropagation(); openCodexCard(logDef, "关闭"); };
-        row.appendChild(info);
-      }
-      list.appendChild(row);
-    });
-    list.scrollTop = list.scrollHeight;
+    // 日志被裁剪 / 换局 / 首次渲染：整体重建，其余情况一律增量追加并按节奏逐条出现
+    const rendered = app.logRenderedCount || 0;
+    if (rendered === 0 || rendered > entries.length || app.logRenderedLogLen > s.log.length) {
+      clear(list);
+      app.logRenderedCount = 0;
+      app.logQueue = [];
+      if (app.logPumpTimer) { clearTimeout(app.logPumpTimer); app.logPumpTimer = null; }
+    }
+    app.logRenderedLogLen = s.log.length;
+    const pending = entries.slice(app.logRenderedCount);
+    app.logRenderedCount = entries.length;
+    if (pending.length) {
+      app.logQueue = (app.logQueue || []).concat(pending);
+      pumpLogQueue();
+    }
     const mini = $("log-mini");
     if (mini) {
       const latest = entries[entries.length - 1];
-      const prev = entries[entries.length - 2];
-      mini.textContent = "";
-      mini.appendChild(el("b", null, "日志"));
-      if (latest) {
-        const main = el("span", "log-ticker-main");
-        main.appendChild(el("i", "log-ticker-icon", icons[latest.type] || "·"));
-        main.appendChild(document.createTextNode(latest.text));
-        mini.appendChild(main);
-        if (prev) {
-          const old = el("span", "log-ticker-prev");
-          old.appendChild(el("i", "log-ticker-icon", icons[prev.type] || "·"));
-          old.appendChild(document.createTextNode("R" + prev.round + " · " + prev.text));
-          mini.appendChild(old);
-        }
-      } else {
-        mini.appendChild(el("span", "log-ticker-main", "等待第一条推演记录…"));
-      }
-      mini.title = "点击查看完整推演日志";
+      if (latest) mini.textContent = latest.text;
     }
   }
 
@@ -4726,27 +4935,11 @@
     setTimeout(() => { if (pop.parentNode) pop.parentNode.removeChild(pop); }, 900);
   }
 
-  function showPlayArc(def, sourceRect, point) {
-    if (!sourceRect) return;
-    const ghost = el("div", "play-ghost type-" + def.type);
-    ghost.style.width = Math.min(120, sourceRect.width) + "px";
-    ghost.style.height = Math.min(156, sourceRect.height) + "px";
-    ghost.style.left = sourceRect.left + "px";
-    ghost.style.top = sourceRect.top + "px";
-    { const url = cardArtUrl(def); if (url) ghost.style.backgroundImage = "url('" + url + "')"; }
-    ghost.appendChild(el("span", null, def.name));
-    document.body.appendChild(ghost);
-    requestAnimationFrame(() => {
-      ghost.style.left = (point.x - 28) + "px";
-      ghost.style.top = (point.y - 38) + "px";
-      ghost.style.transform = "scale(.34) rotate(-8deg)";
-      ghost.style.opacity = "0";
-    });
-    setTimeout(() => { if (ghost.parentNode) ghost.parentNode.removeChild(ghost); }, animMs(def.type === "spell" ? 1800 : 1000));
-  }
+  // 已移除：出牌时的半透明卡牌飞行残影（改为结算条 / 浮动小日志来表现）
+  function showPlayArc() { return; }
 
   function playRevealType(def) {
-    return def.type === "spell" ? "战术" : (def.type === "equipment" || def.type === "relic") ? "装备" : def.type === "formation" ? "阵型" : def.type === "debt" ? "债务卡" : "随从";
+    return def.type === "pulse" ? "刻脉" : def.type === "spell" ? "战术" : (def.type === "equipment" || def.type === "relic") ? "装备" : def.type === "formation" ? "阵型" : def.type === "debt" ? "债务卡" : "随从";
   }
 
   function showCardReveal(def, side) {
@@ -5878,7 +6071,7 @@
         }
         card.appendChild(art);
         card.appendChild(el("strong", null, def.name));
-        card.appendChild(el("small", null, (def.type === "spell" ? "战术" : def.type === "formation" ? "阵型" : def.type === "equipment" ? "装备" : "随从") + " · " + ((def.cost || 0) + penalty) + " 行动力"));
+        card.appendChild(el("small", null, (def.type === "pulse" ? "刻脉卡" : def.type === "spell" ? "战术卡" : def.type === "formation" ? "阵型卡" : def.type === "equipment" ? "装备卡" : "随从卡") + " · " + ((def.cost || 0) + penalty) + " 行动力"));
         const txt = el("p", null, def.text || "—");
         card.appendChild(txt);
         card.onclick = () => {
@@ -6031,6 +6224,7 @@
     const panel = $("log-panel");
     const backdrop = $("log-backdrop");
     if (panel) panel.classList.toggle("open", app.logOpen);
+    document.body.classList.toggle("log-open", app.logOpen);
     if (backdrop) {
       backdrop.hidden = !app.logOpen;
       backdrop.classList.toggle("show", app.logOpen);
@@ -7481,7 +7675,7 @@
       "记住一个最稳的新手顺序：低费随从站场 → 用战术处理威胁 → 随从交换 → 领袖技能 → 结束回合。先站住，再谈斩杀。"
     ] },
     { id: "advanced", level: 1, title: "游戏进阶规则", desc: "五类卡牌 · 关键词 · 流脉事件", xp: 120, keywords: true, body: [
-      "卡牌现在分五类：随从、战术、阵型、装备、债务卡。随从站场，战术一次性结算，阵型挂在一个阵位上持续生效，装备给领袖持续增益。",
+      "卡牌现在分六类：随从卡、战术卡、阵型卡、装备卡、债务卡、刻脉卡。随从卡站场，战术卡一次性结算，阵型卡挂在一个阵位上持续生效，装备卡给领袖持续增益，债务卡塞进对手牌库，刻脉卡暗置在对方判定区等待判定。",
       "债务卡打出后会洗进对手牌库；对手抽到并打出时才开始任务，完不成会在回合结束受到伤害。它更像干扰，不是稳定直伤。",
       "装备最多同时两件，阵型最多三张；阵型只影响一个阵位，装备影响全局，价值不能直接对比。",
       "流脉阈值不是背景数字：4 震荡会伤所有随从，7 裂隙会伤双方领袖，10 魔物潮伤害更高，12 回流清空并重新积累。斩杀前先看流脉会不会先把你送走。",
@@ -7489,9 +7683,21 @@
       "对局模式分单人 AI、在线匹配、组队码房间和局域网。游客可以休闲和房间，排位必须登录账号；其他模式仍在实验，遇到问题直接返回。",
       "进阶的目标不是背规则，而是每回合问自己：场面站住了吗？关键威胁解掉了吗？下回合对手最可能做什么？"
     ] },
+    { id: "phase", level: 1, title: "回合阶段与刻脉卡", desc: "五阶段 · 判定 · 刻脉卡 · 墓地", xp: 120, body: [
+      "一个完整回合拆成五个阶段，按顺序走：回合开始 → 判定 → 抽牌 → 出牌 → 结束。手牌上方那条阶段条就是当前进度，正在走的阶段会亮。",
+      "回合开始：回合数 +1、行动力上限 +1 并回满，装备光环、阵型倒计时、持续效果都在这一段结算。这一段没有东西要结算时会很快过去，不用干等。",
+      "判定：只看你自己的判定区。里面若有对手盖的刻脉卡，就在这一刻翻开，按卡面写的条件比一次——成立就吃惩罚，不成立什么都不会发生。没有刻脉卡时这个阶段一闪就过。",
+      "抽牌：自动抽 1 张，抽牌触发的被动也在这里结算。出牌：你打牌、上随从、攻击、用领袖技能。结束：回合结束时的效果（洗牌、手牌上限）走完，把回合交给对手。",
+      "刻脉卡是一种延迟生效的敌方惩罚牌：打出时暗置在对手的判定区，对手那一回合看不见条件、也没法立刻躲。要等对方完整过完一个回合，再下一次回合开始才翻开判定。",
+      "判定区同时只放 1 张。对手已经有一张时你再盖，新盖的会把旧的挤掉，旧的直接进弃牌堆、不判定——所以想连压两张是压不住的。",
+      "对手也不是完全没法防：条件看的是翻牌那一刻的场面。流脉奇偶就用镇脉或逆脉改成另一边；看手牌数量就把手牌打空；看守备就换掉守备随从；看上个回合有没有打战术，那就忍着别打。每种躲法都要付出节奏。",
+      "墓地只收死掉的随从，双方共用一个墓地；战术卡、阵型卡、装备卡用完不进墓地。有些中立卡的余响按墓地里的随从数量结算，所以清场和交换也会影响这些卡的收益。",
+      "新手常犯的错：把刻脉卡当成即时伤害打出去，指望这一回合就掉血。它是两回合后才可能兑现的赌注，落空就白费一张牌，所以要么早盖给对手压力，要么留到你能控制条件的时候再盖。",
+      "一个实用节奏：先看对手这回合有没有可能改条件（比如手里留着镇脉、场面有守备），再决定盖哪张刻脉卡。猜对了，对手要么吃伤害，要么为了躲它打乱自己的出牌顺序。"
+    ] },
     { id: "deck", level: 1, title: "组卡教学", desc: "30 张 · 曲线 · 品级 · 标签", xp: 120, body: [
       "先定方向：快攻、中速、控制、组合。先想清楚这套牌靠什么赢，再决定带哪些卡；不要把所有强卡塞在一起。",
-      "固定 30 张，随从 / 战术 / 阵型 / 装备自由混编；阵型最多 3 张，装备不限件数；同名卡数量受品级和卡牌规则限制。",
+      "固定 30 张，随从卡 / 战术卡 / 阵型卡 / 装备卡 / 刻脉卡自由混编；阵型最多 3 张，装备不限件数；同名卡数量受品级和卡牌规则限制。",
       "曲线参考：2–3 费 8–12 张，4–5 费 8–10 张，6 费以上别太多。前 3 回合有牌可出，比单卡强度更重要。",
       "品级上限：传说最多 2 张，史诗最多 6 张，稀有最多 10 张；未拥有的传说不能加入自定义牌组，官方预组可以试玩。",
       "新手先用预设或自动构筑生成 30 张，再手动替换 3–5 张；不要从零硬凑，也不要为了“完美”反复推翻整套牌。",
@@ -10307,7 +10513,7 @@ const tabs = $("deck-faction-tabs");
       if (app.codexSort === "cost") return a.cost - b.cost || a.name.localeCompare(b.name);
       if (app.codexSort === "name") return a.name.localeCompare(b.name, "zh-Hans-CN");
       if (app.codexSort === "type") {
-        const order = { minion: 0, spell: 1, formation: 2, relic: 3, equipment: 3, debt: 4 };
+        const order = { minion: 0, spell: 1, pulse: 2, formation: 3, relic: 4, equipment: 4, debt: 5 };
         return (order[a.type] == null ? 9 : order[a.type]) - (order[b.type] == null ? 9 : order[b.type]) || a.cost - b.cost || a.name.localeCompare(b.name);
       }
       const fa = D.FACTION_IDS.indexOf(a.faction), fb = D.FACTION_IDS.indexOf(b.faction);
@@ -11565,7 +11771,7 @@ const tabs = $("deck-faction-tabs");
     const shake = $("btn-settings-shake");
     if (shake) shake.textContent = "震动：" + (app.screenShake ? "开" : "关");
     const anim = $("btn-settings-anim");
-    if (anim) anim.textContent = "动画：" + (app.animSpeed <= 0.6 ? "很快" : app.animSpeed <= 0.78 ? "快" : app.animSpeed <= 1.02 ? "标准" : "慢");
+    if (anim) anim.textContent = "动画：" + (app.animSpeed <= 0.01 ? "关" : app.animSpeed <= 0.55 ? "慢" : app.animSpeed <= 0.85 ? "标准" : "快");
     const handMode = $("btn-settings-hand-mode");
     if (handMode) handMode.textContent = "出牌：" + (isPhoneLayout() ? "点击" : app.handPlayMode === "double" ? "双击" : "拖拽");
     const textsize = $("btn-settings-textsize");
@@ -13564,7 +13770,7 @@ const tabs = $("deck-faction-tabs");
       toast(app.handPlayMode === "double" ? "电脑操作：双击卡牌确认出牌。" : "电脑操作：拖到阵位或目标出牌。");
     };
     if ($("btn-settings-anim")) $("btn-settings-anim").onclick = () => {
-      app.animSpeed = app.animSpeed <= 0.6 ? 0.7 : app.animSpeed <= 0.78 ? 0.9 : app.animSpeed <= 1.02 ? 1.2 : 0.55;
+      app.animSpeed = app.animSpeed <= 0.01 ? 0.5 : app.animSpeed <= 0.55 ? 0.7 : app.animSpeed <= 0.85 ? 1.4 : 0;
       localStorage.setItem("gok_anim_speed", String(app.animSpeed));
       applyVideoPrefs();
       updateSettingsUI();

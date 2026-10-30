@@ -33,7 +33,7 @@
   function lethalAvailable(state, p) {
     if (enemyTaunts(state, p).length) return false;
     const e = enemyOf(state, p);
-    const facePower = p.heroId === "otto" && !p.heroPowerUsed && p.mana >= (p.hero.power.cost || 2) ? 1 : 0;
+    const facePower = 0; // 帝国炮击已改为只打随从，不再算打脸伤害
     return totalAttack(p) + facePower >= e.hp + e.armor;
   }
 
@@ -122,6 +122,26 @@
   function effectScore(state, p, def, target, zone) {
     const b = def.battlecry || def.spell || {};
     let s = 0;
+    // 刻脉：延迟生效、条件可能不成立，按「期望伤害 × 命中率」估，别当零价值扔在手里
+    if (def.type === "pulse") {
+      const spec = def.pulse || {};
+      const cond = spec.cond || {};
+      let value = 0;
+      for (const op of spec.penalty || []) {
+        if (op.op === "damageHero") value += (op.amount || 1) * 1.5;
+        else if (op.op === "damageRandomEnemy") value += (op.amount || 1) * 1.0;
+        else value += 1.2;
+      }
+      const grave = (state.discard || []).filter((x) => x && x.kind === "minion").length;
+      const foe = state.players[1 - p.index] || state.players[0];
+      const foeMinions = (foe.minions || []).filter((m) => m && !m.dead);
+      let hit = 0.5;
+      if (cond.cond === "veinEven") hit = (state.vein || 0) % 2 === 1 ? 0.35 : 0.6;
+      else if (cond.cond === "enemyHand") hit = (foe.hand || []).length >= (cond.value || 4) ? 0.8 : 0.4;
+      else if (cond.cond === "enemyTaunt") hit = foeMinions.some((m) => m.taunt) ? 0.75 : 0.35;
+      else if (cond.cond === "graveCount") hit = grave >= (cond.value || 3) ? 0.85 : 0.35;
+      return value * hit - (def.cost || 0) * 0.15;
+    }
     switch (b.type) {
       case "heal": s += target ? Math.min(b.amount, target.maxHealth - target.health) * 0.8 : 0; break;
       case "healDraw":

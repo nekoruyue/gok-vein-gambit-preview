@@ -15056,7 +15056,7 @@
 
   // ===== 2026-10-24 传说卡牌设计：90 张传说定稿 =====
   (() => {
-    const DESIGN = [{"id":"orlicas","name":"欧莉卡斯","cost":3,"attack":1,"health":6,"type":"minion","rarity":"legendary","text":"每当同阵位另一个友方随从攻击时，将其生命值变为与本随从相同。"},{"id":"shextena","name":"希斯蒂娜","cost":4,"attack":4,"health":4,"type":"minion","rarity":"legendary","text":"登场：恢复你的领袖 4 点生命，引脉8：恢复你的领袖3点生命；每实际恢复 1 点生命值，获得 +1/+1。"},{"id":"timon","name":"提蒙","cost":6,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"登场：复活你在本局对战中死亡的行动力消耗最高的随从。"},{"id":"puwei_overflow_saint","name":"晨潮圣使","cost":5,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"登场：恢复你的领袖 4 点生命；这次恢复溢出的数值转为等量护甲。"},{"id":"aidric","name":"艾德里克","cost":7,"attack":7,"health":1,"type":"minion","rarity":"legendary","text":"守备， 登场：消灭一个随从并获得其生命值"},{"id":"verious","name":"维里欧斯","cost":7,"attack":5,"health":7,"type":"minion","rarity":"legendary","text":"登场：你使用的下一张战术牌会施放三次  被动：每使用一张战术牌，预兆1"},{"id":"miyuki","name":"深雪","cost":7,"attack":6,"health":6,"type":"minion","rarity":"legendary","text":"登场：冻结深雪所在阵位以阵位外的所有随从（包括友方）被动：深雪在场时本阵位随从不会被冻结"},{"id":"vein_heart","name":"地脉之心","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：你的回合开始时恢复 2 点生命。"},{"id":"justus","name":"尤斯图斯·维尔纳","cost":5,"attack":5,"health":5,"type":"minion","rarity":"legendary","text":"登场：在本局对战中，在你施放一个战术后，随机召唤一个行动力消耗相同的随从。"},{"id":"quin_records","name":"记录官奎因","cost":4,"attack":2,"health":4,"type":"minion","rarity":"legendary","text":"你的召唤随从的卡牌召唤数量翻倍。"},{"id":"cassian","name":"卡西安·维尔","cost":6,"attack":4,"health":6,"type":"minion","rarity":"legendary","text":"被动：你的回合结束时，重复你最后使用的一张战术牌。"},{"id":"karl_desmond","name":"卡尔·德斯蒙德","cost":7,"attack":7,"health":7,"type":"minion","rarity":"legendary","text":"每当你施放一个法术，将一张“火球术”法术牌置入你的手牌。（3费火球术：对一个敌方随从造成4点伤害）"},{"id":"time_debt_emperor","name":"时债君王","cost":7,"attack":4,"health":6,"type":"minion","rarity":"legendary","text":"被动：你的回合结束时，使你手牌中的所有卡费用减少 1（最低为 1）。"},{"id":"ac_absolute_theory","name":"绝对理论","cost":3,"attack":null,"health":null,"type":"spell","rarity":"legendary","text":"对所有敌方随从造成 2 点伤害。"},{"id":"ac_final_proof","name":"最终证明","cost":3,"attack":null,"health":null,"type":"spell","rarity":"legendary","text":"对一个敌方随从造成 3 点伤害，并冻结它。"},{"id":"spell_codex","name":"留存法典","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：每当你施放战术牌，抽 1 张牌。"},{"id":"molan","name":"墨兰","cost":3,"attack":2,"health":4,"type":"minion","rarity":"legendary","text":"获得敌方一个随机随从的控制权"},{"id":"grayfeather","name":"灰羽·乌恩","cost":6,"attack":4,"health":4,"type":"minion","rarity":"legendary","text":"登场：你使用的下一张牌会消耗对手的生命值而非法力值（最高不超过10点）。"},{"id":"lize","name":"莉泽","cost":4,"attack":7,"health":7,"type":"minion","rarity":"legendary","text":"登场：随机弃掉一张手牌。引脉8：改为弃对手的一张手牌。"},{"id":"blood_elder","name":"血族长老","cost":4,"attack":5,"health":5,"type":"minion","rarity":"legendary","text":"使你手牌和牌库中的随从牌行动力消耗减少（1）点，战术牌的行动力消耗增加（1）点。"},{"id":"tiega","name":"铁牙·阿古","cost":6,"attack":6,"health":7,"type":"minion","rarity":"legendary","text":"你抽取你行动力消耗最高的两张牌，你的对手抽取你行动力最低的两张牌。"},{"id":"stone_alchemist","name":"石化术师","cost":6,"attack":3,"health":5,"type":"minion","rarity":"legendary","text":"登场：将一个敌方随从变成 1/1 石像衍生物，移除其关键词和卡牌效果。"},{"id":"xh_castle_consul","name":"古堡执政官","cost":7,"attack":7,"health":7,"type":"minion","rarity":"legendary","text":"在你弃掉一张随从牌后，召唤一个该随从的复制。"},{"id":"blood_scythe","name":"血潮镰","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：回合开始时，所有友方随从获得 +1 攻击。"},{"id":"hans","name":"汉斯·冯·霍尔姆","cost":2,"attack":1,"health":3,"type":"minion","rarity":"legendary","text":"格挡。 余响：获得2点护甲。"},{"id":"elena","name":"伊莲娜·索菲","cost":6,"attack":5,"health":7,"type":"minion","rarity":"legendary","text":"登场：召唤你受伤的随从的复制，使复制获得突袭。"},{"id":"erhardt","name":"埃尔哈特·冯·罗森","cost":4,"attack":3,"health":3,"type":"minion","rarity":"legendary","text":"守备。如果在你的某个回合中有四个友方角色受到伤害，从手牌或牌库中召唤本随从。"},{"id":"konrad","name":"康拉德·威廉莱斯","cost":5,"attack":4,"health":6,"type":"minion","rarity":"legendary","text":"登场：消灭你的对手上回合使用的 所有随从。"},{"id":"beatrix","name":"贝娅特丽克丝·冯·艾森胡特","cost":6,"attack":5,"health":6,"type":"minion","rarity":"legendary","text":"登场：将你牌库底的五张牌的法力值消耗变为（1）点。"},{"id":"republic_ironwall_marshal","name":"铁壁元帅","cost":6,"attack":4,"health":6,"type":"minion","rarity":"legendary","text":"守备。登场：获得 4 点护甲；若你在此效果前已有护甲，自身获得格挡。"},{"id":"stein_speaker","name":"施泰因议长","cost":9,"attack":6,"health":7,"type":"minion","rarity":"legendary","text":"使你的其他随从获得“亡语：召唤一个法力值消耗与本随从相同的随从”。"},{"id":"iron_banner","name":"铁壁军旗","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：回合开始时，使一名友方随从获得格挡。"},{"id":"mia","name":"米娅·科尔贝","cost":2,"attack":2,"health":1,"type":"minion","rarity":"legendary","text":"登场：将你的手牌替换为你的起始手牌。在你的回合结束时换回。"},{"id":"klaus","name":"克劳斯·莱茵哈特","cost":3,"attack":3,"health":4,"type":"minion","rarity":"legendary","text":"先遣。登场：场上每有一个其他随从（不分敌我），获得 +1/+1。"},{"id":"elsa","name":"艾尔莎·汉瑟尔","cost":3,"attack":2,"health":2,"type":"minion","rarity":"legendary","text":"在你的回合结束时，使你的随从获得格挡，已有格挡的随从改为获得+3/+3。"},{"id":"eisenwald_marshal","name":"艾森瓦尔德元帅","cost":5,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"将你牌库底的五张牌的法力值消耗变为（1）点。"},{"id":"gunther","name":"京特·冯·艾森瓦尔德","cost":6,"attack":5,"health":7,"type":"minion","rarity":"legendary","text":"连携。登场：获得 6 点护甲。引脉6：获得 4 点护甲。"},{"id":"karl_schwarz","name":"卡尔·冯·施瓦茨","cost":6,"attack":4,"health":6,"type":"minion","rarity":"legendary","text":"登场：对一个敌方随从造成等同于你护甲的伤害。。"},{"id":"cinder_arbiter","name":"灰烬仲裁者","cost":7,"attack":5,"health":6,"type":"minion","rarity":"legendary","text":"战吼：使你的领袖获得回潮"},{"id":"powder_engine","name":"火药引擎","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：回合开始时，获得2点护甲"},{"id":"kugreen","name":"「苦绿」","cost":4,"attack":3,"health":3,"type":"minion","rarity":"legendary","text":"被动：每完成一次悬赏，对敌方领袖造成 2 点伤害。"},{"id":"xiu","name":"「哑巴」修","cost":3,"attack":3,"health":4,"type":"minion","rarity":"legendary","text":"此牌在你的手牌中时，会变成你的对手使用的上一张随从牌的3/4的复制。"},{"id":"vera","name":"「替身」薇拉","cost":5,"attack":6,"health":6,"type":"minion","rarity":"legendary","text":"隐匿。每当一个隐匿的友方随从攻击，随机使你手牌中一张牌的行动力消耗减少（3）点。"},{"id":"seran","name":"「账房」瑟兰","cost":5,"attack":4,"health":4,"type":"minion","rarity":"legendary","text":"登场：将所有低于本随从生命值的随从列入悬赏名单。"},{"id":"karan","name":"「断线」卡兰","cost":6,"attack":6,"health":6,"type":"minion","rarity":"legendary","text":"被动：此随从在场时，所有友方随从攻击无视守备。"},{"id":"unquiet_dowager","name":"夺魂女侯","cost":7,"attack":5,"health":5,"type":"minion","rarity":"legendary","text":"余响：随机控制一个费用不高于 4 的敌方随从。"},{"id":"gh_bounty_king","name":"赏金王","cost":7,"attack":7,"health":7,"type":"minion","rarity":"legendary","text":"登场：消灭所有悬赏名单上的敌方随从；每消灭一个，对敌方领袖造成 4 点伤害。若没有悬赏目标，对敌方领袖造成 8 点伤害。"},{"id":"gh_bounty_board","name":"悬赏榜","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：回合开始时，将一个随机敌方随从列入悬赏名单"},{"id":"lanzhou","name":"澜舟","cost":1,"attack":1,"health":1,"type":"minion","rarity":"legendary","text":"隐匿。登场：召唤一个 1/1 洛斯汰魔物。"},{"id":"lt_awakened","name":"觉醒者","cost":5,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"本随从以及同阵位的其他随从攻击后，获得一张闪电箭。（闪电箭，2费，对敌方所有随从造成1点伤害）"},{"id":"lt_brood_mother","name":"巢母","cost":6,"attack":4,"health":6,"type":"minion","rarity":"legendary","text":"将你上回合使用的所有战术牌移回你的手牌。"},{"id":"lanxi","name":"澜汐","cost":4,"attack":5,"health":5,"type":"minion","rarity":"legendary","text":"被动：场上每有一个洛斯汰魔物，获得 +1/+1。"},{"id":"losutai_hive_ancestor","name":"巢群先祖","cost":7,"attack":5,"health":6,"type":"minion","rarity":"legendary","text":"被动：你的回合结束时，若你本回合召唤过至少 2 个洛斯汰魔物，召唤一个 3/3 洛斯汰巨兽。"},{"id":"lt_tide_mother","name":"潮母","cost":3,"attack":3,"health":4,"type":"minion","rarity":"legendary","text":"登场：召唤2个 1/1 洛斯汰魔物。引脉6：在召唤2个1/1 洛斯汰魔物。"},{"id":"lt_venom_lord","name":"毒潮领主","cost":9,"attack":8,"health":7,"type":"minion","rarity":"legendary","text":"在你的回合结束时，使用你牌库顶的3张牌"},{"id":"lt_deep_eye","name":"深海之眼","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：你的回合开始时，召唤一个 1/1 洛斯汰魔物。"},{"id":"samuel","name":"塞缪尔·奎因","cost":1,"attack":2,"health":2,"type":"minion","rarity":"legendary","text":"登场：检索1 余响：召唤一个雪狐哨兵。"},{"id":"snow_rin","name":"凛","cost":6,"attack":3,"health":5,"type":"minion","rarity":"legendary","text":"将你牌库中的所有战术牌移至牌库顶。每回合你可以选择从牌库顶或牌库底抽牌。"},{"id":"nina","name":"妮娜·索雷尔","cost":6,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"登场：冻结目标所在阵位的所有敌方随从。"},{"id":"snow_shatter_judge","name":"碎冰审判官","cost":6,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"登场：对所有被冻结的敌方随从造成 3 点伤害；每消灭一个随从，获得+1/+1"},{"id":"snow_time_shade","name":"时间残影","cost":8,"attack":4,"health":7,"type":"minion","rarity":"legendary","text":"将你手牌中的所有随从牌送入2回合后的未来。这些牌返回时会具有+5/+5。"},{"id":"snow_frost_dragon","name":"白霜龙","cost":8,"attack":7,"health":7,"type":"minion","rarity":"legendary","text":"登场：冻结目标所在阵位的所有敌方随从。"},{"id":"snow_last_stand","name":"雪都之战·终局","cost":8,"attack":5,"health":6,"type":"minion","rarity":"legendary","text":"被动：在你使用你的英雄技能后，随机对一个敌人造成5点伤害。"},{"id":"snow_ember","name":"雪都火种","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：回合开始时，随机冻结一名敌方随从"},{"id":"monarch","name":"莫纳克","cost":4,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"登场：预兆：从牌库顶 3 张中选 1 张任意阵营的可收集牌。"},{"id":"mirror_regent","name":"镜界执政官","cost":6,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"登场：选择一个敌方随从，召唤它的 1/1 复制。复制体保留关键词和卡牌效果，但不会触发登场效果。"},{"id":"grave_titan","name":"墓钟泰坦","cost":7,"attack":8,"health":8,"type":"minion","rarity":"legendary","text":"余响：召唤一个 5/5 的墓钟守卫。"},{"id":"faceless_king","name":"无面君王","cost":9,"attack":7,"health":7,"type":"minion","rarity":"legendary","text":"登场：复制一个友方随从。"},{"id":"vein_leviathan","name":"流脉利维坦","cost":9,"attack":8,"health":8,"type":"minion","rarity":"legendary","text":"战吼：触发本局对战中死亡的3个友方随从的亡语。"},{"id":"obsidian_colossus","name":"黑曜巨像","cost":9,"attack":5,"health":11,"type":"minion","rarity":"legendary","text":"守备。余响：召唤一个 3/3 的黑曜碎片。"},{"id":"world_serpent","name":"世界之蛇","cost":10,"attack":9,"health":9,"type":"minion","rarity":"legendary","text":"亡语：随机召唤一个传说随从。"},{"id":"void_titan","name":"虚空泰坦","cost":10,"attack":9,"health":9,"type":"minion","rarity":"legendary","text":"登场：消灭所有敌方随从。"},{"id":"last_ledger","name":"最后一笔账","cost":5,"attack":null,"health":null,"type":"spell","rarity":"legendary","text":"检索一张法战术牌，并使其法力值消耗减少（8）点。如果减少的溢出量还有剩余，重复此效果。"},{"id":"world_edge","name":"世界边缘","cost":8,"attack":null,"health":null,"type":"spell","rarity":"legendary","text":"为所有友方角色恢复 8点生命值。随机召唤两个法力值消耗为（8）的随从。"},{"id":"final_bell","name":"终末钟声","cost":10,"attack":null,"health":null,"type":"spell","rarity":"legendary","text":"再次使用在本回合中使用的所有其他牌（尽可能以敌人为目标）。结束你的回合。"},{"id":"no_mans_camp","name":"无主营地","cost":3,"attack":null,"health":null,"type":"formation","rarity":"legendary","text":"该阵位友方随从固定获得 +2 攻击。"},{"id":"grey_ledger_post","name":"灰港账站","cost":6,"attack":null,"health":null,"type":"formation","rarity":"legendary","text":"该阵位友方随从固定获得+2生命值"},{"id":"forgotten_gate","name":"遗忘之门","cost":8,"attack":null,"health":null,"type":"formation","rarity":"legendary","text":"该阵位友方随从固定获得格挡和先遣。"},{"id":"dusk_inn_key","name":"黄昏旅店钥匙","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：回合开始时，获得+1生命上限"},{"id":"smuggler_anchor","name":"走私船锚","cost":8,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：你的回合开始时对所有敌方随从造成 2 点伤害。"}];
+    const DESIGN = [{"id":"orlicas","name":"欧莉卡斯","cost":3,"attack":1,"health":6,"type":"minion","rarity":"legendary","text":"每当同阵位另一个友方随从攻击时，将其生命值变为与本随从相同。"},{"id":"shextena","name":"希斯蒂娜","cost":4,"attack":4,"health":4,"type":"minion","rarity":"legendary","text":"登场：恢复你的领袖 4 点生命，引脉8：恢复你的领袖3点生命；每实际恢复 1 点生命值，获得 +1/+1。"},{"id":"timon","name":"提蒙","cost":6,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"登场：复活你在本局对战中死亡的行动力消耗最高的随从。"},{"id":"puwei_overflow_saint","name":"晨潮圣使","cost":5,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"登场：恢复你的领袖 4 点生命；这次恢复溢出的数值转为等量护甲。"},{"id":"aidric","name":"艾德里克","cost":7,"attack":7,"health":1,"type":"minion","rarity":"legendary","text":"守备， 登场：消灭一个随从并获得其生命值"},{"id":"verious","name":"维里欧斯","cost":7,"attack":5,"health":7,"type":"minion","rarity":"legendary","text":"登场：你使用的下一张战术牌会施放三次  被动：每使用一张战术牌，预兆一张牌"},{"id":"miyuki","name":"深雪","cost":7,"attack":6,"health":6,"type":"minion","rarity":"legendary","text":"登场：冻结深雪所在阵位以阵位外的所有随从（包括友方）被动：深雪在场时本阵位随从不会被冻结"},{"id":"vein_heart","name":"地脉之心","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：你的回合开始时恢复 2 点生命。"},{"id":"justus","name":"尤斯图斯·维尔纳","cost":5,"attack":5,"health":5,"type":"minion","rarity":"legendary","text":"登场：在本局对战中，在你施放一个战术后，随机召唤一个行动力消耗相同的随从。"},{"id":"quin_records","name":"记录官奎因","cost":4,"attack":2,"health":4,"type":"minion","rarity":"legendary","text":"你的召唤随从的卡牌召唤数量翻倍。"},{"id":"cassian","name":"卡西安·维尔","cost":6,"attack":4,"health":6,"type":"minion","rarity":"legendary","text":"被动：你的回合结束时，重复你最后使用的一张战术牌。"},{"id":"karl_desmond","name":"卡尔·德斯蒙德","cost":7,"attack":7,"health":7,"type":"minion","rarity":"legendary","text":"每当你施放一个法术，将一张“火球术”法术牌置入你的手牌。（3费火球术：对一个敌方随从造成4点伤害）"},{"id":"time_debt_emperor","name":"时债君王","cost":7,"attack":4,"health":6,"type":"minion","rarity":"legendary","text":"被动：你的回合结束时，使你手牌中的所有卡费用减少 1（最低为 1）。"},{"id":"ac_absolute_theory","name":"绝对理论","cost":3,"attack":null,"health":null,"type":"spell","rarity":"legendary","text":"对所有敌方随从造成 2 点伤害。"},{"id":"ac_final_proof","name":"最终证明","cost":3,"attack":null,"health":null,"type":"spell","rarity":"legendary","text":"对一个敌方随从造成 3 点伤害，并冻结它。"},{"id":"spell_codex","name":"留存法典","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：每当你施放战术牌，抽 1 张牌。"},{"id":"molan","name":"墨兰","cost":3,"attack":2,"health":4,"type":"minion","rarity":"legendary","text":"获得敌方一个随机随从的控制权"},{"id":"grayfeather","name":"灰羽·乌恩","cost":6,"attack":4,"health":4,"type":"minion","rarity":"legendary","text":"登场：你使用的下一张牌会消耗对手的生命值而非法力值（最高不超过10点）。"},{"id":"lize","name":"莉泽","cost":4,"attack":7,"health":7,"type":"minion","rarity":"legendary","text":"登场：随机弃掉一张手牌。引脉8：改为弃对手的一张手牌。"},{"id":"blood_elder","name":"血族长老","cost":4,"attack":5,"health":5,"type":"minion","rarity":"legendary","text":"使你手牌和牌库中的随从牌行动力消耗减少（1）点，战术牌的行动力消耗增加（1）点。"},{"id":"tiega","name":"铁牙·阿古","cost":6,"attack":6,"health":7,"type":"minion","rarity":"legendary","text":"你抽取你行动力消耗最高的两张牌，你的对手抽取你行动力最低的两张牌。"},{"id":"stone_alchemist","name":"石化术师","cost":6,"attack":3,"health":5,"type":"minion","rarity":"legendary","text":"登场：将一个敌方随从变成 1/1 石像衍生物，移除其关键词和卡牌效果。"},{"id":"xh_castle_consul","name":"古堡执政官","cost":7,"attack":7,"health":7,"type":"minion","rarity":"legendary","text":"在你弃掉一张随从牌后，召唤一个该随从的复制。"},{"id":"blood_scythe","name":"血潮镰","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：回合开始时，所有友方随从获得 +1 攻击。"},{"id":"hans","name":"汉斯·冯·霍尔姆","cost":2,"attack":1,"health":3,"type":"minion","rarity":"legendary","text":"格挡。 余响：获得2点护甲。"},{"id":"elena","name":"伊莲娜·索菲","cost":6,"attack":5,"health":7,"type":"minion","rarity":"legendary","text":"登场：召唤你受伤的随从的复制，使复制获得突袭。"},{"id":"erhardt","name":"埃尔哈特·冯·罗森","cost":4,"attack":3,"health":3,"type":"minion","rarity":"legendary","text":"守备。如果在你的某个回合中有四个友方角色受到伤害，从手牌或牌库中召唤本随从。"},{"id":"konrad","name":"康拉德·威廉莱斯","cost":5,"attack":4,"health":6,"type":"minion","rarity":"legendary","text":"登场：消灭你的对手上回合使用的 所有随从。"},{"id":"beatrix","name":"贝娅特丽克丝·冯·艾森胡特","cost":6,"attack":5,"health":6,"type":"minion","rarity":"legendary","text":"登场：将你牌库底的五张牌的法力值消耗变为（1）点。"},{"id":"republic_ironwall_marshal","name":"铁壁元帅","cost":6,"attack":4,"health":6,"type":"minion","rarity":"legendary","text":"守备。登场：获得 4 点护甲；若你在此效果前已有护甲，自身获得格挡。"},{"id":"stein_speaker","name":"施泰因议长","cost":9,"attack":6,"health":7,"type":"minion","rarity":"legendary","text":"使你的其他随从获得“亡语：召唤一个法力值消耗与本随从相同的随从”。"},{"id":"iron_banner","name":"铁壁军旗","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：回合开始时，使一名友方随从获得格挡。"},{"id":"mia","name":"米娅·科尔贝","cost":2,"attack":2,"health":1,"type":"minion","rarity":"legendary","text":"登场：将你的手牌替换为你的起始手牌。在你的回合结束时换回。"},{"id":"klaus","name":"克劳斯·莱茵哈特","cost":3,"attack":3,"health":4,"type":"minion","rarity":"legendary","text":"先遣。登场：场上每有一个其他随从（不分敌我），获得 +1/+1。"},{"id":"elsa","name":"艾尔莎·汉瑟尔","cost":3,"attack":2,"health":2,"type":"minion","rarity":"legendary","text":"在你的回合结束时，使你的随从获得格挡，已有格挡的随从改为获得+3/+3。"},{"id":"eisenwald_marshal","name":"艾森瓦尔德元帅","cost":5,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"将你牌库底的五张牌的法力值消耗变为（1）点。"},{"id":"gunther","name":"京特·冯·艾森瓦尔德","cost":6,"attack":5,"health":7,"type":"minion","rarity":"legendary","text":"连携。登场：获得 6 点护甲。引脉6：获得 4 点护甲。"},{"id":"karl_schwarz","name":"卡尔·冯·施瓦茨","cost":6,"attack":4,"health":6,"type":"minion","rarity":"legendary","text":"登场：对一个敌方随从造成等同于你护甲的伤害。。"},{"id":"cinder_arbiter","name":"灰烬仲裁者","cost":7,"attack":5,"health":6,"type":"minion","rarity":"legendary","text":"战吼：使你的领袖获得回潮"},{"id":"powder_engine","name":"火药引擎","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：回合开始时，获得2点护甲"},{"id":"kugreen","name":"「苦绿」","cost":4,"attack":3,"health":3,"type":"minion","rarity":"legendary","text":"被动：每完成一次悬赏，对敌方领袖造成 2 点伤害。"},{"id":"xiu","name":"「哑巴」修","cost":3,"attack":3,"health":4,"type":"minion","rarity":"legendary","text":"此牌在你的手牌中时，会变成你的对手使用的上一张随从牌的3/4的复制。"},{"id":"vera","name":"「替身」薇拉","cost":5,"attack":6,"health":6,"type":"minion","rarity":"legendary","text":"隐匿。每当一个隐匿的友方随从攻击，随机使你手牌中一张牌的行动力消耗减少（3）点。"},{"id":"seran","name":"「账房」瑟兰","cost":5,"attack":4,"health":4,"type":"minion","rarity":"legendary","text":"登场：将所有低于本随从生命值的随从列入悬赏名单。"},{"id":"karan","name":"「断线」卡兰","cost":6,"attack":6,"health":6,"type":"minion","rarity":"legendary","text":"被动：此随从在场时，所有友方随从攻击无视守备。"},{"id":"unquiet_dowager","name":"夺魂女侯","cost":7,"attack":5,"health":5,"type":"minion","rarity":"legendary","text":"余响：随机控制一个费用不高于 4 的敌方随从。"},{"id":"gh_bounty_king","name":"赏金王","cost":7,"attack":7,"health":7,"type":"minion","rarity":"legendary","text":"登场：消灭所有悬赏名单上的敌方随从；每消灭一个，对敌方领袖造成 4 点伤害。若没有悬赏目标，对敌方领袖造成 8 点伤害。"},{"id":"gh_bounty_board","name":"悬赏榜","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：回合开始时，将一个随机敌方随从列入悬赏名单"},{"id":"lanzhou","name":"澜舟","cost":1,"attack":1,"health":1,"type":"minion","rarity":"legendary","text":"隐匿。登场：召唤一个 1/1 洛斯汰魔物。"},{"id":"lt_awakened","name":"觉醒者","cost":5,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"本随从以及同阵位的其他随从攻击后，获得一张闪电箭。（闪电箭，2费，对敌方所有随从造成1点伤害）"},{"id":"lt_brood_mother","name":"巢母","cost":6,"attack":4,"health":6,"type":"minion","rarity":"legendary","text":"将你上回合使用的所有战术牌移回你的手牌。"},{"id":"lanxi","name":"澜汐","cost":4,"attack":5,"health":5,"type":"minion","rarity":"legendary","text":"被动：场上每有一个洛斯汰魔物，获得 +1/+1。"},{"id":"losutai_hive_ancestor","name":"巢群先祖","cost":7,"attack":5,"health":6,"type":"minion","rarity":"legendary","text":"被动：你的回合结束时，若你本回合召唤过至少 2 个洛斯汰魔物，召唤一个 3/3 洛斯汰巨兽。"},{"id":"lt_tide_mother","name":"潮母","cost":3,"attack":3,"health":4,"type":"minion","rarity":"legendary","text":"登场：召唤2个 1/1 洛斯汰魔物。引脉6：在召唤2个1/1 洛斯汰魔物。"},{"id":"lt_venom_lord","name":"毒潮领主","cost":9,"attack":8,"health":7,"type":"minion","rarity":"legendary","text":"在你的回合结束时，使用你牌库顶的3张牌"},{"id":"lt_deep_eye","name":"深海之眼","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：你的回合开始时，召唤一个 1/1 洛斯汰魔物。"},{"id":"samuel","name":"塞缪尔·奎因","cost":1,"attack":2,"health":2,"type":"minion","rarity":"legendary","text":"登场：检索1 余响：召唤一个雪狐哨兵。"},{"id":"snow_rin","name":"凛","cost":6,"attack":3,"health":5,"type":"minion","rarity":"legendary","text":"将你牌库中的所有战术牌移至牌库顶。每回合你可以选择从牌库顶或牌库底抽牌。"},{"id":"nina","name":"妮娜·索雷尔","cost":6,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"登场：冻结目标所在阵位的所有敌方随从。"},{"id":"snow_shatter_judge","name":"碎冰审判官","cost":6,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"登场：对所有被冻结的敌方随从造成 3 点伤害；每消灭一个随从，获得+1/+1"},{"id":"snow_time_shade","name":"时间残影","cost":8,"attack":4,"health":7,"type":"minion","rarity":"legendary","text":"将你手牌中的所有随从牌送入2回合后的未来。这些牌返回时会具有+5/+5。"},{"id":"snow_frost_dragon","name":"白霜龙","cost":8,"attack":7,"health":7,"type":"minion","rarity":"legendary","text":"登场：冻结目标所在阵位的所有敌方随从。"},{"id":"snow_last_stand","name":"雪都之战·终局","cost":8,"attack":5,"health":6,"type":"minion","rarity":"legendary","text":"被动：在你使用你的英雄技能后，随机对一个敌人造成5点伤害。"},{"id":"snow_ember","name":"雪都火种","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：回合开始时，随机冻结一名敌方随从"},{"id":"monarch","name":"莫纳克","cost":4,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"登场：预兆：从牌库顶 3 张中选 1 张任意阵营的可收集牌。"},{"id":"mirror_regent","name":"镜界执政官","cost":6,"attack":4,"health":5,"type":"minion","rarity":"legendary","text":"登场：选择一个敌方随从，召唤它的 1/1 复制。复制体保留关键词和卡牌效果，但不会触发登场效果。"},{"id":"grave_titan","name":"墓钟泰坦","cost":7,"attack":8,"health":8,"type":"minion","rarity":"legendary","text":"余响：召唤一个 5/5 的墓钟守卫。"},{"id":"faceless_king","name":"无面君王","cost":9,"attack":7,"health":7,"type":"minion","rarity":"legendary","text":"登场：复制一个友方随从。"},{"id":"vein_leviathan","name":"流脉利维坦","cost":9,"attack":8,"health":8,"type":"minion","rarity":"legendary","text":"战吼：触发本局对战中死亡的3个友方随从的亡语。"},{"id":"obsidian_colossus","name":"黑曜巨像","cost":9,"attack":5,"health":11,"type":"minion","rarity":"legendary","text":"守备。余响：召唤一个 3/3 的黑曜碎片。"},{"id":"world_serpent","name":"世界之蛇","cost":10,"attack":9,"health":9,"type":"minion","rarity":"legendary","text":"亡语：随机召唤一个传说随从。"},{"id":"void_titan","name":"虚空泰坦","cost":10,"attack":9,"health":9,"type":"minion","rarity":"legendary","text":"登场：消灭所有敌方随从。"},{"id":"last_ledger","name":"最后一笔账","cost":5,"attack":null,"health":null,"type":"spell","rarity":"legendary","text":"检索一张法战术牌，并使其法力值消耗减少（8）点。如果减少的溢出量还有剩余，重复此效果。"},{"id":"world_edge","name":"世界边缘","cost":8,"attack":null,"health":null,"type":"spell","rarity":"legendary","text":"为所有友方角色恢复 8点生命值。随机召唤两个法力值消耗为（8）的随从。"},{"id":"final_bell","name":"终末钟声","cost":10,"attack":null,"health":null,"type":"spell","rarity":"legendary","text":"再次使用在本回合中使用的所有其他牌（尽可能以敌人为目标）。结束你的回合。"},{"id":"no_mans_camp","name":"无主营地","cost":3,"attack":null,"health":null,"type":"formation","rarity":"legendary","text":"该阵位友方随从固定获得 +2 攻击。"},{"id":"grey_ledger_post","name":"灰港账站","cost":6,"attack":null,"health":null,"type":"formation","rarity":"legendary","text":"该阵位友方随从固定获得+2生命值"},{"id":"forgotten_gate","name":"遗忘之门","cost":8,"attack":null,"health":null,"type":"formation","rarity":"legendary","text":"该阵位友方随从固定获得格挡和先遣。"},{"id":"dusk_inn_key","name":"黄昏旅店钥匙","cost":4,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：回合开始时，获得+1生命上限"},{"id":"smuggler_anchor","name":"走私船锚","cost":8,"attack":null,"health":null,"type":"equipment","rarity":"legendary","text":"装备（持续生效）：你的回合开始时对所有敌方随从造成 2 点伤害。"}];
     for (const d of DESIGN) { const c = CARDS[d.id]; if (!c) continue; c.cost = d.cost; if (Number.isFinite(d.attack)) c.attack = d.attack; if (Number.isFinite(d.health)) c.health = d.health; c.type = d.type; c.rarity = d.rarity; c.text = d.text; }
   })();
 
@@ -17816,6 +17816,575 @@
       .replace(/\s+/g, " ")
       .trim();
   }
+  // ===== 2026-10-30 英雄数值与技能 v1.1：生命 25–30、起始护甲 0–5、技能统一简化 =====
+  const HERO_TUNE = {
+    lain:    { hp: 28, armor: 3, power: { name: "协调", cost: 0, target: "passive", passive: true, text: "被动：回合开始时，你每控制 1 个阵型或装备，获得 1 点护甲。" } },
+    marta:   { hp: 30, armor: 4, power: { name: "演算", cost: 0, target: "passive", passive: true, text: "被动：每回合第一张战术牌行动力消耗 -2。" } },
+    karna:   { hp: 25, armor: 0, power: { name: "血祭", cost: 2, target: "none", text: "主动：对自己造成 1 点伤害，抽 1 张牌。" } },
+    wolfram: { hp: 25, armor: 0, power: { name: "整编", cost: 2, target: "friendly", text: "主动：使一个友方随从获得 +1/+1。" } },
+    otto:    { hp: 27, armor: 3, power: { name: "炮击", cost: 2, target: "enemy", text: "主动：对一个敌方随从造成 2 点伤害。" } },
+    monarch: { hp: 30, armor: 5, power: { name: "悬赏", cost: 0, target: "passive", passive: true, text: "被动：悬赏名单上的随从死亡时，你获得 2 点护甲并抽 1 张牌。" } },
+    balaena: { hp: 30, armor: 3, power: { name: "潮生", cost: 2, target: "none", text: "主动：召唤一个 1/1 洛斯汰魔物。" } },
+    sernach: { hp: 26, armor: 2, power: { name: "凝时", cost: 0, target: "passive", passive: true, text: "被动：每回合第一次冻结敌方随从时，抽 1 张牌。" } }
+  };
+  for (const [hid, tune] of Object.entries(HERO_TUNE)) {
+    if (!HEROES[hid]) continue;
+    HEROES[hid].hp = tune.hp;
+    HEROES[hid].armor = tune.armor;
+    HEROES[hid].power = Object.assign({}, HEROES[hid].power, tune.power);
+  }
+  // ===== 2026-10-30 修「若…」被自己满足：把条件段挪到给护甲之前 =====
+  // 军事法庭：先判断「有没有护甲」（这是打牌前的状态），再给护甲
+  if (CARDS.martial_court) {
+    CARDS.martial_court.spell = { type: "ops", ops: [
+      { op: "if", cond: "armor", then: [{ op: "armor", amount: 1 }] },
+      { op: "armor", amount: 1 }
+    ] };
+    CARDS.martial_court.text = "若你有护甲，领袖获得 1 点护甲。领袖获得 1 点护甲。";
+  }
+  if (CARDS.war_tax) {
+    CARDS.war_tax.spell = { type: "ops", ops: [
+      { op: "if", cond: "armor", then: [{ op: "draw", amount: 1 }] },
+      { op: "armor", amount: 1 }
+    ] };
+    CARDS.war_tax.text = "若你有护甲，抽 1 张。领袖获得 1 点护甲。";
+  }
+  if (CARDS.conscription_order) {
+    CARDS.conscription_order.spell = { type: "ops", ops: [
+      { op: "if", cond: "armor", then: [{ op: "armor", amount: 1 }] },
+      { op: "armor", amount: 1 }
+    ] };
+    CARDS.conscription_order.text = "若你有护甲，领袖获得 1 点护甲。领袖获得 1 点护甲。";
+  }
+  if (CARDS.powder_marshal) {
+    CARDS.powder_marshal.battlecry = { type: "ops", ops: [
+      { op: "if", cond: "armor", then: [{ op: "damageRandomEnemy", amount: 2 }] },
+      { op: "armor", amount: 3 }
+    ] };
+    CARDS.powder_marshal.text = "登场：若你有护甲，随机对一个敌方随从造成 2 点伤害。领袖获得 3 点护甲。";
+  }
+  // 灰港小刀手：余响没有「目标」上下文，targetBounty 永远为假 —— 改成「场上有悬赏目标」
+  if (CARDS.gh_cutthroat) {
+    CARDS.gh_cutthroat.deathrattle = { type: "ops", ops: [
+      { op: "if", cond: "bountyExists", then: [{ op: "damageRandomEnemy", amount: 2 }], else: [{ op: "damageRandomEnemy", amount: 1 }] }
+    ] };
+    CARDS.gh_cutthroat.text = "先遣。余响：若场上有悬赏目标，随机对一个敌方随从造成 2 点伤害；否则造成 1 点伤害。";
+  }
+  // ===== 2026-10-30 刻脉 v3 实装：敌方判定区 + 延时惩罚 =====
+  const makePulse = (id, cost, text, cond, penalty, faction) => {
+    const c = CARDS[id];
+    if (!c) return;
+    for (const k of ["attack", "health", "maxHealth", "baseAttack", "baseHealth", "keywords", "spell", "battlecry", "deathrattle", "passive", "deploy", "equip"]) delete c[k];
+    Object.assign(c, { type: "pulse", cost: cost, target: "none", keywords: [], text: text, pulse: { cond: cond, penalty: penalty } });
+    if (faction) c.faction = faction;
+  };
+  makePulse("vein_prospect", 3, "刻脉 · 盖在敌方判定区。敌方过完一个回合后，再下一次回合开始时翻开判定：若流脉为偶数，敌方领袖受到 3 点伤害。",
+    { cond: "veinEven" }, [{ op: "damageHero", amount: 3 }]);
+  makePulse("recon", 2, "刻脉 · 盖在敌方判定区。敌方过完一个回合后，再下一次回合开始时翻开判定：若敌方手牌不少于 4 张，敌方领袖受到 2 点伤害。",
+    { cond: "enemyHand", value: 4 }, [{ op: "damageHero", amount: 2 }]);
+  makePulse("frost_archivist", 3, "刻脉 · 盖在敌方判定区。敌方过完一个回合后，再下一次回合开始时翻开判定：若敌方有守备随从，随机对一个敌方随从造成 3 点伤害。",
+    { cond: "enemyTaunt" }, [{ op: "damageRandomEnemy", amount: 3 }]);
+  makePulse("mercenary", 3, "刻脉 · 盖在敌方判定区。敌方过完一个回合后，再下一次回合开始时翻开判定：若墓地里已有 3 个随从，敌方领袖受到 3 点伤害。",
+    { cond: "graveCount", value: 3 }, [{ op: "damageHero", amount: 3 }]);
+
+  // ===== 中立：坟墓机制补两张（不做新卡，改现有弱卡） =====
+  if (CARDS.chrono_scholar) {
+    CARDS.chrono_scholar.deathrattle = { type: "ops", ops: [
+      { op: "if", cond: { cond: "graveCount", value: 4 }, then: [{ op: "draw", amount: 2 }], else: [{ op: "draw", amount: 1 }] }
+    ] };
+    CARDS.chrono_scholar.text = "连携。余响：若墓地里已有 4 个随从，抽 2 张；否则抽 1 张。";
+  }
+  if (CARDS.sim_assistant) {
+    CARDS.sim_assistant.deathrattle = { type: "ops", ops: [
+      { op: "draw", amount: 1 },
+      { op: "if", cond: { cond: "graveCount", value: 3 }, then: [{ op: "draw", amount: 1 }] }
+    ] };
+    CARDS.sim_assistant.text = "余响：抽 1 张；若墓地里已有 3 个随从，再抽 1 张。";
+  }
+  // ===== 2026-10-30 刻脉进预组：不加卡，只换掉预组里重复的弱牌 =====
+  (() => {
+    const idOf = (name) => {
+      for (const k in CARDS) if (CARDS[k] && CARDS[k].name === name) return k;
+      return null;
+    };
+    const swap = (faction, fromName, toId) => {
+      const arr = DECKS[faction];
+      const fromId = idOf(fromName);
+      if (!arr || !fromId) return;
+      const i = arr.indexOf(fromId);
+      if (i >= 0) arr[i] = toId;
+    };
+    swap("academy", "学术辩论", "vein_prospect");
+    swap("academy", "奥能洞察", "recon");
+    swap("snow", "混沌裂隙", "frost_archivist");
+    swap("snow", "雾港水手", "mercenary");
+  })();
+  // ===== 2026-10-30 流脉棱镜并入刻脉（老脉痕系统整个删掉） =====
+  if (CARDS.vein_prism) {
+    const c = CARDS.vein_prism;
+    delete c.spell;
+    delete c.battlecry;
+    delete c.deathrattle;
+    delete c.passive;
+    c.type = "pulse";
+    c.cost = 3;
+    c.target = "none";
+    c.keywords = [];
+    c.pulse = { cond: { cond: "enemySpellLastTurn" }, penalty: [{ op: "damageHero", amount: 2 }, { op: "damageRandomEnemy", amount: 2 }] };
+    c.text = "刻脉 · 盖在敌方判定区。敌方过完一个回合后，再下一次回合开始时翻开判定：若敌方上个回合施放过战术，敌方领袖受到 2 点伤害，并随机对一个敌方随从造成 2 点伤害。";
+  }
+  // ===== 2026-10-30 文案收口：重复词 / 缺主语的碎片 =====
+  for (const c of Object.values(CARDS)) {
+    if (!c.text) continue;
+    c.text = c.text
+      .replace(/否则否则/g, "否则")
+      .replace(/然后然后/g, "然后")
+      .replace(/并且并且/g, "并且")
+      .replace(/如果如果/g, "如果")
+      .replace(/([\u4e00-\u9fa5])的的/g, "$1的")
+      .replace(/([\u4e00-\u9fa5])了了/g, "$1了")
+      .replace(/随机敌方随从(\d+)(?!点)/g, "随机对一个敌方随从造成 $1 点伤害")
+      .replace(/，{2,}/g, "，")
+      .replace(/；{2,}/g, "；");
+  }
+  // ===== 2026-10-30 预兆后续奖励：改成 discover 的 thenIfPulse（预兆到刻脉牌才给） =====
+  (() => {
+    const setOps = (id, ops) => { const c = CARDS[id]; if (c && c.battlecry) c.battlecry = { type: "ops", ops: ops }; };
+    setOps("old_ledger", [{ op: "discover", pool: "spell", thenIfPulse: [{ op: "draw", amount: 1 }] }]);
+    setOps("index_assistant", [{ op: "discover", pool: "spell", thenIfPulse: [{ op: "armor", amount: 2 }] }]);
+    setOps("gok_engineer", [{ op: "discover", pool: "spell", thenIfPulse: [{ op: "armor", amount: 2 }] }]);
+  })();
+  // ===== 2026-10-30 预兆池：战术或刻脉（否则「若它是刻脉牌」永远是假的） =====
+  (() => {
+    const flip = (id, follow) => {
+      const c = CARDS[id];
+      if (!c || !c.battlecry) return;
+      c.battlecry = { type: "ops", ops: [{ op: "discover", pool: "spellPulse", thenIfPulse: follow }] };
+    };
+    flip("old_ledger", [{ op: "draw", amount: 1 }]);
+    flip("index_assistant", [{ op: "armor", amount: 2 }]);
+    flip("gok_engineer", [{ op: "armor", amount: 2 }]);
+  })();
+  // ===== 2026-10-30 预兆池按文案对齐：没写限定就是任意牌 =====
+  (() => {
+    const setPool = (id, pool) => {
+      const c = CARDS[id];
+      if (!c) return;
+      const eff = c.battlecry || c.spell || c.passive;
+      if (!eff) return;
+      if (eff.type === "discover") { eff.pool = pool; return; }
+      const ops = eff.ops || [];
+      for (const op of ops) if (op.op === "discover") op.pool = pool;
+    };
+    setPool("monarch", "any");
+    setPool("bard", "any");
+    setPool("arcane_theorist", "spell");
+    setPool("frost_professor", "spell");
+    setPool("frost_page", "spell");
+    setPool("page_scholar", "spell");
+  })();
+  // ===== 2026-10-30 预兆文案统一：任意牌就说任意牌，限定类型就写明 =====
+  (() => {
+    const T = {
+      monarch: "登场：预兆：看牌库顶 3 张，选 1 张拿走（任意牌）。",
+      bard: "登场：预兆一张牌（看牌库顶 3 张，选 1 张拿走）。",
+      verious: "登场：你使用的下一张战术牌会施放三次。被动：每使用一张战术牌，预兆一张牌。",
+      old_ledger: "预兆一张战术牌或刻脉牌（从牌库顶往后找 3 张，选 1 张）。若它是刻脉牌，抽 1 张。",
+      arcane_theorist: "登场：预兆一张战术牌（从牌库顶往后找 3 张，选 1 张）。被动：每回合第一张战术牌使其获得 +1/+1。",
+      frost_professor: "登场：预兆一张战术牌（从牌库顶往后找 3 张，选 1 张）。抽 1 张。",
+      frost_page: "登场：预兆一张战术牌（从牌库顶往后找 3 张，选 1 张）。被动：每回合第一张战术牌使其获得 +1 攻击。",
+      page_scholar: "登场：预兆一张战术牌（从牌库顶往后找 3 张，选 1 张）。",
+      index_assistant: "登场：预兆一张战术牌或刻脉牌（从牌库顶往后找 3 张，选 1 张）。若它是刻脉牌，领袖获得 2 点护甲。",
+      gok_engineer: "登场：预兆一张战术牌或刻脉牌（从牌库顶往后找 3 张，选 1 张）。若它是刻脉牌，领袖获得 2 点护甲。"
+    };
+    for (const id of Object.keys(T)) {
+      const c = CARDS[id];
+      if (c) c.text = T[id];
+    }
+  })();
+  // ===== 2026-10-30 连携改用 combo：不再是风怒（两次攻击），而是同阵位有友方时每次攻击 +1 =====
+  (() => {
+    for (const c of Object.values(CARDS)) {
+      if (!c.keywords || !c.keywords.includes("windfury")) continue;
+      c.keywords = c.keywords.map((k) => (k === "windfury" ? "combo" : k));
+    }
+  })();
+  // ===== 2026-10-30 combo = 连携（windfury 只留给真正的风怒，当前没有卡在用） =====
+  if (KEYWORDS) {
+    KEYWORDS.combo = { name: "连携", icon: "⚡", color: "#8fd6ff" };
+  }
+  // ===== 2026-10-30 变形/获得控制权补词条：让卡面真的显示这两个关键词 =====
+  (() => {
+    const addKw = (id, kw) => {
+      const c = CARDS[id];
+      if (!c) return;
+      c.keywords = c.keywords || [];
+      if (!c.keywords.includes(kw)) c.keywords.unshift(kw);
+    };
+    if (CARDS.stone_alchemist) {
+      CARDS.stone_alchemist.text = "变形。登场：将一个敌方随从变成 1/1 石像（移出关键词与卡牌效果）。";
+      addKw("stone_alchemist", "transform");
+    }
+    if (CARDS.molan) {
+      CARDS.molan.text = "获得控制权。登场：随机获得一个敌方随从的控制权。";
+      addKw("molan", "takeControl");
+    }
+    if (CARDS.unquiet_dowager) {
+      CARDS.unquiet_dowager.text = "获得控制权。余响：随机获得一个行动力不高于 4 的敌方随从的控制权。";
+      addKw("unquiet_dowager", "takeControl");
+    }
+    if (CARDS.xiu) {
+      CARDS.xiu.text = "复制。被动：此牌在你手牌中时，会变成对手上一张随从牌的 3/4 复制。";
+      addKw("xiu", "copy");
+    }
+    if (CARDS.mirror_regent) CARDS.mirror_regent.text = "复制。登场：复制一个敌方随从的 1/1 复制（保留关键词与效果，不触发登场）。";
+    if (CARDS.faceless_king) CARDS.faceless_king.text = "复制。登场：复制一个友方随从。";
+    if (CARDS.twin_weaver) CARDS.twin_weaver.text = "复制。登场：召唤一个自身的 1/1 复制（不触发登场）。";
+    if (KEYWORDS) {
+      KEYWORDS.transform = KEYWORDS.transform || { name: "变形", icon: "✦", color: "#d7a7ff" };
+      KEYWORDS.takeControl = KEYWORDS.takeControl || { name: "获得控制权", icon: "✥", color: "#ffb0a0" };
+      KEYWORDS.copy = KEYWORDS.copy || { name: "复制", icon: "❐", color: "#b7d8ff" };
+    }
+  })();
+  // ===== 2026-10-30 清理没用到的关键词定义（只留卡牌实际会出现的） =====
+  if (KEYWORDS) {
+    for (const k of ["charge", "freeze", "counter", "windfury"]) delete KEYWORDS[k];
+  }
+  // ===== 2026-10-30 石化给学院一张、控制给共和国一张（不加卡，改弱卡） =====
+  (() => {
+    if (CARDS.record_shot) {
+      const c = CARDS.record_shot;
+      c.name = "归档";
+      c.cost = 4;
+      c.type = "spell";
+      c.target = "enemy";
+      c.spell = { type: "transformEnemyToToken", token: "empire_undead", tokenName: "档案虫", attack: 1, health: 1 };
+      c.text = "变形。把一个敌方随从变成 1/1 档案虫（移出关键词与卡牌效果）。";
+    }
+    if (CARDS.anti_rush) {
+      const c = CARDS.anti_rush;
+      c.name = "接管";
+      c.cost = 4;
+      c.type = "spell";
+      c.target = "none";
+      c.spell = { type: "takeControlRandomEnemy" };
+      c.text = "获得控制权。获得一个随机敌方随从的控制权（需要有空的阵位）。";
+    }
+  })();
+  // ===== 2026-10-30 归档/接管 进预组 + 关键词标记 =====
+  (() => {
+    if (CARDS.record_shot) {
+      CARDS.record_shot.keywords = ["transform"];
+      const arr = DECKS.academy;
+      if (arr) { const from = arr.indexOf("record_shot"); if (from < 0) { const dup = arr.indexOf("ac_arcane_insight"); if (dup >= 0) arr[dup] = "record_shot"; } }
+    }
+    if (CARDS.anti_rush) {
+      CARDS.anti_rush.keywords = ["takeControl"];
+      CARDS.anti_rush.cost = 3;
+      const arr = DECKS.republic;
+      if (arr) { const from = arr.indexOf("anti_rush"); if (from < 0) { const dup = arr.indexOf("line_rotation"); if (dup >= 0) arr[dup] = "anti_rush"; } }
+    }
+  })();
+  // ===== 2026-10-30 归档改挂到「知识爆发」上（record_shot 是衍生物，不能进牌组） =====
+  (() => {
+    // 把衍生物恢复成原来的小战术，别留在可收集池里误导
+    if (CARDS.record_shot) {
+      Object.assign(CARDS.record_shot, {
+        name: "速记",
+        cost: 1,
+        type: "spell",
+        target: "enemy",
+        spell: { type: "damage", amount: 1 },
+        text: "对一个敌方随从造成 1 点伤害。",
+        keywords: [],
+      });
+    }
+    if (CARDS.ac_knowledge_burst) {
+      const c = CARDS.ac_knowledge_burst;
+      c.name = "归档";
+      c.cost = 4;
+      c.target = "enemy";
+      c.spell = { type: "transformEnemyToToken", token: "empire_undead", tokenName: "档案虫", attack: 1, health: 1 };
+      c.text = "变形。把一个敌方随从变成 1/1 档案虫（移出关键词与卡牌效果）。";
+      c.keywords = ["transform"];
+      const arr = DECKS.academy;
+      if (arr) {
+        const idx = arr.indexOf("record_shot");
+        if (idx >= 0) arr[idx] = "ac_knowledge_burst";
+      }
+    }
+  })();
+  // ===== 2026-10-30 归档预组去重（同名上限 2） =====
+  (() => {
+    const arr = DECKS.academy;
+    if (!arr) return;
+    let seen = 0;
+    for (let i = arr.length - 1; i >= 0; i--) {
+      if (arr[i] !== "ac_knowledge_burst" && arr[i] !== "record_shot") continue;
+      seen += 1;
+      if (seen > 2) arr.splice(i, 1);
+      else arr[i] = "ac_knowledge_burst";
+    }
+  })();
+  // ===== 2026-10-30 归档预组补回 30 张（补一张学院低费随从） =====
+  (() => {
+    const arr = DECKS.academy;
+    if (!arr) return;
+    while (arr.length < 30) arr.push("doorman");
+    if (arr.length > 30) arr.length = 30;
+  })();
+  // ===== 2026-10-30 归档预组：老门房回落到 2 张，空位补补给箱 =====
+  (() => {
+    const arr = DECKS.academy;
+    if (!arr) return;
+    let n = 0;
+    for (let i = arr.length - 1; i >= 0; i--) {
+      if (arr[i] !== "doorman") continue;
+      n += 1;
+      if (n > 2) arr[i] = "supply_cache";
+    }
+  })();
+  // ===== 2026-10-30 归档换到「破甲演算」：学院拿变形，但别动知识爆发这种抽牌引擎 =====
+  (() => {
+    // 知识爆发还原成抽牌
+    if (CARDS.ac_knowledge_burst) {
+      Object.assign(CARDS.ac_knowledge_burst, {
+        name: "知识爆发",
+        cost: 3,
+        target: "none",
+        spell: { type: "ops", ops: [{ op: "draw", amount: 1 }, { op: "if", cond: "spells", then: [{ op: "mana", amount: 1 }] }] },
+        text: "抽 1 张。若本回合已施放战术，本回合获得 1 点行动力。",
+        keywords: [],
+      });
+    }
+    // 破甲演算 → 归档（变身别带冻结，直接变 1/1）
+    if (CARDS.armor_break) {
+      Object.assign(CARDS.armor_break, {
+        name: "归档",
+        cost: 3,
+        target: "enemy",
+        spell: { type: "transformEnemyToToken", token: "empire_undead", tokenName: "档案虫", attack: 1, health: 1 },
+        text: "变形。把一个敌方随从变成 1/1 档案虫（移出关键词与卡牌效果）。",
+        keywords: ["transform"],
+      });
+    }
+    // 预组：把补给箱换成归档，保持 30 张
+    const arr = DECKS.academy;
+    if (arr) {
+      const i = arr.indexOf("supply_cache");
+      if (i >= 0) arr[i] = "armor_break";
+    }
+  })();
+  // ===== 2026-10-30 接管 3→4 费（随机抢随从强度偏高） =====
+  if (CARDS.anti_rush) CARDS.anti_rush.cost = 4;
+  // ===== 2026-10-30 学院补强：预组里那几个低费随从太软，各加一点身材 =====
+  (() => {
+    const buff = (id, atk, hp) => {
+      const c = CARDS[id];
+      if (!c) return;
+      if (atk) { c.attack = (c.attack || 0) + atk; c.baseAttack = c.attack; }
+      if (hp) { c.health = (c.health || 0) + hp; c.maxHealth = c.health; c.health = c.maxHealth; c.baseHealth = c.health; }
+    };
+    buff("doorman", 1, 0);          // 老门房 1/3 → 2/3
+    buff("arcane_scribe", 1, 0);    // 奥能抄写员 1/3 → 2/3
+    buff("council_elder", 1, 0);    // 议事会元老 2/4 → 3/4
+    buff("spell_novice", 1, 0);     // 战术学徒 3/5 → 4/5
+    buff("page_scholar", 0, 1);     // 页隙学者 2/4 → 2/5
+  })();
+  // ===== 2026-10-30 归档 3→2 费（学院缺的是处理守备大墙的手段） =====
+  if (CARDS.armor_break) CARDS.armor_break.cost = 2;
+  // ===== 2026-10-30 阵型/装备转战术 第一批：把没人在用的阵型/装备换成有趣机制的战术牌 =====
+  (() => {
+    const toSpell = (id, cfg) => {
+      const c = CARDS[id];
+      if (!c) return;
+      for (const k of ["formation", "equip", "equipAura", "keywords", "battlecry", "deathrattle", "passive"]) delete c[k];
+      Object.assign(c, { type: "spell", name: cfg.name, cost: cfg.cost, target: cfg.target || "none", spell: cfg.spell, text: cfg.text });
+      if (cfg.keywords) c.keywords = cfg.keywords;
+    };
+
+    // 学院：复制 / 变形
+    toSpell("formation_script", {
+      name: "誊本", cost: 3, target: "friendly",
+      spell: { type: "copyFriendlyToHand", costUp: 1 },
+      text: "复制。复制一个友方随从置入手牌，复制牌行动力 +1。",
+      keywords: ["copy"],
+    });
+    toSpell("prohibition", {
+      name: "驳论", cost: 4, target: "enemy",
+      spell: { type: "transformEnemyToToken", token: "empire_undead", tokenName: "驳倒的论文", attack: 1, health: 1 },
+      text: "变形。把一个敌方随从变成 1/1 论文（移出关键词与卡牌效果）。",
+      keywords: ["transform"],
+    });
+    toSpell("whitefrost_bell", {
+      name: "抄录", cost: 2,
+      spell: { type: "copyLastSpellToHand" },
+      text: "复制。复制你本回合最后施放的一张战术牌置入手牌（没有则抽 1 张）。",
+      keywords: ["copy"],
+    });
+    toSpell("cataloging_lens", {
+      name: "编目", cost: 2,
+      spell: { type: "discover", pool: "anyFaction" },
+      text: "预兆一张任意阵营的牌（看牌库顶 3 张，选 1 张拿走）。",
+    });
+
+    // 共和国 / 西昭 / 帝国：控制与变形
+    toSpell("martial_law", {
+      name: "征召接管", cost: 5,
+      spell: { type: "takeControlRandomEnemy" },
+      text: "获得控制权。获得一个随机敌方随从的控制权（需要有空的阵位）。",
+      keywords: ["takeControl"],
+    });
+    toSpell("blood_ritual", {
+      name: "血契接管", cost: 3,
+      spell: { type: "ops", ops: [{ op: "damageHeroSelf", amount: 3 }, { op: "takeControlRandomEnemy" }] },
+      text: "获得控制权。领袖受到 3 点伤害，然后获得一个随机敌方随从的控制权。",
+      keywords: ["takeControl"],
+    });
+    toSpell("bone_fang_blade", {
+      name: "骨刃蚀形", cost: 3, target: "enemy",
+      spell: { type: "transformEnemyToToken", token: "republic_recruit", tokenName: "骨仆", attack: 1, health: 1 },
+      text: "变形。把一个敌方随从变成 1/1 骨仆（移出关键词与卡牌效果）。",
+      keywords: ["transform"],
+    });
+    toSpell("zone_barrage", {
+      name: "双联齐射", cost: 4, target: "friendly",
+      spell: { type: "copyFriendlyToHand", costUp: 0 },
+      text: "复制。复制一个友方随从置入手牌。",
+      keywords: ["copy"],
+    });
+
+    // 中立：跨阵营预兆（和任何阵营都能打交道）
+    toSpell("wanderer_charm", {
+      name: "向导的指引", cost: 2,
+      spell: { type: "discover", pool: "anyFaction" },
+      text: "预兆一张任意阵营的牌（看牌库顶 3 张，选 1 张拿走）。",
+    });
+
+    // 莫纳克与吟游诗人：卡面本来就写「任意阵营」，池子之前只给自己阵营，这里修掉
+    if (CARDS.monarch && CARDS.monarch.battlecry) CARDS.monarch.battlecry.pool = "anyFaction";
+    for (const op of ((CARDS.bard && CARDS.bard.battlecry && CARDS.bard.battlecry.ops) || [])) if (op.op === "discover") op.pool = "anyFaction";
+    if (CARDS.bard) CARDS.bard.text = "登场：预兆一张任意阵营的牌（看牌库顶 3 张，选 1 张拿走）。";
+  })();
+  // ===== 2026-10-30 第二批：把墓地 / 流脉 / 刻脉 三个机制分给别的阵营 =====
+  (() => {
+    const strip = (c) => {
+      for (const k of ["formation", "equip", "equipAura", "keywords", "battlecry", "deathrattle", "passive", "spell", "pulse"]) delete c[k];
+      return c;
+    };
+    const toSpell = (id, cfg) => {
+      const c = CARDS[id];
+      if (!c) return;
+      strip(c);
+      Object.assign(c, { type: "spell", name: cfg.name, cost: cfg.cost, target: cfg.target || "none", spell: cfg.spell, text: cfg.text });
+      if (cfg.keywords) c.keywords = cfg.keywords;
+    };
+    const toPulse = (id, cfg) => {
+      const c = CARDS[id];
+      if (!c) return;
+      strip(c);
+      Object.assign(c, { type: "pulse", name: cfg.name, cost: cfg.cost, pulse: { cond: cfg.cond, value: cfg.value, penalty: cfg.penalty }, text: cfg.text });
+      c.keywords = ["pulse"];
+    };
+
+    // ---- 墓地机制分给洛斯汰 / 共和国 ----
+    toSpell("monster_summon", {
+      name: "尸潮召唤", cost: 4,
+      spell: { type: "ops", ops: [{ op: "graveSummon", count: 1, maxCost: 4 }] },
+      text: "墓地：从墓地召唤一个行动力不高于 4 的随从到你最左的空阵位。",
+    });
+    toSpell("formation_wall", {
+      name: "阵亡名册", cost: 3,
+      spell: { type: "ops", ops: [{ op: "graveSummon", count: 1 }, { op: "armor", amount: 2 }] },
+      text: "墓地：从墓地召唤一个随从到你最左的空阵位，领袖获得 2 点护甲。",
+    });
+
+    // ---- 流脉机制分给普卫岛 / 帝国 ----
+    toSpell("ksetra_beacon_item", {
+      name: "潮心共鸣", cost: 3,
+      spell: { type: "ops", ops: [{ op: "flowDraw", draw: 1, vein: 2 }] },
+      text: "掘脉 2：流脉 +2，抽 1 张。",
+    });
+    toSpell("tide_ward_bracer", {
+      name: "潮汐炮击", cost: 4,
+      spell: { type: "ops", ops: [{ op: "flowDraw", vein: 2 }, { op: "damageRandomEnemy", amount: 3 }] },
+      text: "掘脉 2：流脉 +2，然后对一个随机敌方随从造成 3 点伤害。",
+    });
+
+    // ---- 刻脉分给灰港 / 西昭（各用本阵营的条件）----
+    toPulse("gh_bounty_board", {
+      name: "黑市刻印", cost: 3, cond: "bountyExists",
+      penalty: [{ op: "damageHero", amount: 3 }],
+      text: "刻脉：盖在敌方判定区。敌方过完一个回合后翻开判定：若场上有悬赏目标，敌方领袖受到 3 点伤害。",
+    });
+    toPulse("five_department_badge", {
+      name: "血债刻印", cost: 3, cond: "graveCount", value: 3,
+      penalty: [{ op: "damageHero", amount: 3 }, { op: "healHero", amount: 2 }],
+      text: "刻脉：盖在敌方判定区。敌方过完一个回合后翻开判定：若墓地已有 3 个随从，敌方领袖受到 3 点伤害，你恢复 2 点生命。",
+    });
+  })();
+  // ===== 2026-10-30 刻脉卡不挂 pulse 关键词（跟其他刻脉卡一致） =====
+  (() => {
+    for (const id of ["gh_bounty_board", "five_department_badge"]) {
+      const c = CARDS[id];
+      if (c && c.keywords) c.keywords = c.keywords.filter((k) => k !== "pulse");
+    }
+  })();
+  // ===== 2026-10-30 潮心共鸣拆成标准 draw op（审计工具只认 draw） =====
+  if (CARDS.ksetra_beacon_item && CARDS.ksetra_beacon_item.spell) {
+    CARDS.ksetra_beacon_item.spell = { type: "ops", ops: [{ op: "flowDraw", vein: 2 }, { op: "draw", amount: 1 }] };
+  }
+  // ===== 2026-10-30 第三批：手牌机制分给帝国/西昭/共和国/学院，中立加跨阵营 =====
+  (() => {
+    const toSpell = (id, cfg) => {
+      const c = CARDS[id];
+      if (!c) return;
+      for (const k of ["formation", "equip", "equipAura", "keywords", "battlecry", "deathrattle", "passive"]) delete c[k];
+      Object.assign(c, { type: "spell", name: cfg.name, cost: cfg.cost, target: cfg.target || "none", spell: cfg.spell, text: cfg.text });
+      if (cfg.keywords) c.keywords = cfg.keywords;
+    };
+
+    // 帝国：手牌降费
+    toSpell("iron_order_hammer", {
+      name: "军需调拨", cost: 3,
+      spell: { type: "ops", ops: [{ op: "handCostDown", amount: 1 }, { op: "draw", amount: 1 }] },
+      text: "手牌行动力 -1，抽 1 张。",
+    });
+
+    // 西昭：弃牌换抽牌
+    toSpell("blood_contract", {
+      name: "血契清单", cost: 2,
+      spell: { type: "ops", ops: [{ op: "discardRandom", amount: 1 }, { op: "draw", amount: 2 }] },
+      text: "弃掉一张随机手牌，抽 2 张。",
+    });
+
+    // 共和国：手牌越多抽得越多
+    toSpell("border_lance", {
+      name: "征召批文", cost: 3,
+      spell: { type: "ops", ops: [{ op: "draw", amount: 1 }, { op: "if", cond: "handAtLeast", value: 5, then: [{ op: "draw", amount: 1 }] }] },
+      text: "抽 1 张。若你手牌不少于 5 张，再抽 1 张。",
+    });
+
+    // 学院：一手牌换两张
+    toSpell("school_debate", {
+      name: "摘要", cost: 2,
+      spell: { type: "ops", ops: [{ op: "draw", amount: 2 }] },
+      text: "抽 2 张。",
+    });
+
+    // 中立：跨阵营预兆 + 借敌方随从
+    toSpell("gh_black_market", {
+      name: "外交使节", cost: 2,
+      spell: { type: "discover", pool: "anyFaction" },
+      text: "预兆一张任意阵营的牌（看牌库顶 3 张，选 1 张拿走）。",
+    });
+    toSpell("gambler_dice", {
+      name: "雇佣契约", cost: 3, target: "enemy",
+      spell: { type: "copyEnemyMinion1of1" },
+      text: "复制。复制一个敌方随从的 1/1 复制体（保留关键词与效果）。",
+      keywords: ["copy"],
+    });
+  })();
   return { FACTIONS, FACTION_IDS, nextFaction, HEROES, CARDS, DECKS, NEUTRAL_DECK, KEYWORDS, DECK_STRATEGIES, DECK_SPECIALS, DECK_TRIM, DECK_RARITY_LIMITS, cardPool, deckRarityCounts, isExactPreset, validateDeck, autoBuildDeck, maxCopies };
 });
 

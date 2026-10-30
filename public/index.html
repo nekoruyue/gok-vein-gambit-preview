@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, user-scalable=yes">
   <title>戈克世界：流脉牌局</title>
   <link rel="icon" href="favicon.ico">
-  <link rel="stylesheet" href="css/style.css?v=20261029e1">
-  <link rel="stylesheet" href="css/hs-layout.css?v=20261029e1">
-  <link rel="stylesheet" href="css/art-fixes.css?v=20261029e1">
-  <link rel="stylesheet" href="css/mobile.css?v=20261029e1">
-  <link rel="stylesheet" href="css/vfx.css?v=20261029e1">
+  <link rel="stylesheet" href="css/style.css?v=20261030e6">
+  <link rel="stylesheet" href="css/hs-layout.css?v=20261030e6">
+  <link rel="stylesheet" href="css/art-fixes.css?v=20261030e6">
+  <link rel="stylesheet" href="css/mobile.css?v=20261030e6">
+  <link rel="stylesheet" href="css/vfx.css?v=20261030e6">
   <link rel="stylesheet" href="css/archive.css?v=20261026ui1">
   <link rel="stylesheet" href="css/opening.css?v=20261026o1">
     <link rel="stylesheet" href="css/card-stats.css?v=20261028s14">
@@ -296,7 +296,7 @@
           </button>
           <div id="mode-guide-body" class="mode-guide-body" hidden>
             <button type="button" data-mode-guide="basics"><strong>游戏基本规则</strong><span>对局核心 · 阵位 · 流脉</span></button>
-            <button type="button" data-mode-guide="advanced"><strong>游戏进阶规则</strong><span>五类卡牌 · 关键词 · 事件</span></button>
+            <button type="button" data-mode-guide="advanced"><strong>游戏进阶规则</strong><span>六类卡牌 · 关键词 · 事件</span></button>
             <button type="button" data-mode-guide="deck"><strong>组卡教学</strong><span>30 张 · 曲线 · 品级 · 标签</span></button>
             <button type="button" data-mode-guide="drill"><strong>实战演练</strong><span>起手 · 守备 · 流脉 · 斩杀</span></button>
           </div>
@@ -450,7 +450,7 @@
                 <p>当回合打出的随从不能立即攻击，需要等到下一回合。随从互殴时双方同时受到等于对方攻击力的伤害，生命归零就离场；不是“谁先打谁就赢”。先遣随从是例外：登场当回合就能攻击随从，但不能直接攻击敌方领袖。</p>
               </article>
               <article class="tutorial-card">
-                <h4>五类卡牌</h4>
+                <h4>六类卡牌（含刻脉卡）</h4>
                 <p>卡牌分为随从、战术、阵型、装备、债务五类。随从站场，战术即时结算，阵型挂阵位，装备给领袖，债务塞给对手。现在只要知道它们落点不同，具体区别在进阶规则里展开。</p>
               </article>
               <article class="tutorial-card">
@@ -520,11 +520,11 @@
               <article class="tutorial-card"><h4>逆脉</h4><p>逆脉 X：最多消耗 X 点共享流脉；不足 X 时消耗现有流脉，卡面效果仍然结算，但流脉为 0 时不能触发。逆脉会把风险条往回拉，但拉回去不等于安全。</p></article>
               <article class="tutorial-card"><h4>镇脉</h4><p>镇脉 X：最多消耗 X 点共享流脉，并按实际消耗的点数获得等量护甲。流脉不足时只消耗现有的，不会因为不足而无法打出。</p></article>
               <article class="tutorial-card"><h4>涨脉</h4><p>涨脉 X：本回合行动力上限 +X（最多到 12），并立即获得 X 点行动力；同时流脉 +X。行动力不保留到下一回合。它和掘脉的区别是：掘脉拿牌，涨脉拿当回合节奏。</p></article>
-              <article class="tutorial-card"><h4>刻脉</h4><p>刻脉 X：在目标阵位刻下一道脉痕。共享流脉首次达到或越过 X 时，触发该阵位的刻脉效果，然后脉痕消失。每个阵位最多一道脉痕；刻脉是提前布置，不会被沉默或偷取。</p></article>
+              <article class="tutorial-card"><h4>刻脉</h4><p>刻脉是独立的刻脉卡：盖进对手的判定区，对方完整过一个回合后，再下一次回合开始时翻开判定，条件成立就吃惩罚，不成立则无事，判完进弃牌堆。它的条件常常看流脉奇偶，所以流脉既是资源，也是刻脉卡能不能命中的开关。判定区只有 1 格，新盖的会把旧的挤掉。</p></article>
             </div>
             <p class="manual-note">4 震荡：所有随从受到 1 点伤害；7 裂隙：双方领袖受到 2 点伤害；10 魔物潮：所有随从受到 3 点伤害，双方领袖受到 5 点伤害。注意这是“双方一起承受”，不是只打对手；低血量时推进流脉可能先把自己送走。</p>
             <div class="manual-callout"><strong>流脉会重复触发</strong><p>世界事件不是一局只来一次。逆脉、镇脉、压脉把流脉降回去后，再从下方跨过 4/7/10，事件会再次触发；12 回流清空后重新积累，也会进入下一轮。斩杀前不仅要看当前数值，还要看你这一回合会把流脉推到哪里、会不会连续跨过两个阈值。</p></div>
-            <div class="manual-callout"><strong>当前机制归属</strong><p>引脉八阵营通用；刻脉属于学院、雪都；镇脉属于帝国、共和国；逆脉属于普卫岛、灰港同盟；压脉属于西昭、洛斯汰；掘脉和涨脉来自中立卡。稀有/史诗卡会围绕这些权限展开，不要把每个阵营都当成同一套流脉卡组。</p></div>
+            <div class="manual-callout"><strong>当前机制归属</strong><p>引脉八阵营通用；刻脉是独立卡牌类型（学院 3 张、雪都 1 张、中立 1 张，靠判定区而不是流脉阈值）；镇脉属于帝国、共和国；逆脉属于普卫岛、灰港同盟；压脉属于西昭、洛斯汰；掘脉和涨脉来自中立卡。稀有/史诗卡会围绕这些权限展开，不要把每个阵营都当成同一套流脉卡组。</p></div>
             <div class="manual-callout"><strong>控流不是一直不涨</strong><p>需要抽牌和资源时该掘脉就掘脉，但要在 3、6、9 这种“差一点”的位置停一下，先算对手能不能利用下一个阈值。需要拖回合时，逆脉和镇脉可以把流脉拉回安全区；需要清场时，流脉事件也可以当成一张“双方都吃”的额外战术。</p></div>
           </section>
 
@@ -538,20 +538,20 @@
             </div>
             <div class="tutorial-table-wrap">
               <table class="tutorial-table">
-                <thead><tr><th>阵营 / 英雄</th><th>英雄技能</th><th>上手难度</th><th>适合的玩法</th></tr></thead>
+                <thead><tr><th>阵营 / 英雄</th><th>生命</th><th>英雄技能</th><th>上手难度</th><th>适合的玩法</th></tr></thead>
                 <tbody>
-                  <tr><td>普卫岛 · 莱恩</td><td>协调（2）：友方随从 +0/+1；同阵位有另一个友方随从时改为 +1/+1</td><td>低</td><td>治疗、同阵位配合、稳定站场</td></tr>
-                  <tr><td>学院 · 玛尔塔</td><td>演算（被动）：每回合第一张战术牌行动力 -2</td><td>中高</td><td>连续施放战术、降费、战术组合</td></tr>
-                  <tr><td>西昭 · 卡尔纳</td><td>血祭（2）：对自己造成 2 点伤害，抽 1 张牌</td><td>中高</td><td>用生命换资源、血祭、快攻</td></tr>
-                  <tr><td>共和国 · 沃尔夫拉姆</td><td>整编（2）：把手牌变成行动力 +1 的同阵营牌，最高 10 行动力</td><td>高</td><td>手牌规划、阵型、守备</td></tr>
-                  <tr><td>帝国 · 奥托</td><td>炮击（2）：对一个敌方随从或敌方领袖造成 1 点伤害</td><td>低</td><td>补刀、控场、护甲</td></tr>
-                  <tr><td>灰港同盟 · 莫纳克</td><td>悬赏（被动）：悬赏名单上的随从死亡时，获得 1 点护甲并抽 1 张牌</td><td>中</td><td>悬赏标记、击杀回报、节奏</td></tr>
-                  <tr><td>洛斯汰聚落 · 贝莱娜</td><td>潮生（2）：召唤一个 1/1 魔物；若你控制其他魔物，抽 1 张牌</td><td>低中</td><td>铺场、魔物、死亡补位</td></tr>
-                  <tr><td>雪都 · 熙尔娜</td><td>凝时（2）：冻结一个敌方随从；若它已经被冻结，抽 1 张牌</td><td>中高</td><td>冻结、碎冰、控制后期</td></tr>
+                  <tr><td>普卫岛 · 莱恩</td><td>28 生命 · 3 护甲</td><td>协调（被动）：回合开始时，你每控制 1 个阵型或装备，就获得 1 点护甲</td><td>低</td><td>阵型与装备的护甲收益、稳定站场</td></tr>
+                  <tr><td>学院 · 玛尔塔</td><td>30 生命 · 4 护甲</td><td>演算（被动）：每回合第一张战术牌行动力消耗 -2</td><td>中高</td><td>战术连发、降费、刻脉卡布场</td></tr>
+                  <tr><td>西昭 · 卡尔纳</td><td>25 生命 · 0 护甲</td><td>血祭（2）：对自己造成 1 点伤害，抽 1 张牌</td><td>中高</td><td>用生命换手牌、快攻、低血反打</td></tr>
+                  <tr><td>共和国 · 沃尔夫拉姆</td><td>25 生命 · 0 护甲</td><td>整编（2）：使一个友方随从获得 +1/+1</td><td>低</td><td>养大哥、阵型换血、守备反打</td></tr>
+                  <tr><td>帝国 · 奥托</td><td>27 生命 · 3 护甲</td><td>炮击（2）：对一个敌方随从造成 2 点伤害（打不了领袖）</td><td>低</td><td>清小随从、控场、护甲消耗</td></tr>
+                  <tr><td>灰港同盟 · 莫纳克</td><td>30 生命 · 5 护甲</td><td>悬赏（被动）：悬赏名单上的随从死亡时，获得 2 点护甲并抽 1 张牌</td><td>中</td><td>悬赏标记、击杀回报、尸体节奏</td></tr>
+                  <tr><td>洛斯汰聚落 · 贝莱娜</td><td>30 生命 · 3 护甲</td><td>潮生（2）：召唤一个 1/1 洛斯汰魔物</td><td>低</td><td>铺场、魔物、死亡补位</td></tr>
+                  <tr><td>雪都 · 熙尔娜</td><td>26 生命 · 2 护甲</td><td>凝时（被动）：每回合第一次冻结敌方随从时，抽 1 张牌</td><td>中高</td><td>冻结、碎冰、控制后期</td></tr>
                 </tbody>
               </table>
             </div>
-            <div class="manual-callout"><strong>新手建议</strong><p>第一次玩先用普卫岛的莱恩，技能简单、能练同阵位和交换；或者用帝国的奥托，炮击补刀很直观。沃尔夫拉姆和玛尔塔需要记牌序和行动力，不建议第一局就上。英雄技能不是每回合必须用，但大多数回合用掉比省着更划算。</p></div>
+            <div class="manual-callout"><strong>新手建议</strong><p>第一次玩可以用帝国的奥托（炮击补刀很直观）或共和国的沃尔夫拉姆（整编养一个随从，规则最少）。莱恩和莫纳克是纯被动，不用管技能按钮，但要记得围绕阵型/装备或悬赏去铺。卡尔纳、玛尔塔、熙尔娜都要算资源和出手顺序，不建议第一局就上。三个被动英雄（莱恩、莫纳克、熙尔娜）的效果在回合开始自动结算，你只需要用好主动英雄那 2 点行动力。</p></div>
           </section>
 
           <section class="manual-section" id="tutorial-factions">
@@ -567,13 +567,13 @@
                 <thead><tr><th>阵营</th><th>核心打法</th><th>强势点</th><th>要注意</th></tr></thead>
                 <tbody>
                   <tr><td>普卫岛</td><td>治疗、护甲、同阵位续航</td><td>消耗战、把溢出治疗转成护甲、守住阵位</td><td>爆发偏低，别只奶不做事</td></tr>
-                  <tr><td>学院</td><td>战术连发、降费、复写、抽牌</td><td>战术解场、手牌资源、连续施放</td><td>怕手牌打空，也怕行动力卡住</td></tr>
+                  <tr><td>学院</td><td>战术连发、降费、抽牌、刻脉卡布场</td><td>战术解场、手牌资源、用刻脉卡压对手两回合</td><td>怕手牌打空，也怕行动力卡住；刻脉落空就白费一张</td></tr>
                   <tr><td>西昭</td><td>血祭、债务、弃牌、变形</td><td>精准解场、用生命换节奏、干扰手牌</td><td>血量是资源也是命，别把自己祭死</td></tr>
                   <tr><td>共和国</td><td>守备、格挡、护甲、阵型</td><td>守阵位、拖到高费、反打</td><td>主动进攻慢，怕被绕开守备</td></tr>
-                  <tr><td>帝国</td><td>炮击、护甲、消耗流脉、大随从</td><td>稳定补刀、护甲、后期压制</td><td>流脉消耗要算，别把事件推给自己</td></tr>
-                  <tr><td>灰港同盟</td><td>悬赏、低费节奏、毒与刺客</td><td>标记高价值目标、击杀后滚雪球</td><td>需要目标死亡，空标记会亏节奏</td></tr>
+                  <tr><td>帝国</td><td>同一套牌池两条路：叠甲消耗流 或 炮击清场流</td><td>护甲越叠越厚、炮击稳定清小随从、后期靠大随从压</td><td>炮击打不了领袖，纯炮击流收不了人头；流脉消耗要算</td></tr>
+                  <tr><td>灰港同盟</td><td>悬赏标记 + 邪修尸体：死掉的随从变成资源</td><td>标记高价值目标、击杀换护甲和手牌、尸体二次利用</td><td>需要目标死亡，空标记会亏节奏；怕对手不给你交换</td></tr>
                   <tr><td>洛斯汰聚落</td><td>魔物铺场、死亡补位、巨兽</td><td>横向展开、用尸体换场面</td><td>怕群体伤害和冻结</td></tr>
-                  <tr><td>雪都</td><td>冻结、碎冰、控制、后期</td><td>锁攻击、惩罚被冻结的随从</td><td>冻结不是硬解，解不掉大随从会被反打</td></tr>
+                  <tr><td>雪都</td><td>冻结、碎冰、控制、刻脉卡惩罚守备</td><td>锁攻击、惩罚被冻结的随从、专治爱摆守备的对手</td><td>冻结不是硬解，解不掉大随从会被反打</td></tr>
                   <tr><td>中立</td><td>复制、抽牌、通用资源</td><td>补曲线、补手牌、补关键效果</td><td>别为了中立牌丢掉阵营核心</td></tr>
                 </tbody>
               </table>
@@ -584,11 +584,11 @@
             <div class="manual-head">
               <span class="manual-index">06</span>
               <div>
-                <h3>五类卡牌</h3>
+                <h3>六类卡牌</h3>
                 <p>看清卡框和定位，再决定这张牌什么时候出。</p>
               </div>
             </div>
-            <div class="manual-grid manual-grid-5">
+            <div class="manual-grid manual-grid-6">
               <article class="tutorial-card">
                 <span class="manual-tag">随从卡</span>
                 <h4>核心输出与场面单位</h4>
@@ -614,9 +614,14 @@
                 <h4>塞给对手的任务</h4>
                 <p>打出后会洗进对手牌库。对手抽到并主动打出时，才开始本回合的债务任务；任务没完成，会在回合结束受到伤害。对手不打出，它就只是占一张手牌，所以债务卡更像干扰，不是稳定直伤。对手也可以选择硬吃伤害保节奏。</p>
               </article>
+              <article class="tutorial-card">
+                <span class="manual-tag">刻脉卡</span>
+                <h4>盖在对手判定区的赌注</h4>
+                <p>打出时不产生即时效果，而是暗置在对手的判定区。对手要完整过完一个回合，再下一次回合开始时才翻开判定：卡面条件成立就吃惩罚，不成立则什么都没有，判完的牌进弃牌堆。判定区只有 1 格，新盖的会把旧的挤掉。条件看的是翻牌那一刻的场面（流脉奇偶、敌方手牌数、有没有守备、墓地里几个随从、上个回合有没有打战术），所以对手能通过改变局面来躲。</p>
+              </article>
             </div>
             <div class="manual-grid">
-              <article class="tutorial-card"><h4>牌组结构</h4><p>30 张牌自由混编（随从 / 战术 / 阵型 / 装备）；阵型最多 3 张，装备想带几件都行。领袖在开局单独选择，不占牌组，也不进入牌库。新手前期不用自己组卡，先用系统预设牌组，再慢慢替换。</p></article>
+              <article class="tutorial-card"><h4>牌组结构</h4><p>30 张牌自由混编（随从卡 / 战术卡 / 阵型卡 / 装备卡 / 刻脉卡）；阵型最多 3 张，装备想带几件都行。领袖在开局单独选择，不占牌组，也不进入牌库。新手前期不用自己组卡，先用系统预设牌组，再慢慢替换。</p></article>
               <article class="tutorial-card"><h4>结算顺序与目标</h4><p>一张牌通常按“支付行动力/血祭 → 选择目标 → 结算效果 → 处理死亡 → 结束”执行；召唤类随从进场后还要处理阵型、光环和登场。攻击时先确认攻击者还能不能动、目标是否被守备保护，再同时结算双方伤害。看不懂一张牌时，先看它是“打出时”“进场时”“死亡时”还是“满足条件时”。</p></article>
               <article class="tutorial-card"><h4>读一张牌的四个问题</h4><p>第一，它是什么类型：随从会站场，战术会进弃牌堆，阵型挂在阵位，装备挂在领袖，债务塞给对手。第二，它什么时候触发：登场、余响、被动、攻击后，还是打出时立刻结算。第三，它要不要目标：需要目标时，先看对方有没有守备或隐匿。第四，它的收益能不能当回合兑现：需要等下回合攻击的随从，和立刻结算的战术，价值不一样。</p></article>
             </div>
@@ -643,7 +648,12 @@
               </div>
               <div class="manual-step">
                 <span>03</span>
-                <h4>己方回合</h4>
+                <h4>己方回合（五阶段）</h4>
+                <p>回合开始（行动力 +1 并回满、装备光环与阵型倒计时结算）→ 判定（翻开你判定区里的刻脉卡；没有牌就一闪而过）→ 抽牌（自动抽 1 张）→ 出牌（铺场、战术、攻击、领袖技能）→ 结束（回合结束时点结算，交给对手）。</p>
+              </div>
+              <div class="manual-step">
+                <span>04</span>
+                <h4>出牌顺序</h4>
                 <p>优先低费随从铺场 → 用战术解场或增幅 → 随从攻击 → 使用领袖技能 → 结束回合。攻击前先看对方守备和攻击力；能白吃就交换，不能白吃就用战术牌，不要为了打脸把场面全放掉。</p>
               </div>
             </div>
@@ -792,7 +802,7 @@
         </div>
         <div class="tutorial-grid tutorial-grid-seven">
           <article class="tutorial-card"><div class="tutorial-icon">01</div><h4>对局目标</h4><p>把对方领袖生命打到 0。随从可以攻击敌方随从或领袖；守备会保护同阵位的其他友方随从；要攻击被保护的随从，先处理守备。</p></article>
-          <article class="tutorial-card"><div class="tutorial-icon">02</div><h4>回合流程</h4><p>回合开始：行动力 +1（上限 10）、抽 1 张牌。之后可以出牌、攻击、使用领袖技能，最后结束回合交给对手。</p></article>
+          <article class="tutorial-card"><div class="tutorial-icon">02</div><h4>回合流程</h4><p>五个阶段按顺序走：回合开始 → 判定 → 抽牌 → 出牌 → 结束。回合开始回满行动力、结算光环；判定翻开你判定区的刻脉卡；抽牌自动抽 1 张；出牌阶段铺场、攻击、用技能；结束阶段交给对手。</p></article>
           <article class="tutorial-card"><div class="tutorial-icon">03</div><h4>行动力</h4><p>第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张，并额外获得一张「掘脉许可」（1 费战术：本回合 +2 点行动力）。</p></article>
           <article class="tutorial-card"><div class="tutorial-icon">04</div><h4>流脉</h4><p>双方共享 0→12，每次完整轮次（双方各行动一次）自然 +1。达到 4 震荡、7 裂隙、10 魔物潮时触发世界事件；12 回流清空。引脉是达到阈值后的额外效果；掘脉会同时抽牌并加速流脉。</p></article>
         </div>
@@ -842,10 +852,11 @@
           
           <div class="deck-filter-row codex-type-row">
             <button class="deck-filter active" data-codex-filter="all">全部</button>
-            <button class="deck-filter" data-codex-filter="minion">随从</button>
-            <button class="deck-filter" data-codex-filter="spell">战术</button>
-            <button class="deck-filter" data-codex-filter="formation">阵型</button>
-            <button class="deck-filter" data-codex-filter="equipment">装备</button>
+            <button class="deck-filter" data-codex-filter="minion">随从卡</button>
+            <button class="deck-filter" data-codex-filter="spell">战术卡</button>
+            <button class="deck-filter" data-codex-filter="formation">阵型卡</button>
+            <button class="deck-filter" data-codex-filter="equipment">装备卡</button>
+          <button class="deck-filter" data-codex-filter="pulse">刻脉卡</button>
             <button class="deck-filter" data-codex-filter="debt">债务卡</button>
             <button id="codex-token-quick" class="deck-filter codex-token-quick">衍生卡</button>
             </div>
@@ -1129,7 +1140,7 @@
             <div class="panel-label">关于 / ABOUT</div>
             <p class="settings-about">《戈克世界：流脉牌局》经典模式 2.0。八阵营、633 张卡牌 / 585 可收藏，支持起手调度、编成、单人 AI 与在线组队码房间。</p>
                         <p class="settings-about settings-keys-hint">键盘：Esc 返回 / 关闭弹窗 · 空格 结束回合（对局中）· / 聚焦图鉴搜索</p>
-            <p class="settings-about">当前构建：20261029e1</p>
+            <p class="settings-about">当前构建：20261030e6</p>
             <button id="btn-settings-credits" class="btn btn-small btn-ghost">制作与素材说明</button>
             <button id="btn-settings-feedback" class="btn btn-small btn-ghost">反馈与交流</button>
           </div>
@@ -1718,19 +1729,19 @@
   <div id="toast" class="toast"></div>
 
   <script>window.__GOK_CHANNEL_VALUE__ = "__GOK_CHANNEL__";</script>
-  <script src="js/channel.js?v=20261029e1"></script>
-  <script src="js/data.js?v=20261029e1"></script>
-  <script src="js/engine.js?v=20261029e1"></script>
-  <script src="js/ai.js?v=20261029e1"></script>
-  <script src="js/cinematic.js?v=20261029e1"></script>
-  <script src="js/vfx.js?v=20261029e1"></script>
-  <script src="js/net-authority.js?v=20261029e1"></script>
-  <script src="js/ui.js?v=20261029e1"></script>
-  <script src="js/updater-ui.js?v=20261029e1"></script>
-  <script src="js/content.js?v=20261029e1"></script>
-  <script src="js/battler.js?v=20261029e1"></script>
-  <script src="js/arcade.js?v=20261029e1"></script>
-  <script src="js/main.js?v=20261029e1"></script>
+  <script src="js/channel.js?v=20261030e6"></script>
+  <script src="js/data.js?v=20261030e6"></script>
+  <script src="js/engine.js?v=20261030e6"></script>
+  <script src="js/ai.js?v=20261030e6"></script>
+  <script src="js/cinematic.js?v=20261030e6"></script>
+  <script src="js/vfx.js?v=20261030e6"></script>
+  <script src="js/net-authority.js?v=20261030e6"></script>
+  <script src="js/ui.js?v=20261030e6"></script>
+  <script src="js/updater-ui.js?v=20261030e6"></script>
+  <script src="js/content.js?v=20261030e6"></script>
+  <script src="js/battler.js?v=20261030e6"></script>
+  <script src="js/arcade.js?v=20261030e6"></script>
+  <script src="js/main.js?v=20261030e6"></script>
 
   <!-- 开场动画：六幕，需要一次点击才允许出声，可跳过 -->
   <div id="gok-opening" class="gkopen" hidden data-scene="idle">

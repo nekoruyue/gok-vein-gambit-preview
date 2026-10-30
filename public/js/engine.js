@@ -85,9 +85,10 @@
       factionName: faction.name,
       heroId: heroId,
       hero: heroDef,
+      verdictZone: [],  // 刻脉判定区（对方盖过来的牌，最多 1 张）
       hp: heroDef.hp,
       maxHp: heroDef.hp,
-      armor: 0,
+      armor: heroDef.armor || 0,
       mana: 0,
       maxMana: 0,
       deck: [],
@@ -130,7 +131,7 @@
     if (equip.armor) { player.armor = (player.armor || 0) + equip.armor; log(state, player.name + " 获得 " + equip.armor + " 点护甲（装备）。", player, "armor"); }
     if (equip.healHero) healHero(state, player, equip.healHero);
     if (equip.maxHp) { player.maxHp += equip.maxHp; player.hp += equip.maxHp; }
-    if (equip.gainMana) player.mana += equip.gainMana;
+    if (equip.gainMana) player.mana = Math.min(12, player.mana + equip.gainMana);
     if (equip.draw) drawCard(state, player, equip.draw);
     if (equip.buffAllAllies) for (const m of aliveMinions(player)) buffMinion(state, m, equip.buffAllAllies.attack || 0, equip.buffAllAllies.health || 0, "装备", true);
     if (equip.damageAllEnemies) {
@@ -163,7 +164,12 @@
     if (cond === "stealth") return aliveMinions(player).some(m => m.stealth);
     if (cond === "demon") return aliveMinions(player).some(m => /魔物|imp|demon/i.test(m.name || ""));
     if (cond === "freeze") return player.freezeCastTurn === state.turnNumber;
-    if (cond === "spells") return (player.spellsCastThisTurn || 0) > 0;
+    if (cond === "spells") {
+      let cast = player.spellsCastThisTurn || 0;
+      const selfUid = player.__resolvingSpellUid;
+      if (selfUid && Array.isArray(player.spellsCastThisTurnList) && player.spellsCastThisTurnList.some(x => x && x.uid === selfUid)) cast -= 1;
+      return cast > 0;
+    }
     if (cond === "hp15") return player.hp <= 15;
     if (cond === "grave5") return (state.discard || []).length >= 5;
   if (cond === "zhenmai") return player.zhenmaiTurn != null;
@@ -223,6 +229,7 @@
       charge: charge,
       divineShield: (def.keywords || []).includes("divineShield"),
       windfury: (def.keywords || []).includes("windfury"),
+    combo: (def.keywords || []).includes("combo") || (def.keywords || []).includes("windfury"),
       poisonous: (def.keywords || []).includes("poisonous"),
       lifesteal: (def.keywords || []).includes("lifesteal"),
       rush: (def.keywords || []).includes("rush"),      reborn: (def.keywords || []).includes("reborn"),
@@ -295,7 +302,12 @@
     if (cond === "bounty") return (player.bountyCompleted || 0) > 0;
     if (cond === "stealth") return aliveMinions(player).some(m => m.stealth);
     if (cond === "demon") return aliveMinions(player).some(m => /魔物|imp|demon/i.test(m.name || ""));
-    if (cond === "spells") return (player.spellsCastThisTurn || 0) > 0;
+    if (cond === "spells") {
+      let cast = player.spellsCastThisTurn || 0;
+      const selfUid = player.__resolvingSpellUid;
+      if (selfUid && Array.isArray(player.spellsCastThisTurnList) && player.spellsCastThisTurnList.some(x => x && x.uid === selfUid)) cast -= 1;
+      return cast > 0;
+    }
     if (cond === "lostHealth") return player.lostHealthTurn != null;
     if (cond === "freeze") return player.freezeCastTurn != null;
     return false;
@@ -1365,46 +1377,50 @@ function processDeaths(state) {
     }
   }
 
-  function placeSeal(state, player, lane, kind, cardId, threshold) {
-    if (!player || !ZONES.includes(lane)) return false;
-    if (!Array.isArray(state.seals)) state.seals = [];
-    if (state.seals.some(s => s.owner === player.index && s.lane === lane)) {
-      log(state, "该阵位已经有一道脉痕，无法重复刻下。", player, "vein");
-      return false;
+  // ===== 刻脉（pulse）：盖在对手判定区，下回合开始翻开判定 =====
+  function placeVerdict(state, caster, card) {
+    const target = opponentOf(state, caster);
+    if (!target) return false;
+    if (!Array.isArray(target.verdictZone)) target.verdictZone = [];
+    // 只有 1 格：新的直接顶掉旧的（旧的进弃牌堆，不判定）
+    for (const old of target.verdictZone) {
+      if (!Array.isArray(target.discard)) target.discard = [];
+      target.discard.push({ uid: old.uid, cardId: old.cardId });
+      const _oldDef = D.CARDS[old.cardId]; log(state, "判定区已满，「" + ((_oldDef && _oldDef.name) || old.cardId) + "」被挤掉。", target, "discard");
     }
-    state.seals.push({ owner: player.index, lane: lane, kind: kind, threshold: threshold || 4, cardId: cardId || null });
-    log(state, player.name + " 在" + ZONE_NAMES[lane] + "刻下脉痕（流脉 " + (threshold || 4) + "）。", player, "vein");
-    fx(state, player, "刻脉 4", "hero:" + player.index, "summon");
+    target.verdictZone = [{ uid: card.uid, cardId: card.cardId, from: caster.index, turn: state.turnNumber }];
+    log(state, caster.name + " 在" + target.name + "的判定区盖下刻脉（对方过完一个回合后翻开）。", caster, "vein");
+    fx(state, caster, "刻脉", "hero:" + target.index, "summon");
     return true;
   }
 
-  function triggerSeals(state) {
-    if (!Array.isArray(state.seals) || !state.seals.length) return;
-    const remaining = [];
-    for (const seal of state.seals.slice()) {
-      if (state.vein < seal.threshold) { remaining.push(seal); continue; }
-      const owner = state.players[seal.owner];
-      if (!owner) continue;
-      if (seal.kind === "academy" || seal.kind === "academyProspect") {
-        const amount = seal.kind === "academyProspect" ? 1 : (state.vein >= 7 ? 2 : 1);
-        drawCard(state, owner, amount);
-        if (state.vein >= 7) owner.mana += 1;
-        log(state, "刻脉触发：学院在" + ZONE_NAMES[seal.lane] + "抽 " + amount + " 张牌" + (state.vein >= 7 ? "并复原 1 点行动力" : "") + "。", owner, "vein");
-        fx(state, owner, "刻脉：抽牌", "hero:" + owner.index, "summon");
-      } else if (seal.kind === "snow") {
-        const turns = state.vein >= 7 ? 2 : 1;
-        const enemies = aliveMinions(opponentOf(state, owner)).filter(m => m.zone === seal.lane);
-        for (const m of enemies) {
-          freezeMinion(state, m);
-          if (turns > 1) m.frozenTurns = Math.max(m.frozenTurns || 0, 2);
-        }
-        log(state, "刻脉触发：雪都在" + ZONE_NAMES[seal.lane] + "冻结 " + enemies.length + " 个敌方随从 " + turns + " 回合。", owner, "vein");
-        fx(state, owner, "刻脉：冻结", enemies[0] ? enemies[0].uid : "hero:" + owner.index, "freeze");
+  function resolveVerdictZone(state, player) {
+    const zone = player.verdictZone || [];
+    if (!zone.length) return;
+    const keep = [];
+    for (const entry of zone.slice()) {
+      const def = D.CARDS[entry.cardId];
+      const caster = state.players[entry.from];
+      const spec = def && def.pulse;
+      if (!spec) continue;
+      // 盖下的当回合不算，对方要完整过一个回合；再下一个回合开始才翻开
+      if (state.turnNumber - (entry.turn || 0) < 3) {
+        log(state, "刻脉「" + def.name + "」：对方还没完整过一个回合，本次不翻开。", player, "vein");
+        keep.push(entry); continue;
       }
+      let ok = false;
+      // 刻脉的条件既可以写成字符串（值放在 spec.value），也可以写成对象，两种都要带上数值
+      const condArg = typeof spec.cond === "string" ? { cond: spec.cond, value: spec.value, amount: spec.amount } : spec.cond;
+      try { ok = !!patchCondRaw(state, caster || opponentOf(state, player), null, null, condArg); } catch (e) { ok = false; }
+      state.events.push({ structured: true, kind: "verdict", player: player.index, cardId: def.id, ok: ok });
+      log(state, "判定「" + def.name + "」：" + condLabelText(condArg) + "，" + (ok ? "成立，结算惩罚。" : "不成立，不结算惩罚。"), player, "vein");
+      if (ok && Array.isArray(spec.penalty)) runPatchOps(state, caster || opponentOf(state, player), null, null, spec.penalty);
+      if (!Array.isArray(player.discard)) player.discard = [];
+      player.discard.push({ uid: entry.uid, cardId: entry.cardId });
+      processDeaths(state);
     }
-    state.seals = remaining;
+    player.verdictZone = keep;
   }
-
   // 壁垒教官：本回合首次获得护甲时，随机友方 +0/+1（即时触发，不再等到回合开始）
   function armorGainHook(state, player) {
     if (!player || !state) return;
@@ -1433,7 +1449,6 @@ function processDeaths(state) {
       for (const t of thresholds) {
         if (before < t && state.vein >= t) triggerVeinThreshold(state, t);
       }
-      triggerSeals(state);
       if (state.vein >= 12) {
         state.vein = 0;
         log(state, "流脉达到 12，潮汐回流清空。", null, "veinEvent");
@@ -1682,7 +1697,43 @@ function processDeaths(state) {
     return { ok: true };
   }
 
+  function countBoard(p) {
+    return ((p.board && p.board.left) || []).length + ((p.board && p.board.center) || []).length + ((p.board && p.board.right) || []).length;
+  }
+  // 每张牌结算完都写清实际效果，哪怕什么都没变
   function playCard(state, playerIndex, cardUid, opts) {
+    const __p = state && state.players ? state.players[playerIndex] : null;
+    const __foe = __p ? opponentOf(state, __p) : null;
+    const snapOf = (p, foe) => ({
+      hp: p ? p.hp : null, armor: p ? p.armor : null, hand: p && p.hand ? p.hand.length : null,
+      mana: p ? p.mana : null, board: p ? countBoard(p) : null,
+      vein: state ? state.vein : null, discard: state ? (state.discard || []).length : null,
+      foeHp: foe ? foe.hp : null, foeBoard: foe ? countBoard(foe) : null
+    });
+    const __handCard = __p && __p.hand ? __p.hand.find((h) => h.uid === cardUid) : null;
+    const __def = __handCard ? card(__handCard.cardId) : null;
+    const __cardName = __def ? __def.name : String(cardUid || "卡牌");
+    const __before = snapOf(__p, __foe);
+    const __res = playCardCore(state, playerIndex, cardUid, opts);
+    try {
+      const __now = snapOf(__p, __foe);
+      const parts = [];
+      const add = (label, a, b) => { if (a != null && b != null && a !== b) parts.push(label + (b - a > 0 ? " +" : " ") + (b - a)); };
+      add("自己领袖", __before.hp, __now.hp);
+      add("自己护甲", __before.armor, __now.armor);
+      add("手牌", __before.hand, __now.hand);
+      add("行动力", __before.mana, __now.mana);
+      add("自己场面", __before.board, __now.board);
+      add("流脉", __before.vein, __now.vein);
+      add("墓地", __before.discard, __now.discard);
+      add("敌方领袖", __before.foeHp, __now.foeHp);
+      add("敌方场面", __before.foeBoard, __now.foeBoard);
+      log(state, "【" + __cardName + "】结算结果：" + (parts.length ? parts.join("，") : "没有产生任何变化"), __p, "effect");
+    } catch (err) {}
+    return __res;
+  }
+
+  function playCardCore(state, playerIndex, cardUid, opts) {
     if (state.status !== "playing") return { ok: false, reason: "对局已结束" };
     if (state.mulliganPhase) return { ok: false, reason: "请先完成起手调度" };
     if (state.pendingChoice) return { ok: false, reason: "请先完成当前选择" };
@@ -1886,6 +1937,8 @@ function processDeaths(state) {
         }
         endDeferredDeaths(state);
       }
+    } else if (def.type === "pulse") {
+      placeVerdict(state, player, { uid: cardUid, cardId: def.id });
     } else if (def.type === "equipment" || def.type === "equipment") {
       const equipments = player.equipments || (player.equipments = []);
       // 装备上限 2 件：装第三张时挤掉最早的那张，被挤掉的进弃牌堆
@@ -1960,7 +2013,13 @@ function processDeaths(state) {
         beginDeferredDeaths(state);
         const pressureReady = !def.pressure || (state.vein || 0) >= def.pressure;
         if (pressureReady && (!def.reflux || payReflux(state, player, def))) {
+          // 这张牌自己的效果判定里不算「本回合已施放过的战术牌」
+        player.spellsCastThisTurn = Math.max(0, (player.spellsCastThisTurn || 0) - 1);
+        try {
           resolveSpell(state, player, def, target || null, Object.assign({}, opts || {}, { __uid: cardUid }));
+        } finally {
+          player.spellsCastThisTurn = (player.spellsCastThisTurn || 0) + 1;
+        }
           if (player.nextSpellTriple) {
             const times = player.nextSpellTriple - 1; player.nextSpellTriple = 0;
             for (let i = 0; i < times; i++) { if (state.status !== "playing") break; resolveSpell(state, player, def, target || null, opts || {}); }
@@ -2024,8 +2083,23 @@ function processDeaths(state) {
     if (bonus.taunt) grantTaunt(state, minion);
   }
 
+  // 条件判定包装：调试时把每次判定结果记到 state.__condLog，方便审计「若…」是否被自己触发
   function patchCond(state, player, minion, target, cond) {
+    const r = patchCondRaw(state, player, minion, target, cond);
+    if (state && Array.isArray(state.__condLog)) state.__condLog.push({ cond: (cond && (cond.cond || cond)) || "none", result: !!r });
+    return r;
+  }
+  function patchCondRaw(state, player, minion, target, cond) {
     if (!cond) return true;
+    if (cond && typeof cond === "object") {
+      // 兼容三种写法："armor" / {cond:"armor",value:3} / {op:"if",cond:{cond:"armor",value:3}}
+      let inner = cond;
+      while (inner && typeof inner === "object" && inner.cond && typeof inner.cond !== "string") inner = inner.cond;
+      const name = typeof inner === "string" ? inner : (inner && typeof inner === "object" ? inner.cond : undefined);
+      const merged = Object.assign({}, cond, (inner && typeof inner === "object" ? inner : {}));
+      if (name) merged.cond = name;
+      cond = merged;
+    }
     const c = cond.cond || cond;
     if (c === "sameZoneAlly") return minion ? aliveMinions(player).some(x => x.uid !== minion.uid && x.zone === minion.zone) : aliveMinions(player).length >= 2;
   if (c === "sameZoneTaunt") return minion ? aliveMinions(player).some(x => x.zone === minion.zone && x.taunt) : aliveMinions(player).some(x => x.taunt);
@@ -2039,6 +2113,12 @@ function processDeaths(state) {
     if (c === "controlFormation") return (player.formations || []).length > 0;
     if (c === "bountyCompleted") return (player.bountyCompleted || 0) > 0;
     if (c === "vein") return (state.vein || 0) >= (cond.value || 1);
+    if (c === "veinEven") return (state.vein || 0) % 2 === 0;
+    if (c === "graveCount") return (state.discard || []).filter(x => x && x.kind === "minion").length >= (cond.value || 1);
+    if (c === "enemyHand") return (opponentOf(state, player).hand || []).length >= (cond.value || 4);
+    if (c === "enemyTaunt") return aliveMinions(opponentOf(state, player)).some(x => x.taunt);
+    if (c === "enemySpell") return (opponentOf(state, player).spellsCastThisTurn || 0) > 0;
+    if (c === "enemySpellLastTurn") return (opponentOf(state, player).lastTurnSpells || []).length > 0;
     // ---- 补齐的条件 ----
     if (c === "reflux") return player.refluxedTurn === state.turnNumber;
     // ---- 战术牌条件补齐（这些条件原本不存在，导致对应 if 永远不触发）----
@@ -2058,6 +2138,7 @@ function processDeaths(state) {
     if (c === "spells2") return (player.spellsCastThisTurn || 0) >= 2;
     if (c === "otherCards") return (player.cardsPlayedThisTurn || 0) > 1;
     if (c === "hand") return player.hand.length <= (cond.value || 5);
+    if (c === "handAtLeast") return player.hand.length >= (cond.value || 5);
     if (c === "targetFrozen") return !!target && target.frozenTurns > 0;
     if (c === "freezeCast") return player.freezeCastTurn === state.turnNumber;
     if (c === "sameZoneTaunt") return !!minion && aliveMinions(player).some(x => x.uid !== minion.uid && x.zone === minion.zone && x.taunt);
@@ -2067,16 +2148,71 @@ function processDeaths(state) {
   if (c === "freezeCount") return (player.frozenTotal || 0) >= (cond.value || 3);
     if (c === "targetDemon") return !!target && /魔物|imp|demon/i.test(target.name || "");
     if (c === "controlBeast") return aliveMinions(player).some(m => /雪狐|狐|beast/i.test(m.name || ""));
-    if (c === "otherDemon") return !!minion && aliveMinions(player).some(x => x.uid !== minion.uid && /魔物|imp|demon/i.test(x.name || ""));
+    if (c === "otherDemon") return minion ? aliveMinions(player).some(x => x.uid !== minion.uid && /魔物|imp|demon/i.test(x.name || "")) : aliveMinions(player).some(x => /魔物|imp|demon/i.test(x.name || ""));  // 战术牌没有 minion 上下文，退回「场上有没有魔物」
     if (c === "controlDemon") return aliveMinions(player).some(x => /魔物|imp|demon/i.test(x.name || ""));
     if (c === "bountyExists") return state.players.some(p => aliveMinions(p).some(x => x.bounty));
     return true;
   }
+
+  // ===== 2026-10-30 全量效果日志：条件说清成不成立，效果说清实际发生了什么 =====
+  const COND_TEXT = {
+    armor: "护甲", armorGained: "本回合获得过护甲", vein: "流脉", veinEven: "流脉为偶数",
+    sameZoneAlly: "同阵位有另一个友方随从", sameZoneTaunt: "同阵位有守备随从",
+    spells: "本回合施放过战术牌", spells2: "本回合施放过两张战术牌",
+    hand: "手牌数量", handAtLeast: "手牌数量", handSpell: "手牌里有战术牌",
+    controlTaunt: "控制守备随从", controlFormation: "控制阵型", controlDemon: "控制魔物",
+    controlBeast: "控制兽类", controlFox: "控制狐类", otherDemon: "控制另一个魔物",
+    otherCards: "有其他牌", enemyHand: "敌方手牌", enemyTaunt: "敌方有守备",
+    enemyNoMinions: "敌方没有随从", zhenmai: "本回合用过镇脉", zhenmaiFull: "镇脉满值",
+    reflux: "逆脉已触发", refluxFull: "逆脉满值", graveCount: "墓地随从数",
+    graveHasBounty: "墓地有悬赏尸体", freezeCast: "本回合施放过冻结", freezeCount: "本回合冻结次数",
+    healedHero: "本回合治疗过领袖", lostHealth: "本回合失去过生命", tookDamage: "本回合受过伤害",
+    attacked: "本回合攻击过", targetFrozen: "目标被冻结", targetTaunt: "目标是守备",
+    targetCostLow: "目标费用够低", targetDamaged: "目标已受伤", targetDead: "目标已死亡",
+    targetDemon: "目标是魔物", targetBounty: "目标带悬赏", bountyExists: "场上有悬赏目标",
+    bountyTargetDead: "悬赏目标已死", bountyCompleted: "悬赏已完成", carveCard: "你上一张是刻脉牌"
+  };
+  function condLabelText(cond) {
+    if (!cond) return "无条件";
+    let c = cond;
+    while (c && typeof c === "object" && c.cond && typeof c.cond !== "string") c = c.cond;
+    const name = typeof c === "string" ? c : (c && (c.cond || c.type));
+    const val = (cond && cond.value) || (c && c.value);
+    const base = COND_TEXT[name] || String(name || "条件");
+    return val != null ? base + " ≥ " + val : base;
+  }
+  function effectSnap(state, player, target) {
+    const p = player || {};
+    const zone = (p.board && p.board.left ? p.board.left.length : 0) + (p.board && p.board.center ? p.board.center.length : 0) + (p.board && p.board.right ? p.board.right.length : 0);
+    return {
+      hp: p.hp, armor: p.armor, hand: (p.hand || []).length, mana: p.mana,
+      board: zone, vein: state.vein, discard: (state.discard || []).length,
+      tHp: target ? target.health : null, tArmor: target ? target.armor : null
+    };
+  }
+  function effectDiff(before, after) {
+    const parts = [];
+    const add = (label, a, b) => { if (a != null && b != null && a !== b) parts.push(label + (b - a > 0 ? " +" : " ") + (b - a)); };
+    add("领袖生命", before.hp, after.hp);
+    add("护甲", before.armor, after.armor);
+    add("手牌", before.hand, after.hand);
+    add("行动力", before.mana, after.mana);
+    add("场上随从", before.board, after.board);
+    add("流脉", before.vein, after.vein);
+    add("墓地", before.discard, after.discard);
+    add("目标生命", before.tHp, after.tHp);
+    add("目标护甲", before.tArmor, after.tArmor);
+    return parts.length ? parts.join("，") : "";
+  }
   function runPatchOps(state, player, minion, target, ops) {
+    const __entrySnap = effectSnap(state, player, target);
+    const __isOuterCall = !state.__opDepth;
+    state.__opDepth = (state.__opDepth || 0) + 1;
     for (const op of ops || []) {
       try {
         if (op.op === "if") {
           const ok = patchCond(state, player, minion, target, op);
+          log(state, (ok ? "条件成立" : "条件不成立") + "：" + condLabelText(op) + (ok ? "，结算后续效果" : "，不结算后续效果"), player, "effect");
           if (ok) runPatchOps(state, player, minion, target, op.then || []);
           else runPatchOps(state, player, minion, target, op.else || []);
         } else if (op.op === "damageFrozenEnemies") {
@@ -2224,7 +2360,7 @@ function processDeaths(state) {
     }
     else if (op.op === "zhenmai") resolveZhenmai(state, player, { zhenmai: op.amount || 1 });
     // ---- 以下是补齐的实现：这些操作在卡牌数据里被使用，但引擎原本没接 ----
-    else if (op.op === "mana") { player.mana += op.amount || 1; log(state, "本回合获得 " + (op.amount || 1) + " 点行动力。", player, "mana"); }
+    else if (op.op === "mana") { player.mana = Math.min(12, player.mana + (op.amount || 1)); log(state, "本回合获得 " + (op.amount || 1) + " 点行动力。", player, "mana"); }
     else if (op.op === "nextMana") { player.nextManaBonus = (player.nextManaBonus || 0) + (op.amount || 1); log(state, "下回合开始时获得 " + (op.amount || 1) + " 点行动力。", player, "mana"); }
     else if (op.op === "damageHero") { damageHero(state, opponentOf(state, player), op.amount || 1, minion, "战术", true); }
     else if (op.op === "damageAllMinions") { for (const p2 of state.players) for (const m of aliveMinions(p2)) damageMinion(state, m, op.amount || 1, null, "战术"); }
@@ -2232,7 +2368,54 @@ function processDeaths(state) {
     // 北境唤潮者的「掘脉」：抽 1 张并加 1 点流脉
     else if (op.op === "flowDraw") { if (op.draw) drawCard(state, player, op.draw); if (op.vein) addVein(state, op.vein, "掘脉"); }
     else if (op.op === "grantDeathDraw" && target && !target.dead) { target.deathDrawOwner = player.index; target.deathDrawTurn = state.turnNumber; }
-    else if (op.op === "discover") { log(state, "预兆一张战术牌。", player, "discover"); player.discoverPending = (player.discoverPending || 0) + (op.amount || 1); }
+    else if (op.op === "damageHeroSelf") { damageHero(state, player, op.amount || 1, null, "代价"); }
+    else if (op.op === "handCostDown") {
+      // 手牌费用下调：给每张手牌加 discount（getCardCost 会读它）
+      const amount = op.amount || 1;
+      const cap = op.count == null ? player.hand.length : op.count;
+      let done = 0;
+      for (const h of player.hand) {
+        if (done >= cap) break;
+        h.discount = Math.max(0, (h.discount || 0)) + amount;
+        done += 1;
+      }
+      if (done) log(state, "手牌行动力下调 " + amount + "（" + done + " 张）。", player, "buff");
+    } else if (op.op === "discardRandom") {
+      const amount = op.amount || 1;
+      for (let i = 0; i < amount; i++) {
+        if (!player.hand.length) break;
+        const idx = randomInt(state, player.hand.length);
+        const gone = player.hand.splice(idx, 1)[0];
+        state.discard = state.discard || [];
+        state.discard.push({ cardId: gone.cardId, kind: (card(gone.cardId) || {}).type || "spell", player: player.index });
+        log(state, "弃掉了 " + ((card(gone.cardId) || {}).name || gone.cardId) + "。", player, "discard");
+      }
+    }
+    else if (op.op === "takeControlRandomEnemy") {
+      const pool = aliveMinions(opponentOf(state, player)).filter((x) => !x.stealth);
+      const z = openZones(player)[0];
+      if (pool.length && z) {
+        const pick = pool[randomInt(state, pool.length)];
+        const foe = ownerOf(state, pick);
+        foe.board[pick.zone] = foe.board[pick.zone].filter((x) => x.uid !== pick.uid);
+        pick.zone = z; pick.justPlayed = true; pick.attacksLeft = 0;
+        player.board[z].push(pick);
+        log(state, "接管：" + player.name + " 获得了 " + pick.name + " 的控制权。", player, "control");
+      } else log(state, "接管：没有可控制的目标或空阵位。", player, "control");
+    }
+    else if (op.op === "discover") {
+      const pool = op.pool || "spell";
+      const follow = op.thenIfPulse || null;
+      if (player.index === state.current) {
+        log(state, "预兆：" + player.name + " 从牌库顶三张里挑一张。", player, "discover");
+        openDiscover(state, player, pool, op.source || null, follow);
+      } else {
+        // 非当前回合（比如余响）不弹选择框，直接自动取一张，免得卡住流程
+        const got = addRandomSpellFromDeck(state, player, "预兆");
+        const gd = got && card(got.cardId);
+        if (gd && gd.type === "pulse" && follow) runPatchOps(state, player, null, null, follow);
+      }
+    }
         else if (op.op === "refluxHeal") { const need=op.reflux||1; if ((state.vein||0)>0) { addVein(state,-Math.min(state.vein,need),"逆脉"); healHero(state,player,op.amount||1); } }
       } catch (e) {
       // 一个 op 出错不该拖垮整局，但也不能完全吞掉——留痕便于排查
@@ -2242,6 +2425,11 @@ function processDeaths(state) {
     }
     }
     processDeaths(state);
+    state.__opDepth = Math.max(0, (state.__opDepth || 1) - 1);
+    if (__isOuterCall) {
+      const __d = effectDiff(__entrySnap, effectSnap(state, player, target));
+      log(state, "效果结算：" + (__d || "没有产生任何变化") + "。", player, "effect");
+    }
   }
 
   function resolveBattlecry(state, player, def, minion, target, opts) {
@@ -2641,7 +2829,7 @@ function processDeaths(state) {
       player.nextSpellReduction = (player.nextSpellReduction || 0) + (b.amount || 1);
       log(state, "本回合下一张战术牌行动力消耗 -" + (b.amount || 1) + "。", player, "buff");
     } else if (b.type === "gainMana") {
-      player.mana = Math.min(10, player.mana + (b.amount || 2));
+      player.mana = Math.min(12, player.mana + (b.amount || 2));
       log(state, player.name + " 获得 " + (b.amount || 2) + " 点行动力。", player, "mana");
     } else if (b.type === "randomFreeze") {
       const enemies = aliveMinions(opponentOf(state, player));
@@ -2890,8 +3078,6 @@ function processDeaths(state) {
       addVein(state, amount, "涨脉");
       log(state, "涨脉 " + amount + "：行动力 +" + amount + "，流脉 +" + amount + "。", player, "vein");
       fx(state, player, "涨脉 " + amount, "hero:" + player.index, "summon");
-    } else if (b.type === "carveSealSnow") {
-      placeSeal(state, player, minion.zone, "snow", def.id);
     } else if (b.type === "copyEnemyMinion1of1") {
       if (target && !target.dead) {
         const z = openZones(player)[0];
@@ -3493,16 +3679,85 @@ function processDeaths(state) {
         }
       }
       log(state, "戒严：" + ZONE_NAMES[zone] + "的所有随从获得守备与回潮。", player, "buff");
+    } else if (s.type === "copyEnemyMinion1of1") {
+      if (target && !target.dead) {
+        const z = openZones(player)[0];
+        if (z) {
+          const copy = summonMinion(state, player, target.cardId, z, null);
+          if (copy) {
+            copyMinionStats(target, copy);
+            copy.attack = 1; copy.health = 1; copy.maxHealth = 1; copy.baseAttack = 1; copy.baseHealth = 1;
+            copy.justPlayed = true;
+            fx(state, player, "复制", target.uid, "summon");
+            log(state, "复制了 " + target.name + " 的 1/1 复制体。", player, "copy");
+          }
+        } else log(state, "阵位已满，复制失败。", player, "copy");
+      }
+    } else if (s.type === "copyFriendlyToHand") {
+      if (target && !target.dead) {
+        const extra = s.costUp || 0;
+        const base = card(target.cardId);
+        const copyId = target.cardId;
+        const added = addCardToHand(state, player, copyId, {});
+        if (added) {
+          added.costUp = extra;
+          log(state, "复制：" + player.name + " 拿到了 " + (base ? base.name : copyId) + " 的复制。", player, "copy");
+        }
+      }
+    } else if (s.type === "copyLastSpellToHand") {
+      // 不能复制自己：优先从本回合施放记录里找上一张不同的战术
+      const list = (player.spellsCastThisTurnList || []).slice();
+      let lastId = player.lastSpell && player.lastSpell.cardId;
+      if (lastId === def.id) lastId = null;
+      for (let i = list.length - 1; i >= 0 && !lastId; i--) {
+        if (list[i] && list[i].cardId !== def.id) lastId = list[i].cardId;
+      }
+      const lastDef = lastId ? card(lastId) : null;
+      if (lastDef) {
+        const added = addCardToHand(state, player, lastId, {});
+        if (added) log(state, "抄录：复制了「" + lastDef.name + "」。", player, "copy");
+      } else {
+        drawCard(state, player, 1);
+        log(state, "抄录：没有可复制的战术牌，改为抽 1 张。", player, "copy");
+      }
+    } else if (s.type === "transformEnemyToToken") {
+      if (target && !target.dead) {
+        const tokenId = s.token || "empire_undead";
+        const tokenDef = card(tokenId);
+        target.silenced = true;
+        target.cardId = tokenId;
+        target.attack = s.attack || 1; target.health = s.health || 1; target.maxHealth = s.health || 1;
+        target.baseAttack = target.attack; target.baseHealth = target.maxHealth;
+        target.keywords = []; target.passive = null; target.deathrattle = null; target.deathrattles = [];
+        target.name = s.tokenName || (tokenDef && tokenDef.name) || "衍生物";
+        recomputeAuras(state);
+        processDeaths(state);
+        fx(state, player, "变形", target.uid, "damage");
+        log(state, "变形：" + target.name + " 出现。", player, "transform");
+      }
+    } else if (s.type === "takeControlRandomEnemy") {
+      const pool = aliveMinions(opponentOf(state, player)).filter((x) => !x.stealth);
+      const z = openZones(player)[0];
+      if (pool.length && z) {
+        const pick = pool[randomInt(state, pool.length)];
+        const foe = ownerOf(state, pick);
+        foe.board[pick.zone] = foe.board[pick.zone].filter((x) => x.uid !== pick.uid);
+        pick.zone = z; pick.justPlayed = true; pick.attacksLeft = 0;
+        player.board[z].push(pick);
+        log(state, "接管：" + player.name + " 获得了 " + pick.name + " 的控制权。", player, "control");
+      } else {
+        log(state, "接管：没有可控制的目标或空阵位。", player, "control");
+      }
     } else if (s.type === "damageAllMinions") {
       for (const p of state.players) for (const z of ZONES) for (const m of p.board[z].slice()) damageMinion(state, m, s.amount || 5, null, "火药桶");
       log(state, "对所有随从造成 " + (s.amount || 5) + " 点伤害。", player, "damage");
       processDeaths(state);
     } else if (s.type === "buffWindfury") {
+      // 历史名字叫 buffWindfury，实际语义是「获得连携」
       if (!target || target.dead) return;
-      if (!target.windfury) {
-        target.windfury = true;
-        if (!target.keywords.includes("windfury")) target.keywords.push("windfury");
-        target.attacksLeft = target.attacksLeft = Math.max(target.attacksLeft || 0, 1);
+      if (!target.combo) {
+        target.combo = true;
+        if (!target.keywords.includes("combo")) target.keywords.push("combo");
         log(state, target.name + " 获得连携。", player, "buff");
       }
     } else if (s.type === "blockHeroPower") {
@@ -3651,10 +3906,6 @@ function processDeaths(state) {
       if (s.penalty) player.nextTurnManaBonus = (player.nextTurnManaBonus || 0) - s.penalty;
       log(state, "涨脉 " + amount + "：行动力 +" + amount + "，流脉 +" + amount + "。", player, "vein");
       fx(state, player, "涨脉 " + amount, "hero:" + player.index, "summon");
-    } else if (s.type === "carveSealAcademy") {
-      if (target && !target.dead) { if (s.armor) player.armor += s.armor;
-    try { armorGainHook(state, player); } catch (e) {} placeSeal(state, player, target.zone, s.kind || "academy", def.id, s.threshold); if (s.discover) openDiscover(state, player, s.discover, def.id); }
-      else log(state, "流脉棱镜没有合法目标，脉痕未刻下。", player, "vein");
     } else if (s.type === "discoverTacticCost8Repeat") {
       openDiscover(state, player, "spell", def.id);
       player.nextSpellReduction = (player.nextSpellReduction || 0) + 8;
@@ -3678,7 +3929,7 @@ function processDeaths(state) {
   }
 
   function freezeMinion(state, m) {
-    const _owner = state.players[m.owner]; if (_owner) _owner.freezeCastTurn = state.turnNumber;
+    const _caster = state.players[1 - m.owner]; if (_caster) _caster.freezeCastTurn = state.turnNumber;  // 记在施冻者头上，之前错记成了被冻方
     if (!m || m.dead) return;
     if (ownerOf(state, m).freezeImmuneTurn) { log(state, m.name + " 受到地脉护佑，抵消了冻结。", ownerOf(state, m), "freeze"); return; }
     if (deepSnowProtected(state, m)) { log(state, m.name + " 受到深雪的守护，抵消了冻结。", ownerOf(state, m), "freeze"); return; }
@@ -3694,6 +3945,11 @@ function processDeaths(state) {
     const frozenOwner = ownerOf(state, m);
     for (const p of state.players) {
       if (p.index === frozenOwner.index) continue;
+      if (p.heroId === "sernach" && p.freezeDrawTurn !== state.turnNumber) {
+        p.freezeDrawTurn = state.turnNumber;
+        drawCard(state, p, 1);
+        log(state, "凝时：本回合第一次冻结敌方随从，抽 1 张牌。", p, "draw");
+      }
       triggerFormationEvent(state, p, "freeze");
       for (const ally of aliveMinions(p)) {
         if (ally.passive && ally.passive.type === "freezeGrowth" && !ally.silenced) {
@@ -3771,9 +4027,9 @@ function processDeaths(state) {
     drawCard(state, owner, 1);
     log(state, "悬赏完成：" + owner.name + " 抽 1 张牌。", owner, "bounty");
     if (owner.heroId === "monarch") {
-      owner.armor += 1;
-      state.events.push({ structured: true, kind: "armor", player: owner.index, amount: 1 });
-      log(state, "抽成：" + owner.name + " 获得 1 点护甲。", owner, "armor");
+      owner.armor += 2;
+      state.events.push({ structured: true, kind: "armor", player: owner.index, amount: 2 });
+      log(state, "抽成：" + owner.name + " 获得 2 点护甲。", owner, "armor");
     }
     if (hasEquipment(owner, "gh_bounty_board")) {
       drawCard(state, owner, 1);
@@ -3819,21 +4075,27 @@ function processDeaths(state) {
     log(state, m.name + " 获得先遣。", ownerOf(state, m), "rush");
   }
 
-  function openDiscover(state, player, pool, sourceCardId) {
+  function openDiscover(state, player, pool, sourceCardId, followUp) {
     let options = [];
     const fromDeck = true;
-    const wanted = (c) => pool === "any" || (pool === "spell" && card(c.cardId).type === "spell") || (pool === "minion" && card(c.cardId).type === "minion");
-    const seen = new Set();
-    for (const c of player.deck) {
-      if (!wanted(c) || seen.has(c.cardId)) continue;
-      seen.add(c.cardId); options.push(c.cardId);
-      if (options.length >= 3) break;
+    const wanted = (c) => pool === "any" || pool === "anyFaction" || (pool === "spell" && card(c.cardId).type === "spell") || (pool === "spellPulse" && (card(c.cardId).type === "spell" || card(c.cardId).type === "pulse")) || (pool === "minion" && card(c.cardId).type === "minion");
+    if (pool === "any" || pool === "anyFaction") {
+      // 预兆 = 看牌库顶三张：按牌库顺序取，不够三张就只给剩下的
+      for (const c of player.deck.slice(0, 3)) options.push(c.cardId);
+    } else {
+      // 写了「预兆战术牌」这类：从牌库顶往后找，凑够三张为止（同名只出现一次）
+      const seen = new Set();
+      for (const c of player.deck) {
+        if (!wanted(c) || seen.has(c.cardId)) continue;
+        seen.add(c.cardId); options.push(c.cardId);
+        if (options.length >= 3) break;
+      }
     }
     if (!options.length) {
       log(state, player.name + " 没有可预兆的卡牌。", player, "discover");
       return;
     }
-    const choice = { type: "discover", player: player.index, options: options, source: sourceCardId, fromDeck: fromDeck };
+    const choice = { type: "discover", player: player.index, options: options, source: sourceCardId, fromDeck: fromDeck, followUp: followUp || null };
     if (state.pendingChoice) {
       state.discoverQueue = state.discoverQueue || [];
       state.discoverQueue.push(choice);
@@ -3885,6 +4147,7 @@ function processDeaths(state) {
     if (state.pendingChoice.player !== playerIndex) return { ok: false, reason: "不是你的选择" };
     if (state.pendingChoice.options.indexOf(cardId) < 0) return { ok: false, reason: "不在预兆选项中" };
     const player = state.players[playerIndex];
+    let resolvedId = cardId;
     if (state.pendingChoice.fromDeck) {
       let chosenId = cardId;
       let idx = player.deck.findIndex(c => c.cardId === chosenId);
@@ -3898,6 +4161,7 @@ function processDeaths(state) {
         return { ok: true, reason: "预兆选项已失效" };
       }
       const [deckCard] = player.deck.splice(idx, 1);
+      resolvedId = chosenId;
       const added = addCardToHand(state, player, chosenId, {});
       if (!added) {
         player.deck.splice(idx, 0, deckCard);
@@ -3908,6 +4172,12 @@ function processDeaths(state) {
     } else {
       addCardToHand(state, player, cardId, {});
     }
+    // 预兆到的若是刻脉牌，结算卡面写明的后续奖励
+    try {
+      const follow = state.pendingChoice && state.pendingChoice.followUp;
+      const picked = card(resolvedId);
+      if (follow && picked && picked.type === "pulse") runPatchOps(state, player, null, null, follow);
+    } catch (err) {}
     advanceDiscover(state);
     return { ok: true };
   }
@@ -4000,7 +4270,12 @@ function processDeaths(state) {
       return { ok: true };
     }
     let atk = attacker.attack;
-    if (attacker.windfury && !attacker.hasAttacked && aliveMinions(player).some(x => x.uid !== attacker.uid && x.zone === attacker.zone)) atk += 1;
+    // 连携：同阵位有另一个友方时，每次攻击都 +1（写清楚这次生效没有）
+  if (attacker.combo || attacker.windfury) {
+    const __comboAlly = aliveMinions(player).some(x => x.uid !== attacker.uid && x.zone === attacker.zone);
+    if (__comboAlly) { atk += 1; log(state, "连携：" + attacker.name + " 同阵位有友方，本次攻击 +1。", player, "buff"); }
+    else log(state, "连携：" + attacker.name + " 同阵位没有其他友方，本次攻击不加成。", player, "effect");
+  }
     if (defender.frozenTurns > 0) atk += formationBonus(player, attacker.zone).attackVsFrozen || 0;
     // 处刑督办：文字写「获得+1/+1」（永久），先记下这次是否打中悬赏目标，
     // 伤害结算后再给永久加成——原来只在算攻击力时临时 +1，生命从来没加过。
@@ -4092,7 +4367,7 @@ function processDeaths(state) {
       player.heroPowerUsed = true;
       state.lastAction = { type: "heroPower", player: playerIndex, heroId: player.heroId, powerName: player.hero.power.name, targetUid: null, seq: ((state.lastAction && state.lastAction.seq) || 0) + 1 };
       log(state, player.name + " 使用领袖技能「血祭」。", player, "heroPower");
-      damageHero(state, player, 2, null, "血祭");
+      damageHero(state, player, 1, null, "血祭");
       drawCard(state, player, 1);
       checkGameOver(state);
       return { ok: true };
@@ -4107,22 +4382,9 @@ function processDeaths(state) {
       state.lastAction = { type: "heroPower", player: playerIndex, heroId: player.heroId, powerName: player.hero.power.name, targetUid: null, seq: ((state.lastAction && state.lastAction.seq) || 0) + 1 };
       log(state, player.name + " 使用领袖技能「潮生」。", player, "heroPower");
       summonMinion(state, player, "losutai_imp", zone, null);
-      // 文字写「若你控制其他魔物，抽 1 张牌」——原来漏了这段
-      const otherDemons = aliveMinions(player).filter(m => /魔物|imp|demon/i.test(m.name || ""));
-      if (otherDemons.length > 1) { drawCard(state, player, 1); log(state, "潮生：控制其他魔物，抽 1 张牌。", player, "draw"); }
       return { ok: true };
     }
-    if (player.heroId === "wolfram") {
-      if (!player.hand.length) return { ok: false, reason: "没有可以整编的手牌" };
-      player.mana -= (player.hero.power.cost || 2);
-      player.heroPowerUsed = true;
-      state.lastAction = { type: "heroPower", player: playerIndex, heroId: player.heroId, powerName: player.hero.power.name, targetUid: null, seq: ((state.lastAction && state.lastAction.seq) || 0) + 1 };
-      log(state, player.name + " 使用领袖技能「整编」。", player, "heroPower");
-      transformHandCostPlusOne(state, player);
-      checkGameOver(state);
-      return { ok: true };
-    }
-    const handTarget = player.heroId === "wolfram";
+    const handTarget = false; // 共和国整编已改为友方目标
     let targets = [];
     let targetIds = [];
     if (handTarget) {
@@ -4135,12 +4397,10 @@ function processDeaths(state) {
         ? aliveMinions(opponentOf(state, player)).filter(m => !m.stealth)
         : aliveMinions(player);
       targetIds = targets.map(m => m.uid);
-      if (player.heroId === "otto") targetIds.unshift("hero");
       if (!targetIds.length) return { ok: false, reason: heroTargetType === "enemy" ? "没有敌方目标" : "没有友方随从可作为目标" };
     }
     let target = null;
     if (handTarget) target = player.hand.find(c => c.uid === targetUid);
-    else if (targetUid === "hero" && player.heroId === "otto") target = "hero";
     else if (targetUid) target = targets.find(m => m.uid === targetUid);
     if (!target) return {
       ok: false,
@@ -4157,13 +4417,10 @@ function processDeaths(state) {
     log(state, player.name + " 使用领袖技能「" + player.hero.power.name + "」。", player, "heroPower");
     if (handTarget) {
       transformHandCard(state, player, target);
-    } else if (player.heroId === "lain") {
-      const zoneMates = player.board[target.zone].filter(m => m.uid !== target.uid && !m.dead);
-      const hasMate = zoneMates.length > 0;
-      buffMinion(state, target, hasMate ? 1 : 0, 1, "协调", true);
+    } else if (player.heroId === "lain" || player.heroId === "wolfram") {
+      buffMinion(state, target, 1, 1, "整编", true);
     } else if (player.heroId === "otto") {
-      if (target === "hero") damageHero(state, opponentOf(state, player), 1, null, "炮击");
-      else damageMinion(state, target, 1, null, "炮击");
+      damageMinion(state, target, 2, null, "炮击");
       processDeaths(state);
     } else if (player.heroId === "sernach") {
       const wasFrozen = target.frozenTurns > 0;
@@ -4187,10 +4444,21 @@ function processDeaths(state) {
   function setPhase(state, phase) {
     state.phase = phase;
     if (!Array.isArray(state.phaseLog)) state.phaseLog = [];
-    state.phaseLog.push({ phase: phase, turn: state.turnNumber || 0, player: state.current, at: Date.now() });
+    state.phaseLog.push({ phase: phase, turn: state.turnNumber || 0, player: state.current, at: Date.now(), logLen: (state.log || []).length });
     if (state.phaseLog.length > 60) state.phaseLog.splice(0, state.phaseLog.length - 60);
   }
 
+  // 使用（或被动激活）领袖技能后的随从钩子：终局这类卡靠它结算
+  function triggerHeroPowerUsedHooks(state, player) {
+    for (const m of aliveMinions(player)) {
+      if (m.silenced || !m.passive || m.passive.type !== "heroPowerDamage") continue;
+      const enemies = aliveMinions(opponentOf(state, player));
+      const pick = randomInt(state, enemies.length + 1);
+      if (pick >= enemies.length) damageHero(state, opponentOf(state, player), m.passive.amount || 5, null, "终局");
+      else damageMinion(state, enemies[pick], m.passive.amount || 5, null, "终局");
+      processDeaths(state);
+    }
+  }
   function startTurn(state) {
     if (state.status !== "playing") return;
     const player = state.players[state.current];
@@ -4199,6 +4467,14 @@ function processDeaths(state) {
     setPhase(state, "start");
     // 回合开始：被动光环按当前阵位重新结算一遍（阵型倒计时、装备光环紧跟其后）
     recomputeAuras(state);
+    // 格挡：每回合开始自动刷新（带格挡的随从重获一层）
+    for (const m of aliveMinions(player)) {
+      if (m.silenced || !(m.keywords || []).includes("divineShield")) continue;
+      if (!m.divineShield) {
+        m.divineShield = true;
+        log(state, m.name + " 的格挡刷新了。", player, "shield");
+      }
+    }
     for (const p of state.players) {
       for (const m of allMinions(p)) {
         if (m.passive && m.passive.expiresTurn && m.passive.expiresTurn < state.turnNumber) m.passive = null;
@@ -4249,6 +4525,14 @@ function processDeaths(state) {
     const auraDraw = equipmentAura(player, "turnDraw") + equipmentConditionalAura(state, player, "turnDraw");
     const auraAllDamage = equipmentAura(player, "turnDamageAll") + equipmentConditionalAura(state, player, "turnDamageAll");
     const auraMaxHp = equipmentAura(player, "maxHpTurn") + equipmentConditionalAura(state, player, "maxHpTurn");
+    // 普卫岛被动：回合开始时，每控制 1 个阵型或装备，获得 1 点护甲
+    if (player.hero.power && (player.hero.power.passive || player.hero.power.target === "passive")) {
+      triggerHeroPowerUsedHooks(state, player);
+    }
+    if (player.heroId === "lain") {
+      const laneCount = (player.formations || []).length + activeEquipment(player).length;
+      if (laneCount > 0) { player.armor += laneCount; log(state, "协调：阵线与装备提供 " + laneCount + " 点护甲。", player, "armor"); }
+    }
     if (auraArmor) { player.armor += auraArmor;
     try { armorGainHook(state, player); } catch (e) {} log(state, "装备：获得 " + auraArmor + " 点护甲。", player, "armor"); }
     if (auraDraw) { drawCard(state, player, auraDraw); log(state, "装备：抽 " + auraDraw + " 张牌。", player, "draw"); }
@@ -4294,6 +4578,9 @@ function processDeaths(state) {
     log(state, "—— " + player.name + " 的回合开始（第 " + state.round + " 轮，行动力 " + player.mana + "/" + player.maxMana + "）——", player, "turn");
     // 阶段 2：抽牌
     triggerFormationEvent(state, player, "turnStart");   // 阵型的回合开始效果
+    // 阶段 2：判定（对方盖过来的刻脉在这里翻开）
+    setPhase(state, "verdict");
+    resolveVerdictZone(state, player);
     setPhase(state, "draw");
     drawCard(state, player, 1);
     if (player.nextTurnDraw) {
@@ -4314,13 +4601,10 @@ function processDeaths(state) {
   }
 
   function triggerSpellDiscoverObservers(state, player) {
-    let done = false;
+    // 每使用一张战术牌触发一次：预兆一张牌（卡面没限定类型，所以是任意牌）
     for (const m of aliveMinions(player)) {
-      if (done || !m.passive || m.passive.type !== "spellDiscoverOnce" || m.silenced) continue;
-      if (player.theoristTurn === state.turnNumber) continue;
-      player.theoristTurn = state.turnNumber;
-      openDiscover(state, player, "spell", m.cardId);
-      done = true;
+      if (!m.passive || m.passive.type !== "spellDiscoverOnce" || m.silenced) continue;
+      openDiscover(state, player, "any", m.cardId);
     }
   }
 
@@ -4529,16 +4813,12 @@ function processDeaths(state) {
     if (player.heroId === "balaena") {
       return { ok: !player.heroPowerUsed && player.mana >= 2 && boardCount(player) < 6, targets: [], targetType: "none", cost: 2, used: player.heroPowerUsed };
     }
-    if (player.heroId === "wolfram") {
-      return { ok: !player.heroPowerUsed && player.mana >= (player.hero.power.cost || 2) && player.hand.length > 0, targets: [], targetType: "none", cost: player.hero.power.cost || 2, used: player.heroPowerUsed };
-    }
-    const handTarget = player.heroId === "wolfram";
-    const targetType = handTarget ? "hand" : ((player.heroId === "otto" || player.heroId === "sernach") ? "enemy" : "friendly");
+    const handTarget = false;
+    const targetType = (player.heroId === "otto" || player.heroId === "sernach") ? "enemy" : "friendly";
     const targets = targetType === "enemy"
       ? aliveMinions(opponentOf(state, player)).filter(m => !m.stealth)
       : (targetType === "friendly" ? aliveMinions(player) : []);
     let targetIds = handTarget ? player.hand.filter(c => transformCandidates(player, c).length > 0).map(c => c.uid) : targets.map(m => m.uid);
-    if (player.heroId === "otto") targetIds.unshift("hero");
     return {
       ok: !player.heroPowerUsed && player.mana >= (player.hero.power.cost || 2) && targetIds.length > 0,
       targets: targetIds,
