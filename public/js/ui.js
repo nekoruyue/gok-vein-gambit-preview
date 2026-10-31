@@ -2491,7 +2491,7 @@
       const debtTasks = Array.isArray(player.debtTasks) ? player.debtTasks : [];
       if (debtTasks.length) {
         const taskBlock = el("div", "hero-info-block");
-        taskBlock.appendChild(el("span", "hero-info-kicker", "债务任务"));
+        taskBlock.appendChild(el("span", "hero-info-kicker", "判定区 · 债务"));
         for (const task of debtTasks) {
           const td = D.CARDS[task.cardId];
           const taskName = task.type === "summon" ? "摆放 " + (task.amount || 1) + " 个随从"
@@ -3952,7 +3952,18 @@
     "刻脉": "盖在对手判定区的暗牌，最多 1 张。对方完整过一个回合后翻开，条件成立就吃惩罚，判完进弃牌堆。",
     "墓地": "随从死亡后进的地方，双方共用；战术、阵型、装备用完不进墓地。",
     "变形": "用新随从或衍生物替换目标；被替换的随从不视为死亡，不触发余响。",
-    "获得控制权": "把敌方随从移到自己的空阵位；没有空阵位时无法获得。"
+    "获得控制权": "把敌方随从移到自己的空阵位；没有空阵位时无法获得。",
+    "流脉": "双方共用的场地资源，靠引脉、掘脉、涨脉累积。触发阈值会给加成；镇脉、压脉、逆脉则反过来消耗它。",
+    "阵位": "场地分左、中、右三个阵位；每个阵位最多 3 个随从，全场最多 6 个。守备、阵型、连携都按阵位结算。",
+    "阵型": "打在某个阵位上的持续效果，最多同时 3 张。「固定」的部分会一直生效，之后进入该阵位的随从也能吃到。",
+    "坟场": "随从死亡后去的地方，双方共用、没有上限、只进不出。战术、阵型、装备用完不进坟场，进弃牌堆。",
+    "弃牌堆": "战术、阵型、装备用掉之后去的地方；部分卡能从弃牌堆把牌取回手牌。",
+    "招魂": "从坟场把一个随从召回到场上，回来时是沉默状态：只有原本身材，关键词、登场、余响、被动全部失效。默认取最后进入坟场的那个。",
+    "复活": "从坟场把一个随从按完整状态召回来，关键词和效果都保留。",
+    "消灭": "直接把随从送进坟场，不走伤害流程，护甲和格挡都拦不住。",
+    "免疫": "不会受到该效果影响。例如「免疫冻结」的随从不会被冻结。",
+    "魔物": "洛斯汰的衍生种族，身材小但吃群体加成；不少卡按「控制魔物」触发额外效果。",
+    "雪狐": "雪都的衍生种族；部分卡按「控制雪狐」或「控制狐」触发额外效果。"
   };
   const KEYWORD_TUTORIAL = {
     "格挡": "格挡会先替你挡下下一次伤害 2 点，然后消失。它适合保护关键随从或领袖，但不是永久免疫；连续的小伤害会先磨掉格挡，再用真实伤害打进来。",
@@ -4456,18 +4467,13 @@
       content.appendChild(el("div", "eyebrow", "债务"));
       content.appendChild(el("h3", null, def.name));
       content.appendChild(el("p", null, def.text || ""));
-      content.appendChild(el("p", "muted", "偿还：" + debtRepayText(def)));
+      content.appendChild(el("p", "muted", "这张牌打出去之后会洗进对手牌库；对手抽到时自动进入判定区，当回合没完成就要吃伤害。"));
       const actions = el("div", "modal-actions");
-      const repay = el("button", "btn btn-primary", "偿还债务");
-      repay.onclick = () => {
-        const r = E.repayDebt(s, app.viewer, instance.uid);
-        if (!r.ok) { toast(r.reason || "无法偿还。"); return; }
-        closeModal(true);
-        renderGame();
-      };
-      const cancel = el("button", "btn btn-ghost", "先不还");
+      const play = el("button", "btn btn-primary", "打出");
+      play.onclick = () => { closeModal(true); commitPlay(instance.uid); };
+      const cancel = el("button", "btn btn-ghost", "先留着");
       cancel.onclick = () => closeModal(true);
-      actions.appendChild(repay);
+      actions.appendChild(play);
       actions.appendChild(cancel);
       content.appendChild(actions);
     });
@@ -8103,6 +8109,17 @@
     showScreen("tasks");
   }
 
+  // 任务行进度条：多步任务能一眼看到还剩多少
+  function taskProgressBar(prog, target, done) {
+    const total = Math.max(1, target || 1);
+    const pct = done ? 100 : Math.max(0, Math.min(100, Math.round((prog / total) * 100)));
+    const bar = el("span", "task-bar");
+    const fill = el("i");
+    fill.style.width = pct + "%";
+    bar.appendChild(fill);
+    return bar;
+  }
+
   function renderTasksPage() {
     const root = $("tasks-page-root");
     if (!root) return;
@@ -8124,7 +8141,12 @@
     const card = el("button", "tasks-overview-card" + (done >= total && total > 0 ? " done" : ""));
     card.type = "button";
     if (tabKey) card.onclick = () => { app.taskTab = tabKey; renderTasksPage(); };
-    card.appendChild(el("span", "to-label", label));
+    card.appendChild((() => {
+      const lbl = el("span", "to-label");
+      lbl.appendChild(el("span", "to-left", label));
+      lbl.appendChild(el("span", "to-pct", (total ? Math.round((done / total) * 100) : 0) + "%"));
+      return lbl;
+    })());
     card.appendChild(el("strong", null, done + " / " + total));
     const meter = el("span", "to-meter");
     const fill = el("i");
@@ -8144,7 +8166,8 @@
   const top = el("div", "tasks-top");
     const head = el("div", "tasks-top-head");
     head.appendChild(el("strong", null, p.level >= LEVEL_MAX ? "档案满级" : "Lv." + p.level + " · 档案经验"));
-    head.appendChild(el("small", null, p.level >= LEVEL_MAX ? "全部档案权限已开放" : "距离下一级还差 " + Math.max(0, need - p.xp) + " XP"));
+    const xpPct = p.level >= LEVEL_MAX ? 100 : Math.min(100, Math.round((p.xp / Math.max(1, need)) * 100));
+    head.appendChild(el("small", null, p.level >= LEVEL_MAX ? "全部档案权限已开放" : "距离下一级还差 " + Math.max(0, need - p.xp) + " XP · 当前 " + xpPct + "%"));
     top.appendChild(head);
     const bar = el("div", "tasks-xp-bar"); const fill = el("i"); fill.style.width = (p.level >= LEVEL_MAX ? 100 : Math.min(100, p.xp / need * 100)) + "%"; bar.appendChild(fill); top.appendChild(bar);
     top.appendChild(el("p", "fine-print", p.level >= LEVEL_MAX ? "当前经验 " + p.xp + " · 满级" : "经验 " + p.xp + " / " + need + " · 主线任务经验更多"));
@@ -8163,17 +8186,20 @@
         if (!list.length) continue;
         const box = el("div", "task-chapter");
         const chHead = el("div", "task-chapter-head");
+        const chDone = list.filter((t) => taskClaimed("main", t)).length;
         chHead.appendChild(el("strong", null, "第" + ["一","二","三"][ch-1] + "章 · " + MAIN_CHAPTERS[ch].name));
         chHead.appendChild(el("small", null, MAIN_CHAPTERS[ch].desc));
+        chHead.appendChild(el("span", "task-chapter-progress" + (chDone >= list.length ? " complete" : ""), chDone + " / " + list.length + " 已完成"));
         box.appendChild(chHead);
         for (const task of list) {
           const locked = ch === 3 && p.level < 5;
           const done = taskComplete("main", task) && !locked; const claimed = taskClaimed("main", task); const prog = taskProgress("main", task);
-          const row = el("div", "task-row" + (done ? " done" : "") + (done && !claimed ? " claim" : ""));
+          const row = el("div", "task-row" + (done ? " done" : "") + (done && !claimed ? " claim" : "") + (claimed ? " claimed" : "") + (locked ? " locked" : ""));
           row.appendChild(el("span", "task-mark", claimed ? "✓" : done ? "!" : locked ? "锁" : "·"));
           const copy = el("div"); copy.appendChild(el("strong", null, task.name)); copy.appendChild(el("small", null, locked ? "Lv.5 开放" : done ? "已完成，可领取" : "进度 " + prog + " / " + (task.target || 1))); row.appendChild(copy);
           row.appendChild(el("span", "task-xp", "+" + (task.xp || 0) + " XP"));
           const btn = el("button", "btn btn-small " + (done && !claimed ? "btn-primary" : "btn-ghost"), claimed ? "已领取" : locked ? "未开放" : done ? "领取" : "进行中"); btn.disabled = claimed || !done || locked; btn.onclick = () => claimTask("main", task.id); row.appendChild(btn);
+          copy.appendChild(taskProgressBar(prog, task.target, done));
           box.appendChild(row);
         }
         const foot = el("div", "task-chapter-foot");
@@ -8189,14 +8215,20 @@
     } else {
       const box = el("div", "task-chapter");
       const label = app.taskTab === "daily" ? "每日任务 · " + p.tasks.daily.key : "每周任务 · " + p.tasks.weekly.key;
-      box.appendChild(el("div", "task-chapter-head")).appendChild(el("strong", null, label));
+      const dChead = el("div", "task-chapter-head");
+      dChead.appendChild(el("strong", null, label));
+      const dDone = defs.filter((t) => taskClaimed(app.taskTab, t)).length;
+      dChead.appendChild(el("span", "task-chapter-progress" + (dDone >= defs.length ? " complete" : ""), dDone + " / " + defs.length + " 已完成"));
+      box.appendChild(dChead);
+      if (!defs.length) box.appendChild(el("div", "tasks-empty", "这个周期暂时没有任务，稍后刷新再来看看。"));
       for (const task of defs) {
         const done = taskComplete(app.taskTab, task); const claimed = taskClaimed(app.taskTab, task); const prog = taskProgress(app.taskTab, task);
-        const row = el("div", "task-row" + (done ? " done" : "") + (done && !claimed ? " claim" : ""));
+        const row = el("div", "task-row" + (done ? " done" : "") + (done && !claimed ? " claim" : "") + (claimed ? " claimed" : ""));
         row.appendChild(el("span", "task-mark", claimed ? "✓" : done ? "!" : "·"));
         const copy = el("div"); copy.appendChild(el("strong", null, task.name)); copy.appendChild(el("small", null, done ? "已完成，可领取" : "进度 " + prog + " / " + (task.target || 1))); row.appendChild(copy);
         row.appendChild(el("span", "task-xp", "+" + (task.xp || 0) + " XP"));
         const btn = el("button", "btn btn-small " + (done && !claimed ? "btn-primary" : "btn-ghost"), claimed ? "已领取" : done ? "领取" : "进行中"); btn.disabled = claimed || !done; btn.onclick = () => claimTask(app.taskTab, task.id); row.appendChild(btn);
+        copy.appendChild(taskProgressBar(prog, task.target, done));
         box.appendChild(row);
       }
       root.appendChild(box);
@@ -8213,7 +8245,7 @@
     for (const lesson of TUTORIAL_LESSONS) {
       const unlocked = level >= lesson.level;
       const done = lessonCompleted(lesson.id);
-      const row = el("div", "task-row" + (done ? " done" : ""));
+      const row = el("div", "task-row" + (done ? " done" : "") + (done ? " claimed" : "") + (unlocked ? "" : " locked"));
       row.appendChild(el("span", "task-mark", done ? "✓" : unlocked ? "·" : "锁"));
       const copy = el("div");
       copy.appendChild(el("strong", null, lesson.title));
@@ -10530,6 +10562,20 @@ const tabs = $("deck-faction-tabs");
     if (empty) empty.hidden = list.length > 0;
     const search = $("codex-search");
     if (search && search.value !== (app.codexSearch || "")) search.value = app.codexSearch || "";
+    // 卡牌尺寸档位（紧凑 / 标准 / 大图 / 超大）：只影响排版，记忆在本机
+    if (!app.codexSize) {
+      try { app.codexSize = localStorage.getItem("gok.codexSize") || "m"; } catch (e) { app.codexSize = "m"; }
+    }
+    const sizeGrid = $("codex-grid");
+    if (sizeGrid) sizeGrid.dataset.size = app.codexSize || "m";
+    document.querySelectorAll("[data-codex-size]").forEach((b) => {
+      b.classList.toggle("active", b.dataset.codexSize === (app.codexSize || "m"));
+      b.onclick = () => {
+        app.codexSize = b.dataset.codexSize;
+        try { localStorage.setItem("gok.codexSize", app.codexSize); } catch (e) {}
+        renderCodex();
+      };
+    });
     const grid = $("codex-grid");
     clear(grid);
     shown.forEach((d, index) => {
@@ -12465,6 +12511,7 @@ const tabs = $("deck-faction-tabs");
     else if (action.kind === "end") result = E.endTurn(app.game, 1);
     else if (action.kind === "discover") result = E.resolveDiscover(app.game, 1, action.cardId);
     else if (action.kind === "retreat") result = E.retreatMinion(app.game, 1, action.uid);
+    else if (action.kind === "repay") result = E.repayDebt(app.game, 1, action.uid);
     if (!result || !result.ok) {
       // 回发当前状态，让挑战者解除等待
       sendNet({ type: "state", state: redactStateForGuest(app.game) });
@@ -13662,8 +13709,9 @@ const tabs = $("deck-faction-tabs");
       const rarityLabel = [...codexToolbar.querySelectorAll(".codex-filter-label")].find(x => x.textContent.includes("品级"));
       const factionLabel = [...codexToolbar.querySelectorAll(".codex-filter-label")].find(x => x.textContent.includes("阵营"));
       const searchLabel = [...codexToolbar.querySelectorAll(".codex-filter-label")].find(x => x.textContent.includes("筛选与搜索"));
+      const sizeLabel = [...codexToolbar.querySelectorAll(".codex-filter-label")].find(x => x.textContent.includes("卡牌大小"));
       // 顺序即信息架构：阵营 -> 类型 -> 品级 -> 搜索/排序；未列入的节点会被留在首位，所以新增标签必须加进来
-      for (const node of [factionLabel, document.querySelector("#codex-faction-tabs"), document.querySelector("#codex-hero-panel"), typeLabel, document.querySelector(".codex-type-row"), rarityLabel, document.querySelector("#codex-rarity-row"), searchLabel, document.querySelector(".codex-search-row"), document.querySelector(".codex-color-legend")]) if (node) codexToolbar.appendChild(node);
+      for (const node of [factionLabel, document.querySelector("#codex-faction-tabs"), document.querySelector("#codex-hero-panel"), typeLabel, document.querySelector(".codex-type-row"), rarityLabel, document.querySelector("#codex-rarity-row"), sizeLabel, document.querySelector("#codex-size-row"), searchLabel, document.querySelector(".codex-search-row"), document.querySelector(".codex-color-legend")]) if (node) codexToolbar.appendChild(node);
     }
     if ($("codex-search")) $("codex-search").oninput = (e) => { app.codexSearch = e.target.value; app.codexLimit = 60; renderCodex(); };
     if ($("codex-cost")) $("codex-cost").onchange = (e) => { app.codexCost = e.target.value; app.codexLimit = 60; renderCodex(); };
@@ -14065,6 +14113,8 @@ const tabs = $("deck-faction-tabs");
     app.openCodex = openCodex;
     app.openAchievements = openAchievements;
     app.openSettings = openSettings;
+    // 首帧启动屏（index.html 里的内联样式）到此收起：此时首页已经可用
+    try { document.documentElement.classList.add("gok-booted"); } catch (e) {}
   }
 
   function reinforceHandCardText() {

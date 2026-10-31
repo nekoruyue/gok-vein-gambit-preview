@@ -51,6 +51,9 @@
   function boardCount(player) { return allMinions(player).length; }
   function zoneHasSpace(player, zone) { return player.board[zone].length < 3; }
   function openZones(player) { return ZONES.filter(z => zoneHasSpace(player, z)); }
+  // 夺控 / 接管这类「把敌方随从挪到自己场上」的路径也要挡 6 个上限：
+  // 光看 openZones 的话，场上 3/3/0 分布时还会给出空阵位，于是变成 7 个随从
+  function controlZone(player) { return boardCount(player) < 6 ? openZones(player)[0] : null; }
 
   function log(state, text, player, type, cardId) {
     const entry = { turn: state.turnNumber, round: state.round, text: text, player: player == null ? null : player.index, type: type || "info", cardId: cardId || null };
@@ -314,7 +317,7 @@
   }
 
   function formationBonus(player, zone) {
-    const out = { attack: 0, health: 0, taunt: false, rush: false, charge: false, lifesteal: false, stealth: false, poisonous: false, windfury: false, reborn: false, divineShield: false, deathrattleSummon: null, excludeDeathrattle: null, attackVsFrozen: 0 };
+    const out = { attack: 0, health: 0, taunt: false, rush: false, charge: false, lifesteal: false, stealth: false, poisonous: false, windfury: false, combo: false, reborn: false, divineShield: false, deathrattleSummon: null, excludeDeathrattle: null, attackVsFrozen: 0 };
     let hasFormation = false;
     const seenFormations = new Set();
     for (const f of player.formations || []) {
@@ -334,12 +337,13 @@
         out.stealth = out.stealth || !!d.formation.stealth;
         out.poisonous = out.poisonous || !!d.formation.poisonous;
         out.windfury = out.windfury || !!d.formation.windfury;
+        out.combo = out.combo || !!d.formation.combo;
         out.reborn = out.reborn || !!d.formation.reborn;
         out.divineShield = out.divineShield || !!d.formation.divineShield;
         out.deathrattleSummon = out.deathrattleSummon || d.formation.deathrattleSummon || null;
         out.excludeDeathrattle = out.excludeDeathrattle || d.formation.excludeDeathrattle || null;
         out.attackVsFrozen += d.formation.attackVsFrozen || 0;
-        if (d.formation.condition && d.formation.bonus && formationCond(player, zone, d.formation.condition)) { const b=d.formation.bonus; out.attack += b.attack||0; out.health += b.health||0; out.taunt=out.taunt||!!b.taunt; out.rush=out.rush||!!b.rush; out.reborn=out.reborn||!!b.reborn; out.lifesteal=out.lifesteal||!!b.lifesteal; out.windfury=out.windfury||!!b.windfury; out.stealth=out.stealth||!!b.stealth; out.divineShield=out.divineShield||!!b.divineShield; }
+        if (d.formation.condition && d.formation.bonus && formationCond(player, zone, d.formation.condition)) { const b=d.formation.bonus; out.attack += b.attack||0; out.health += b.health||0; out.taunt=out.taunt||!!b.taunt; out.rush=out.rush||!!b.rush; out.reborn=out.reborn||!!b.reborn; out.lifesteal=out.lifesteal||!!b.lifesteal; out.windfury=out.windfury||!!b.windfury; out.combo=out.combo||!!b.combo; out.stealth=out.stealth||!!b.stealth; out.divineShield=out.divineShield||!!b.divineShield; }
       }
     }
     if (hasFormation && hasEquipment(player, "formation_standard")) { out.attack += 1; }
@@ -411,6 +415,7 @@
     if (fb.stealth) { m.stealth = true; if (!m.keywords.includes("stealth")) m.keywords.push("stealth"); }
     if (fb.poisonous) { m.poisonous = true; if (!m.keywords.includes("poisonous")) m.keywords.push("poisonous"); }
     if (fb.windfury) { m.windfury = true; if (!m.keywords.includes("windfury")) m.keywords.push("windfury"); }
+    if (fb.combo) { m.combo = true; if (!m.keywords.includes("combo")) m.keywords.push("combo"); }
     if (fb.reborn) { m.reborn = true; if (!m.keywords.includes("reborn")) m.keywords.push("reborn"); }
     if (fb.deathrattleSummon && fb.excludeDeathrattle !== m.cardId) {
       addDeathrattleEffect(m, { type: "summon", token: fb.deathrattleSummon, count: 1 });
@@ -449,12 +454,21 @@
       }
       const c = player.deck.shift();
       const drawnDef = card(c.cardId);
+      // 债务卡不占手牌：抽到就自动进入判定区，本回合结束时结算
+      if (c.isDebt) {
+        startDebtTask(state, player, drawnDef, c.debtSource);
+        if (!Array.isArray(player.debtZone)) player.debtZone = [];
+        player.debtZone.push({ uid: c.uid, cardId: c.cardId, dueTurn: state.turnNumber });
+        log(state, player.name + " 抽到债务卡「" + drawnDef.name + "」，自动进入判定区：" + debtTaskLabel(player.debtTasks[player.debtTasks.length - 1]) + "。", player, "debt");
+        state.events.push({ structured: true, kind: "debt", player: player.index, cardId: c.cardId, inserted: "zone" });
+        continue;
+      }
       if (player.hand.length >= 8) {
         log(state, player.name + " 手牌已满，" + drawnDef.name + " 被烧掉。", player, "burn");
       } else {
         player.hand.push(c);
         if (c.isDebt) {
-          log(state, player.name + " 抽到债务卡「" + drawnDef.name + "」，可保留在手中；不打出时只占手牌。", player, "debt");
+          log(state, player.name + " 抽到债务卡「" + drawnDef.name + "」。", player, "debt");
         } else {
           log(state, player.name + " 抽到 " + drawnDef.name + "。", player, "draw");
         }
@@ -1336,7 +1350,7 @@ function processDeaths(state) {
       }
     } else if (d.type === "takeControlRandomEnemyUnder4") {
       const candidates = aliveMinions(opponentOf(state, player)).filter(x => (card(x.cardId).cost || 0) <= 4);
-      const z = openZones(player)[0];
+      const z = controlZone(player);
       if (candidates.length && z) {
         const pick = candidates[randomInt(state, candidates.length)];
         const foe = ownerOf(state, pick);
@@ -1660,6 +1674,7 @@ function processDeaths(state) {
       return;
     }
     const pending = [];
+    const settled = [];
     for (const task of holder.debtTasks) {
       if (!task || task.dueTurn > state.turnNumber) { pending.push(task); continue; }
       const def = card(task.cardId);
@@ -1673,6 +1688,18 @@ function processDeaths(state) {
         applyDebtEffect(state, holder, task.penalty, "债务惩罚");
         state.events.push({ structured: true, kind: "debtPenalty", player: holder.index, source: task.source, cardId: task.cardId });
         if (state.status !== "playing") { checkGameOver(state); return; }
+      }
+      settled.push(task);
+    }
+    // 结算完的债务卡离开判定区，进弃牌堆（不回归牌库、也不占手牌）
+    if (settled.length && Array.isArray(holder.debtZone)) {
+      for (const task of settled) {
+        const idx = holder.debtZone.findIndex((z) => z && z.cardId === task.cardId && z.dueTurn != null && z.dueTurn <= state.turnNumber);
+        if (idx >= 0) {
+          const z = holder.debtZone.splice(idx, 1)[0];
+          if (!Array.isArray(holder.discard)) holder.discard = [];
+          holder.discard.push({ uid: z.uid, cardId: z.cardId });
+        }
       }
     }
     holder.debtTasks = pending;
@@ -2254,7 +2281,7 @@ function processDeaths(state) {
         else if (op.op === "freezeAllEnemies") { for (const m of aliveMinions(opponentOf(state, player))) freezeMinion(state, m); }
         else if (op.op === "summon") summonMinion(state, player, op.token, openZones(player)[0], null);
         else if (op.op === "markBounty" && target && !target.dead) markBounty(state, player, target);
-        else if (op.op === "markRandomBounties") { const e = aliveMinions(opponentOf(state, player)); for (let i=0;i<(op.count||1)&&i<e.length;i++) e[i].bounty = true; }
+        else if (op.op === "markRandomBounties") { const foes = aliveMinions(opponentOf(state, player)).slice(); for (let i = 0; i < (op.count || 1) && foes.length; i++) { const pick = foes.splice(randomInt(state, foes.length), 1)[0]; if (pick) markBounty(state, player, pick); } }
         else if (op.op === "grantRushAll") { for (const m of aliveMinions(player)) grantRush(state, m); }
         else if (op.op === "buffSelf" && minion) buffMinion(state, minion, op.attack || 0, op.health || 0, "补丁", true);
         else if (op.op === "buffZone" && minion) { for (const m of aliveMinions(player).filter(x => x.zone === minion.zone)) buffMinion(state, m, op.attack || 0, op.health || 0, "补丁", true); }
@@ -2393,7 +2420,7 @@ function processDeaths(state) {
     }
     else if (op.op === "takeControlRandomEnemy") {
       const pool = aliveMinions(opponentOf(state, player)).filter((x) => !x.stealth);
-      const z = openZones(player)[0];
+      const z = controlZone(player);
       if (pool.length && z) {
         const pick = pool[randomInt(state, pool.length)];
         const foe = ownerOf(state, pick);
@@ -3197,7 +3224,7 @@ function processDeaths(state) {
       player.nextCardHealthCost = true;
       log(state, "灰羽：下一张牌将消耗对手生命。", player, "buff");
     } else if (b.type === "takeControlRandomEnemy") {
-      const candidates = aliveMinions(opponentOf(state, player)); const z = openZones(player)[0];
+      const candidates = aliveMinions(opponentOf(state, player)); const z = controlZone(player);
       if (candidates.length && z) { const pick = candidates[randomInt(state, candidates.length)]; const foe=ownerOf(state,pick); foe.board[pick.zone]=foe.board[pick.zone].filter(x=>x.uid!==pick.uid); pick.zone=z; pick.justPlayed=true; pick.attacksLeft=0; player.board[z].push(pick); fx(state, player, "获得控制权", pick.uid, "freeze"); log(state, "墨兰控制了 " + pick.name + "。", player, "copy"); }
     } else if (b.type === "destroyLastTurnMinions") {
       for (const m of aliveMinions(opponentOf(state, player))) m.dead = true;
@@ -3737,7 +3764,7 @@ function processDeaths(state) {
       }
     } else if (s.type === "takeControlRandomEnemy") {
       const pool = aliveMinions(opponentOf(state, player)).filter((x) => !x.stealth);
-      const z = openZones(player)[0];
+      const z = controlZone(player);
       if (pool.length && z) {
         const pick = pool[randomInt(state, pool.length)];
         const foe = ownerOf(state, pick);
@@ -3945,10 +3972,17 @@ function processDeaths(state) {
     const frozenOwner = ownerOf(state, m);
     for (const p of state.players) {
       if (p.index === frozenOwner.index) continue;
-      if (p.heroId === "sernach" && p.freezeDrawTurn !== state.turnNumber) {
-        p.freezeDrawTurn = state.turnNumber;
-        drawCard(state, p, 1);
-        log(state, "凝时：本回合第一次冻结敌方随从，抽 1 张牌。", p, "draw");
+      if (p.heroId === "sernach") {
+        // 2026-11-01 平衡：每次冻结都让目标 -1 攻击，让冻结真的能锁住人（原来只会抽牌）
+        if ((m.attack || 0) > 0) {
+          m.attack = Math.max(0, m.attack - 1);
+          log(state, "凝时：" + m.name + " 攻击力 -1。", p, "freeze");
+        }
+        if (p.freezeDrawTurn !== state.turnNumber) {
+          p.freezeDrawTurn = state.turnNumber;
+          drawCard(state, p, 1);
+          log(state, "凝时：本回合第一次冻结敌方随从，抽 1 张牌。", p, "draw");
+        }
       }
       triggerFormationEvent(state, p, "freeze");
       for (const ally of aliveMinions(p)) {
@@ -4024,8 +4058,12 @@ function processDeaths(state) {
     if (!owner) return;
     owner.bountiesClaimed = (owner.bountiesClaimed || 0) + 1;
     owner.bountiesClaimedThisTurn = (owner.bountiesClaimedThisTurn || 0) + 1;
+    // 条件里读的是 bountyCompleted，之前只写了 bountiesClaimed，导致「完成过悬赏」永远为假
+    owner.bountyCompleted = (owner.bountyCompleted || 0) + 1;
     drawCard(state, owner, 1);
     log(state, "悬赏完成：" + owner.name + " 抽 1 张牌。", owner, "bounty");
+    // 阵型事件要在循环外触发：没有随从站着时也要生效
+    triggerFormationEvent(state, owner, "bounty");
     if (owner.heroId === "monarch") {
       owner.armor += 2;
       state.events.push({ structured: true, kind: "armor", player: owner.index, amount: 2 });
@@ -4043,7 +4081,6 @@ function processDeaths(state) {
       if (ally.passive.type === "bountyClaimDamage") {
         damageHero(state, opponentOf(state, owner), ally.passive.amount || 2, null, "赏金王", true);
       }
-      triggerFormationEvent(state, owner, "bounty");
       if (ally.passive.type === "bountyClaimHeal") {
         healHero(state, owner, ally.passive.heal || 2);
         if (ally.passive.drawIfStealth && aliveMinions(owner).some(m => m.stealth)) drawCard(state, owner, 1);
@@ -4363,7 +4400,7 @@ function processDeaths(state) {
     }
     if (player.mana < (player.hero.power.cost || 2)) return { ok: false, reason: "行动力不足" };
     if (player.heroId === "karna") {
-      player.mana -= 2;
+      player.mana -= (player.hero.power.cost || 2);
       player.heroPowerUsed = true;
       state.lastAction = { type: "heroPower", player: playerIndex, heroId: player.heroId, powerName: player.hero.power.name, targetUid: null, seq: ((state.lastAction && state.lastAction.seq) || 0) + 1 };
       log(state, player.name + " 使用领袖技能「血祭」。", player, "heroPower");
@@ -4511,7 +4548,8 @@ function processDeaths(state) {
     player.nextTurnManaBonus = 0;
     player.overload = 0;
     if (player.heroId === "marta") player.spellCostReduction = 2;
-    const auraArmor = equipmentAura(player, "armorTurn") + equipmentConditionalAura(state, player, "armorTurn"), auraHeal = equipmentAura(player, "healTurn") + equipmentConditionalAura(state, player, "healTurn"), auraDamage = equipmentAura(player, "turnDamage");
+    // auraDamage 也要算条件型加成，否则「封口蜡印」这类「完成过悬赏 → 全体改 2 伤」的条件永远不生效
+    const auraArmor = equipmentAura(player, "armorTurn") + equipmentConditionalAura(state, player, "armorTurn"), auraHeal = equipmentAura(player, "healTurn") + equipmentConditionalAura(state, player, "healTurn"), auraDamage = equipmentAura(player, "turnDamage") + equipmentConditionalAura(state, player, "turnDamage");
     if (hasEquipment(player, "lt_deep_eye")) { const z=openZones(player)[0]; if(z) { const otherDemon = aliveMinions(player).some(m => /魔物|imp|demon/i.test(m.name || "")); summonMinion(state, player, otherDemon ? "losutai_beast" : "losutai_imp", z, null); fx(state, player, "深海之眼", "hero:" + player.index, "summon"); } }
     if (hasEquipment(player, "snow_ember")) { const es=aliveMinions(opponentOf(state,player)); if(es.length){ const t=es[randomInt(state,es.length)]; const already=t.frozenTurns>0; freezeMinion(state,t); if(already) drawCard(state,player,1); } fx(state, player, "雪都火种", null, "freeze"); }
     if (hasEquipment(player, "iron_banner")) { const as=aliveMinions(player); if(as.length) grantDivineShield(state, as[randomInt(state,as.length)]); fx(state, player, "铁壁军旗", null, "shield"); }
@@ -4530,7 +4568,8 @@ function processDeaths(state) {
       triggerHeroPowerUsedHooks(state, player);
     }
     if (player.heroId === "lain") {
-      const laneCount = (player.formations || []).length + activeEquipment(player).length;
+      // 2026-11-01 平衡：护甲封顶 2 点。原来无上限且随阵型线性增长，实测值 24 个百分点
+      const laneCount = Math.min(1, (player.formations || []).length + activeEquipment(player).length);
       if (laneCount > 0) { player.armor += laneCount; log(state, "协调：阵线与装备提供 " + laneCount + " 点护甲。", player, "armor"); }
     }
     if (auraArmor) { player.armor += auraArmor;
@@ -4802,11 +4841,12 @@ function processDeaths(state) {
       };
     }
     if (player.heroId === "karna") {
+      const kcost = player.hero.power.cost || 2;
       return {
-        ok: !player.heroPowerUsed && player.mana >= 2,
+        ok: !player.heroPowerUsed && player.mana >= kcost,
         targets: [],
         targetType: "none",
-        cost: 2,
+        cost: kcost,
         used: player.heroPowerUsed
       };
     }

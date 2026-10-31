@@ -1,13 +1,13 @@
 {
   "channel": "preview",
-  "version": "1.0.1",
-  "build": "20261030e5",
-  "publishedAt": "2026-10-30T21:57:47+08:00",
+  "version": "1.1.0",
+  "build": "20261101e11",
+  "publishedAt": "2026-11-01T03:18:53+08:00",
   "mandatory": false,
   "minSupportedVersion": "0.9.0",
-  "size": 282474944,
-  "sha256": "4c725c5a96bb362cc4bc98412912ccd17f28fd894ebfd6c1f438319c0a244b13",
-  "url": "https://gok-vein-gambit-preview.onrender.com/downloads/GokVeinGambit-Setup-1.0.1.exe",
-  "title": "1.0.1 布局修正",
+  "size": 282394004,
+  "sha256": "638506886c070caab9f875504e412d770e7c0265e457d7d140e3ae37e51ed0d2",
+  "url": "https://gok-vein-gambit-preview.onrender.com/downloads/GokVeinGambit-Setup-1.1.0.exe",
+  "title": "债务卡重做与英雄平衡",
   "notes": []
 }
