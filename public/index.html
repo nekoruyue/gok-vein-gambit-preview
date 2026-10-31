@@ -5,12 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, user-scalable=yes">
   <title>戈克世界：流脉牌局</title>
   <link rel="icon" href="favicon.ico">
-  <link rel="stylesheet" href="css/style.css?v=20261030e6">
-  <link rel="stylesheet" href="css/hs-layout.css?v=20261030e6">
-  <link rel="stylesheet" href="css/art-fixes.css?v=20261030e6">
-  <link rel="stylesheet" href="css/mobile.css?v=20261030e6">
-  <link rel="stylesheet" href="css/vfx.css?v=20261030e6">
+  <!-- 首帧启动屏：内联样式，不依赖任何网络资源；ui.js 初始化完成后给 <html> 加 .gok-booted 收起来 -->
+  <style>
+    html:not(.gok-booted)::before {
+      content: ""; position: fixed; inset: 0; z-index: 9998;
+      background: radial-gradient(120% 120% at 50% 32%, #0d1a20 0%, #050b0e 72%);
+    }
+    html:not(.gok-booted)::after {
+      content: "戈克世界 · 流脉牌局";
+      position: fixed; z-index: 9999; left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
+      font-size: 24px; letter-spacing: .32em; white-space: nowrap;
+      color: #d9c79a; text-shadow: 0 0 24px rgba(217, 164, 65, .38);
+      animation: gokBootFade 1.6s ease-in-out infinite;
+    }
+    @keyframes gokBootFade { 0%, 100% { opacity: .5; } 50% { opacity: .96; } }
+    @media (max-width: 720px) {
+      html:not(.gok-booted)::after { font-size: 17px; letter-spacing: .24em; }
+    }
+  </style>
+  <link rel="stylesheet" href="css/style.css?v=20261101e11">
+  <link rel="stylesheet" href="css/hs-layout.css?v=20261101e11">
+  <link rel="stylesheet" href="css/art-fixes.css?v=20261101e11">
+  <link rel="stylesheet" href="css/mobile.css?v=20261101e11">
+  <link rel="stylesheet" href="css/vfx.css?v=20261101e11">
   <link rel="stylesheet" href="css/archive.css?v=20261026ui1">
+  <link rel="stylesheet" href="css/codex-zoom.css?v=20261101e11">
+  <link rel="stylesheet" href="css/tasks-polish.css?v=20261101t1">
   <link rel="stylesheet" href="css/opening.css?v=20261026o1">
     <link rel="stylesheet" href="css/card-stats.css?v=20261028s14">
 </head>
@@ -612,7 +634,7 @@
               <article class="tutorial-card">
                 <span class="manual-tag">债务卡</span>
                 <h4>塞给对手的任务</h4>
-                <p>打出后会洗进对手牌库。对手抽到并主动打出时，才开始本回合的债务任务；任务没完成，会在回合结束受到伤害。对手不打出，它就只是占一张手牌，所以债务卡更像干扰，不是稳定直伤。对手也可以选择硬吃伤害保节奏。</p>
+                <p>打出后会洗进对手牌库。对手抽到这张牌时不必花行动力，它会自动进入判定区：当回合内完成卡面要求就免罚，没完成就在回合结束时按卡面吃伤害。判定结束这张牌进弃牌堆，不占对手手牌，等于白白吃掉对手一次抽牌。</p>
               </article>
               <article class="tutorial-card">
                 <span class="manual-tag">刻脉卡</span>
@@ -867,6 +889,13 @@
             <button class="deck-filter rarity-rare" data-codex-rarity="rare">稀有</button>
             <button class="deck-filter rarity-epic" data-codex-rarity="epic">史诗</button>
             <button class="deck-filter rarity-legendary" data-codex-rarity="legendary">传说</button>
+          </div>
+          <div class="codex-filter-label">卡牌大小</div>
+          <div class="deck-filter-row codex-size-row" id="codex-size-row">
+            <button class="deck-filter" data-codex-size="s">紧凑</button>
+            <button class="deck-filter active" data-codex-size="m">标准</button>
+            <button class="deck-filter" data-codex-size="l">大图</button>
+            <button class="deck-filter" data-codex-size="xl">超大</button>
           </div>
                     <div class="codex-filter-label">筛选与搜索</div>
           <div class="codex-search-row codex-search-after-filters">
@@ -1140,7 +1169,7 @@
             <div class="panel-label">关于 / ABOUT</div>
             <p class="settings-about">《戈克世界：流脉牌局》经典模式 2.0。八阵营、633 张卡牌 / 585 可收藏，支持起手调度、编成、单人 AI 与在线组队码房间。</p>
                         <p class="settings-about settings-keys-hint">键盘：Esc 返回 / 关闭弹窗 · 空格 结束回合（对局中）· / 聚焦图鉴搜索</p>
-            <p class="settings-about">当前构建：20261030e6</p>
+            <p class="settings-about">当前构建：20261101e11</p>
             <button id="btn-settings-credits" class="btn btn-small btn-ghost">制作与素材说明</button>
             <button id="btn-settings-feedback" class="btn btn-small btn-ghost">反馈与交流</button>
           </div>
@@ -1729,19 +1758,19 @@
   <div id="toast" class="toast"></div>
 
   <script>window.__GOK_CHANNEL_VALUE__ = "__GOK_CHANNEL__";</script>
-  <script src="js/channel.js?v=20261030e6"></script>
-  <script src="js/data.js?v=20261030e6"></script>
-  <script src="js/engine.js?v=20261030e6"></script>
-  <script src="js/ai.js?v=20261030e6"></script>
-  <script src="js/cinematic.js?v=20261030e6"></script>
-  <script src="js/vfx.js?v=20261030e6"></script>
-  <script src="js/net-authority.js?v=20261030e6"></script>
-  <script src="js/ui.js?v=20261030e6"></script>
-  <script src="js/updater-ui.js?v=20261030e6"></script>
-  <script src="js/content.js?v=20261030e6"></script>
-  <script src="js/battler.js?v=20261030e6"></script>
-  <script src="js/arcade.js?v=20261030e6"></script>
-  <script src="js/main.js?v=20261030e6"></script>
+  <script src="js/channel.js?v=20261101e11"></script>
+  <script src="js/data.js?v=20261101e11"></script>
+  <script src="js/engine.js?v=20261101e11"></script>
+  <script src="js/ai.js?v=20261101e11"></script>
+  <script src="js/cinematic.js?v=20261101e11"></script>
+  <script src="js/vfx.js?v=20261101e11"></script>
+  <script src="js/net-authority.js?v=20261101e11"></script>
+  <script src="js/ui.js?v=20261101e11"></script>
+  <script src="js/updater-ui.js?v=20261101e11"></script>
+  <script src="js/content.js?v=20261101e11"></script>
+  <script src="js/battler.js?v=20261101e11"></script>
+  <script src="js/arcade.js?v=20261101e11"></script>
+  <script src="js/main.js?v=20261101e11"></script>
 
   <!-- 开场动画：六幕，需要一次点击才允许出声，可跳过 -->
   <div id="gok-opening" class="gkopen" hidden data-scene="idle">

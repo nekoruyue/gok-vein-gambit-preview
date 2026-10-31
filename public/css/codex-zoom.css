@@ -1,0 +1,42 @@
+/* 图鉴卡牌尺寸档位（2026-11-01）
+ * 挂载点：#codex-grid[data-size="s|m|l|xl"]
+ * 目的是解决「图鉴卡片太小、规则文字看不清」，按档位放大网格列宽与卡面字号。
+ * 本文件必须在 archive.css 之后加载：那边用 !important 把尺寸压到 136px，这里要能盖住。
+ */
+
+/* ===== 紧凑：一屏尽量多 ===== */
+#screen-codex .codex-grid[data-size="s"] { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important; gap: 8px !important; }
+#screen-codex .codex-grid[data-size="s"] .gok-lib-name { font-size: 10.5px !important; min-height: 18px !important; padding: 2px 3px !important; }
+#screen-codex .codex-grid[data-size="s"] .gok-lib-kind { font-size: 7px !important; }
+#screen-codex .codex-grid[data-size="s"] .gok-lib-text { font-size: 7.5px !important; line-height: 1.32 !important; top: calc(51% + 32px) !important; bottom: 26px !important; }
+
+/* ===== 标准（默认）：比原来大一号 ===== */
+#screen-codex .codex-grid[data-size="m"] { grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)) !important; gap: 12px !important; }
+#screen-codex .codex-grid[data-size="m"] .codex-card { aspect-ratio: 5 / 8.5 !important; }
+#screen-codex .codex-grid[data-size="m"] .gok-lib-name { font-size: 13.5px !important; min-height: 22px !important; }
+#screen-codex .codex-grid[data-size="m"] .gok-lib-kind { font-size: 8px !important; }
+#screen-codex .codex-grid[data-size="m"] .gok-lib-text { font-size: 9.5px !important; line-height: 1.42 !important; top: calc(51% + 34px) !important; bottom: 30px !important; }
+
+/* ===== 大图：规则文字能舒服读完 ===== */
+#screen-codex .codex-grid[data-size="l"] { grid-template-columns: repeat(auto-fill, minmax(228px, 1fr)) !important; gap: 16px !important; }
+#screen-codex .codex-grid[data-size="l"] .codex-card { aspect-ratio: 5 / 8.6 !important; }
+#screen-codex .codex-grid[data-size="l"] .gok-lib-name { font-size: 17px !important; min-height: 30px !important; padding: 6px 8px !important; }
+#screen-codex .codex-grid[data-size="l"] .gok-lib-kind { font-size: 10.5px !important; top: calc(51% + 32px) !important; }
+#screen-codex .codex-grid[data-size="l"] .gok-lib-text { font-size: 12px !important; line-height: 1.55 !important; top: calc(51% + 52px) !important; bottom: 40px !important; }
+#screen-codex .codex-grid[data-size="l"] .gok-lib-cost { width: 32px !important; height: 32px !important; font-size: 15px !important; }
+#screen-codex .codex-grid[data-size="l"] .gok-lib-stat { width: 32px !important; height: 32px !important; font-size: 15px !important; }
+
+/* ===== 超大：当卡册翻，一眼看清一整套 ===== */
+#screen-codex .codex-grid[data-size="xl"] { grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)) !important; gap: 20px !important; }
+#screen-codex .codex-grid[data-size="xl"] .codex-card { aspect-ratio: 5 / 9.2 !important; }
+#screen-codex .codex-grid[data-size="xl"] .gok-lib-name { font-size: 22px !important; min-height: 40px !important; padding: 8px 10px !important; }
+#screen-codex .codex-grid[data-size="xl"] .gok-lib-kind { font-size: 13px !important; top: calc(51% + 42px) !important; }
+#screen-codex .codex-grid[data-size="xl"] .gok-lib-text { font-size: 15.5px !important; line-height: 1.6 !important; top: calc(51% + 66px) !important; bottom: 52px !important; }
+#screen-codex .codex-grid[data-size="xl"] .gok-lib-cost { width: 40px !important; height: 40px !important; font-size: 19px !important; }
+#screen-codex .codex-grid[data-size="xl"] .gok-lib-stat { width: 40px !important; height: 40px !important; font-size: 19px !important; }
+#screen-codex .codex-grid[data-size="xl"] .gok-lib-faction { font-size: 11px !important; }
+
+/* 档位按钮：和既有筛选按钮同款，整行独占避免被挤到标签右边 */
+.codex-size-row { gap: 6px; flex: 1 0 100%; }
+.codex-size-row .deck-filter { min-width: 56px; }
+#screen-codex .codex-toolbar > .codex-size-row { justify-content: flex-start !important; flex-wrap: wrap; margin-left: 0 !important; }
