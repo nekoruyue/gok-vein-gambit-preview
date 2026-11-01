@@ -3904,13 +3904,14 @@
 
   function appendKeywordText(node, text) {
     if (!text) return;
-    const re = /(登场|余响|守备|先遣|冻结|隐匿|掘脉|涨脉|刻脉|引脉|血祭|沉默|预兆|格挡|连携|蚀毒|血偿|先遣|回潮|封口|顺势|吞噬|阵位|对位|行动力|战术|阵型)/g;
+    // 2026-11-01：逆脉/镇脉/压脉 也是正式关键词，补进来让卡面能点出解释
+    const re = /(登场|余响|守备|先遣|冻结|隐匿|掘脉|涨脉|刻脉|引脉|逆脉|镇脉|压脉|血祭|沉默|预兆|格挡|连携|蚀毒|血偿|先遣|回潮|封口|顺势|吞噬|阵位|对位|行动力|战术|阵型)/g;
     let last = 0;
     let m;
     while ((m = re.exec(text)) !== null) {
       if (m.index > last) node.appendChild(document.createTextNode(text.slice(last, m.index)));
       const span = el("span", "kw", m[0]);
-      if (["掘脉", "涨脉", "引脉", "刻脉"].indexOf(m[0]) >= 0) span.classList.add("vein-kw");
+      if (["掘脉", "涨脉", "引脉", "刻脉", "逆脉", "镇脉", "压脉"].indexOf(m[0]) >= 0) span.classList.add("vein-kw");
       if (m[0] === "血祭") span.classList.add("danger-kw");
       applyKeywordColor(span, m[0]);
       node.appendChild(span);

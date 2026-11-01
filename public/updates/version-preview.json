@@ -1,13 +1,13 @@
 {
   "channel": "preview",
-  "version": "1.1.0",
-  "build": "20261101e11",
-  "publishedAt": "2026-11-01T03:18:53+08:00",
+  "version": "1.1.1",
+  "build": "20261101e16",
+  "publishedAt": "2026-11-01T11:33:46+08:00",
   "mandatory": false,
   "minSupportedVersion": "0.9.0",
-  "size": 282394004,
-  "sha256": "638506886c070caab9f875504e412d770e7c0265e457d7d140e3ae37e51ed0d2",
-  "url": "https://gok-vein-gambit-preview.onrender.com/downloads/GokVeinGambit-Setup-1.1.0.exe",
-  "title": "债务卡重做与英雄平衡",
+  "size": 282396012,
+  "sha256": "b2fa0dfb7d399cddd10cf4ad6a4b7704faa364324383c1a4fe4085825ef82cc3",
+  "url": "https://gok-vein-gambit-preview.onrender.com/downloads/GokVeinGambit-Setup-1.1.1.exe",
+  "title": "卡牌文案全面彻查修复",
   "notes": []
 }
