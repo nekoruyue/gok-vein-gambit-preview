@@ -1988,7 +1988,12 @@
       else main++;
     }
     const rarity = deckRarityCounts(arr);
-    for (const key of ["legendary", "epic", "rare"]) {
+    // 2026-11-15：传说配额拆成「本阵营 2 + 中立 1」，其余品级沿用总额
+    const legendOwn = arr.filter((x) => CARDS[x] && CARDS[x].rarity === "legendary" && CARDS[x].faction === faction).length;
+    const legendNeutral = arr.filter((x) => CARDS[x] && CARDS[x].rarity === "legendary" && CARDS[x].faction === "neutral").length;
+    if (legendOwn > 2) errors.push("本阵营传说最多 2 张，当前 " + legendOwn + " 张");
+    if (legendNeutral > 1) errors.push("中立传说最多 1 张，当前 " + legendNeutral + " 张");
+    for (const key of ["epic", "rare"]) {
       if (rarity[key] > DECK_RARITY_LIMITS[key]) {
         errors.push(({ legendary: "传说", epic: "史诗", rare: "稀有" })[key] + "卡最多 " + DECK_RARITY_LIMITS[key] + " 张，当前 " + rarity[key] + " 张");
       }
@@ -19087,6 +19092,1392 @@
     // 收尸队：passive 是死数据（引擎只从场上随从读 passive），阵型事件已提供同一效果，删掉免得重复
     if (CARDS.gh_silence_field) delete CARDS.gh_silence_field.passive;
   })();
+
+  /* ===== 2026-11-15 内容扩充：刻脉 20 + 流脉 24 + 第二英雄 8 ===== */
+  Object.assign(HEROES, {
+  "kelin": {
+    "id": "kelin",
+    "name": "克林·维斯",
+    "short": "克林",
+    "faction": "pus",
+    "hp": 26,
+    "armor": 5,
+    "art": "cedric",
+    "quote": "阵线不是画出来的，是站出来的。",
+    "power": {
+      "name": "结阵",
+      "cost": 1,
+      "target": "friendly",
+      "text": "主动：使一个友方随从获得 +0/+2 与守备。"
+    }
+  },
+  "finn": {
+    "id": "finn",
+    "name": "芬恩·阿舍",
+    "short": "芬恩",
+    "faction": "academy",
+    "hp": 28,
+    "armor": 3,
+    "art": "justus",
+    "quote": "同一道题，抄两遍才算懂。",
+    "power": {
+      "name": "校勘",
+      "cost": 2,
+      "target": "none",
+      "text": "主动：复制手牌里 1 张随机战术牌，置入你的手牌。"
+    }
+  },
+  "tumen": {
+    "id": "tumen",
+    "name": "「赤手」图门",
+    "short": "图门",
+    "faction": "xizhao",
+    "hp": 24,
+    "armor": 0,
+    "art": "beatrix",
+    "quote": "血流出来的时候，人才知道自己有几斤。",
+    "power": {
+      "name": "见血",
+      "cost": 0,
+      "target": "passive",
+      "passive": true,
+      "text": "被动：你的随从受伤时，该随从获得 +1 攻击（每回合 1 次）。"
+    }
+  },
+  "aida": {
+    "id": "aida",
+    "name": "艾达·朔",
+    "short": "艾达",
+    "faction": "republic",
+    "hp": 30,
+    "armor": 2,
+    "art": "elena",
+    "quote": "墙是大家垒的，就得大家一起站。",
+    "power": {
+      "name": "共守",
+      "cost": 0,
+      "target": "passive",
+      "passive": true,
+      "text": "被动：你获得护甲时，所有友方随从获得 +0/+1（每回合 1 次）。"
+    }
+  },
+  "erica": {
+    "id": "erica",
+    "name": "艾丽卡·冯·霍尔",
+    "short": "艾丽卡",
+    "faction": "empire",
+    "hp": 29,
+    "armor": 2,
+    "art": "orlicas",
+    "quote": "坟场也是兵源，只要你还记得名字。",
+    "power": {
+      "name": "征召",
+      "cost": 2,
+      "target": "none",
+      "text": "主动：召唤 1 个 2/2 帝国卫兵；若你的坟场有随从，则改为召唤 3/3 卫兵。"
+    }
+  },
+  "blackcrow": {
+    "id": "blackcrow",
+    "name": "黑鸦",
+    "short": "黑鸦",
+    "faction": "greyharbor",
+    "hp": 27,
+    "armor": 1,
+    "art": "grayfeather",
+    "quote": "名字上了名单，价钱就不归你定了。",
+    "power": {
+      "name": "标记",
+      "cost": 1,
+      "target": "enemy",
+      "text": "主动：把 1 个敌方随从列入悬赏名单。"
+    }
+  },
+  "shan": {
+    "id": "shan",
+    "name": "珊",
+    "short": "珊",
+    "faction": "losutai",
+    "hp": 29,
+    "armor": 3,
+    "art": "lanxi",
+    "quote": "潮水带走的，潮水会还回来。",
+    "power": {
+      "name": "回潮",
+      "cost": 0,
+      "target": "passive",
+      "passive": true,
+      "text": "被动：你的魔物死亡时，抽 1 张牌（每回合 1 次）。"
+    }
+  },
+  "whitecrow": {
+    "id": "whitecrow",
+    "name": "白鸦",
+    "short": "白鸦",
+    "faction": "snow",
+    "hp": 27,
+    "armor": 2,
+    "art": "elsa",
+    "quote": "冷不是坏事，冷让人想清楚。",
+    "power": {
+      "name": "封脉",
+      "cost": 2,
+      "target": "enemy",
+      "text": "主动：冻结 1 个敌方随从，并对其造成 1 点伤害。"
+    }
+  }
+});
+  for (const c of [
+  {
+    "id": "pl_pus_1",
+    "name": "堡垒判词",
+    "faction": "pus",
+    "type": "pulse",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "pulse": {
+      "kind": "damage",
+      "cond": {
+        "cond": "armor",
+        "value": 4
+      },
+      "penalty": [
+        {
+          "op": "damageHero",
+          "amount": 3
+        }
+      ]
+    },
+    "text": "刻脉：盖住敌方判定区；过完 1 个回合后判定，若你的护甲不少于 4，则对敌方领袖造成 3 点伤害"
+  },
+  {
+    "id": "pl_pus_2",
+    "name": "铁壁封印",
+    "faction": "pus",
+    "type": "pulse",
+    "cost": 4,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "pulse": {
+      "kind": "lock",
+      "cond": {
+        "cond": "enemyTaunt"
+      }
+    },
+    "text": "刻脉：盖住敌方判定区；过完 1 个回合后判定，若敌方有守备随从，则冻结其所有随从 2 个回合，并对每个被冻结的随从造成 1 点伤害"
+  },
+  {
+    "id": "pl_xizhao_1",
+    "name": "血账判词",
+    "faction": "xizhao",
+    "type": "pulse",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "pulse": {
+      "kind": "damage",
+      "cond": {
+        "cond": "graveCount",
+        "value": 3
+      },
+      "penalty": [
+        {
+          "op": "damageHero",
+          "amount": 3
+        }
+      ]
+    },
+    "text": "刻脉：盖住敌方判定区；过完 1 个回合后判定，若坟场有不少于 3 个随从，则对敌方领袖造成 3 点伤害"
+  },
+  {
+    "id": "pl_xizhao_2",
+    "name": "赤潮收据",
+    "faction": "xizhao",
+    "type": "pulse",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "pulse": {
+      "kind": "drain",
+      "cond": {
+        "cond": "enemyHand",
+        "value": 4
+      }
+    },
+    "text": "刻脉：盖住敌方判定区；过完 1 个回合后判定，若敌方手牌不少于 4 张，则其领袖失去 2 点行动力并随机弃 1 张手牌"
+  },
+  {
+    "id": "pl_xizhao_3",
+    "name": "血月封缄",
+    "faction": "xizhao",
+    "type": "pulse",
+    "cost": 4,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "pulse": {
+      "kind": "lock",
+      "cond": {
+        "cond": "vein",
+        "value": 6
+      }
+    },
+    "text": "刻脉：盖住敌方判定区；过完 1 个回合后判定，若流脉不少于 6，则冻结其所有随从 2 个回合，并对每个被冻结的随从造成 1 点伤害"
+  },
+  {
+    "id": "pl_republic_1",
+    "name": "议席判词",
+    "faction": "republic",
+    "type": "pulse",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "pulse": {
+      "kind": "damage",
+      "cond": {
+        "cond": "armor",
+        "value": 3
+      },
+      "penalty": [
+        {
+          "op": "damageHero",
+          "amount": 2
+        },
+        {
+          "op": "damageRandomEnemy",
+          "amount": 2
+        }
+      ]
+    },
+    "text": "刻脉：盖住敌方判定区；过完 1 个回合后判定，若你的护甲不少于 3，则对敌方领袖造成 2 点伤害，并对 1 个随机敌方随从造成 2 点伤害"
+  },
+  {
+    "id": "pl_republic_2",
+    "name": "铁誓封印",
+    "faction": "republic",
+    "type": "pulse",
+    "cost": 4,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "pulse": {
+      "kind": "lock",
+      "cond": {
+        "cond": "enemyTaunt"
+      }
+    },
+    "text": "刻脉：盖住敌方判定区；过完 1 个回合后判定，若敌方有守备随从，则冻结其所有随从 2 个回合，并对每个被冻结的随从造成 1 点伤害"
+  },
+  {
+    "id": "pl_republic_3",
+    "name": "审计通知",
+    "faction": "republic",
+    "type": "pulse",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "pulse": {
+      "kind": "drain",
+      "cond": {
+        "cond": "hand",
+        "value": 5
+      }
+    },
+    "text": "刻脉：盖住敌方判定区；过完 1 个回合后判定，若你的手牌不少于 5 张，则其领袖失去 2 点行动力并随机弃 1 张手牌"
+  },
+  {
+    "id": "pl_empire_1",
+    "name": "锻炉判词",
+    "faction": "empire",
+    "type": "pulse",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "pulse": {
+      "kind": "damage",
+      "cond": {
+        "cond": "graveCount",
+        "value": 4
+      },
+      "penalty": [
+        {
+          "op": "damageHero",
+          "amount": 4
+        }
+      ]
+    },
+    "text": "刻脉：盖住敌方判定区；过完 1 个回合后判定，若坟场有不少于 4 个随从，则对敌方领袖造成 4 点伤害"
+  },
+  {
+    "id": "pl_empire_2",
+    "name": "铁序封缄",
+    "faction": "empire",
+    "type": "pulse",
+    "cost": 4,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "pulse": {
+      "kind": "lock",
+      "cond": {
+        "cond": "vein",
+        "value": 8
+      }
+    },
+    "text": "刻脉：盖住敌方判定区；过完 1 个回合后判定，若流脉不少于 8，则冻结其所有随从 2 个回合，并对每个被冻结的随从造成 1 点伤害"
+  },
+  {
+    "id": "pl_empire_3",
+    "name": "征调回执",
+    "faction": "empire",
+    "type": "pulse",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "pulse": {
+      "kind": "drain",
+      "cond": {
+        "cond": "enemySpellLastTurn"
+      }
+    },
+    "text": "刻脉：盖住敌方判定区；过完 1 个回合后判定，若敌方上回合使用过战术牌，则其领袖失去 2 点行动力并随机弃 1 张手牌"
+  },
+  {
+    "id": "pl_grey_1",
+    "name": "黑市判词",
+    "faction": "greyharbor",
+    "type": "pulse",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "pulse": {
+      "kind": "damage",
+      "cond": {
+        "cond": "bountyExists"
+      },
+      "penalty": [
+        {
+          "op": "damageHero",
+          "amount": 3
+        }
+      ]
+    },
+    "text": "刻脉：盖住敌方判定区；过完 1 个回合后判定，若场上有被列入悬赏名单的随从，则对敌方领袖造成 3 点伤害"
+  },
+  {
+    "id": "pl_grey_2",
+    "name": "账房封缄",
+    "faction": "greyharbor",
+    "type": "pulse",
+    "cost": 4,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "pulse": {
+      "kind": "drain",
+      "cond": {
+        "cond": "graveCount",
+        "value": 3
+      }
+    },
+    "text": "刻脉：盖住敌方判定区；过完 1 个回合后判定，若坟场有不少于 3 个随从，则其领袖失去 2 点行动力并随机弃 1 张手牌"
+  },
+  {
+    "id": "pl_losutai_1",
+    "name": "潮底判词",
+    "faction": "losutai",
+    "type": "pulse",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "pulse": {
+      "kind": "damage",
+      "cond": {
+        "cond": "enemyTaunt"
+      },
+      "penalty": [
+        {
+          "op": "damageHero",
+          "amount": 2
+        },
+        {
+          "op": "damageRandomEnemy",
+          "amount": 3
+        }
+      ]
+    },
+    "text": "刻脉：盖住敌方判定区；过完 1 个回合后判定，若敌方有守备随从，则对敌方领袖造成 2 点伤害，并对 1 个随机敌方随从造成 3 点伤害"
+  },
+  {
+    "id": "pl_losutai_2",
+    "name": "魔物封缄",
+    "faction": "losutai",
+    "type": "pulse",
+    "cost": 4,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "pulse": {
+      "kind": "lock",
+      "cond": {
+        "cond": "enemyHand",
+        "value": 5
+      }
+    },
+    "text": "刻脉：盖住敌方判定区；过完 1 个回合后判定，若敌方手牌不少于 5 张，则冻结其所有随从 2 个回合，并对每个被冻结的随从造成 1 点伤害"
+  },
+  {
+    "id": "pl_losutai_3",
+    "name": "潮汐回执",
+    "faction": "losutai",
+    "type": "pulse",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "pulse": {
+      "kind": "drain",
+      "cond": {
+        "cond": "veinEven"
+      }
+    },
+    "text": "刻脉：盖住敌方判定区；过完 1 个回合后判定，若流脉为偶数，则其领袖失去 2 点行动力并随机弃 1 张手牌"
+  },
+  {
+    "id": "pl_snow_1",
+    "name": "霜下判词",
+    "faction": "snow",
+    "type": "pulse",
+    "cost": 4,
+    "rarity": "rare",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "pulse": {
+      "kind": "lock",
+      "cond": {
+        "cond": "enemyTaunt"
+      }
+    },
+    "text": "刻脉：盖住敌方判定区；过完 1 个回合后判定，若敌方有守备随从，则冻结其所有随从 2 个回合，并对每个被冻结的随从造成 1 点伤害"
+  },
+  {
+    "id": "pl_snow_2",
+    "name": "冰封回执",
+    "faction": "snow",
+    "type": "pulse",
+    "cost": 3,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "pulse": {
+      "kind": "damage",
+      "cond": {
+        "cond": "enemyHand",
+        "value": 4
+      },
+      "penalty": [
+        {
+          "op": "damageHero",
+          "amount": 2
+        },
+        {
+          "op": "damageRandomEnemy",
+          "amount": 2
+        }
+      ]
+    },
+    "text": "刻脉：盖住敌方判定区；过完 1 个回合后判定，若敌方手牌不少于 4 张，则对敌方领袖造成 2 点伤害，并对 1 个随机敌方随从造成 2 点伤害"
+  },
+  {
+    "id": "pl_neutral_1",
+    "name": "佣兵判词",
+    "faction": "neutral",
+    "type": "pulse",
+    "cost": 3,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "pulse": {
+      "kind": "damage",
+      "cond": {
+        "cond": "veinEven"
+      },
+      "penalty": [
+        {
+          "op": "damageHero",
+          "amount": 3
+        }
+      ]
+    },
+    "text": "刻脉：盖住敌方判定区；过完 1 个回合后判定，若流脉为偶数，则对敌方领袖造成 3 点伤害"
+  },
+  {
+    "id": "pl_neutral_2",
+    "name": "荒原回执",
+    "faction": "neutral",
+    "type": "pulse",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "pulse": {
+      "kind": "drain",
+      "cond": {
+        "cond": "bountyExists"
+      }
+    },
+    "text": "刻脉：盖住敌方判定区；过完 1 个回合后判定，若场上有被列入悬赏名单的随从，则其领袖失去 2 点行动力并随机弃 1 张手牌"
+  },
+  {
+    "id": "vn_pus_1",
+    "name": "脉涌",
+    "faction": "pus",
+    "type": "spell",
+    "cost": 3,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "spell": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "zhenmai",
+          "amount": 3
+        },
+        {
+          "op": "if",
+          "cond": "vein",
+          "value": 8,
+          "then": [
+            {
+              "op": "draw",
+              "amount": 1
+            }
+          ]
+        }
+      ]
+    },
+    "text": "镇脉 3：获得 3 点护甲；若流脉不少于 8，则抽 1 张牌"
+  },
+  {
+    "id": "vn_pus_2",
+    "name": "引脉卫士",
+    "faction": "pus",
+    "type": "minion",
+    "cost": 4,
+    "attack": 3,
+    "health": 4,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "keywords": [],
+    "target": "none",
+    "battlecry": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "if",
+          "cond": "vein",
+          "value": 6,
+          "then": [
+            {
+              "op": "buffSelf",
+              "attack": 0,
+              "health": 2
+            },
+            {
+              "op": "tauntSelf"
+            }
+          ]
+        }
+      ]
+    },
+    "text": "登场：引脉 6：获得 +0/+2 与守备",
+    "veinBonus": {
+      "vein": 6,
+      "health": 2
+    }
+  },
+  {
+    "id": "vn_pus_3",
+    "name": "逆脉守望",
+    "faction": "pus",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "rare",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "spell": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "refluxHeal",
+          "amount": 3
+        }
+      ]
+    },
+    "text": "逆脉 3：你的领袖恢复 3 点生命",
+    "reflux": 3
+  },
+  {
+    "id": "vn_academy_1",
+    "name": "脉学讲义",
+    "faction": "academy",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "spell": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "zhenmai",
+          "amount": 2
+        },
+        {
+          "op": "if",
+          "cond": "spells",
+          "then": [
+            {
+              "op": "armor",
+              "amount": 2
+            }
+          ]
+        }
+      ]
+    },
+    "text": "镇脉 2：获得 2 点护甲；若你本回合使用过战术牌，则再获得 2 点护甲"
+  },
+  {
+    "id": "vn_academy_2",
+    "name": "脉学讲师",
+    "faction": "academy",
+    "type": "minion",
+    "cost": 5,
+    "attack": 4,
+    "health": 5,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "keywords": [],
+    "target": "none",
+    "battlecry": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "zhenmai",
+          "amount": 2
+        },
+        {
+          "op": "if",
+          "cond": "spells",
+          "then": [
+            {
+              "op": "armor",
+              "amount": 2
+            }
+          ]
+        }
+      ]
+    },
+    "text": "登场：镇脉 2；若你本回合使用过战术牌，则获得 2 点护甲"
+  },
+  {
+    "id": "vn_academy_3",
+    "name": "引脉演算",
+    "faction": "academy",
+    "type": "spell",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "spell": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "if",
+          "cond": "vein",
+          "value": 7,
+          "then": [
+            {
+              "op": "draw",
+              "amount": 2
+            }
+          ],
+          "else": [
+            {
+              "op": "draw",
+              "amount": 1
+            }
+          ]
+        }
+      ]
+    },
+    "text": "引脉 7：抽 2 张牌；否则抽 1 张牌"
+  },
+  {
+    "id": "vn_xizhao_1",
+    "name": "血脉冲锋",
+    "faction": "xizhao",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "spell": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "refluxHeal",
+          "amount": 2
+        },
+        {
+          "op": "grantRushAll"
+        }
+      ]
+    },
+    "text": "逆脉 2：你的领袖恢复 2 点生命；所有友方随从获得先遣",
+    "reflux": 2
+  },
+  {
+    "id": "vn_xizhao_2",
+    "name": "掘脉斗士",
+    "faction": "xizhao",
+    "type": "minion",
+    "cost": 3,
+    "attack": 3,
+    "health": 3,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "keywords": [],
+    "target": "none",
+    "battlecry": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "flowDraw",
+          "amount": 2
+        }
+      ]
+    },
+    "text": "登场：掘脉 2",
+    "excavate": 2
+  },
+  {
+    "id": "vn_xizhao_3",
+    "name": "压脉血祭",
+    "faction": "xizhao",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "rare",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "spell": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "if",
+          "cond": "vein",
+          "value": 3,
+          "then": [
+            {
+              "op": "damageAllMinions",
+              "amount": 1
+            }
+          ]
+        }
+      ]
+    },
+    "text": "压脉 3：若流脉不多于 3，则对所有随从造成 1 点伤害",
+    "pressure": 3
+  },
+  {
+    "id": "vn_republic_1",
+    "name": "镇脉军令",
+    "faction": "republic",
+    "type": "spell",
+    "cost": 3,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "spell": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "zhenmai",
+          "amount": 3
+        },
+        {
+          "op": "if",
+          "cond": "controlTaunt",
+          "then": [
+            {
+              "op": "draw",
+              "amount": 1
+            }
+          ]
+        }
+      ]
+    },
+    "text": "镇脉 3：获得 3 点护甲；若你控制守备随从，则抽 1 张牌"
+  },
+  {
+    "id": "vn_republic_2",
+    "name": "引脉铁卫",
+    "faction": "republic",
+    "type": "minion",
+    "cost": 4,
+    "attack": 4,
+    "health": 5,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "keywords": [],
+    "target": "none",
+    "battlecry": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "if",
+          "cond": "armor",
+          "value": 5,
+          "then": [
+            {
+              "op": "tauntSelf"
+            },
+            {
+              "op": "buffSelf",
+              "attack": 0,
+              "health": 2
+            }
+          ]
+        }
+      ]
+    },
+    "text": "登场：引脉 5 护甲：获得守备与 +0/+2",
+    "veinBonus": {
+      "vein": 5,
+      "health": 2
+    }
+  },
+  {
+    "id": "vn_republic_3",
+    "name": "逆脉换防",
+    "faction": "republic",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "rare",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "spell": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "refluxHeal",
+          "amount": 2
+        },
+        {
+          "op": "armor",
+          "amount": 4
+        }
+      ]
+    },
+    "text": "逆脉 2：获得 4 点护甲",
+    "reflux": 2
+  },
+  {
+    "id": "vn_empire_1",
+    "name": "御脉令",
+    "faction": "empire",
+    "type": "spell",
+    "cost": 3,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "spell": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "zhenmai",
+          "amount": 2
+        },
+        {
+          "op": "if",
+          "cond": "vein",
+          "value": 9,
+          "then": [
+            {
+              "op": "draw",
+              "amount": 2
+            }
+          ]
+        }
+      ]
+    },
+    "text": "镇脉 2：获得 2 点护甲；若流脉不少于 9，则抽 2 张牌"
+  },
+  {
+    "id": "vn_empire_2",
+    "name": "脉刃学者",
+    "faction": "empire",
+    "type": "minion",
+    "cost": 4,
+    "attack": 3,
+    "health": 4,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "keywords": [],
+    "target": "none",
+    "battlecry": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "flowDraw",
+          "amount": 2
+        },
+        {
+          "op": "if",
+          "cond": "vein",
+          "value": 6,
+          "then": [
+            {
+              "op": "buffSelf",
+              "attack": 2,
+              "health": 0
+            }
+          ]
+        }
+      ]
+    },
+    "text": "登场：掘脉 2；引脉 6：获得 +2/+0",
+    "excavate": 2,
+    "veinBonus": {
+      "vein": 6,
+      "attack": 2
+    }
+  },
+  {
+    "id": "vn_empire_3",
+    "name": "逆脉锻炉",
+    "faction": "empire",
+    "type": "spell",
+    "cost": 4,
+    "rarity": "rare",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "spell": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "refluxHeal",
+          "amount": 4
+        },
+        {
+          "op": "summon",
+          "token": "empire_undead",
+          "count": 2
+        }
+      ]
+    },
+    "text": "逆脉 4：召唤 1 个 1/1 亡灵",
+    "reflux": 4
+  },
+  {
+    "id": "vn_grey_1",
+    "name": "押脉悬赏",
+    "faction": "greyharbor",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "spell": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "refluxHeal",
+          "amount": 2
+        },
+        {
+          "op": "markRandomBounties",
+          "count": 1
+        }
+      ]
+    },
+    "text": "逆脉 2：把 1 个随机敌方随从列入悬赏",
+    "reflux": 2
+  },
+  {
+    "id": "vn_grey_2",
+    "name": "账房打手",
+    "faction": "greyharbor",
+    "type": "minion",
+    "cost": 4,
+    "attack": 4,
+    "health": 4,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "keywords": [],
+    "target": "none",
+    "battlecry": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "if",
+          "cond": "bountyExists",
+          "then": [
+            {
+              "op": "buffSelf",
+              "attack": 1,
+              "health": 1
+            }
+          ]
+        }
+      ]
+    },
+    "text": "登场：引脉 5：若场上有悬赏随从，则获得 +1/+1",
+    "veinBonus": {
+      "vein": 5,
+      "attack": 1,
+      "health": 1
+    }
+  },
+  {
+    "id": "vn_grey_3",
+    "name": "掘脉私账",
+    "faction": "greyharbor",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "rare",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "spell": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "flowDraw",
+          "amount": 2
+        },
+        {
+          "op": "draw",
+          "amount": 1
+        }
+      ]
+    },
+    "text": "掘脉 2：抽 1 张牌",
+    "excavate": 2
+  },
+  {
+    "id": "vn_losutai_1",
+    "name": "潮底掘口",
+    "faction": "losutai",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "spell": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "flowDraw",
+          "amount": 3
+        },
+        {
+          "op": "if",
+          "cond": "controlDemon",
+          "then": [
+            {
+              "op": "flowDraw",
+              "amount": 2
+            }
+          ]
+        }
+      ]
+    },
+    "text": "掘脉 3；若你控制魔物，则再掘脉 2",
+    "excavate": 3
+  },
+  {
+    "id": "vn_losutai_2",
+    "name": "脉巢幼体",
+    "faction": "losutai",
+    "type": "minion",
+    "cost": 3,
+    "attack": 2,
+    "health": 3,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "keywords": [],
+    "target": "none",
+    "battlecry": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "summon",
+          "token": "losutai_imp",
+          "count": 1
+        }
+      ]
+    },
+    "text": "登场：召唤 1 个 1/1 洛斯汰魔物"
+  },
+  {
+    "id": "vn_losutai_3",
+    "name": "压脉退潮",
+    "faction": "losutai",
+    "type": "spell",
+    "cost": 3,
+    "rarity": "rare",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "spell": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "if",
+          "cond": "vein",
+          "value": 4,
+          "then": [
+            {
+              "op": "summon",
+              "token": "losutai_imp",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    "text": "压脉 4：若流脉不多于 4，则召唤 1 个 1/1 洛斯汰魔物",
+    "pressure": 4
+  },
+  {
+    "id": "vn_snow_1",
+    "name": "寒脉护腕",
+    "faction": "snow",
+    "type": "spell",
+    "cost": 3,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "spell": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "zhenmai",
+          "amount": 2
+        },
+        {
+          "op": "if",
+          "cond": "vein",
+          "value": 6,
+          "then": [
+            {
+              "op": "freezeRandomDrawIfFrozen"
+            }
+          ]
+        }
+      ]
+    },
+    "text": "镇脉 2：获得 2 点护甲；引脉 6：冻结 1 个随机敌方随从"
+  },
+  {
+    "id": "vn_snow_2",
+    "name": "霜脉哨兵",
+    "faction": "snow",
+    "type": "minion",
+    "cost": 4,
+    "attack": 3,
+    "health": 4,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "keywords": [],
+    "target": "enemy",
+    "battlecry": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "freezeTarget"
+        }
+      ]
+    },
+    "text": "登场：冻结 1 个敌方随从"
+  },
+  {
+    "id": "vn_snow_3",
+    "name": "逆脉长冬",
+    "faction": "snow",
+    "type": "spell",
+    "cost": 4,
+    "rarity": "rare",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "spell": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "refluxHeal",
+          "amount": 3
+        },
+        {
+          "op": "freezeAllEnemies"
+        }
+      ]
+    },
+    "text": "逆脉 3：冻结所有敌方随从",
+    "reflux": 3
+  },
+  {
+    "id": "vn_neutral_1",
+    "name": "掘脉客",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 2,
+    "attack": 2,
+    "health": 2,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "keywords": [],
+    "target": "none",
+    "battlecry": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "flowDraw",
+          "amount": 2
+        }
+      ]
+    },
+    "text": "登场：掘脉 2",
+    "excavate": 2
+  },
+  {
+    "id": "vn_neutral_2",
+    "name": "脉市交易",
+    "faction": "neutral",
+    "type": "spell",
+    "cost": 2,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "target": "none",
+    "spell": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "if",
+          "cond": "vein",
+          "value": 5,
+          "then": [
+            {
+              "op": "draw",
+              "amount": 2
+            },
+            {
+              "op": "damageHeroSelf",
+              "amount": 2
+            }
+          ]
+        }
+      ]
+    },
+    "text": "引脉 5：抽 2 张牌，你的领袖受到 2 点伤害"
+  },
+  {
+    "id": "vn_neutral_3",
+    "name": "压脉佣兵",
+    "faction": "neutral",
+    "type": "minion",
+    "cost": 3,
+    "attack": 3,
+    "health": 3,
+    "rarity": "common",
+    "art": null,
+    "flavor": "",
+    "keywords": [],
+    "target": "none",
+    "battlecry": {
+      "type": "ops",
+      "ops": [
+        {
+          "op": "if",
+          "cond": "vein",
+          "value": 3,
+          "then": [
+            {
+              "op": "buffSelf",
+              "attack": 2,
+              "health": 0
+            }
+          ]
+        }
+      ]
+    },
+    "text": "登场：压脉 3：若流脉不多于 3，则获得 +2/+0",
+    "pressure": 3
+  }
+]) CARDS[c.id] = c;
+
+
+  /* 新卡占位卡面：按阵营/类型生成的 SVG 印记（public/assets/generated/<id>.svg），
+   * 不再复用立绘；等专门美术出图后换成 webp 并去掉 noGeneratedArt 即可 */
+  for (const id of Object.keys(CARDS)) {
+    if (/^(pl_|vn_)/.test(id)) { delete CARDS[id].art; CARDS[id].noGeneratedArt = true; }
+  }
   return { FACTIONS, FACTION_IDS, nextFaction, HEROES, CARDS, DECKS, NEUTRAL_DECK, KEYWORDS, DECK_STRATEGIES, DECK_SPECIALS, DECK_TRIM, DECK_RARITY_LIMITS, cardPool, deckRarityCounts, isExactPreset, validateDeck, autoBuildDeck, maxCopies };
 });
 

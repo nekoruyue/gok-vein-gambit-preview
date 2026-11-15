@@ -88,7 +88,7 @@
       factionName: faction.name,
       heroId: heroId,
       hero: heroDef,
-      verdictZone: [],  // 刻脉判定区（对方盖过来的牌，最多 1 张）
+      verdictZone: [],  // 刻脉判定区（对方盖过来的牌，最多 2 张）
       hp: heroDef.hp,
       maxHp: heroDef.hp,
       armor: heroDef.armor || 0,
@@ -750,6 +750,13 @@
       log(state, p.name + " 获得 " + m.passive.amount + " 点护甲（" + m.name + "）。", p, "armor");
     }
     if (m.health <= 0) m.dead = true;
+    // 图门（第二英雄 · 西昭，2026-11-15）：你的随从受伤时 +1 攻击，每回合全场最多 1 次。
+    // 加成给「受伤的那个随从」；已经因此阵亡的不再吃加成。
+    if (dmgOwner && dmgOwner.heroId === "tumen" && !m.dead && actual > 0 && dmgOwner.tumenHurtTurn !== state.turnNumber) {
+      dmgOwner.tumenHurtTurn = state.turnNumber;
+      buffMinion(state, m, 1, 0, "赤手", false);
+      log(state, "赤手：" + m.name + " 受伤后获得 +1 攻击。", dmgOwner, "buff");
+    }
     if (source && source.passive && source.passive.type === "damageToArmor" && !source.silenced && actual > 0) {
       const armorOwner = ownerOf(state, source);
       armorOwner.armor += actual;
@@ -1128,6 +1135,13 @@ function processDeaths(state) {
           }
           m.deathDrawOwner = null;
         }
+        // 珊（第二英雄 · 洛斯汰，2026-11-15）：你的魔物死亡时抽 1 张牌，每回合 1 次。
+        // 「魔物」沿用引擎里现有的判定口径（名字含 魔物 / imp / demon），和 controlDemon 条件一致。
+        if (p.heroId === "shan" && p.shanMonsterDrawTurn !== state.turnNumber && /魔物|imp|demon/i.test(m.name || "")) {
+          p.shanMonsterDrawTurn = state.turnNumber;
+          drawCard(state, p, 1);
+          log(state, "魔物陨落：" + p.name + " 抽 1 张牌。", p, "draw");
+        }
         if (m.cardId === "losutai_imp") {
           const spore = aliveMinions(p).find(x => x.passive && x.passive.type === "firstImpDeathSummon" && !x.silenced);
           if (spore && p.sporePathfinderTurn !== state.turnNumber) {
@@ -1392,18 +1406,24 @@ function processDeaths(state) {
   }
 
   // ===== 刻脉（pulse）：盖在对手判定区，下回合开始翻开判定 =====
+  // 2026-11-15：判定区 1 格 → 2 格。1 格时新卡永远顶掉旧卡，刻脉没有「布局」可言；
+  // 现在可以同时押两张，只有盖第 3 张时才会把最旧的那条（数组下标 0）挤进弃牌堆。
+  const VERDICT_ZONE_SIZE = 2;
   function placeVerdict(state, caster, card) {
     const target = opponentOf(state, caster);
     if (!target) return false;
     if (!Array.isArray(target.verdictZone)) target.verdictZone = [];
-    // 只有 1 格：新的直接顶掉旧的（旧的进弃牌堆，不判定）
-    for (const old of target.verdictZone) {
+    // 满了才挤最旧的一条：被挤掉的直接进弃牌堆，不判定
+    while (target.verdictZone.length >= VERDICT_ZONE_SIZE) {
+      const old = target.verdictZone.shift();
       if (!Array.isArray(target.discard)) target.discard = [];
       target.discard.push({ uid: old.uid, cardId: old.cardId });
-      const _oldDef = D.CARDS[old.cardId]; log(state, "判定区已满，「" + ((_oldDef && _oldDef.name) || old.cardId) + "」被挤掉。", target, "discard");
+      const _oldDef = D.CARDS[old.cardId];
+      log(state, "判定区已满（" + VERDICT_ZONE_SIZE + " 格），「" + ((_oldDef && _oldDef.name) || old.cardId) + "」被挤掉。", target, "discard");
     }
-    target.verdictZone = [{ uid: card.uid, cardId: card.cardId, from: caster.index, turn: state.turnNumber }];
-    log(state, caster.name + " 在" + target.name + "的判定区盖下刻脉（对方过完一个回合后翻开）。", caster, "vein");
+    // 追加在末尾，前一条继续留在判定区里等翻开
+    target.verdictZone.push({ uid: card.uid, cardId: card.cardId, from: caster.index, turn: state.turnNumber });
+    log(state, caster.name + " 在" + target.name + "的判定区盖下刻脉（判定区 " + target.verdictZone.length + "/" + VERDICT_ZONE_SIZE + "，对方过完一个回合后翻开）。", caster, "vein");
     fx(state, caster, "刻脉", "hero:" + target.index, "summon");
     return true;
   }
@@ -1426,18 +1446,81 @@ function processDeaths(state) {
       // 刻脉的条件既可以写成字符串（值放在 spec.value），也可以写成对象，两种都要带上数值
       const condArg = typeof spec.cond === "string" ? { cond: spec.cond, value: spec.value, amount: spec.amount } : spec.cond;
       try { ok = !!patchCondRaw(state, caster || opponentOf(state, player), null, null, condArg); } catch (e) { ok = false; }
-      state.events.push({ structured: true, kind: "verdict", player: player.index, cardId: def.id, ok: ok });
+      // 刻脉三型（2026-11-15）：data 里没写 kind、或写 "damage" 的，完全沿用旧行为
+      const verdictKind = (spec.kind === "drain" || spec.kind === "lock") ? spec.kind : "damage";
+      state.events.push({ structured: true, kind: "verdict", player: player.index, cardId: def.id, ok: ok, verdictKind: verdictKind });
       log(state, "判定「" + def.name + "」：" + condLabelText(condArg) + "，" + (ok ? "成立，结算惩罚。" : "不成立，不结算惩罚。"), player, "vein");
-      if (ok && Array.isArray(spec.penalty)) runPatchOps(state, caster || opponentOf(state, player), null, null, spec.penalty);
+      if (ok) {
+        if (verdictKind === "damage") {
+          // damage 型沿用旧语义：penalty 的主语是「施放者」caster（runPatchOps 内部的 player 就是施放者）
+          if (Array.isArray(spec.penalty)) runPatchOps(state, caster || opponentOf(state, player), null, null, spec.penalty);
+        } else {
+          // drain / lock 的主语是「判定区主人」player —— 不要再走 runPatchOps，那是施放者视角，会打反
+          resolveVerdictKindEffect(state, player, caster, def, verdictKind);
+        }
+      }
       if (!Array.isArray(player.discard)) player.discard = [];
       player.discard.push({ uid: entry.uid, cardId: entry.cardId });
       processDeaths(state);
     }
     player.verdictZone = keep;
   }
+
+  // 刻脉 drain / lock 的结算（2026-11-15）。主语一律是「判定区主人」player；
+  // caster 只用来写日志/事件里的归属，不参与结算，避免把惩罚打到施放者自己头上。
+  function resolveVerdictKindEffect(state, player, caster, def, kind) {
+    const name = (def && (def.name || def.id)) || "刻脉";
+    if (kind === "drain") {
+      // 耗资源：判定区主人失去 2 点行动力（不低于 0），再随机弃 1 张手牌
+      const before = player.mana || 0;
+      player.mana = Math.max(0, before - 2);
+      const lost = before - player.mana;
+      state.events.push({ structured: true, kind: "drain", player: player.index, amount: lost, cardId: def ? def.id : null });
+      log(state, "刻脉「" + name + "」：耗脉，" + player.name + " 失去 " + lost + " 点行动力（" + before + " → " + player.mana + "）。", player, "vein");
+      if (Array.isArray(player.hand) && player.hand.length) {
+        const pick = player.hand.splice(randomInt(state, player.hand.length), 1)[0];
+        const pickDef = card(pick.cardId);
+        if (!Array.isArray(player.discard)) player.discard = [];
+        player.discard.push({ uid: pick.uid, cardId: pick.cardId, kind: "hand" });
+        state.events.push({ structured: true, kind: "discard", player: player.index, cardId: pick.cardId, label: name });
+        log(state, "刻脉「" + name + "」：" + player.name + " 随机弃掉手牌「" + ((pickDef && pickDef.name) || pick.cardId) + "」。", player, "discard");
+      } else {
+        log(state, "刻脉「" + name + "」：" + player.name + " 手牌为空，没有可弃的牌。", player, "vein");
+      }
+      return;
+    }
+    // 控场 lock：冻结判定区主人的全部随从 2 个回合，并对每个随从造成 1 点伤害
+    const targets = aliveMinions(player).slice();
+    if (!targets.length) {
+      log(state, "刻脉「" + name + "」：" + player.name + " 没有随从，锁定效果落空。", player, "vein");
+      state.events.push({ structured: true, kind: "lock", player: player.index, cardId: def ? def.id : null, count: 0 });
+      return;
+    }
+    for (const m of targets) {
+      freezeMinion(state, m);
+      // freezeMinion 按「攻击是否用完」给 1~2 回合，锁场至少要 2 回合；
+      // 但被地脉护佑 / 深雪守护挡掉时 frozenTurns 仍是 0，这种情况不硬改，避免绕过免疫
+      if ((m.frozenTurns || 0) > 0) m.frozenTurns = Math.max(m.frozenTurns, 2);
+      damageMinion(state, m, 1, null, "刻脉");
+    }
+    state.events.push({ structured: true, kind: "lock", player: player.index, cardId: def ? def.id : null, count: targets.length });
+    log(state, "刻脉「" + name + "」：封场，" + player.name + " 的全部随从（" + targets.length + " 个）被冻结 2 个回合并受到 1 点伤害。", player, "vein");
+    processDeaths(state);
+  }
+
   // 壁垒教官：本回合首次获得护甲时，随机友方 +0/+1（即时触发，不再等到回合开始）
   function armorGainHook(state, player) {
     if (!player || !state) return;
+    // 艾达（第二英雄 · 共和国，2026-11-15）：获得护甲时全体友方随从 +0/+1，每回合 1 次。
+    // 放在 armorGainHook 里，是因为全引擎所有「获得护甲」的入口都会调它（30+ 处）。
+    if (player.heroId === "aida" && player.aidaArmorTurn !== state.turnNumber) {
+      const allies = aliveMinions(player);
+      if (allies.length) {
+        player.aidaArmorTurn = state.turnNumber;
+        for (const a of allies) buffMinion(state, a, 0, 1, "护甲共鸣", true);
+        log(state, player.name + " 的护甲共鸣：获得护甲，全体友方随从 +0/+1。", player, "buff");
+      }
+    }
     for (const m of aliveMinions(player)) {
       if (m.silenced || !m.passive || m.passive.type !== "firstArmorBuffAllyHealth") continue;
       if (m.armorBuffTurn === state.turnNumber) continue;
@@ -4375,11 +4458,44 @@ function processDeaths(state) {
     return changed;
   }
 
+  // ===== 第二英雄（2026-11-15）技能表 =====
+  // 主动技能的目标类型。数据里 power.target 是权威（none / friendly / enemy），
+  // 数据漏写或写了历史遗留值（hand / passive）时用这张表兜底；HEROES 里还没有该英雄时
+  // power 为 undefined，走 fallback 也不会抛异常（每个分支另有 D.HEROES 守卫）。
+  const HERO_POWER_TARGET_FALLBACK = {
+    otto: "enemy", sernach: "enemy", blackcrow: "enemy", whitecrow: "enemy",
+    karna: "none", balaena: "none", finn: "none", erica: "none",
+    lain: "friendly", wolfram: "friendly", kelin: "friendly"
+  };
+  function heroPowerTargetType(player) {
+    if (!player) return "friendly";
+    const declared = player.hero && player.hero.power && player.hero.power.target;
+    if (declared === "none" || declared === "enemy" || declared === "friendly") return declared;
+    return HERO_POWER_TARGET_FALLBACK[player.heroId] || "friendly";
+  }
+  function heroPowerTargets(state, player, targetType) {
+    let list = [];
+    if (targetType === "enemy") list = aliveMinions(opponentOf(state, player)).filter(m => !m.stealth);
+    else if (targetType === "friendly") list = aliveMinions(player);
+    // 黑鸦「标记」：已经在悬赏名单上的敌方随从不用重复标，选目标前先剔掉
+    if (targetType === "enemy" && player.heroId === "blackcrow") list = list.filter(m => m.bounty == null);
+    return list;
+  }
+  function heroPowerTargetPrompt(heroId) {
+    if (heroId === "otto") return "请选择一个敌方随从或领袖";
+    if (heroId === "sernach" || heroId === "whitecrow") return "请选择一个敌方随从";
+    if (heroId === "blackcrow") return "请选择一个敌方随从列入悬赏名单";
+    return "请选择一个友方随从";
+  }
+
   function useHeroPower(state, playerIndex, targetUid) {
     if (state.status !== "playing") return { ok: false, reason: "对局已结束" };
     if (state.mulliganPhase) return { ok: false, reason: "请先完成起手调度" };
     if (state.current !== playerIndex) return { ok: false, reason: "还没轮到你" };
     const player = state.players[playerIndex];
+    // 数据守卫：HEROES 里没有这个英雄（data 还没补 / 自定义局面）时不报错，只返回失败提示
+    if (!player) return { ok: false, reason: "玩家不存在" };
+    if (!player.hero || !player.hero.power) return { ok: false, reason: "该领袖没有可用技能" };
     if (player.heroPowerUsed) return { ok: false, reason: "领袖技能本回合已用过" };
     if (player.hero.power && player.hero.power.id === "spell_codex") {
       const cost = player.hero.power.cost || 2;
@@ -4421,28 +4537,70 @@ function processDeaths(state) {
       summonMinion(state, player, "losutai_imp", zone, null);
       return { ok: true };
     }
+    // 第二英雄 · 学院「校勘」：复制手牌里随机 1 张战术牌（按原费用），无需目标
+    if (player.heroId === "finn") {
+      const cost = player.hero.power.cost || 2;
+      if (player.mana < cost) return { ok: false, reason: "行动力不足" };
+      const spells = player.hand.filter(c => { const d = card(c.cardId); return d && d.type === "spell"; });
+      if (!spells.length) return { ok: false, reason: "手牌中没有战术牌可以校勘" };
+      if (player.hand.length >= 8) return { ok: false, reason: "手牌已满，无法复制" };
+      player.mana -= cost;
+      player.heroPowerUsed = true;
+      state.lastAction = { type: "heroPower", player: playerIndex, heroId: player.heroId, powerName: player.hero.power.name, targetUid: null, seq: ((state.lastAction && state.lastAction.seq) || 0) + 1 };
+      log(state, player.name + " 使用领袖技能「" + player.hero.power.name + "」。", player, "heroPower");
+      const picked = spells[randomInt(state, spells.length)];
+      const pickedDef = card(picked.cardId);
+      // 复制「原费用」：不拷贝 picked.discount，行动力消耗按卡面原值算
+      player.hand.push({ uid: uid("c"), cardId: picked.cardId, generated: true });
+      state.events.push({ structured: true, kind: "copy", player: player.index, cardId: picked.cardId });
+      log(state, "校勘：复制手牌中的战术牌「" + pickedDef.name + "」（行动力消耗 " + (pickedDef.cost || 0) + "）。", player, "copy");
+      return { ok: true };
+    }
+    // 第二英雄 · 帝国「征召」：召唤 2/2 卫兵；坟场里有随从则改为 3/3，无需目标
+    if (player.heroId === "erica") {
+      const cost = player.hero.power.cost || 2;
+      if (player.mana < cost) return { ok: false, reason: "行动力不足" };
+      if (boardCount(player) >= 6) return { ok: false, reason: "随从已满" };
+      const zone = openZones(player)[0];
+      if (!zone) return { ok: false, reason: "随从已满" };
+      // 数据守卫：衍生物还没加进 data.js 时不要炸在 summonMinion 里
+      if (!D.CARDS.empire_guard_token) return { ok: false, reason: "缺少卫兵衍生物（empire_guard_token）" };
+      player.mana -= cost;
+      player.heroPowerUsed = true;
+      state.lastAction = { type: "heroPower", player: playerIndex, heroId: player.heroId, powerName: player.hero.power.name, targetUid: null, seq: ((state.lastAction && state.lastAction.seq) || 0) + 1 };
+      log(state, player.name + " 使用领袖技能「" + player.hero.power.name + "」。", player, "heroPower");
+      const graveMinions = (state.discard || []).filter(e => e && e.kind === "minion").length;
+      const guard = summonMinion(state, player, "empire_guard_token", zone, null);
+      if (guard && graveMinions > 0) {
+        buffMinion(state, guard, 1, 1, "征召", true);
+        log(state, "征召：坟场已有 " + graveMinions + " 个随从，卫兵强化为 " + guard.attack + "/" + guard.health + "。", player, "buff");
+      }
+      return { ok: true };
+    }
     const handTarget = false; // 共和国整编已改为友方目标
+    // 目标类型表驱动（2026-11-15）：原来只按 otto / sernach 硬编码，第二英雄一多就散；
+    // 现在 none / friendly / enemy 都从 heroPowerTargetType 取，和 getHeroPowerOptions 共用同一份判定。
+    const heroTargetType = heroPowerTargetType(player);
     let targets = [];
     let targetIds = [];
+    let target = null;
     if (handTarget) {
       targetIds = player.hand.map(c => c.uid);
       if (!targetIds.length) return { ok: false, reason: "没有可以改写的手牌" };
       if (!targetUid || targetIds.indexOf(targetUid) < 0) return { ok: false, reason: "请选择一张手牌", code: "target", targets: targetIds };
+      target = player.hand.find(c => c.uid === targetUid);
+    } else if (heroTargetType === "none") {
+      // 无需目标的主动技能（卡尔纳 / 贝莱娜 走各自分支，这里只兜住未来的 none 型）
+      target = null;
     } else {
-      const heroTargetType = (player.heroId === "otto" || player.heroId === "sernach") ? "enemy" : "friendly";
-      targets = heroTargetType === "enemy"
-        ? aliveMinions(opponentOf(state, player)).filter(m => !m.stealth)
-        : aliveMinions(player);
+      targets = heroPowerTargets(state, player, heroTargetType);
       targetIds = targets.map(m => m.uid);
       if (!targetIds.length) return { ok: false, reason: heroTargetType === "enemy" ? "没有敌方目标" : "没有友方随从可作为目标" };
+      if (targetUid) target = targets.find(m => m.uid === targetUid);
     }
-    let target = null;
-    if (handTarget) target = player.hand.find(c => c.uid === targetUid);
-    else if (targetUid) target = targets.find(m => m.uid === targetUid);
-    if (!target) return {
+    if (heroTargetType !== "none" && !target) return {
       ok: false,
-      reason: handTarget ? "请选择一张手牌"
-        : (player.heroId === "otto" ? "请选择一个敌方随从或领袖" : (player.heroId === "sernach" ? "请选择一个敌方随从" : "请选择一个友方随从")),
+      reason: handTarget ? "请选择一张手牌" : heroPowerTargetPrompt(player.heroId),
       code: "target", targets: targetIds
     };
     if (handTarget && !transformCandidates(player, target).length) {
@@ -4463,6 +4621,18 @@ function processDeaths(state) {
       const wasFrozen = target.frozenTurns > 0;
       freezeMinion(state, target);
       if (wasFrozen) drawCard(state, player, 1);
+    } else if (player.heroId === "kelin") {
+      // 第二英雄 · 普卫岛「结阵」：一个友方随从 +0/+2 并获得守备
+      buffMinion(state, target, 0, 2, "结阵", true);
+      grantTaunt(state, target);
+    } else if (player.heroId === "blackcrow") {
+      // 第二英雄 · 灰港「标记」：把目标列入悬赏名单（复用现有 markBounty）
+      markBounty(state, player, target);
+    } else if (player.heroId === "whitecrow") {
+      // 第二英雄 · 雪都「封脉」：冻结目标并造成 1 点伤害
+      freezeMinion(state, target);
+      damageMinion(state, target, 1, null, "封脉");
+      processDeaths(state);
     }
     for (const m of aliveMinions(player)) {
       if (!m.silenced && m.passive && m.passive.type === "heroPowerDamage") {
@@ -4820,7 +4990,9 @@ function processDeaths(state) {
   function getHeroPowerOptions(state, playerIndex) {
     const player = state.players[playerIndex];
     if (!player) return { ok: false, targets: [] };
-    if (player.hero.power && player.hero.power.id === "spell_codex") {
+    // 数据守卫：HEROES 里没有这个英雄时也要能回答（ok:false，不抛异常）
+    if (!player.hero || !player.hero.power) return { ok: false, targets: [], targetType: "none", cost: 0, used: true, reason: "该领袖没有可用技能" };
+    if (player.hero.power.id === "spell_codex") {
       const hasSpell = player.hand.some(c => card(c.cardId).type === "spell");
       return {
         ok: !player.heroPowerUsed && player.mana >= (player.hero.power.cost || 2) && hasSpell,
@@ -4853,14 +5025,24 @@ function processDeaths(state) {
     if (player.heroId === "balaena") {
       return { ok: !player.heroPowerUsed && player.mana >= 2 && boardCount(player) < 6, targets: [], targetType: "none", cost: 2, used: player.heroPowerUsed };
     }
+    // 第二英雄 · 学院「校勘」：手牌里要有战术牌，且手牌没满
+    if (player.heroId === "finn") {
+      const fcost = player.hero.power.cost || 2;
+      const hasTactic = player.hand.some(c => { const d = card(c.cardId); return d && d.type === "spell"; });
+      return { ok: !player.heroPowerUsed && player.mana >= fcost && hasTactic && player.hand.length < 8, targets: [], targetType: "none", cost: fcost, used: player.heroPowerUsed };
+    }
+    // 第二英雄 · 帝国「征召」：要有空阵位，且衍生物必须在 data 里
+    if (player.heroId === "erica") {
+      const ecost = player.hero.power.cost || 2;
+      return { ok: !player.heroPowerUsed && player.mana >= ecost && boardCount(player) < 6 && !!D.CARDS.empire_guard_token, targets: [], targetType: "none", cost: ecost, used: player.heroPowerUsed };
+    }
     const handTarget = false;
-    const targetType = (player.heroId === "otto" || player.heroId === "sernach") ? "enemy" : "friendly";
-    const targets = targetType === "enemy"
-      ? aliveMinions(opponentOf(state, player)).filter(m => !m.stealth)
-      : (targetType === "friendly" ? aliveMinions(player) : []);
+    // 目标类型表驱动（2026-11-15），和 useHeroPower 共用一份判定
+    const targetType = heroPowerTargetType(player);
+    const targets = heroPowerTargets(state, player, targetType);
     let targetIds = handTarget ? player.hand.filter(c => transformCandidates(player, c).length > 0).map(c => c.uid) : targets.map(m => m.uid);
     return {
-      ok: !player.heroPowerUsed && player.mana >= (player.hero.power.cost || 2) && targetIds.length > 0,
+      ok: !player.heroPowerUsed && player.mana >= (player.hero.power.cost || 2) && (targetType === "none" || targetIds.length > 0),
       targets: targetIds,
       targetType: targetType,
       cost: player.hero.power.cost || 2,

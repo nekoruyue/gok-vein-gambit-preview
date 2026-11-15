@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" width="400" height="560">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="38%" r="72%">
+      <stop offset="0%" stop-color="#d6b25f" stop-opacity="0.55"/>
+      <stop offset="60%" stop-color="#2b2518" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#06090c"/>
+    </radialGradient>
+  </defs>
+  <rect width="400" height="560" fill="url(#g)"/>
+  <circle cx="200" cy="232" r="96" fill="none" stroke="#d6b25f" stroke-opacity="0.55" stroke-width="2"/>
+  <circle cx="200" cy="232" r="76" fill="none" stroke="#d6b25f" stroke-opacity="0.28" stroke-width="1"/>
+  <text x="200" y="258" text-anchor="middle" font-family="Noto Serif SC, Songti SC, serif" font-size="76" fill="#d6b25f" fill-opacity="0.92">刻</text>
+  <text x="200" y="376" text-anchor="middle" font-family="Noto Sans SC, Microsoft YaHei, sans-serif" font-size="30" fill="#e8e2d4">议席判词</text>
+  <text x="200" y="414" text-anchor="middle" font-family="Noto Sans SC, Microsoft YaHei, sans-serif" font-size="16" fill="#d6b25f" fill-opacity="0.8" letter-spacing="4">刻脉 · 判定</text>
+  <text x="200" y="520" text-anchor="middle" font-family="Georgia, serif" font-size="13" fill="#8a8578" letter-spacing="6">GOK / VEIN</text>
+</svg>

@@ -9,6 +9,7 @@ const path = require("path");
 const os = require("os");
 const { URL } = require("url");
 const { createAuth } = process.env.DATABASE_URL ? require("./auth_pg") : require("./auth");
+const GokSeason = require(path.join(__dirname, "..", "public", "js", "season-rules.js"));
 
 const PORT = Number(process.env.PORT || 4173);
 
@@ -440,6 +441,12 @@ const server = http.createServer(async (req, res) => {
       const rrMode = roomFromRequest(u, false);
       if (!rrMode) { json(res, 404, { ok: false, error: "房间不存在" }); return; }
       rrMode.room.ranked = !!body.ranked;
+      // 2026-11-15：排位开局写进本周赛季规则（只写一次，换牌组不重复叠加）
+      if (rrMode.room.ranked && rrMode.room.game && !rrMode.room.seasonApplied) {
+        GokSeason.applyToGame(rrMode.room.game);
+        rrMode.room.seasonRule = GokSeason.ruleFor().id;
+        rrMode.room.seasonApplied = true;
+      }
       rrMode.room.names[0] = typeof body.name === "string" ? body.name.slice(0, 24) : rrMode.room.names[0];
       rrMode.room.guestReady = false;
       rrMode.room.seq = 0;
@@ -492,6 +499,11 @@ const server = http.createServer(async (req, res) => {
             faction1: (waiting && waiting.faction) || "pus",
             faction2: matchBody.faction || "academy"
           });
+          // 2026-11-15：排位匹配出的服务端权威对局，开局先套本周赛季规则
+          if (matchRanked) {
+            GokSeason.applyToGame(aroom.game);
+            aroom.seasonRule = GokSeason.ruleFor().id;
+          }
           const seat0 = authoritative.join(aroom, 0);
           const seat1 = authoritative.join(aroom, 1);
           authInfo = {

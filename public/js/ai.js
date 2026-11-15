@@ -875,6 +875,9 @@
         if (p.heroId === "marta") s += (m.health <= 2 ? 2 : 0);
         if (p.heroId === "sernach") s += (m.frozenTurns > 0 ? -1.5 : 0) + m.attack * 0.3;
         if (p.heroId === "monarch") s += (m.bounty == null ? 1.5 : 0);
+        // 第二英雄（2026-11-15）：悬赏优先挑大个子；封脉优先挑能冻住 / 能补刀的
+        if (p.heroId === "blackcrow") s += (m.bounty == null ? 1.5 : 0) + m.attack * 0.2;
+        if (p.heroId === "whitecrow") s += (m.frozenTurns > 0 ? -1.5 : 0) + (m.health <= 1 ? 2 : 0) + m.attack * 0.3;
       }
       if (s > bestScore) { bestScore = s; best = m; }
     }
@@ -890,6 +893,13 @@
       return { type: "heroPower", targetUid: null, score: 3 };
     }
     if (p.heroId === "balaena") return { type: "heroPower", targetUid: null, score: 3.4 };
+    // 第二英雄（2026-11-15）无需目标的主动技能：按「一张牌的能量」估值
+    if (p.heroId === "finn") return { type: "heroPower", targetUid: null, score: 2.8 };
+    if (p.heroId === "erica") {
+      // 2/2（坟场有随从则 3/3）：越是有尸体可挖越值得
+      const graveMinions = (state.discard || []).filter(function (e) { return e && e.kind === "minion"; }).length;
+      return { type: "heroPower", targetUid: null, score: graveMinions > 0 ? 3.6 : 3.2 };
+    }
     const target = heroPowerTarget(state, p, o);
     if (!target) return null;
     let score = 3.5;
@@ -899,6 +909,13 @@
       score = 3.0 + (target.hasAttacked ? 0 : 1.0);
     } else if (p.heroId === "sernach") {
       score = target.attack >= 3 ? 3.4 : 2.2;
+    } else if (p.heroId === "kelin") {
+      // +0/+2 加守备：接近满血的随从更值得变成墙
+      score = 2.8 + (target.taunt ? 0 : 0.5) + (target.maxHealth - target.health >= 2 ? 0.5 : 0);
+    } else if (p.heroId === "blackcrow") {
+      score = 2.4 + Math.min(2, target.attack * 0.3) + (target.health >= 4 ? 0.4 : 0);
+    } else if (p.heroId === "whitecrow") {
+      score = (target.attack >= 3 ? 3.2 : 2.4) + (target.health <= 1 ? 1.2 : 0);
     }
     return { type: "heroPower", targetUid: target.uid, score: score };
   }

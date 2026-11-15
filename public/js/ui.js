@@ -190,11 +190,30 @@
     };
     art.appendChild(img);
   }
-  function heroImage(id) { if (id === "balaena" || id === "sernach") return portraitImage(id); const file = id === "otto" ? "otto_centered" : id; return "assets/heroes/" + file + ".webp"; }
+  // 2026-11-15：第二英雄没有单独的 hero 立绘，直接用 portraits 里的 art，避免 404
+  const HERO_IMAGE_FILE = { otto: "otto_centered" };
+  const HERO_PORTRAIT_ONLY = { balaena: true, sernach: true, kelin: true, finn: true, tumen: true, aida: true, erica: true, blackcrow: true, shan: true, whitecrow: true };
+  function heroImage(id) {
+    if (HERO_PORTRAIT_ONLY[id]) {
+      const heroDef = window.GokData && window.GokData.HEROES && window.GokData.HEROES[id];
+      return portraitImage((heroDef && heroDef.art) || id);
+    }
+    const file = HERO_IMAGE_FILE[id] || id;
+    return "assets/heroes/" + file + ".webp";
+  }
   function portraitImage(id) { return "assets/portraits/" + id + ".webp?v=" + ART_VERSION; }
   const HERO_SKILL_ICONS = {
     balaena: "assets/icons/skills/balaena-skill.svg?v=" + ART_VERSION,
-    sernach: "assets/icons/skills/sernach-skill.svg?v=" + ART_VERSION
+    sernach: "assets/icons/skills/sernach-skill.svg?v=" + ART_VERSION,
+    // 第二英雄复用同阵营已有技能图标，先不出新图，避免 404
+    kelin: "assets/icons/skills/lain.webp?v=" + ART_VERSION,
+    finn: "assets/icons/skills/marta.webp?v=" + ART_VERSION,
+    tumen: "assets/icons/skills/karna.webp?v=" + ART_VERSION,
+    aida: "assets/icons/skills/wolfram.webp?v=" + ART_VERSION,
+    erica: "assets/icons/skills/otto.webp?v=" + ART_VERSION,
+    blackcrow: "assets/icons/skills/monarch.webp?v=" + ART_VERSION,
+    shan: "assets/icons/skills/balaena.webp?v=" + ART_VERSION,
+    whitecrow: "assets/icons/skills/sernach.webp?v=" + ART_VERSION
   };
   function heroSkillIcon(id) { return HERO_SKILL_ICONS[id] || ("assets/icons/skills/" + id + ".webp?v=" + ART_VERSION); }
   function escapeText(s) { return s == null ? "" : String(s); }
@@ -268,6 +287,7 @@
     mulliganSelected: new Set(),
     settlementAchievements: null,
     settlementRecorded: false,
+    gameDeckIds: null,
     rankChange: null,
     rankReturn: "home",
     lastLegendary: null,
@@ -1225,9 +1245,12 @@
     app.settlementAchievements = null;
     app.settlementRecorded = false;
     app.profileRecorded = false;
+    app.gameDeckIds = null;
     stopNet(true);
     const requestedDifficulty = config.aiDifficulty || app.aiDifficulty || "hard";
     const safeDifficulty = (requestedDifficulty === "hard" && !levelUnlocked("hard")) || (requestedDifficulty === "nightmare" && !levelUnlocked("nightmare")) ? "normal" : requestedDifficulty;
+    // 记住本局牌组 ID 列表：构筑委托要用它判定「这一局用的是什么牌组」
+    const p1DeckList = (config.p1Deck || getPlayDeck(faction) || []).slice();
     const state = E.createGame({
       faction1: faction,
       faction2: other,
@@ -1236,7 +1259,7 @@
       mode: mode,
       aiDifficulty: safeDifficulty,
       mulligan: config.mulligan !== false && !app.tutorial,
-      p1Deck: config.p1Deck || getPlayDeck(faction),
+      p1Deck: p1DeckList,
       p2Deck: config.p2Deck || getPlayDeck(other),
       first: config.first,
       seed: config.seed == null ? ((Date.now() >>> 0) ^ Math.floor(Math.random() * 0x7fffffff)) : config.seed
@@ -1255,6 +1278,7 @@
     app.local = false;
     app.net = null;
     app.game = state;
+    app.gameDeckIds = p1DeckList.map(String);
     // 配音：玩家阵营的开场台词（没有音频文件时 voice.js 静默跳过）
     voiceLine(voiceRoleForFaction(faction), "opening");
     if (state.mulliganPhase) autoMulliganAI(state, 1);
@@ -7392,7 +7416,12 @@
     { id: "mulligan", chapter: 2, name: "完成一次起手调度", xp: 80 },
     { id: "vein4", chapter: 2, name: "触发一次流脉 4", xp: 100 },
     { id: "deck_saved", chapter: 3, name: "保存并命名第一套自定义牌组", xp: 150 },
-    { id: "custom_deck_play", chapter: 3, name: "用自定义牌组完成一局", xp: 150 }
+    { id: "custom_deck_play", chapter: 3, name: "用自定义牌组完成一局", xp: 150 },
+    // 第 4 章「在线档案」：判定全部复用现有字段（app.net / s.ranked / app.roomCode），
+    // 落地成 main.done 的一次性标记，不新增存档字段。
+    { id: "online_casual", chapter: 4, name: "完成 1 局在线休闲对局", xp: 120 },
+    { id: "online_room", chapter: 4, name: "用组队码进入一次房间", xp: 100 },
+    { id: "online_ranked", chapter: 4, name: "完成 1 局排位对局", xp: 150 }
   ];
   const MAIN_CHAPTERS = {
     1: { name: "初入档案", desc: "学会走完一场完整推演" },
@@ -7400,7 +7429,9 @@
     3: { name: "自己组一套", desc: "30 张、品级、曲线与命名" },
     4: { name: "在线档案", desc: "账号、休闲与排位" }
   };
-  const CHAPTER_REWARDS = { 1: { xp: 200, marks: 3 }, 2: { xp: 250, marks: 3 }, 3: { xp: 400, marks: 5 } };
+  const CHAPTER_REWARDS = { 1: { xp: 200, marks: 3 }, 2: { xp: 250, marks: 3 }, 3: { xp: 400, marks: 5 }, 4: { xp: 500, marks: 6 } };
+  const CHAPTER_NUMERALS = ["一", "二", "三", "四", "五", "六"];
+  function chapterLabel(ch) { return "第" + (CHAPTER_NUMERALS[ch - 1] || String(ch)) + "章"; }
   function chapterClaimed(ch) { return !!(ensureAccount().progress.chapterClaims && ensureAccount().progress.chapterClaims[ch]); }
   function claimChapterReward(ch, tasks) {
     const account = ensureAccount();
@@ -7412,12 +7443,162 @@
     const reward = CHAPTER_REWARDS[ch] || { xp: 0, marks: 0 };
     if (reward.marks) grantAchievementMarks(reward.marks);
     addExperience(reward.xp);
-    toast("第" + ["一","二","三"][ch-1] + "章奖励 · +" + reward.xp + " XP" + (reward.marks ? " · 印记 +" + reward.marks : ""));
+    toast(chapterLabel(ch) + "奖励 · +" + reward.xp + " XP" + (reward.marks ? " · 印记 +" + reward.marks : ""));
     renderTasksPage();
   }
 
   function mainTaskUnlocked(task) {
     return !task.level || ensureAccount().progress.level >= task.level;
+  }
+
+  /* ===== 构筑委托（§4.3）：带约束的牌组任务 =====
+   * 结构：{ id, period:"daily"|"weekly", name, desc, check(deckIds)->bool, games, reward:{xp,marks} }
+   * 进度存 account.progress.commissions[period] = { key, progress:{id:count}, claimed:[id] }，
+   * 由 normalizeAccountProgression 按日/周 key 自动滚动，旧存档读出来时补字段（迁移兼容）。
+   */
+  const COMMISSIONS = [
+    {
+      id: "no_legend", period: "daily", name: "无传说牌组",
+      desc: "牌组里不带任何传说，完成 1 局。",
+      check(ids) { return ids.length > 0 && ids.every(id => { const c = D.CARDS[id]; return !c || c.rarity !== "legendary"; }); },
+      games: 1, reward: { xp: 60, marks: 3 }
+    },
+    {
+      id: "one_cost_swarm", period: "daily", name: "一费军团",
+      desc: "1 费卡至少 10 张，完成 1 局。",
+      check(ids) { return ids.filter(id => { const c = D.CARDS[id]; return c && Number(c.cost) === 1; }).length >= 10; },
+      games: 1, reward: { xp: 70, marks: 3 }
+    },
+    {
+      id: "single_faction", period: "weekly", name: "单阵营纪律",
+      desc: "只用 1 个阵营 + 中立的牌，完成 2 局。",
+      check(ids) {
+        const factions = new Set();
+        for (const id of ids) {
+          const c = D.CARDS[id];
+          if (!c || !c.faction || c.faction === "neutral") continue;
+          factions.add(c.faction);
+          if (factions.size > 1) return false;
+        }
+        return factions.size === 1;
+      },
+      games: 2, reward: { xp: 180, marks: 5 }
+    },
+    {
+      id: "two_equipment", period: "weekly", name: "装备恰好 2 件",
+      desc: "牌组里正好 2 件装备（不多不少），完成 2 局。",
+      check(ids) { return ids.filter(id => { const c = D.CARDS[id]; return c && (c.type === "equipment" || c.type === "relic"); }).length === 2; },
+      games: 2, reward: { xp: 160, marks: 4 }
+    },
+    {
+      id: "low_curve", period: "weekly", name: "低曲线",
+      desc: "6 费及以上 0 张，完成 2 局。",
+      check(ids) { return ids.length > 0 && ids.every(id => { const c = D.CARDS[id]; return !c || Number(c.cost) < 6; }); },
+      games: 2, reward: { xp: 180, marks: 5 }
+    },
+    {
+      id: "pulse_research", period: "weekly", name: "刻脉研究",
+      desc: "带至少 4 张刻脉卡，完成 2 局。",
+      check(ids) { return ids.filter(id => { const c = D.CARDS[id]; return c && c.type === "pulse"; }).length >= 4; },
+      games: 2, reward: { xp: 200, marks: 6 }
+    }
+  ];
+  const COMMISSION_PERIODS = ["daily", "weekly"];
+  const COMMISSION_PERIOD_LABEL = { daily: "每日委托", weekly: "每周委托" };
+
+  function commissionDefs(period) {
+    return COMMISSION_PERIODS.indexOf(period) >= 0 ? COMMISSIONS.filter(d => d.period === period) : COMMISSIONS.slice();
+  }
+
+  function normalizeCommissions(p) {
+    if (!p.commissions || typeof p.commissions !== "object") p.commissions = {};
+    const keys = { daily: localDateKey(), weekly: localWeekKey() };
+    for (const period of COMMISSION_PERIODS) {
+      const cur = p.commissions[period];
+      if (!cur || typeof cur !== "object" || cur.key !== keys[period]) {
+        p.commissions[period] = { key: keys[period], progress: {}, claimed: [] };
+      } else {
+        if (!cur.progress || typeof cur.progress !== "object") cur.progress = {};
+        if (!Array.isArray(cur.claimed)) cur.claimed = [];
+      }
+    }
+    return p.commissions;
+  }
+
+  function commissionSlot(period) {
+    syncTaskPeriods();
+    const p = ensureAccount().progress;
+    normalizeCommissions(p);
+    return p.commissions[period];
+  }
+
+  function commissionCheck(def, deckIds) {
+    if (!def || typeof def.check !== "function") return false;
+    const ids = Array.isArray(deckIds) ? deckIds : [];
+    try { return !!def.check(ids); } catch (e) { return false; }
+  }
+
+  function commissionProgress(period, def) {
+    const slot = commissionSlot(period);
+    return Math.max(0, Number((slot.progress || {})[def.id]) || 0);
+  }
+
+  function commissionTarget(def) { return Math.max(1, Number(def.games) || 1); }
+
+  function commissionComplete(period, def) {
+    return commissionProgress(period, def) >= commissionTarget(def);
+  }
+
+  function commissionClaimed(period, def) {
+    return (commissionSlot(period).claimed || []).indexOf(def.id) >= 0;
+  }
+
+  function claimCommission(period, def) {
+    if (!def) return;
+    const slot = commissionSlot(period);
+    if ((slot.claimed || []).indexOf(def.id) >= 0) return;
+    if (commissionProgress(period, def) < commissionTarget(def)) return;
+    slot.claimed.push(def.id);
+    persistAccount();
+    const reward = def.reward || {};
+    if (reward.marks) grantAchievementMarks(reward.marks);
+    if (reward.xp) addExperience(reward.xp);
+    AudioBox.play("coin");
+    toast("委托完成 · " + def.name + " · +" + (reward.xp || 0) + " XP" + (reward.marks ? " · 印记 +" + reward.marks : ""));
+    if (typeof renderTasksIfOpen === "function") renderTasksIfOpen();
+  }
+
+  // 对局结算钩子（recordGameAchievements 里调用）：只有拿到本局牌组 ID 时才计进度
+  function recordCommissionProgress(s) {
+    const ids = Array.isArray(app.gameDeckIds) ? app.gameDeckIds : null;
+    if (!ids || !ids.length) return;
+    syncTaskPeriods();
+    const account = ensureAccount();
+    const slots = normalizeCommissions(account.progress);
+    const finished = [];
+    let changed = false;
+    for (const def of COMMISSIONS) {
+      const slot = slots[def.period];
+      if (!slot || slot.claimed.indexOf(def.id) >= 0) continue;
+      if (!commissionCheck(def, ids)) continue;
+      const before = Math.max(0, Number(slot.progress[def.id]) || 0);
+      slot.progress[def.id] = before + 1;
+      changed = true;
+      if (slot.progress[def.id] >= commissionTarget(def)) finished.push(def.name);
+    }
+    if (!changed) return;
+    persistAccount();
+    if (finished.length) toast("构筑委托达成 · " + finished.join("、") + "（到任务页 → 委托 领取）");
+  }
+
+  // 第 4 章「在线档案」+ 委托：统一的对局结算入口
+  function recordSessionTasks(s) {
+    if (!s || app.tutorial) return;
+    try {
+      if (s.ranked) markMainTask("online_ranked");
+      else if (app.net) markMainTask("online_casual");
+    } catch (e) {}
+    try { recordCommissionProgress(s); } catch (e) {}
   }
 
   function levelNeed(level) {
@@ -7511,6 +7692,8 @@
     if (!p.tasks.main || typeof p.tasks.main !== "object") p.tasks.main = { done: {}, claimed: [] };
     if (!p.tasks.main.done) p.tasks.main.done = {};
     if (!p.tasks.main.claimed) p.tasks.main.claimed = [];
+    // 构筑委托：旧存档没有这个字段，这里补齐并按日/周 key 滚动（迁移兼容）
+    normalizeCommissions(p);
   }
 
   function persistAccount() {
@@ -7706,7 +7889,7 @@
       "先定方向：快攻、中速、控制、组合。先想清楚这套牌靠什么赢，再决定带哪些卡；不要把所有强卡塞在一起。",
       "固定 30 张，随从卡 / 战术卡 / 阵型卡 / 装备卡 / 刻脉卡自由混编；阵型最多 3 张，装备不限件数；同名卡数量受品级和卡牌规则限制。",
       "曲线参考：2–3 费 8–12 张，4–5 费 8–10 张，6 费以上别太多。前 3 回合有牌可出，比单卡强度更重要。",
-      "品级上限：传说最多 2 张，史诗最多 6 张，稀有最多 10 张；未拥有的传说不能加入自定义牌组，官方预组可以试玩。",
+      "品级上限：本阵营传说最多 2 张、中立传说最多 1 张，史诗最多 6 张，稀有最多 10 张；未拥有的传说不能加入自定义牌组，官方预组可以试玩。",
       "新手先用预设或自动构筑生成 30 张，再手动替换 3–5 张；不要从零硬凑，也不要为了“完美”反复推翻整套牌。",
       "牌组保存前要起名字，并加流派标签：流脉、快攻、中速、控制、组合、娱乐。准备阶段按名字和标签选择，别只留一个默认牌组。",
       "检查清单：30 张、2 件装备、阵型合法、没有未拥有传说、曲线不空、同名不超限。满足这些，才算一套能上桌的牌。"
@@ -7725,7 +7908,7 @@
       "先定方向：快攻、中速、控制、组合。先想清楚这套牌靠什么赢，再往里面塞卡。",
       "固定 30 张，阵型最多 3 张，装备不限件数。",
       "曲线参考：2–3 费 8–12 张，4–5 费 8–10 张，6 费以上不要太多；先保证每回合有事做。",
-      "品级上限：传说最多 2 张，史诗最多 6 张，稀有最多 10 张；未拥有的传说不能加入自定义牌组。",
+      "品级上限：本阵营传说最多 2 张、中立传说最多 1 张，史诗最多 6 张，稀有最多 10 张；未拥有的传说不能加入自定义牌组。",
       "先用「预设牌组」试玩；Lv.5 后可以复制为自定义牌组，再改名、加流派标签、手动替换。",
       "流派标签建议：快攻、中速、控制、组合、娱乐、流脉。标签只帮你整理牌组，不改变对局规则。",
       "自动构筑适合新手：先生成 30 张，再手动替换 3–5 张，不要从零硬凑。",
@@ -8181,14 +8364,15 @@
     if (app.taskTab === "tutorial") { renderTaskTutorialTab(root); return; }
     const defs = app.taskTab === "daily" ? DAILY_TASKS : app.taskTab === "weekly" ? WEEKLY_TASKS : MAIN_TASKS;
     if (app.taskTab === "main") {
-      const chapters = [1,2,3];
+      const chapters = [1,2,3,4];
       for (const ch of chapters) {
         const list = MAIN_TASKS.filter(t => (t.chapter || 1) === ch).map(t => Object.assign({ level: ch === 3 ? 5 : 1 }, t));
         if (!list.length) continue;
         const box = el("div", "task-chapter");
+        box.dataset.chapter = String(ch);
         const chHead = el("div", "task-chapter-head");
         const chDone = list.filter((t) => taskClaimed("main", t)).length;
-        chHead.appendChild(el("strong", null, "第" + ["一","二","三"][ch-1] + "章 · " + MAIN_CHAPTERS[ch].name));
+        chHead.appendChild(el("strong", null, chapterLabel(ch) + " · " + MAIN_CHAPTERS[ch].name));
         chHead.appendChild(el("small", null, MAIN_CHAPTERS[ch].desc));
         chHead.appendChild(el("span", "task-chapter-progress" + (chDone >= list.length ? " complete" : ""), chDone + " / " + list.length + " 已完成"));
         box.appendChild(chHead);
@@ -9183,6 +9367,8 @@ const tabs = $("deck-faction-tabs");
     app.achievements.play_10 = rec;
     persistAchievements();
     recordGameProgress(s, win);
+    // 第 4 章在线任务 + 构筑委托：都在已有结算钩子里补进度
+    recordSessionTasks(s);
     app.settlementAchievements = unlocked;
   }
 
@@ -10556,7 +10742,9 @@ const tabs = $("deck-faction-tabs");
     const seenCount = allCards.filter(d => app.codexSeen && app.codexSeen[d.id]).length;
     const collectible = allCards.filter(d => !d.token && !d.easterEgg).length;
     const tokenCount = allCards.filter(d => d.token).length;
-    $("codex-count").innerHTML = '<span class="codex-count-total">可收藏 <b>' + collectible + '</b> 张</span><span class="codex-count-sep"> · </span><span class="codex-count-token">衍生 ' + tokenCount + '</span><span class="codex-count-sep"> · </span><span class="codex-count-seen">已阅 ' + seenCount + '</span><span class="codex-count-sep"> · </span><span class="codex-count-fav">收藏 ' + (app.codexFavorites ? app.codexFavorites.size : 0) + '</span><span class="codex-count-sep"> · </span><span class="codex-count-hit">当前 <b>' + list.length + '</b> 张</span>' + (list.length > shown.length ? '<span class="codex-count-sep"> · </span><span class="codex-count-shown">已显示 ' + shown.length + '</span>' : "");
+    const codexOwnedLegend = ownedLegendarySet();
+    const codexLegendTotal = allLegendaryIds().length;
+    $("codex-count").innerHTML = '<span class="codex-count-total">可收藏 <b>' + collectible + '</b> 张</span><span class="codex-count-sep"> · </span><span class="codex-count-legend">传说收集 <b>' + codexOwnedLegend.size + '</b> / ' + codexLegendTotal + '</span><span class="codex-count-sep"> · </span><span class="codex-count-token">衍生 ' + tokenCount + '</span><span class="codex-count-sep"> · </span><span class="codex-count-seen">已阅 ' + seenCount + '</span><span class="codex-count-sep"> · </span><span class="codex-count-fav">收藏 ' + (app.codexFavorites ? app.codexFavorites.size : 0) + '</span><span class="codex-count-sep"> · </span><span class="codex-count-hit">当前 <b>' + list.length + '</b> 张</span>' + (list.length > shown.length ? '<span class="codex-count-sep"> · </span><span class="codex-count-shown">已显示 ' + shown.length + '</span>' : "");
     const more = $("codex-more");
     if (more) { more.hidden = list.length <= shown.length; more.onclick = () => { app.codexLimit = (app.codexLimit || 60) + 60; renderCodex(); }; }
     const empty = $("codex-empty");
@@ -10582,6 +10770,11 @@ const tabs = $("deck-faction-tabs");
     shown.forEach((d, index) => {
       const card = buildLibraryCard(d, { variant: "codex", faction: true });
       card.classList.add("codex-card");
+      // 未拥有的传说置灰 + 角标（其余品级本来就全解锁，不用标）
+      if (d.rarity === "legendary" && !codexOwnedLegend.has(d.id)) {
+        card.classList.add("codex-locked");
+        card.appendChild(el("span", "codex-lock-badge", "未收集"));
+      }
       addCardTags(card, d, null, "lib-tags");
       card.onclick = () => openCodexCard(d, "返回图鉴", shown, index);
       grid.appendChild(card);
@@ -10877,7 +11070,7 @@ const tabs = $("deck-faction-tabs");
         ["阵型", "每个阵位同时只生效一张阵型卡。在同一个阵位再布置第二张时，原来那张会被顶掉并进入弃牌堆。阵型是持续光环：布置之后放进该阵位的随从，以及布置时已经在场的随从，都会吃到加成。"],
         ["手牌上限", "手牌最多 8 张。到 8 张时再抽到的牌会被直接烧掉（进入弃牌堆）；被移回手牌的随从也会因为手牌满而被烧掉。"],
         ["流脉", "双方共享 0→12，每次完整轮次（双方各行动一次）自然 +1。4 震荡、7 裂隙、10 魔物潮触发世界事件，12 回流清空。"],
-        ["牌组结构", "30 张牌，随从 / 战术 / 阵型 / 装备 / 债务自由混编，各类型都不限张数，只受品级限制：传说最多 2 张、史诗最多 15 张，普通与稀有随便带。同名卡也有上限：传说 1 张，其余最多 2 张。领袖在开局单独选择，不占牌组，也不进入牌库。"],
+        ["牌组结构", "30 张牌，随从 / 战术 / 阵型 / 装备 / 债务自由混编，各类型都不限张数，只受品级限制：本阵营传说最多 2 张、中立传说最多 1 张、史诗最多 15 张，普通与稀有随便带。同名卡也有上限：传说 1 张，其余最多 2 张。领袖在开局单独选择，不占牌组，也不进入牌库。"],
         ["装备", "抽到打出即可生效。场上同时只生效 2 件，带第三张时最早的那件会被挤掉，挤掉的装备进入弃牌堆。"],
         ["坟场", "敌我双方共享同一个坟场。死掉的随从会留在这里，双方都能查看。战术牌、阵型、装备、债务卡用掉就是没了，不进坟场。\r\n坟场里能做的事只有两种：招魂（从坟场拉回场上，回来的是沉默状态，只有原身材）和复活（完整身材与效果，目前只有提蒙）。谁都能招对面的尸体。\r\n灰港不招魂：它把死前被悬赏的尸体当账本，读数量换伤害、抽牌、加护甲；用掉的那具尸体会被取下悬赏标记，变成普通尸体留在坟场。"],
         ["行动力与先后手", "第 1 回合 1 点，每回合 +1，上限 10 点，回合开始回满。先手抽 3 张；后手抽 4 张，并额外获得一张「掘脉许可」（1 费战术：本回合 +2 点行动力，可以留着）。"]
@@ -11094,7 +11287,7 @@ const tabs = $("deck-faction-tabs");
         ["流脉", "共享流脉 0→12。到达 4 震荡、7 裂隙、10 魔物潮时触发世界事件；12 回流清空。"],
         ["关键词", "登场、余响、守备、先遣、冻结、沉默、引脉、预兆等关键词会在卡牌和标签上标明。"],
         ["装备", "装备是一张牌，抽到并打出后持续生效。场上同时只生效 2 件，打第三张时最早的会被挤掉并进入弃牌堆。"],
-        ["牌组构成", "30 张，随从 / 战术 / 阵型 / 装备 / 债务各类型都不限张数。只卡品级：传说最多 2 张、史诗最多 15 张，普通与稀有随便带。同名上限：传说 1 张，其余 2 张。"],
+        ["牌组构成", "30 张，随从 / 战术 / 阵型 / 装备 / 债务各类型都不限张数。只卡品级：本阵营传说最多 2 张、中立传说最多 1 张、史诗最多 15 张，普通与稀有随便带。同名上限：传说 1 张，其余 2 张。"],
         ["坟场", "敌我共享同一个坟场：只有死掉的随从会进去。战术牌、阵型、装备、债务卡用掉就是没了，不进坟场。\r\n① 招魂：从坟场拿走一个随从召唤回场，回来是沉默状态——只有原身材，关键词、登场、余响、被动全都没有。可以招对面的尸体。默认拿最后进入坟场的那张；内卫部招魂师、黑弥撒执事、招魂这三张会优先召唤城主·永夜。\r\n② 复活：从坟场拿走一个随从，按完整状态回场（身材、关键词、余响都在）。目前只有普卫岛的提蒙会复活。\r\n③ 城主·永夜：每次死亡进坟场永久 +1/+1，只有招魂能把它带回来，它免疫沉默。\r\n④ 灰港读悬赏尸体：死于悬赏的随从带金色标记。拾荒者、黑市之主、收尸结算、黑市拍卖、验尸官、销赃人、坟场账簿都按「有几具悬赏尸体」结算；用掉的效果会取下标记，尸体变普通尸体。\r\n⑤ 衍生物（召唤出来的亡灵之类）也会进坟场，但带虚框标记，不能被招魂。"]
       ];
       for (const [title, desc] of sections) {
@@ -11164,6 +11357,21 @@ const tabs = $("deck-faction-tabs");
     const oldLadder = $("rank-ladder-panel"); if (oldLadder) oldLadder.remove();
     const oldReward = $("rank-reward-panel"); if (oldReward) oldReward.remove();
     const oldServer = $("rank-server-panel"); if (oldServer) oldServer.remove();
+    // 2026-11-15：段位页显示本周赛季规则（6 周一轮，每周一 10:00 换）
+    const oldSeason = $("rank-season-panel"); if (oldSeason) oldSeason.remove();
+    const seasonPanel = el("div", "panel rank-panel"); seasonPanel.id = "rank-season-panel";
+    seasonPanel.appendChild(el("div", "panel-label", "本周赛季规则 / WEEKLY RULE"));
+    const seasonRule = window.GokSeason ? window.GokSeason.ruleFor() : null;
+    if (seasonRule) {
+      seasonPanel.appendChild(el("h3", null, seasonRule.name));
+      seasonPanel.appendChild(el("p", null, seasonRule.desc));
+      const nextChange = new Date(window.GokSeason.nextChangeAt());
+      seasonPanel.appendChild(el("p", "muted", "每周一 10:00 换规则 · 下一次 " + (nextChange.getMonth() + 1) + " 月 " + nextChange.getDate() + " 日 " + String(nextChange.getHours()).padStart(2, "0") + ":00"));
+      seasonPanel.appendChild(el("p", "fine-print", "排位对局开局会自动套用这条规则；休闲局和组队码房间不受影响。"));
+    } else {
+      seasonPanel.appendChild(el("p", "muted", "赛季规则未加载。"));
+    }
+    grid.appendChild(seasonPanel);
     const serverPanel = el("div", "panel rank-panel"); serverPanel.id = "rank-server-panel";
     const seasonLabel = (window.__GOK_LADDER_SEASON__ || "s0");
     serverPanel.appendChild(el("div", "panel-label", "第 " + (seasonLabel.replace(/^s/i, "") || "0") + " 赛季排行 / SERVER LADDER"));
@@ -12207,6 +12415,8 @@ const tabs = $("deck-faction-tabs");
     const seed = (Date.now() >>> 0) ^ Math.floor(Math.random() * 0x7fffffff);
     const roomRules = app.roomRules || {};
     const firstRule = app.roomCode ? (roomRules.first === "host" ? 0 : roomRules.first === "guest" ? 1 : undefined) : undefined;
+    // 房主牌组 ID 列表：构筑委托判定要用
+    const hostDeckList = (getSelectedPlayDeck(faction, app.lanHostUseCustom ? "custom" : "preset") || []).slice();
     const state = E.createGame({
       faction1: faction,
       faction2: other,
@@ -12214,7 +12424,7 @@ const tabs = $("deck-faction-tabs");
       p2AI: false,
       mode: "lan",
       mulligan: true,
-      p1Deck: getSelectedPlayDeck(faction, app.lanHostUseCustom ? "custom" : "preset"),
+      p1Deck: hostDeckList,
       p2Deck: (() => {
         const active = app.lanGuestRelic || activeRelicFor(other);
         const gd = app.lanGuestDecks && app.lanGuestDecks[other];
@@ -12232,6 +12442,7 @@ const tabs = $("deck-faction-tabs");
     state.players[0].name = accountDisplayName();
     state.players[1].name = app.lanGuestName || (app.matchmaking ? "对手" : "挑战者");
     app.game = state;
+    app.gameDeckIds = hostDeckList.map(String);
     app.net = { role: "host", player: 0, active: true, since: 0 };
     app.human = 0;
     app.aiPlayer = null;

@@ -8183,3 +8183,14 @@ body[data-screen="home"] .toast.show { transform: translateY(0); }
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
 }
+
+/* 2026-11-15 图鉴收集度：未拥有的传说置灰 + 角标 */
+#screen-codex .codex-card.codex-locked { filter: grayscale(0.85); opacity: .55; }
+#screen-codex .codex-card.codex-locked .generated-art-img { filter: grayscale(1); }
+#screen-codex .codex-card .codex-lock-badge {
+  position: absolute; top: 6px; right: 6px; z-index: 3;
+  padding: 1px 6px; border-radius: 8px; font-size: 10px; line-height: 16px;
+  background: rgba(8, 12, 16, .82); color: #c9a86a; border: 1px solid rgba(201, 168, 106, .45);
+  pointer-events: none;
+}
+#screen-codex .codex-count-legend b { color: #d9a441; }

@@ -155,7 +155,7 @@
     const stats = el("div", "content-stats");
     stats.appendChild(el("span", null, "印记 " + (data.marks || 0)));
     stats.appendChild(el("span", null, "残局 " + Object.keys(data.puzzles || {}).length + "/" + PUZZLES.length));
-    stats.appendChild(el("span", null, "故事 " + Object.keys(data.story && data.story.done || {}).length + "/5"));
+    stats.appendChild(el("span", null, "故事 " + Object.keys(data.story && data.story.done || {}).length + "/" + STORY.length));
     stats.appendChild(el("span", null, "镜像 " + (data.mirror ? (data.mirror.wins || 0) + " 胜" : "未开始")));
     box.appendChild(stats);
     const activeExpedition = data.expedition && !data.expedition.finished && data.expedition.node < data.expedition.nodes.length;
@@ -184,20 +184,20 @@
       },
       {
         id: "daily", title: "每日挑战", tag: "每日种子",
-        desc: "每天固定种子、固定对手，使用当前阵营挑战噩梦 AI。每天只能结算一次。",
+        desc: "每天固定种子、固定对手，从 24 条修饰器里抽 1 主 1 副，使用当前阵营挑战噩梦 AI。每天只能结算一次。",
         status: data.daily && data.daily.date === fmtDate() ? (data.daily.result === "win" ? "今日已通关" : "今日已结算") : "今日尚未推演",
         action: () => renderDaily()
       },
       {
         id: "puzzle", title: "残局", tag: "残局",
-        desc: "从固定局面寻找本回合斩杀。完成记录会保存在档案里。",
+        desc: "30 个固定局面：算术斩杀、关键词组合、多回合布局。完成记录会保存在档案里。",
         status: "已完成 " + Object.keys(data.puzzles || {}).length + " / " + PUZZLES.length,
         action: () => renderPuzzles()
       },
       {
         id: "story", title: "旧日故事", tag: "剧情",
-        desc: "五段与阵营有关的短战，先看档案，再进入战斗。",
-        status: "已完成 " + Object.keys(data.story && data.story.done || {}).length + " / 5",
+        desc: "八段与阵营有关的短战，先读档案，再进入战斗。",
+        status: "已完成 " + Object.keys(data.story && data.story.done || {}).length + " / " + STORY.length,
         action: () => renderStory()
       },
       {
@@ -1028,15 +1028,42 @@
     renderArena();
   }
 
-  /* ===== daily ===== */
-  const DAILY_MODS = [
-    { id: "armor", name: "铁壁日", desc: "双方领袖开局获得 2 点护甲。", apply: (s) => { s.players[0].armor += 2; s.players[1].armor += 2; } },
-    { id: "vein", name: "流脉湍急", desc: "开局流脉为 5。", apply: (s) => { s.vein = 5; } },
-    { id: "blood", name: "血月", desc: "双方生命上限 -5。", apply: (s) => { for (const p of s.players) { p.maxHp = Math.max(10, p.maxHp - 5); p.hp = Math.min(p.hp, p.maxHp); } } },
-    { id: "mana", name: "行动力危机", desc: "双方开局行动力 +1。", apply: (s) => { for (const p of s.players) { p.maxMana = Math.min(10, (p.maxMana || 10) + 1); p.mana = Math.min(p.maxMana, (p.mana || 0) + 1); } } }
-  ];
-  function dailyMod(date) {
-    return DAILY_MODS[seedFrom("daily-mod:" + date) % DAILY_MODS.length];
+  /* ===== daily =====
+   * 修饰器改由 public/js/mods.js 的 GokMods 注册表提供：
+   * 每日 = 1 主 + 1 副（类别不同），牌库类修饰器在发牌前改牌组。
+   */
+  const MODS = global.GokMods || null;
+  const DAILY_MODS = MODS ? MODS.list("daily") : [];
+  function dailyMods(date) { return MODS ? MODS.pickDaily(date, 2) : []; }
+  function applyMods(state, mods) { if (MODS) MODS.applyState(state, (mods || []).map((m) => m.id)); }
+
+  // 牌库类修饰器：先过滤，再从同阵营+中立里补齐到 30 张
+  function topUpDeck(faction, ids, mods) {
+    const out = ids.slice();
+    const seen = {};
+    for (const id of out) seen[id] = (seen[id] || 0) + 1;
+    const maxOf = (id) => (typeof D.maxCopies === "function" ? D.maxCopies(D.CARDS[id]) : 2) || 2;
+    const deckMods = (mods || []).filter((m) => m.kind === "deck" && typeof m.filter === "function");
+    if (!deckMods.length) return out;
+    const pool = Object.values(D.CARDS).filter((c) => !c.token && !c.disabled && c.type !== "relic"
+      && (c.faction === faction || c.faction === "neutral")
+      && deckMods.every((m) => m.filter(faction, [c.id]).length > 0));
+    let guard = 0;
+    while (out.length < 30 && pool.length && guard++ < 400) {
+      const c = pool[Math.floor(Math.random() * pool.length)];
+      if ((seen[c.id] || 0) >= maxOf(c.id)) continue;
+      seen[c.id] = (seen[c.id] || 0) + 1;
+      out.push(c.id);
+    }
+    return out;
+  }
+  function modsDeck(faction, mods) {
+    const base = factionDeck(faction);
+    const deckMods = (mods || []).filter((m) => m.kind === "deck" && typeof m.filter === "function");
+    if (!deckMods.length) return base;
+    let ids = base.slice();
+    for (const m of deckMods) ids = m.filter(faction, ids);
+    return topUpDeck(faction, ids, mods);
   }
 
   function renderDaily() {
@@ -1051,10 +1078,14 @@
     head.appendChild(el("h2", null, "每日挑战 · " + date));
     box.appendChild(head);
     const panel = el("div", "mode-panel");
-    const mod = dailyMod(date);
+    const mods = dailyMods(date);
     panel.appendChild(el("p", null, "今日固定种子：" + seedFrom("daily:" + date) + "。对手：噩梦 AI。阵营使用当前档案阵营。"));
-    const modLine = el("p", "daily-mod", "今日规则 · " + mod.name + "：" + mod.desc);
-    panel.appendChild(modLine);
+    panel.appendChild(el("p", "muted", "每日规则从 24 条修饰器里抽 1 主 1 副，同一天所有人一样。"));
+    const modList = el("div", "daily-mod-list");
+    for (const mod of mods) {
+      modList.appendChild(el("p", "daily-mod", "「" + mod.category + "」" + mod.name + "：" + mod.desc));
+    }
+    panel.appendChild(modList);
     if (result) {
       panel.appendChild(el("h3", null, result === "win" ? "今日挑战已完成" : "今日挑战失败"));
       panel.appendChild(el("p", "muted", "连续完成：" + (data.daily.streak || 0) + " 天 · 最长连续：" + (data.daily.best || 0) + " 天。明日会刷新新的固定种子。"));
@@ -1064,13 +1095,14 @@
         const f = app.faction || "pus";
         const other = randomOpponent(f);
         runMode("daily", "每日挑战");
+        app.contentRun.mods = mods.map((m) => m.id);
         global.GokUI.startGame({
           faction: f, opponent: other,
-          p1Deck: factionDeck(f), p2Deck: factionDeck(other),
+          p1Deck: modsDeck(f, mods), p2Deck: modsDeck(other, mods),
           aiDifficulty: "nightmare",
           first: seedFrom(date) % 2,
           seed: seedFrom("daily:" + date),
-          setup: (state) => mod.apply(state)
+          setup: (state) => applyMods(state, mods)
         });
       };
       panel.appendChild(b);
@@ -1088,74 +1120,171 @@
     renderDaily();
   }
 
-  /* ===== puzzles ===== */
-  const PUZZLES = [
-    { id: "last_hit", name: "最后一步", desc: "你的随从已经站在敌方领袖面前。本回合完成斩杀。", setup: (s) => setupPuzzle(s, [{ atk: 5, hp: 5 }], 5, false) },
-    { id: "double_line", name: "双线齐发", desc: "两条阵线都准备好了。用两次攻击终结对手。", setup: (s) => setupPuzzle(s, [{ atk: 5, hp: 5 }, { atk: 5, hp: 5 }], 10, false) },
-    { id: "through_wall", name: "越过盾墙", desc: "对方有守备。先用一次攻击拆盾，再补上最后一击。", setup: (s) => setupPuzzle(s, [{ atk: 7, hp: 7 }, { atk: 5, hp: 5 }], 5, true) },
-    { id: "triple_line", name: "三线合围", desc: "三次攻击，正好覆盖敌方领袖的生命。", setup: (s) => setupPuzzle(s, [{ atk: 5, hp: 5 }, { atk: 5, hp: 5 }, { atk: 5, hp: 5 }], 15, false) },
-    { id: "armor_break", name: "破甲", desc: "对手有 3 点护甲。算好两次攻击的溢出伤害。", setup: (s) => setupPuzzle(s, [{ atk: 5, hp: 5 }, { atk: 5, hp: 5 }], 7, false, 3) }
-  ];
-  function setupPuzzle(s, minions, enemyHp, enemyTaunt, enemyArmor) {
-    s.mulliganPhase = false;
-    s.mulliganDone = { 0: true, 1: true };
-    s.current = 0;
-    s.round = 3;
-    const p = s.players[0], e = s.players[1];
-    p.hand = []; e.hand = [];
-    p.deck = []; e.deck = [];
-    for (const z of E.ZONES) { p.board[z] = []; e.board[z] = []; }
-    p.mana = 10; p.maxMana = 10; p.hp = 30; p.maxHp = 30; p.armor = 0;
-    e.hp = enemyHp; e.maxHp = enemyHp; e.armor = enemyArmor || 0;
-    let i = 0;
-    for (const cfg of minions) {
-      const m = E.summonMinion(s, p, "shield_recruit", ["left", "center", "right"][i] || "center", null);
-      if (m) { m.attack = cfg.atk; m.health = cfg.hp; m.maxHealth = cfg.hp; m.attacksLeft = 1; m.taunt = false; }
-      i++;
-    }
-    if (enemyTaunt) {
-      const t = E.summonMinion(s, e, "shield_recruit", "center", null);
-      if (t) { t.attack = 2; t.health = 2; t.maxHealth = 2; t.taunt = true; t.attacksLeft = 0; }
-    }
-    s.status = "playing";
+  /* ===== puzzles =====
+   * 30 个固定局面，三档：算术 / 关键词 / 布局。
+   * 每关带 spec（局面）与 solution（解题动作序列，回归时回放）。
+   */
+  const PUZZLE_TIERS = { 1: "算术", 2: "关键词", 3: "布局" };
+  function pm(id, atk, hp, opts) { return Object.assign({ id: id, atk: atk, hp: hp }, opts || {}); }
+  function puzzleDeck(cards) {
+    const out = (cards || []).slice();
+    while (out.length < 30) out.push("guard");
+    return out;
   }
+  function takeFromDeck(player, cardId, n) {
+    let need = n || 1;
+    for (let k = player.deck.length - 1; k >= 0 && need > 0; k--) {
+      if (player.deck[k].cardId === cardId) { player.hand.push(player.deck.splice(k, 1)[0]); need--; }
+    }
+    return need === 0;
+  }
+  function putPuzzleMinion(state, side, cfg) {
+    const unit = E.summonMinion(state, side, cfg.id || "guard", cfg.zone || null, null);
+    if (!unit) return null;
+    if (cfg.atk != null) unit.attack = cfg.atk;
+    if (cfg.hp != null) { unit.health = cfg.hp; unit.maxHealth = cfg.hp; }
+    unit.attacksLeft = cfg.attacks != null ? cfg.attacks : 1;
+    if (cfg.taunt) unit.taunt = true;
+    if (cfg.poisonous) { unit.poisonous = true; if (unit.keywords.indexOf("poisonous") < 0) unit.keywords.push("poisonous"); }
+    if (cfg.rush) unit.rush = true;
+    if (cfg.frozen) unit.frozenTurns = 2;
+    return unit;
+  }
+  function setupPuzzle(state, spec) {
+    spec = spec || {};
+    state.mulliganPhase = false;
+    state.mulliganDone = { 0: true, 1: true };
+    state.current = 0;
+    state.round = spec.round || 3;
+    const p = state.players[0], e = state.players[1];
+    p.hand = []; e.hand = [];
+    for (const z of E.ZONES) { p.board[z] = []; e.board[z] = []; }
+    p.hp = p.maxHp = spec.hp != null ? spec.hp : 30;
+    p.armor = 0;
+    p.mana = p.maxMana = spec.mana != null ? spec.mana : 10;
+    e.hp = e.maxHp = spec.enemyHp != null ? spec.enemyHp : 20;
+    e.armor = spec.enemyArmor || 0;
+    state.vein = spec.vein || 0;
+    for (const id of spec.hand || []) takeFromDeck(p, id, 1);
+    for (const cfg of spec.mine || []) putPuzzleMinion(state, p, cfg);
+    for (const cfg of spec.enemy || []) putPuzzleMinion(state, e, cfg);
+    p.deck = []; e.deck = [];
+    state.status = "playing";
+    return state;
+  }
+
+  const PUZZLES = [
+    /* ---- L1 算术：护甲先扣、守备路线、溢出伤害 ---- */
+    { id: "p101", tier: 1, name: "最后一步", desc: "你的随从已经站在敌方领袖面前。本回合完成斩杀。",
+      hint: "5 点攻击打 5 点生命，正好。", spec: { mine: [pm("guard", 5, 5)], enemyHp: 5 }, solution: ["attack:0:hero"] },
+    { id: "p102", tier: 1, name: "双线齐发", desc: "两条阵线都准备好了。用两次攻击终结对手。",
+      hint: "两个 5 攻，各打一下脸。", spec: { mine: [pm("guard", 5, 5, { zone: "left" }), pm("guard", 5, 5, { zone: "right" })], enemyHp: 10 }, solution: ["attack:0:hero", "attack:1:hero"] },
+    { id: "p103", tier: 1, name: "越过盾墙", desc: "对方有守备。先用一次攻击拆盾，再补上最后一击。",
+      hint: "守备随从挡在中间，先把它打掉。", spec: { mine: [pm("guard", 7, 7), pm("guard", 5, 5)], enemy: [pm("guard", 2, 2, { zone: "center", taunt: true })], enemyHp: 5 }, solution: ["attack:0:minion", "attack:1:hero"] },
+    { id: "p104", tier: 1, name: "三线合围", desc: "三次攻击，正好覆盖敌方领袖的生命。",
+      hint: "5 + 5 + 5 = 15。", spec: { mine: [pm("guard", 5, 5), pm("guard", 5, 5), pm("guard", 5, 5)], enemyHp: 15 }, solution: ["attack:0:hero", "attack:1:hero", "attack:2:hero"] },
+    { id: "p105", tier: 1, name: "破甲", desc: "对手有 3 点护甲。算好两次攻击的溢出伤害。",
+      hint: "护甲先吃 3 点，剩下的才进血。", spec: { mine: [pm("guard", 5, 5), pm("guard", 5, 5)], enemyHp: 7, enemyArmor: 3 }, solution: ["attack:0:hero", "attack:1:hero"] },
+    { id: "p106", tier: 1, name: "溢出的三滴", desc: "敌方 6 血 4 甲，你只有两次 5 点攻击。",
+      hint: "第一下拆甲剩 1 点进血，第二下正好。", spec: { mine: [pm("guard", 5, 5), pm("guard", 5, 5)], enemyHp: 6, enemyArmor: 4 }, solution: ["attack:0:hero", "attack:1:hero"] },
+    { id: "p107", tier: 1, name: "先拆左墙", desc: "左侧守备必须死，右边才有路。",
+      hint: "守备只挡住指定阵位，先清掉。", spec: { mine: [pm("guard", 3, 3, { zone: "left" }), pm("guard", 6, 6, { zone: "right" })], enemy: [pm("guard", 3, 3, { zone: "left", taunt: true })], enemyHp: 6 }, solution: ["attack:0:minion", "attack:1:hero"] },
+    { id: "p108", tier: 1, name: "两点余量", desc: "敌方 12 血，你三次 4 点攻击，一次都不能浪费。",
+      hint: "4×3 = 12。", spec: { mine: [pm("guard", 4, 4), pm("guard", 4, 4), pm("guard", 4, 4)], enemyHp: 12 }, solution: ["attack:0:hero", "attack:1:hero", "attack:2:hero"] },
+    { id: "p109", tier: 1, name: "少一下都不行", desc: "三次攻击，敌方 15 血 2 甲。",
+      hint: "先把 2 点护甲算进去。", spec: { mine: [pm("guard", 6, 6), pm("guard", 6, 6), pm("guard", 5, 5)], enemyHp: 15, enemyArmor: 2 }, solution: ["attack:0:hero", "attack:1:hero", "attack:2:hero"] },
+    { id: "p110", tier: 1, name: "一击必杀", desc: "你只有一个随从，一次攻击。",
+      hint: "它够大。", spec: { mine: [pm("guard", 9, 9)], enemyHp: 9 }, solution: ["attack:0:hero"] },
+
+    /* ---- L2 关键词 ---- */
+    { id: "p201", tier: 2, name: "蚀毒过墙", desc: "对方立着一堵 9/9 的墙。你没有拆墙的牌。",
+      hint: "蚀毒不看血量，只看有没有打中。", spec: { mine: [pm("guard", 1, 1, { poisonous: true })], enemy: [pm("guard", 9, 9, { taunt: true })], enemyHp: 5 }, solution: ["attack:0:minion"] },
+    { id: "p202", tier: 2, name: "毒牙开路", desc: "两堵墙，一只蚀毒随从。拆完墙还剩一次攻击。",
+      hint: "蚀毒只能换一个，另一个交给谁？", spec: { mine: [pm("guard", 1, 1, { poisonous: true }), pm("guard", 4, 4)], enemy: [pm("guard", 8, 8, { zone: "left", taunt: true })], enemyHp: 6 }, solution: ["attack:0:minion", "attack:1:hero"] },
+    { id: "p203", tier: 2, name: "回潮再斩", desc: "3/1 的回潮随从死后会回到场上。让它先死一次。",
+      hint: "先撞守备送死，回潮回来还能再打。", spec: { mine: [pm("mist_hound", 3, 1)], enemy: [pm("guard", 2, 2, { taunt: true })], enemyHp: 3 }, solution: ["attack:0:minion"] },
+    { id: "p204", tier: 2, name: "先遣抢线", desc: "先遣随从登场当回合就能攻击。",
+      hint: "先用先遣随从拆盾。", spec: { mine: [pm("rush_lancer", 3, 3, { rush: true }), pm("guard", 3, 3)], enemy: [pm("guard", 3, 3, { taunt: true })], enemyHp: 3 }, solution: ["attack:0:minion", "attack:1:hero"] },
+    { id: "p205", tier: 2, name: "血偿续航", desc: "血偿随从造成伤害时会给自己回血。用它顶住反击。",
+      hint: "先打随从不亏血。", spec: { mine: [pm("guard", 4, 2)], enemy: [pm("guard", 4, 4)], enemyHp: 10, hp: 6 }, solution: ["attack:0:minion"] },
+    { id: "p206", tier: 2, name: "冻结的窗口", desc: "对手下回合就能斩杀你。先冻住它。",
+      hint: "冻结可以让一个随从这回合不能攻击。", spec: { mine: [pm("guard", 4, 4)], enemy: [pm("guard", 7, 7, { frozen: true })], enemyHp: 6, hp: 4 }, solution: ["attack:0:hero"] },
+    { id: "p207", tier: 2, name: "守备换位", desc: "守备随从必须被先处理，但你的大随从在右边。",
+      hint: "用左边的小随从换掉守备。", spec: { mine: [pm("guard", 2, 2, { zone: "left" }), pm("guard", 7, 7, { zone: "right" })], enemy: [pm("guard", 2, 2, { zone: "left", taunt: true })], enemyHp: 7 }, solution: ["attack:0:minion", "attack:1:hero"] },
+    { id: "p208", tier: 2, name: "两点毒", desc: "两只蚀毒随从，一堵墙，一个 4 血领袖。",
+      hint: "毒一只，另一只打脸。", spec: { mine: [pm("guard", 1, 1, { poisonous: true }), pm("guard", 3, 3)], enemy: [pm("guard", 8, 8, { taunt: true })], enemyHp: 4 }, solution: ["attack:0:minion", "attack:1:hero"] },
+    { id: "p209", tier: 2, name: "回潮计数", desc: "回潮随从回来时会带着满血，但攻击次数重置。",
+      hint: "先送死，再打脸。", spec: { mine: [pm("mist_hound", 4, 1)], enemy: [pm("guard", 1, 1, { taunt: true })], enemyHp: 4 }, solution: ["attack:0:minion"] },
+    { id: "p210", tier: 2, name: "先遣与守备", desc: "先遣拆盾，普通过的随从负责收尾。",
+      hint: "先遣先动。", spec: { mine: [pm("rush_lancer", 2, 2, { rush: true }), pm("guard", 5, 5)], enemy: [pm("guard", 2, 2, { taunt: true })], enemyHp: 7 }, solution: ["attack:0:minion", "attack:1:hero"] },
+
+    /* ---- L3 布局：多回合 / 流脉 / 手牌 ---- */
+    { id: "p301", tier: 3, name: "两次呼吸", desc: "流脉只有 3 点。两回合内攒到 8，再引爆引脉。",
+      hint: "先打掘脉类的牌，再打引脉 8 的牌。", spec: { vein: 3, mana: 8, hand: ["gok_digger"], mine: [pm("guard", 3, 3)], enemyHp: 12 }, solution: ["play:0", "attack:0:hero"] },
+    { id: "p302", tier: 3, name: "手牌斩杀", desc: "手里有一张 4 点直伤。先算清楚它打谁。",
+      hint: "火球只能打随从，脸要靠随从。", spec: { hand: ["fireball"], mine: [pm("guard", 4, 4)], enemy: [pm("guard", 4, 4, { taunt: true })], enemyHp: 5 }, solution: ["play:0", "attack:0:hero"] },
+    { id: "p303", tier: 3, name: "留一手", desc: "这回合打不死。留一个随从到下一回合。",
+      hint: "先拆守备，别把攻击全交出去。", spec: { round: 4, mine: [pm("guard", 5, 5), pm("guard", 5, 5)], enemy: [pm("guard", 5, 5, { taunt: true })], enemyHp: 9 }, solution: ["attack:0:minion", "attack:1:hero"] },
+    { id: "p304", tier: 3, name: "满脉压制", desc: "开局流脉 8，引脉条件已经成立。",
+      hint: "先看手牌的条件句。", spec: { vein: 8, mana: 10, hand: ["gok_digger"], mine: [pm("guard", 6, 6)], enemyHp: 10 }, solution: ["attack:0:hero"] },
+    { id: "p305", tier: 3, name: "低费快攻", desc: "行动力只有 3。三张 1 费牌，一张都不能浪费。",
+      hint: "行动力不够就别留大牌。", spec: { mana: 3, mine: [pm("guard", 2, 2), pm("guard", 2, 2), pm("guard", 2, 2)], enemyHp: 6 }, solution: ["attack:0:hero", "attack:1:hero", "attack:2:hero"] },
+    { id: "p306", tier: 3, name: "血线管理", desc: "你只有 3 点生命。这回合必须解掉对方随从。",
+      hint: "不解场就死了。", spec: { hp: 3, mine: [pm("guard", 3, 3)], enemy: [pm("guard", 3, 3)], enemyHp: 8 }, solution: ["attack:0:minion"] },
+    { id: "p307", tier: 3, name: "护甲换血", desc: "你有 4 点护甲。可以硬吃一次攻击换节奏。",
+      hint: "护甲先扣，血还在。", spec: { hp: 4, mine: [pm("guard", 6, 6)], enemy: [pm("guard", 5, 5)], enemyHp: 7 }, solution: ["attack:0:hero"] },
+    { id: "p308", tier: 3, name: "三回合的账", desc: "局面已经铺好。三回合内打完 12 点。",
+      hint: "每回合两次攻击。", spec: { round: 5, mine: [pm("guard", 3, 3), pm("guard", 3, 3)], enemyHp: 12 }, solution: ["attack:0:hero", "attack:1:hero", "attack:0:hero", "attack:1:hero"] },
+    { id: "p309", tier: 3, name: "守备与先遣", desc: "先遣拆盾，守备留在场上。",
+      hint: "先遣的攻击次数是单独的。", spec: { mine: [pm("rush_lancer", 3, 3, { rush: true }), pm("guard", 3, 3, { taunt: true })], enemy: [pm("guard", 3, 3, { taunt: true })], enemyHp: 3 }, solution: ["attack:0:minion", "attack:1:hero"] },
+    { id: "p310", tier: 3, name: "最后的流脉", desc: "流脉 11，手牌全是高费。找一张能改变局面的。",
+      hint: "先算行动力，再算出牌顺序。", spec: { vein: 11, mana: 6, hand: ["gok_digger"], mine: [pm("guard", 5, 5), pm("guard", 4, 4)], enemyHp: 9 }, solution: ["attack:0:hero", "attack:1:hero"] }
+  ];
   function renderPuzzles() {
     const box = root(); clear(box);
     const data = load();
+    const doneMap = data.puzzles || {};
     const head = el("div", "content-subhead");
-    head.appendChild(el("button", "btn btn-small btn-ghost", "← 返回街机模式"));
+    head.appendChild(el("button", "btn btn-small btn-ghost", "← 返回档案处"));
     head.querySelector("button").onclick = renderHub;
-    head.appendChild(el("div", "eyebrow", "残局 / 斩杀"));
+    head.appendChild(el("div", "eyebrow", "残局 / 三档"));
     head.appendChild(el("h2", null, "残局档案"));
+    const done = PUZZLES.filter((p) => doneMap[p.id]).length;
+    head.appendChild(el("p", "muted", "已完成 " + done + " / " + PUZZLES.length + " · 算术 10 / 关键词 10 / 布局 10"));
     box.appendChild(head);
-    const grid = el("div", "puzzle-grid");
-    for (const p of PUZZLES) {
-      const card = el("article", "mode-card puzzle-card");
-      card.appendChild(el("span", "mode-tag", "LETHAL"));
-      card.appendChild(el("h3", null, p.name));
-      card.appendChild(el("p", null, p.desc));
-      card.appendChild(el("div", "mode-status", data.puzzles && data.puzzles[p.id] ? "已完成" : "未完成"));
-      const b = el("button", "btn btn-primary", "进入残局");
-      b.onclick = () => {
-        runMode("puzzle", "残局");
-        app.contentRun.puzzle = p.id;
-        global.GokUI.startGame({
-          faction: "empire", opponent: "pus",
-          p1Deck: factionDeck("empire"), p2Deck: factionDeck("pus"),
-          aiDifficulty: "easy", mulligan: false,
-          setup: p.setup,
-          seed: seedFrom("puzzle:" + p.id)
-        });
-      };
-      card.appendChild(b);
-      grid.appendChild(card);
+    for (const tier of [1, 2, 3]) {
+      const section = el("section", "puzzle-tier");
+      section.appendChild(el("h3", null, "L" + tier + " · " + PUZZLE_TIERS[tier]));
+      const grid = el("div", "puzzle-grid");
+      for (const p of PUZZLES.filter((x) => x.tier === tier)) {
+        const card = el("article", "mode-card puzzle-card" + (doneMap[p.id] ? " done" : ""));
+        card.appendChild(el("span", "mode-tag", "L" + tier));
+        card.appendChild(el("h3", null, p.name));
+        card.appendChild(el("p", null, p.desc));
+        card.appendChild(el("div", "mode-status", doneMap[p.id] ? "已完成" : "未完成"));
+        const b = el("button", "btn btn-primary", doneMap[p.id] ? "重试" : "进入残局");
+        b.onclick = () => {
+          runMode("puzzle", "残局");
+          app.contentRun.puzzle = p.id;
+          global.GokUI.startGame({
+            faction: "empire", opponent: "pus",
+            p1Deck: puzzleDeck(p.spec.hand), p2Deck: puzzleDeck([]),
+            aiDifficulty: "easy", mulligan: false,
+            setup: (state) => setupPuzzle(state, p.spec),
+            seed: seedFrom("puzzle:" + p.id)
+          });
+        };
+        card.appendChild(b);
+        grid.appendChild(card);
+      }
+      section.appendChild(grid);
+      box.appendChild(section);
     }
-    box.appendChild(grid);
   }
   function puzzleAfter(data, state, id) {
     if (state.winner === 0 && id) {
       data.puzzles = data.puzzles || {};
-      data.puzzles[id] = true;
+      data.puzzles[id] = { done: true, at: Date.now() };
       save(data);
     }
     renderPuzzles();
@@ -1163,11 +1292,94 @@
 
   /* ===== story ===== */
   const STORY = [
-    { id: "ch1", title: "灰港的夜", faction: "pus", opponent: "xizhao", text: "潮雾压低了灯塔。档案里的第一段故事，从一个不肯熄灯的港口开始。" },
-    { id: "ch2", title: "零点演算", faction: "academy", opponent: "empire", text: "学院塔顶的钟停在零点，记录员发现所有算式都指向同一个答案。" },
-    { id: "ch3", title: "赤潮来客", faction: "xizhao", opponent: "republic", text: "血潮越过旧边墙。来客没有名字，只带着一枚被火烤黑的流脉徽记。" },
-    { id: "ch4", title: "铁与誓约", faction: "republic", opponent: "academy", text: "共和国的议会厅里，铁誓军团等待一个不会被写进正史的决定。" },
-    { id: "ch5", title: "最后一炉", faction: "empire", opponent: "pus", text: "帝国锻炉最后一次点火。守炉人知道，炉火熄灭之前必须有人做出选择。" }
+    { id: "ch1", title: "灰港的夜", faction: "pus", opponent: "xizhao",
+      text: "潮雾压低了灯塔。档案里的第一段故事，从一个不肯熄灯的港口开始。",
+      dialogue: [
+        { who: "莱恩", art: "lain", text: "灯不能灭。灯一灭，海上的船就找不到岸。" },
+        { who: "守夜人", art: "hans", text: "潮水今晚不对，长官。它退得太快了。" },
+        { who: "莱恩", art: "lain", text: "那就把阵线往前推一格。别让雾替我们做决定。" }
+      ],
+      choices: [
+        { text: "守住灯塔", mod: "openingShield", tip: "开局护甲 +5" },
+        { text: "先撤平民", mod: "fatBlood", tip: "生命上限 +8" }
+      ] },
+    { id: "ch2", title: "零点演算", faction: "academy", opponent: "empire",
+      text: "学院塔顶的钟停在零点，记录员发现所有算式都指向同一个答案。",
+      dialogue: [
+        { who: "玛尔塔", art: "marta", text: "所有变量都收敛到同一个值。这不是巧合。" },
+        { who: "记录员", art: "mia", text: "教授，帝国的人已经到了楼下。" },
+        { who: "玛尔塔", art: "marta", text: "那就把答案写在他们看不懂的地方。" }
+      ],
+      choices: [
+        { text: "继续演算", mod: "veinThree", tip: "开局流脉 3" },
+        { text: "先封档案", mod: "noHeroPower", tip: "双方不能用领袖技能" }
+      ] },
+    { id: "ch3", title: "赤潮来客", faction: "xizhao", opponent: "republic",
+      text: "血潮越过旧边墙。来客没有名字，只带着一枚被火烤黑的流脉徽记。",
+      dialogue: [
+        { who: "卡尔纳", art: "karna", text: "血潮不认边墙，只认还站着的人。" },
+        { who: "来客", art: "karl_schwarz", text: "我带了帝国的一封信。你要看，还是烧掉？" },
+        { who: "卡尔纳", art: "karna", text: "先看。看完再决定烧不烧。" }
+      ],
+      choices: [
+        { text: "接纳来客", mod: "openingWound", tip: "双方开场各受 3 伤" },
+        { text: "当场驱逐", mod: "ironDay", tip: "双方开局护甲 +2" }
+      ] },
+    { id: "ch4", title: "铁与誓约", faction: "republic", opponent: "academy",
+      text: "共和国的议会厅里，铁誓军团等待一个不会被写进正史的决定。",
+      dialogue: [
+        { who: "沃尔夫拉姆", art: "wolfram", text: "誓约写下来是给人看的。真正守约的人不需要纸。" },
+        { who: "书记官", art: "samuel", text: "那这一条还要不要记？" },
+        { who: "沃尔夫拉姆", art: "wolfram", text: "记。让后来的人知道我们犹豫过。" }
+      ],
+      choices: [
+        { text: "照章行事", mod: "doubleArmor", tip: "双方开局护甲翻倍" },
+        { text: "破例出兵", mod: "manaFlood", tip: "最大行动力 +1" }
+      ] },
+    { id: "ch5", title: "最后一炉", faction: "empire", opponent: "pus",
+      text: "帝国锻炉最后一次点火。守炉人知道，炉火熄灭之前必须有人做出选择。",
+      dialogue: [
+        { who: "奥托", art: "otto", text: "炉子还能烧三天。三天够打一场仗。" },
+        { who: "守炉人", art: "gunther", text: "打完这仗，就没有下一个炉子了。" },
+        { who: "奥托", art: "otto", text: "那就让这三天烧得值得。" }
+      ],
+      choices: [
+        { text: "全力开炉", mod: "veinTide", tip: "开局流脉 5" },
+        { text: "留火种", mod: "shortHand", tip: "双方起手少 1 张" }
+      ] },
+    { id: "ch6", title: "灯柱下的账", faction: "greyharbor", opponent: "empire",
+      text: "灰港的灯柱下不谈价，只谈谁的账先到期。帝国税吏带着账本上了岸。",
+      dialogue: [
+        { who: "莫纳克", art: "monarch", text: "灯柱下不谈价，只谈谁的账先到期。" },
+        { who: "帝国税吏", art: "otto", text: "灰港的账，帝国也有一份。" },
+        { who: "莫纳克", art: "monarch", text: "那就把刀也一起算进去。" }
+      ],
+      choices: [
+        { text: "先查账", mod: "openingShield", tip: "开局护甲 +5" },
+        { text: "先救人", mod: "fatBlood", tip: "生命上限 +8" }
+      ] },
+    { id: "ch7", title: "潮下的名字", faction: "losutai", opponent: "snow",
+      text: "洛斯汰的潮水退去，露出一整片刻着名字的礁石。雪都的使者站在礁石上。",
+      dialogue: [
+        { who: "贝莱娜", art: "balaena", text: "每一个名字都是一次潮生。海记得它们。" },
+        { who: "雪都使者", art: "sernach", text: "海也会冻住。冻住的名字还算数吗？" },
+        { who: "贝莱娜", art: "balaena", text: "你试试看。" }
+      ],
+      choices: [
+        { text: "唤醒潮生", mod: "veinEight", tip: "开局流脉 8" },
+        { text: "守住礁石", mod: "noArmor", tip: "双方开局没有护甲" }
+      ] },
+    { id: "ch8", title: "雪线以北", faction: "snow", opponent: "losutai",
+      text: "雪线以北，时间被冻在最后一秒。熙尔娜要在冰里做一次选择。",
+      dialogue: [
+        { who: "熙尔娜", art: "sernach", text: "冻结不是停止。是把一件事留在还能改变的时候。" },
+        { who: "考察队员", art: "nina", text: "队长，冰层下面有东西在动。" },
+        { who: "熙尔娜", art: "sernach", text: "那就让它先动。我们看清楚再决定。" }
+      ],
+      choices: [
+        { text: "封住冰层", mod: "manaDrought", tip: "双方最大行动力 −1" },
+        { text: "打开缺口", mod: "veinEleven", tip: "开局流脉 11" }
+      ] }
   ];
   function renderStory() {
     const box = root(); clear(box);
@@ -1208,32 +1420,45 @@
     const panel = el("div", "mode-panel story-detail");
     panel.appendChild(el("div", "panel-label", "ARCHIVE EXCERPT"));
     panel.appendChild(el("p", null, ch.text));
+    const script = el("div", "story-dialogue");
+    for (const line of ch.dialogue || []) {
+      const row = el("div", "story-line");
+      row.appendChild(el("span", "story-who", line.who));
+      row.appendChild(el("span", "story-text", line.text));
+      script.appendChild(row);
+    }
+    panel.appendChild(script);
     panel.appendChild(el("p", "muted", "对手：" + factionName(ch.opponent) + " · 难度：困难 · 固定种子"));
+    panel.appendChild(el("div", "panel-label", "你的选择"));
     const row = el("div", "mode-actions");
-    const start = el("button", "btn btn-primary", "进入战斗");
-    start.onclick = () => {
-      const begin = () => {
-        runMode("story", "故事");
-        app.contentRun.chapter = ch.id;
-        global.GokUI.startGame({
-          faction: ch.faction, opponent: ch.opponent,
-          p1Deck: factionDeck(ch.faction), p2Deck: factionDeck(ch.opponent),
-          aiDifficulty: "hard", first: 0,
-          seed: seedFrom("story:" + ch.id)
-        });
+    for (const choice of ch.choices || []) {
+      const b = el("button", "btn btn-primary", choice.text);
+      b.title = choice.tip || "";
+      b.onclick = () => {
+        const mods = choice.mod && MODS ? [MODS.get(choice.mod)].filter(Boolean) : [];
+        const begin = () => {
+          runMode("story", "故事");
+          app.contentRun.chapter = ch.id;
+          global.GokUI.startGame({
+            faction: ch.faction, opponent: ch.opponent,
+            p1Deck: factionDeck(ch.faction), p2Deck: factionDeck(ch.opponent),
+            aiDifficulty: "hard", first: 0,
+            seed: seedFrom("story:" + ch.id),
+            setup: (state) => applyMods(state, mods)
+          });
+        };
+        if (global.GokCinema && global.GokCinema.play) {
+          global.GokCinema.play(ch.id + ".mp4", {
+            eyebrow: "STORY · " + factionName(ch.faction),
+            title: ch.title,
+            text: ch.text
+          }).then(begin).catch(begin);
+        } else begin();
       };
-      if (global.GokCinema) {
-        global.GokCinema.play(ch.id + ".mp4", {
-          eyebrow: "STORY · " + factionName(ch.faction),
-          title: ch.title,
-          text: ch.text
-        }).then(begin);
-      } else {
-        begin();
-      }
-    };
-    row.appendChild(start);
+      row.appendChild(b);
+    }
     panel.appendChild(row);
+    panel.appendChild(el("p", "fine-print", "选择只会改变这一场战斗的开局规则，不影响后续章节。"));
     box.appendChild(panel);
   }
 
