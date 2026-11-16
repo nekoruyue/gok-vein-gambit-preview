@@ -11,6 +11,12 @@ window.addEventListener("error", function (event) {
 
 document.addEventListener("DOMContentLoaded", function () {
   if (window.GokUI && window.GokUI.init) window.GokUI.init();
+  // 离线壳：网页端（含局域网 http 与在线部署）注册 Service Worker；file:// 下的桌面壳不适用
+  if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    });
+  }
   // 自动化截图入口：?capture=home|setup|sim|game
   var params = new URLSearchParams(window.location.search);
   var capture = params.get("capture");

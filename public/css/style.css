@@ -8194,3 +8194,23 @@ body[data-screen="home"] .toast.show { transform: translateY(0); }
   pointer-events: none;
 }
 #screen-codex .codex-count-legend b { color: #d9a441; }
+
+/* 2026-11-17 首页关于条：作者署名 + 关于/更多作品入口 */
+.home-about-strip {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin: 6px 0 8px; padding: 6px 2px;
+  border-top: 1px solid rgba(233,225,210,0.08);
+}
+.home-about-strip .who { color: #84939c; font-size: 10px; letter-spacing: 0.12em; }
+.home-about-strip .btn { font-size: 11px; }
+
+/* 2026-11-17 关于面板：七款作品列表 */
+.about-works { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 10px; }
+.about-work {
+  display: flex; align-items: baseline; gap: 10px; width: 100%; text-align: left;
+  padding: 8px 10px; border: 1px solid rgba(233,225,210,0.12); background: rgba(5,10,15,0.5);
+  color: #d4dde2; cursor: pointer; transition: 0.16s;
+}
+.about-work:hover { border-color: rgba(242,198,109,0.55); background: rgba(18,29,38,0.7); }
+.about-work strong { font-family: var(--serif); font-size: 13px; font-weight: 500; color: #f1e8d5; white-space: nowrap; }
+.about-work span { font-size: 10px; color: #84939c; }

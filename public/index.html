@@ -4,7 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, user-scalable=yes">
   <title>戈克世界：流脉牌局</title>
-  <link rel="icon" href="favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#070d12">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="流脉牌局">
   <!-- 首帧启动屏：内联样式，不依赖任何网络资源；ui.js 初始化完成后给 <html> 加 .gok-booted 收起来 -->
   <style>
     html:not(.gok-booted)::before {
@@ -25,16 +30,16 @@
       html:not(.gok-booted)::after { font-size: 17px; letter-spacing: .24em; }
     }
   </style>
-  <link rel="stylesheet" href="css/style.css?v=20261101e16">
-  <link rel="stylesheet" href="css/hs-layout.css?v=20261101e16">
-  <link rel="stylesheet" href="css/art-fixes.css?v=20261101e16">
-  <link rel="stylesheet" href="css/mobile.css?v=20261101e16">
-  <link rel="stylesheet" href="css/vfx.css?v=20261101e16">
-  <link rel="stylesheet" href="css/archive.css?v=20261026ui1">
-  <link rel="stylesheet" href="css/codex-zoom.css?v=20261101e16">
-  <link rel="stylesheet" href="css/tasks-polish.css?v=20261101t1">
-  <link rel="stylesheet" href="css/opening.css?v=20261026o1">
-    <link rel="stylesheet" href="css/card-stats.css?v=20261028s14">
+  <link rel="stylesheet" href="css/style.css?v=20261117e9">
+  <link rel="stylesheet" href="css/hs-layout.css?v=20261117e9">
+  <link rel="stylesheet" href="css/art-fixes.css?v=20261117e9">
+  <link rel="stylesheet" href="css/mobile.css?v=20261117e9">
+  <link rel="stylesheet" href="css/vfx.css?v=20261117e9">
+  <link rel="stylesheet" href="css/archive.css?v=20261117e9">
+  <link rel="stylesheet" href="css/codex-zoom.css?v=20261117e9">
+  <link rel="stylesheet" href="css/tasks-polish.css?v=20261117e9">
+  <link rel="stylesheet" href="css/opening.css?v=20261117e9">
+    <link rel="stylesheet" href="css/card-stats.css?v=20261117e9">
 </head>
 <body data-screen="home">
   <div id="channel-badge" class="channel-badge" hidden></div>
@@ -135,7 +140,7 @@
           <button id="btn-achievements" class="home-nav-item"><span class="home-nav-no">04</span><strong>推演记录</strong><small>战绩 · 成就</small></button>
           <button id="btn-customize-home" class="home-nav-item"><span class="home-nav-no">05</span><strong>档案外观</strong><small>头像 · 称号 · 卡背</small></button>
           <button id="btn-settings" class="home-nav-item"><span class="home-nav-no">06</span><strong>推演设置</strong><small>画面 · 音效 · 操作</small></button>
-          <button id="btn-lore-home" class="home-nav-item"><span class="home-nav-no">07</span><strong>游戏背景</strong><small>大陆 · 阵营 · 历史</small></button>
+          <button id="btn-lore-home" class="home-nav-item"><span class="home-nav-no">07</span><strong>游戏背景</strong><small>世界观站 · 新窗口</small></button>
         </nav>
         </div>
 
@@ -159,6 +164,10 @@
             <strong id="home-feedback-title">群 1132308724 · 戈克世界交流群</strong>
             <small id="home-feedback-cta">提问题、报 bug、聊卡组 <i>→</i></small>
           </button>
+          <div class="home-about-strip">
+            <span class="who">小猫月月 制作</span>
+            <button id="btn-about" class="btn btn-small btn-ghost" type="button">关于 / 更多作品</button>
+          </div>
           <aside class="home-legendary" id="home-legendary">
             <div class="home-legendary-art" id="home-legendary-art">
               <img id="home-legendary-img" alt="" />
@@ -1169,7 +1178,7 @@
             <div class="panel-label">关于 / ABOUT</div>
             <p class="settings-about">《戈克世界：流脉牌局》经典模式 2.0。八阵营、633 张卡牌 / 585 可收藏，支持起手调度、编成、单人 AI 与在线组队码房间。</p>
                         <p class="settings-about settings-keys-hint">键盘：Esc 返回 / 关闭弹窗 · 空格 结束回合（对局中）· / 聚焦图鉴搜索</p>
-            <p class="settings-about">当前构建：20261101e16</p>
+            <p class="settings-about">当前构建：20261117e9</p>
             <button id="btn-settings-credits" class="btn btn-small btn-ghost">制作与素材说明</button>
             <button id="btn-settings-feedback" class="btn btn-small btn-ghost">反馈与交流</button>
           </div>
@@ -1758,21 +1767,21 @@
   <div id="toast" class="toast"></div>
 
   <script>window.__GOK_CHANNEL_VALUE__ = "__GOK_CHANNEL__";</script>
-  <script src="js/channel.js?v=20261101e16"></script>
-  <script src="js/data.js?v=20261101e16"></script>
-  <script src="js/mods.js?v=20261115a"></script>
-  <script src="js/season-rules.js?v=20261115a"></script>
-  <script src="js/engine.js?v=20261101e16"></script>
-  <script src="js/ai.js?v=20261101e16"></script>
-  <script src="js/cinematic.js?v=20261101e16"></script>
-  <script src="js/vfx.js?v=20261101e16"></script>
-  <script src="js/net-authority.js?v=20261101e16"></script>
-  <script src="js/ui.js?v=20261101e16"></script>
-  <script src="js/updater-ui.js?v=20261101e16"></script>
-  <script src="js/content.js?v=20261101e16"></script>
-  <script src="js/battler.js?v=20261101e16"></script>
-  <script src="js/arcade.js?v=20261101e16"></script>
-  <script src="js/main.js?v=20261101e16"></script>
+  <script src="js/channel.js?v=20261117e9"></script>
+  <script src="js/data.js?v=20261117e9"></script>
+  <script src="js/mods.js?v=20261117e9"></script>
+  <script src="js/season-rules.js?v=20261117e9"></script>
+  <script src="js/engine.js?v=20261117e9"></script>
+  <script src="js/ai.js?v=20261117e9"></script>
+  <script src="js/cinematic.js?v=20261117e9"></script>
+  <script src="js/vfx.js?v=20261117e9"></script>
+  <script src="js/net-authority.js?v=20261117e9"></script>
+  <script src="js/ui.js?v=20261117e9"></script>
+  <script src="js/updater-ui.js?v=20261117e9"></script>
+  <script src="js/content.js?v=20261117e9"></script>
+  <script src="js/battler.js?v=20261117e9"></script>
+  <script src="js/arcade.js?v=20261117e9"></script>
+  <script src="js/main.js?v=20261117e9"></script>
 
   <!-- 开场动画：六幕，需要一次点击才允许出声，可跳过 -->
   <div id="gok-opening" class="gkopen" hidden data-scene="idle">
@@ -1798,8 +1807,8 @@
     <button class="gkopen-skip">跳 过</button>
     <audio class="gkopen-audio" preload="none"></audio>
   </div>
-  <script src="js/opening.js?v=20261026o1"></script>
-  <script src="js/voice.js?v=20261026v1"></script>
+  <script src="js/opening.js?v=20261117e9"></script>
+  <script src="js/voice.js?v=20261117e9"></script>
 </body>
 </html>
 

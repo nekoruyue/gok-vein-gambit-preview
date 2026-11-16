@@ -681,6 +681,7 @@
     if (name === "tutorial") showTutorialTab(app.tutorialTab || "basics");
     if (name === "rules") renderRulesKeywords();
     if (name === "other") renderOtherModes();
+    if (name === "setup" || name === "lan" || name === "match" || name === "room") preloadHeroArt();
     applyVideoPrefs();
     closeModal(true);
     hideKeywordTip();
@@ -6537,14 +6538,59 @@
     });
   }
 
+  // 2026-11-17：关于面板 = 作者署名 + 本作简介 + 更多作品引流 + 交流群
+  const ABOUT_SITE = "https://nekoruyue.github.io/gok/";
+  const ABOUT_LINKS = [
+    { label: "世界观站", hint: "世界总纲、阵营、编年史、七款作品都在这里", url: ABOUT_SITE },
+    { label: "作品总览", hint: "站内的「七款可玩的东西」一节", url: ABOUT_SITE + "#games" },
+    { label: "深空典当行 MOD", hint: "Steam 创意工坊条目（另一个 IP）", url: "https://steamcommunity.com/sharedfiles/filedetails/?id=3834735097" }
+  ];
+  // 七款作品的名单与一句话介绍，取自世界观站 #games 一节
+  const ABOUT_WORKS = [
+    { name: "戈克纪元：流脉", note: "单机回合制大战略 · 六边形地图 · Godot 桌面端", url: ABOUT_SITE + "#games" },
+    { name: "戈克世界：流脉牌局", note: "本作 · 1v1 卡牌对战 · 网页 + 桌面", url: ABOUT_SITE + "#games" },
+    { name: "戈克世界：流脉防线", note: "2D 即时塔防 · 网格部署 · 2 关原型", url: ABOUT_SITE + "#games" },
+    { name: "戈克世界：账铺", note: "走贩经营 · 网页 + 安卓 APK", url: ABOUT_SITE + "#games" },
+    { name: "鹿铃亭", note: "经营模拟 · 安卓 · 像素风", url: ABOUT_SITE + "#games" },
+    { name: "雪都路", note: "WebGAL galgame · 现代背景 · IP 二创", url: ABOUT_SITE + "#games" },
+    { name: "流脉初醒", note: "Minecraft 整合包 · 第三方平台衍生", url: ABOUT_SITE + "#games" }
+  ];
+  function openExternal(url) {
+    // 不带 noopener：带它 window.open 会返回 null，Safari/Chrome 下容易误判成「没开成」
+    const w = window.open(url, "_blank");
+    if (w) { try { w.opener = null; } catch (e) {} }
+  }
   function showCredits() {
     openModal((content) => {
-      content.appendChild(el("div", "eyebrow", "制作名单 / 档案"));
-      content.appendChild(el("h3", null, "制作与素材说明"));
-      const p1 = el("p", null, "《戈克世界：流脉牌局》经典模式 2.0。当前开放普卫岛、学院、西昭、洛斯汰聚落、共和国、帝国、灰港同盟与雪都八个阵营，支持起手调度、单人 AI 与局域网双人对战。");
-      const p2 = el("p", null, "随从立绘与场景图来自《戈克世界》项目现有素材；音效与背景音乐来自《戈克纪元：流脉》项目。卡牌框架、规则引擎与界面由本作制作。");
-      const p3 = el("p", null, "本作为非正史档案推演，卡牌效果不写入小说正史；未使用 NSFW 私设、参考图或带文字介绍卡。");
-      content.appendChild(p1); content.appendChild(p2); content.appendChild(p3);
+      content.appendChild(el("div", "eyebrow", "关于 / ABOUT"));
+      content.appendChild(el("h3", null, "《戈克世界：流脉牌局》"));
+      content.appendChild(el("p", null, "作者：小猫月月 · 独立制作。八阵营 1v1 卡牌对战，网页与桌面双端，支持联机与排位。"));
+      const facts = el("p", null, "当前内容：658 张可收藏卡、16 位领袖、30 个残局、8 章旧日故事、每日 24 条修饰器、赛季周规则、构筑委托与图鉴收集度。");
+      content.appendChild(facts);
+      content.appendChild(el("div", "eyebrow", "作者的其他作品 / 共 7 款"));
+      const works = el("div", "about-works");
+      for (const w of ABOUT_WORKS) {
+        const row = el("button", "about-work");
+        row.type = "button";
+        row.title = w.hint || "";
+        row.appendChild(el("strong", null, w.name));
+        row.appendChild(el("span", null, w.note));
+        row.onclick = () => openExternal(w.url);
+        works.appendChild(row);
+      }
+      content.appendChild(works);
+      const links = el("div", "modal-actions");
+      for (const item of ABOUT_LINKS) {
+        const b = el("button", "btn btn-small btn-ghost", item.label);
+        b.title = item.hint || "";
+        b.onclick = () => openExternal(item.url);
+        links.appendChild(b);
+      }
+      content.appendChild(links);
+      content.appendChild(el("p", "fine-print", "七款作品都没上平台，想试哪一款进交流群说一声，作者直接发；深空典当行在 Steam 创意工坊。"));
+      content.appendChild(el("div", "eyebrow", "交流群 / QQ"));
+      content.appendChild(el("p", null, "群号 1132308724（戈克世界交流群）"));
+      content.appendChild(el("p", "muted", "素材：随从立绘与场景图来自《戈克世界》项目；音效与背景音乐来自《戈克纪元：流脉》。本作为非正史档案推演，卡牌效果不写入小说正史。"));
       const actions = el("div", "modal-actions");
       const close = el("button", "btn btn-primary", "知道了");
       close.onclick = () => closeModal(true);
@@ -12824,21 +12870,55 @@ const tabs = $("deck-faction-tabs");
     return true;
   }
 
-  function preloadArt() {
-    // 手机端不要预载 242 张卡图：首屏刷新时大量解码会造成明显卡顿。
-    // 卡图改为进入手牌/战场时按需加载，桌面端保留预载。
-    const urls = new Set();
-    if (!isPhoneLayout()) {
-      for (const id of Object.keys(D.CARDS)) {
-        const d = D.CARDS[id];
-        // 预载缩略图就够了：原图一张近百 KB，53 张等于首屏多背 6MB
-      if (d.art) urls.add(thumbUrl(portraitImage(d.art)));
+  // 空闲分批预载：卡图缩略图几百张，一次性发起会把首屏带宽全抢走
+  function queueIdlePreload(list, chunk) {
+    let i = 0;
+    const size = chunk || 12;
+    const step = () => {
+      const end = Math.min(i + size, list.length);
+      for (; i < end; i++) { const img = new Image(); img.src = list[i]; }
+      if (i < list.length) schedule();
+    };
+    const schedule = () => {
+      if (typeof window.requestIdleCallback === "function") {
+        window.requestIdleCallback(step, { timeout: 1200 });
+      } else {
+        setTimeout(step, 120);
       }
-      for (const id of Object.keys(D.HEROES)) urls.add(heroImage(id));
-    }
-    urls.add("assets/backgrounds/menu.webp");
-    urls.add("assets/backgrounds/battle.webp");
+    };
+    schedule();
+  }
+
+  // 英雄立绘（一张近百 KB）只在真正要用它的界面加载：选阵、建房、开桌
+  let heroArtLoaded = false;
+  function preloadHeroArt() {
+    if (heroArtLoaded || isPhoneLayout()) return;
+    heroArtLoaded = true;
+    for (const id of Object.keys(D.HEROES)) { const img = new Image(); img.src = heroImage(id); }
+  }
+
+  function preloadArt() {
+    // 首屏只拉两张背景。手机端不预载卡图（大量解码会卡）；
+    // 桌面端也不再在 init 里一口气预载：卡图缩略图与英雄立绘都不属于首页，
+    // 实测这样首页冷启动少掉 60 多个请求、少背约 1.6MB。
+    const urls = ["assets/backgrounds/menu.webp", "assets/backgrounds/battle.webp"];
     urls.forEach((u) => { const img = new Image(); img.src = u; });
+    if (isPhoneLayout()) return;
+    const cardUrls = [];
+    for (const id of Object.keys(D.CARDS)) {
+      const d = D.CARDS[id];
+      if (d.art) cardUrls.push(thumbUrl(portraitImage(d.art)));
+    }
+    // 等页面真正空闲（或玩家先动手了）再慢慢补图，不跟首屏抢带宽
+    const startIdle = (fn) => {
+      if (typeof window.requestIdleCallback === "function") window.requestIdleCallback(fn, { timeout: 2500 });
+      else setTimeout(fn, 800);
+    };
+    let started = false;
+    const kick = () => { if (started) return; started = true; queueIdlePreload(cardUrls, 12); };
+    window.addEventListener("pointerdown", kick, { once: true, passive: true });
+    window.addEventListener("keydown", kick, { once: true });
+    setTimeout(() => startIdle(kick), 3000);
   }
 
   function startHostKeepAlive() {
@@ -14091,7 +14171,16 @@ const tabs = $("deck-faction-tabs");
     if ($("btn-game-settings")) $("btn-game-settings").onclick = () => { AudioBox.play("ui_open"); openGameMenu(); };
     if (typeof app.emoteVoice !== "boolean") app.emoteVoice = localStorage.getItem("gok_emote_voice") !== "0";
     if ($("btn-emote")) $("btn-emote").onclick = () => { AudioBox.play("ui_open"); openEmotePanel(); };
-    if ($("btn-lore-home")) $("btn-lore-home").onclick = () => { AudioBox.play("ui_open"); location.href = "lore/index.html"; };
+    // 2026-11-17：世界观统一到独立站点，游戏内入口直接开它（Electron 会交给系统浏览器）
+    if ($("btn-about")) $("btn-about").onclick = () => { AudioBox.play("ui_open"); showCredits(); };
+    if ($("btn-lore-home")) $("btn-lore-home").onclick = () => {
+      AudioBox.play("ui_open");
+      const loreUrl = "https://nekoruyue.github.io/gok/";
+      // 注意：window.open 带 noopener 时浏览器会返回 null（按规范），
+      // 之前用返回值判断「没开成」会误触发 location.href，把游戏页直接顶掉，看起来就像打不开。
+      const opened = window.open(loreUrl, "_blank");
+      if (opened) { try { opened.opener = null; } catch (e) {} }
+    };
     window.addEventListener("resize", () => { document.querySelectorAll("#player-hero, #opponent-hero").forEach(centerHeroDeckBadge); });
     if ($("btn-sim-back")) $("btn-sim-back").onclick = () => showScreen("home");
     $("btn-setup-back").onclick = () => showModeSelect();
