@@ -1,13 +1,15 @@
 {
   "channel": "preview",
-  "version": "1.1.1",
-  "build": "20261101e16",
-  "publishedAt": "2026-11-01T11:51:34+08:00",
+  "version": "1.3.0",
+  "build": "20261118e3",
+  "publishedAt": "2026-11-17T07:28:03+08:00",
   "mandatory": false,
   "minSupportedVersion": "0.9.0",
-  "size": 282400353,
-  "sha256": "08998dc2eea8bb4c05181d1abe37445618043ec1dba09be95abdd02f4fdff1f6",
-  "url": "https://gok-vein-gambit-preview.onrender.com/downloads/GokVeinGambit-Setup-1.1.1.exe",
-  "title": "卡牌文案全面彻查修复",
-  "notes": []
+  "size": 257728045,
+  "sha256": "3519d8dec3b21bb128c99ede5b06b51bb83e32e20e5240aa71929d78a3dd1056",
+  "url": "https://gok-vein-gambit-preview.onrender.com/downloads/GokVeinGambit-Setup-1.3.0.exe",
+  "title": "1.3.0 网页离线与首屏提速",
+  "notes": [
+    "网页端可作为应用安装、断网也能开；首页冷启动体积 3.75MB -> 2.09MB；首页新增关于面板与七款作品列表"
+  ]
 }

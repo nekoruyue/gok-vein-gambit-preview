@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, user-scalable=yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, user-scalable=yes, viewport-fit=cover">
   <title>戈克世界：流脉牌局</title>
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
@@ -30,16 +30,16 @@
       html:not(.gok-booted)::after { font-size: 17px; letter-spacing: .24em; }
     }
   </style>
-  <link rel="stylesheet" href="css/style.css?v=20261117e9">
-  <link rel="stylesheet" href="css/hs-layout.css?v=20261117e9">
-  <link rel="stylesheet" href="css/art-fixes.css?v=20261117e9">
-  <link rel="stylesheet" href="css/mobile.css?v=20261117e9">
-  <link rel="stylesheet" href="css/vfx.css?v=20261117e9">
-  <link rel="stylesheet" href="css/archive.css?v=20261117e9">
-  <link rel="stylesheet" href="css/codex-zoom.css?v=20261117e9">
-  <link rel="stylesheet" href="css/tasks-polish.css?v=20261117e9">
-  <link rel="stylesheet" href="css/opening.css?v=20261117e9">
-    <link rel="stylesheet" href="css/card-stats.css?v=20261117e9">
+  <link rel="stylesheet" href="css/style.css?v=20261118e3">
+  <link rel="stylesheet" href="css/hs-layout.css?v=20261118e3">
+  <link rel="stylesheet" href="css/art-fixes.css?v=20261118e3">
+  <link rel="stylesheet" href="css/mobile.css?v=20261118e3">
+  <link rel="stylesheet" href="css/vfx.css?v=20261118e3">
+  <link rel="stylesheet" href="css/archive.css?v=20261118e3">
+  <link rel="stylesheet" href="css/codex-zoom.css?v=20261118e3">
+  <link rel="stylesheet" href="css/tasks-polish.css?v=20261118e3">
+  <link rel="stylesheet" href="css/opening.css?v=20261118e3">
+    <link rel="stylesheet" href="css/card-stats.css?v=20261118e3">
 </head>
 <body data-screen="home">
   <div id="channel-badge" class="channel-badge" hidden></div>
@@ -551,11 +551,11 @@
               <article class="tutorial-card"><h4>逆脉</h4><p>逆脉 X：最多消耗 X 点共享流脉；不足 X 时消耗现有流脉，卡面效果仍然结算，但流脉为 0 时不能触发。逆脉会把风险条往回拉，但拉回去不等于安全。</p></article>
               <article class="tutorial-card"><h4>镇脉</h4><p>镇脉 X：最多消耗 X 点共享流脉，并按实际消耗的点数获得等量护甲。流脉不足时只消耗现有的，不会因为不足而无法打出。</p></article>
               <article class="tutorial-card"><h4>涨脉</h4><p>涨脉 X：本回合行动力上限 +X（最多到 12），并立即获得 X 点行动力；同时流脉 +X。行动力不保留到下一回合。它和掘脉的区别是：掘脉拿牌，涨脉拿当回合节奏。</p></article>
-              <article class="tutorial-card"><h4>刻脉</h4><p>刻脉是独立的刻脉卡：盖进对手的判定区，对方完整过一个回合后，再下一次回合开始时翻开判定，条件成立就吃惩罚，不成立则无事，判完进弃牌堆。它的条件常常看流脉奇偶，所以流脉既是资源，也是刻脉卡能不能命中的开关。判定区只有 1 格，新盖的会把旧的挤掉。</p></article>
+              <article class="tutorial-card"><h4>刻脉</h4><p>刻脉是独立的刻脉卡：盖进对手的判定区，对方完整过一个回合后，再下一次回合开始时翻开判定，条件成立就吃惩罚，不成立则无事，判完进弃牌堆。它的条件常常看流脉奇偶，所以流脉既是资源，也是刻脉卡能不能命中的开关。判定区最多 2 格，两条各自独立判定，盖第 3 张时才把最旧的一条挤掉。</p></article>
             </div>
             <p class="manual-note">4 震荡：所有随从受到 1 点伤害；7 裂隙：双方领袖受到 2 点伤害；10 魔物潮：所有随从受到 3 点伤害，双方领袖受到 5 点伤害。注意这是“双方一起承受”，不是只打对手；低血量时推进流脉可能先把自己送走。</p>
             <div class="manual-callout"><strong>流脉会重复触发</strong><p>世界事件不是一局只来一次。逆脉、镇脉、压脉把流脉降回去后，再从下方跨过 4/7/10，事件会再次触发；12 回流清空后重新积累，也会进入下一轮。斩杀前不仅要看当前数值，还要看你这一回合会把流脉推到哪里、会不会连续跨过两个阈值。</p></div>
-            <div class="manual-callout"><strong>当前机制归属</strong><p>引脉八阵营通用；刻脉是独立卡牌类型（学院 3 张、雪都 1 张、中立 1 张，靠判定区而不是流脉阈值）；镇脉属于帝国、共和国；逆脉属于普卫岛、灰港同盟；压脉属于西昭、洛斯汰；掘脉和涨脉来自中立卡。稀有/史诗卡会围绕这些权限展开，不要把每个阵营都当成同一套流脉卡组。</p></div>
+            <div class="manual-callout"><strong>当前机制归属</strong><p>引脉八阵营通用；刻脉是独立卡牌类型（八阵营各 3 张、中立 3 张，共 27 张，靠判定区而不是流脉阈值）；镇脉属于帝国、共和国；逆脉属于普卫岛、灰港同盟；压脉属于西昭、洛斯汰；掘脉和涨脉来自中立卡。稀有/史诗卡会围绕这些权限展开，不要把每个阵营都当成同一套流脉卡组。</p></div>
             <div class="manual-callout"><strong>控流不是一直不涨</strong><p>需要抽牌和资源时该掘脉就掘脉，但要在 3、6、9 这种“差一点”的位置停一下，先算对手能不能利用下一个阈值。需要拖回合时，逆脉和镇脉可以把流脉拉回安全区；需要清场时，流脉事件也可以当成一张“双方都吃”的额外战术。</p></div>
           </section>
 
@@ -648,7 +648,7 @@
               <article class="tutorial-card">
                 <span class="manual-tag">刻脉卡</span>
                 <h4>盖在对手判定区的赌注</h4>
-                <p>打出时不产生即时效果，而是暗置在对手的判定区。对手要完整过完一个回合，再下一次回合开始时才翻开判定：卡面条件成立就吃惩罚，不成立则什么都没有，判完的牌进弃牌堆。判定区只有 1 格，新盖的会把旧的挤掉。条件看的是翻牌那一刻的场面（流脉奇偶、敌方手牌数、有没有守备、墓地里几个随从、上个回合有没有打战术），所以对手能通过改变局面来躲。</p>
+                <p>打出时不产生即时效果，而是暗置在对手的判定区。对手要完整过完一个回合，再下一次回合开始时才翻开判定：卡面条件成立就吃惩罚，不成立则什么都没有，判完的牌进弃牌堆。判定区最多 2 格，两条各自独立判定，盖第 3 张时才把最旧的一条挤掉。条件看的是翻牌那一刻的场面（流脉奇偶、敌方手牌数、有没有守备、墓地里几个随从、上个回合有没有打战术），所以对手能通过改变局面来躲。</p>
               </article>
             </div>
             <div class="manual-grid">
@@ -1178,7 +1178,7 @@
             <div class="panel-label">关于 / ABOUT</div>
             <p class="settings-about">《戈克世界：流脉牌局》经典模式 2.0。八阵营、633 张卡牌 / 585 可收藏，支持起手调度、编成、单人 AI 与在线组队码房间。</p>
                         <p class="settings-about settings-keys-hint">键盘：Esc 返回 / 关闭弹窗 · 空格 结束回合（对局中）· / 聚焦图鉴搜索</p>
-            <p class="settings-about">当前构建：20261117e9</p>
+            <p class="settings-about">当前构建：20261118e3</p>
             <button id="btn-settings-credits" class="btn btn-small btn-ghost">制作与素材说明</button>
             <button id="btn-settings-feedback" class="btn btn-small btn-ghost">反馈与交流</button>
           </div>
@@ -1767,21 +1767,21 @@
   <div id="toast" class="toast"></div>
 
   <script>window.__GOK_CHANNEL_VALUE__ = "__GOK_CHANNEL__";</script>
-  <script src="js/channel.js?v=20261117e9"></script>
-  <script src="js/data.js?v=20261117e9"></script>
-  <script src="js/mods.js?v=20261117e9"></script>
-  <script src="js/season-rules.js?v=20261117e9"></script>
-  <script src="js/engine.js?v=20261117e9"></script>
-  <script src="js/ai.js?v=20261117e9"></script>
-  <script src="js/cinematic.js?v=20261117e9"></script>
-  <script src="js/vfx.js?v=20261117e9"></script>
-  <script src="js/net-authority.js?v=20261117e9"></script>
-  <script src="js/ui.js?v=20261117e9"></script>
-  <script src="js/updater-ui.js?v=20261117e9"></script>
-  <script src="js/content.js?v=20261117e9"></script>
-  <script src="js/battler.js?v=20261117e9"></script>
-  <script src="js/arcade.js?v=20261117e9"></script>
-  <script src="js/main.js?v=20261117e9"></script>
+  <script src="js/channel.js?v=20261118e3"></script>
+  <script src="js/data.js?v=20261118e3"></script>
+  <script src="js/mods.js?v=20261118e3"></script>
+  <script src="js/season-rules.js?v=20261118e3"></script>
+  <script src="js/engine.js?v=20261118e3"></script>
+  <script src="js/ai.js?v=20261118e3"></script>
+  <script src="js/cinematic.js?v=20261118e3"></script>
+  <script src="js/vfx.js?v=20261118e3"></script>
+  <script src="js/net-authority.js?v=20261118e3"></script>
+  <script src="js/ui.js?v=20261118e3"></script>
+  <script src="js/updater-ui.js?v=20261118e3"></script>
+  <script src="js/content.js?v=20261118e3"></script>
+  <script src="js/battler.js?v=20261118e3"></script>
+  <script src="js/arcade.js?v=20261118e3"></script>
+  <script src="js/main.js?v=20261118e3"></script>
 
   <!-- 开场动画：六幕，需要一次点击才允许出声，可跳过 -->
   <div id="gok-opening" class="gkopen" hidden data-scene="idle">
@@ -1807,8 +1807,8 @@
     <button class="gkopen-skip">跳 过</button>
     <audio class="gkopen-audio" preload="none"></audio>
   </div>
-  <script src="js/opening.js?v=20261117e9"></script>
-  <script src="js/voice.js?v=20261117e9"></script>
+  <script src="js/opening.js?v=20261118e3"></script>
+  <script src="js/voice.js?v=20261118e3"></script>
 </body>
 </html>
 

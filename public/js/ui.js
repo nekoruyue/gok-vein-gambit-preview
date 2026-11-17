@@ -201,7 +201,17 @@
     const file = HERO_IMAGE_FILE[id] || id;
     return "assets/heroes/" + file + ".webp";
   }
-  function portraitImage(id) { return "assets/portraits/" + id + ".webp?v=" + ART_VERSION; }
+  function portraitImage(id) {
+    // 第二领袖没有专属头像图，回落到同阵营主领袖那张，避免 404
+    const GD = window.GokData;
+    let file = HERO_IMAGE_FILE[id];
+    if (!file && GD && GD.HEROES && GD.HEROES[id]) {
+      const def = GD.HEROES[id];
+      const mainId = def.faction && GD.FACTIONS && GD.FACTIONS[def.faction] ? GD.FACTIONS[def.faction].hero : null;
+      if (mainId && mainId !== id && GD.HEROES[mainId]) file = GD.HEROES[mainId].art || mainId;
+    }
+    return "assets/portraits/" + (file || id) + ".webp?v=" + ART_VERSION;
+  }
   const HERO_SKILL_ICONS = {
     balaena: "assets/icons/skills/balaena-skill.svg?v=" + ART_VERSION,
     sernach: "assets/icons/skills/sernach-skill.svg?v=" + ART_VERSION,
@@ -1054,7 +1064,11 @@
       const statsEl = b.querySelector(".faction-stats");
       if (statsEl && heroDef) statsEl.textContent = heroDef.hp + " 生命";   // 以 data.js 为准，不再用写死的数字
     });
-    const hero = D.HEROES[D.FACTIONS[app.faction].hero];
+    // 同阵营两位领袖：玩家选过就用选的，否则用阵营默认
+    const heroIdsHere = Object.keys(D.HEROES).filter(function (hid) { return D.HEROES[hid].faction === app.faction; });
+    const defaultHeroId = D.FACTIONS[app.faction].hero;
+    const chosenHeroId = (app.heroChoice && app.heroChoice[app.faction]) || defaultHeroId;
+    const hero = D.HEROES[chosenHeroId] || D.HEROES[defaultHeroId];
     const art = $("setup-hero-art");
     art.style.backgroundImage = "url('" + heroImage(hero.id) + "')";
     $("setup-hero-name").textContent = hero.name;
@@ -1063,6 +1077,47 @@
     const facEl = $("setup-hero-faction");
     if (facEl) facEl.textContent = factionName(app.faction);
     $("setup-hero-quote").textContent = "“" + hero.quote + "”";
+    // 领袖切换：同阵营两位，点一下换人，本局就用换上的那位
+    (function renderHeroPicker() {
+      let row = $("setup-hero-pick");
+      if (!row) {
+        row = el("div", "setup-hero-pick");
+        row.id = "setup-hero-pick";
+        row.style.marginTop = "8px";
+        row.style.display = "flex";
+        row.style.flexWrap = "wrap";
+        row.style.alignItems = "center";
+        row.style.gap = "6px";
+        const quoteEl = $("setup-hero-quote");
+        if (quoteEl && quoteEl.parentNode) quoteEl.parentNode.insertBefore(row, quoteEl.nextSibling);
+      }
+      row.textContent = "";
+      if (heroIdsHere.length < 2) { row.hidden = true; return; }
+      row.hidden = false;
+      const label = el("span", null, "领袖");
+      label.style.fontSize = "11px";
+      label.style.opacity = "0.65";
+      label.style.letterSpacing = "0.08em";
+      row.appendChild(label);
+      heroIdsHere.forEach(function (hid) {
+        const def = D.HEROES[hid];
+        const b = el("button", "btn", def.short || def.name);
+        b.type = "button";
+        b.dataset.heroId = hid;
+        b.className = "btn" + (hid === hero.id ? " active" : "");
+        b.style.fontSize = "11px";
+        b.style.padding = "4px 10px";
+        b.style.opacity = hid === hero.id ? "1" : "0.62";
+        if (hid === hero.id) b.style.outline = "1px solid rgba(242,198,109,.6)";
+        b.onclick = function () {
+          app.heroChoice = app.heroChoice || {};
+          app.heroChoice[app.faction] = hid;
+          try { AudioBox.play("ui_click"); } catch (e) {}
+          setupState();
+        };
+        row.appendChild(b);
+      });
+    })();
     const setupPowerIcon = $("setup-power-icon");
     if (setupPowerIcon) setupPowerIcon.src = heroSkillIcon(hero.id);
     $("setup-power-name").textContent = hero.power.passive ? "被动 · " + hero.power.name : hero.power.name + " · " + hero.power.cost + " 行动力";
@@ -1261,6 +1316,7 @@
       aiDifficulty: safeDifficulty,
       mulligan: config.mulligan !== false && !app.tutorial,
       p1Deck: p1DeckList,
+      p1HeroId: (app.heroChoice && app.heroChoice[faction]) || null,
       p2Deck: config.p2Deck || getPlayDeck(other),
       first: config.first,
       seed: config.seed == null ? ((Date.now() >>> 0) ^ Math.floor(Math.random() * 0x7fffffff)) : config.seed
@@ -3975,7 +4031,7 @@
     "悬赏": "给随从打上悬赏标记，它死亡时按卡面结算。",
     "装备": "打出后持续生效；场上最多同时 2 件，第 3 件挤掉最早的。",
     "复制": "复制体默认继承目标当前攻击、最大生命、关键词和效果，不复制已受伤；复制体进场通常不触发登场。",
-    "刻脉": "盖在对手判定区的暗牌，最多 1 张。对方完整过一个回合后翻开，条件成立就吃惩罚，判完进弃牌堆。",
+    "刻脉": "盖在对手判定区的暗牌，最多 2 张。对方完整过一个回合后翻开，条件成立就吃惩罚，判完进弃牌堆。",
     "墓地": "随从死亡后进的地方，双方共用；战术、阵型、装备用完不进墓地。",
     "变形": "用新随从或衍生物替换目标；被替换的随从不视为死亡，不触发余响。",
     "获得控制权": "把敌方随从移到自己的空阵位；没有空阵位时无法获得。",
@@ -4019,7 +4075,7 @@
     "被动": "被动不需要主动使用，满足条件时自动生效。它可能影响出牌、攻击、抽牌或阵位，读卡时要优先确认触发条件；没有满足条件时就不生效。",
     "复制": "复制会生成一张与目标相同或相近的卡。复制体通常继承目标当前攻击、最大生命、关键词和效果，但不复制已经受到的伤害；复制体进场不会触发登场。复制进手牌时，按目标卡牌的基础数值生成，卡面标注的行动力调整优先。",
     "变形": "变形会用新的随从或衍生物替换目标。被替换的随从不算死亡，不会触发余响；新单位留在原阵位，并替换原卡的关键词、攻击和生命。",
-    "刻脉": "刻脉是一种延迟生效的敌方惩罚牌：打出时暗置在对手的判定区，对手那一回合看不见条件也判定不了。要等对方完整过完一个回合，再下一次回合开始才翻开判定：卡面条件成立就吃惩罚，不成立则什么都没有。判完的牌进弃牌堆，不会留在场上。判定区同时只放 1 张，新盖的会把旧的挤掉——所以别在对手已经有一张时急着再盖。",
+    "刻脉": "刻脉是一种延迟生效的敌方惩罚牌：打出时暗置在对手的判定区，对手那一回合看不见条件也判定不了。要等对方完整过完一个回合，再下一次回合开始才翻开判定：卡面条件成立就吃惩罚，不成立则什么都没有。判完的牌进弃牌堆，不会留在场上。判定区最多放 2 张，两条各自独立判定；只有盖第 3 张时，最旧的那条才会被挤进弃牌堆、不判定——所以可以连压两张做布局。",
     "墓地": "墓地只收死掉的随从，双方共用一个墓地，牌库里用过的战术、阵型、装备不会进去。现在有些中立卡按墓地里的随从数量结算（比如余响看墓地里够不够 3 / 4 个随从），所以清场和交换也会影响这些卡的收益。",
     "获得控制权": "获得控制权会把敌方随从移到你的场上；目标必须有一个空的阵位，否则无法获得。控制权转移不是复制，原随从不会留在敌方场上。",
   };
@@ -7168,7 +7224,12 @@
     { id: "ten_rounds", name: "十局档案员", desc: "完成 10 局推演", test: () => ((app.profile && app.profile.games) || 0) >= 10 },
     { id: "eightfold", name: "八阵收集者", desc: "八阵营各赢 1 局", test: () => D.FACTION_IDS.every(id => ((((app.profile || {}).byFaction || {})[id] || {}).wins || 0) >= 1) },
     { id: "snowbound", name: "霜页旅人", desc: "使用雪都赢得 3 局", test: () => ((((app.profile || {}).byFaction || {}).snow || {}).wins || 0) >= 3 },
-    { id: "iron_oath", name: "铁誓见证者", desc: "使用帝国赢得 3 局", test: () => ((((app.profile || {}).byFaction || {}).empire || {}).wins || 0) >= 3 }
+    { id: "iron_oath", name: "铁誓见证者", desc: "使用帝国赢得 3 局", test: () => ((((app.profile || {}).byFaction || {}).empire || {}).wins || 0) >= 3 },
+    { id: "tide_of_pus", name: "潮雾执笔", desc: "使用普卫岛赢得一局", test: () => !!(app.achievements && app.achievements.win_pus && app.achievements.win_pus.unlocked) },
+    { id: "frost_scribe", name: "霜页抄录", desc: "使用雪都赢得一局", test: () => !!(app.achievements && app.achievements.win_snow && app.achievements.win_snow.unlocked) },
+    { id: "clean_record", name: "无瑕记录", desc: "领袖全程不掉血赢下一局", test: () => !!(app.achievements && app.achievements.untouched && app.achievements.untouched.unlocked) },
+    { id: "last_page", name: "残页执笔", desc: "生命不超过 5 时赢下一局", test: () => !!(app.achievements && app.achievements.comeback && app.achievements.comeback.unlocked) },
+    { id: "plain_build", name: "粗粝编成", desc: "只用普通与稀有卡赢下一局", test: () => !!(app.achievements && app.achievements.common_rare && app.achievements.common_rare.unlocked) },
   ];
   const PROFILE_CARD_BACKS = [
     { id: "classic", name: "档案原版", color: "#173b3a", glyph: "GK" },
@@ -7818,7 +7879,7 @@
         : next ? "下一步：" + next.name : "主线已全部完成";
       // 章节名与完成度
       const chapEl = $("home-task-chapter");
-      if (chapEl) chapEl.textContent = "第" + ["一", "二", "三"][chapter - 1] + "章";
+      if (chapEl) chapEl.textContent = chapterLabel(chapter);
       const countEl = $("home-task-count");
       if (countEl) countEl.textContent = doneCount + " / " + chapterTasks.length;
       const fill = $("home-task-fill");
@@ -7925,7 +7986,7 @@
       "判定：只看你自己的判定区。里面若有对手盖的刻脉卡，就在这一刻翻开，按卡面写的条件比一次——成立就吃惩罚，不成立什么都不会发生。没有刻脉卡时这个阶段一闪就过。",
       "抽牌：自动抽 1 张，抽牌触发的被动也在这里结算。出牌：你打牌、上随从、攻击、用领袖技能。结束：回合结束时的效果（洗牌、手牌上限）走完，把回合交给对手。",
       "刻脉卡是一种延迟生效的敌方惩罚牌：打出时暗置在对手的判定区，对手那一回合看不见条件、也没法立刻躲。要等对方完整过完一个回合，再下一次回合开始才翻开判定。",
-      "判定区同时只放 1 张。对手已经有一张时你再盖，新盖的会把旧的挤掉，旧的直接进弃牌堆、不判定——所以想连压两张是压不住的。",
+      "判定区最多同时放 2 张，两条各自独立判定。盖第 3 张时，最旧的那条才会被挤进弃牌堆、不判定——所以连压两张是可行的，第三张才开始互相挤。",
       "对手也不是完全没法防：条件看的是翻牌那一刻的场面。流脉奇偶就用镇脉或逆脉改成另一边；看手牌数量就把手牌打空；看守备就换掉守备随从；看上个回合有没有打战术，那就忍着别打。每种躲法都要付出节奏。",
       "墓地只收死掉的随从，双方共用一个墓地；战术卡、阵型卡、装备卡用完不进墓地。有些中立卡的余响按墓地里的随从数量结算，所以清场和交换也会影响这些卡的收益。",
       "新手常犯的错：把刻脉卡当成即时伤害打出去，指望这一回合就掉血。它是两回合后才可能兑现的赌注，落空就白费一张牌，所以要么早盖给对手压力，要么留到你能控制条件的时候再盖。",
@@ -9323,6 +9384,20 @@ const tabs = $("deck-faction-tabs");
     { id: "fast_win", name: "速记", desc: "在 6 回合内赢得一局。", icon: "6" },
     { id: "online_10", name: "线上常客", desc: "赢得 10 局在线或排位对局。", icon: "NET" },
     { id: "all_factions", name: "八色档案", desc: "使用全部八个阵营各赢一局。", icon: "8" },
+    { id: "win_pus", name: "潮雾初记", desc: "使用普卫岛赢得一局。", icon: "潮" },
+    { id: "win_xizhao", name: "血契初记", desc: "使用西昭赢得一局。", icon: "血" },
+    { id: "win_republic", name: "铁誓初记", desc: "使用共和国赢得一局。", icon: "誓" },
+    { id: "win_empire", name: "铁序初记", desc: "使用帝国赢得一局。", icon: "序" },
+    { id: "win_greyharbor", name: "账本初记", desc: "使用灰港同盟赢得一局。", icon: "账" },
+    { id: "win_losutai", name: "潮纹初记", desc: "使用洛斯汰聚落赢得一局。", icon: "纹" },
+    { id: "win_snow", name: "霜页初记", desc: "使用雪都赢得一局。", icon: "霜" },
+    { id: "no_legendary", name: "不带底牌", desc: "用一套没有传说卡的牌组赢下一局。", icon: "无" },
+    { id: "common_rare", name: "粗粝档案", desc: "用一套只含普通与稀有卡的牌组赢下一局。", icon: "粗" },
+    { id: "all_unique", name: "三十而立", desc: "用 30 张互不相同的牌组赢下一局。", icon: "30" },
+    { id: "low_curve", name: "疾流", desc: "用平均行动力不超过 2 的牌组赢下一局。", icon: "2" },
+    { id: "comeback", name: "残页", desc: "在自己领袖生命不超过 5 时赢下一局。", icon: "残" },
+    { id: "untouched", name: "无瑕推演", desc: "领袖全程不掉血赢下一局。", icon: "全" },
+    { id: "second_player", name: "后手", desc: "以后手身份赢下一局。", icon: "后" },
   ];
 
   const ACH_CATEGORY_LABELS = { combat: "战斗", collection: "收集", mode: "模式", archive: "档案" };
@@ -9337,7 +9412,21 @@ const tabs = $("deck-faction-tabs");
     play_10: { category: "archive", reward: 2 },
     fast_win: { category: "combat", reward: 2 },
     online_10: { category: "mode", reward: 3 },
-    all_factions: { category: "collection", reward: 4 }
+    all_factions: { category: "collection", reward: 4 },
+    win_pus: { category: "collection", reward: 1 },
+    win_xizhao: { category: "collection", reward: 1 },
+    win_republic: { category: "collection", reward: 1 },
+    win_empire: { category: "collection", reward: 1 },
+    win_greyharbor: { category: "collection", reward: 1 },
+    win_losutai: { category: "collection", reward: 1 },
+    win_snow: { category: "collection", reward: 1 },
+    no_legendary: { category: "collection", reward: 2 },
+    common_rare: { category: "collection", reward: 2 },
+    all_unique: { category: "collection", reward: 2 },
+    low_curve: { category: "collection", reward: 2 },
+    comeback: { category: "combat", reward: 2 },
+    untouched: { category: "combat", reward: 3 },
+    second_player: { category: "combat", reward: 1 },
   };
   for (const a of ACHIEVEMENTS) Object.assign(a, ACH_META[a.id] || { category: "archive", reward: 0 });
 
@@ -9406,6 +9495,39 @@ const tabs = $("deck-faction-tabs");
       const won = new Set(D.FACTION_IDS.filter(f => profile.byFaction && profile.byFaction[f] && profile.byFaction[f].wins > 0));
       won.add(s.players[app.human].faction);
       if (won.size >= D.FACTION_IDS.length && unlockAchievement("all_factions")) unlocked.push("all_factions");
+    }
+    if (win) {
+      const me = s.players[app.human] || {};
+      const faction = me.faction;
+      // 阵营首胜（学院已在上面单独判过）
+      const factionWinIds = ["pus", "xizhao", "republic", "empire", "greyharbor", "losutai", "snow"];
+      if (factionWinIds.indexOf(faction) >= 0) {
+        const fId = "win_" + faction;
+        if (unlockAchievement(fId)) unlocked.push(fId);
+      }
+      // 场上状态类
+      const hpLeft = typeof me.hp === "number" ? me.hp : 99;
+      const hpMax = typeof me.maxHp === "number" ? me.maxHp : 0;
+      if (hpLeft <= 5 && unlockAchievement("comeback")) unlocked.push("comeback");
+      if (hpMax > 0 && hpLeft >= hpMax && unlockAchievement("untouched")) unlocked.push("untouched");
+      if (s.stats && s.stats.firstPlayer != null && s.stats.firstPlayer !== app.human && unlockAchievement("second_player")) unlocked.push("second_player");
+      // 构筑类：远征/竞技场/每日用自己的牌组，跳过以免误判
+      if (!app.contentRun) {
+        const custom = app.customDecks && app.customDecks[faction];
+        const legalCustom = custom && D.validateDeck && D.validateDeck(faction, custom).ok;
+        const deckIds = (legalCustom ? custom.slice() : (D.DECKS[faction] || []).slice());
+        const defs = deckIds.map(id => D.CARDS[id]).filter(Boolean);
+        if (defs.length) {
+          const hasLegendary = defs.some(c => c.rarity === "legendary");
+          const onlyLow = defs.every(c => c.rarity === "common" || c.rarity === "rare");
+          const uniq = new Set(deckIds).size;
+          const avgCost = defs.reduce((sum, c) => sum + (Number(c.cost) || 0), 0) / defs.length;
+          if (!hasLegendary && unlockAchievement("no_legendary")) unlocked.push("no_legendary");
+          if (onlyLow && unlockAchievement("common_rare")) unlocked.push("common_rare");
+          if (uniq >= (deckIds.length || 30) && deckIds.length >= 30 && unlockAchievement("all_unique")) unlocked.push("all_unique");
+          if (avgCost <= 2 && unlockAchievement("low_curve")) unlocked.push("low_curve");
+        }
+      }
     }
     const rec = app.achievements.play_10 || { progress: 0 };
     rec.progress = (rec.progress || 0) + 1;

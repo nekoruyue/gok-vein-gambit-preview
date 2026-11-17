@@ -71,9 +71,10 @@
     state.events.push({ structured: true, kind: "effect", label: label, targetUid: targetUid || ("hero:" + (player ? player.index : 0)), player: player ? player.index : null, tone: tone || "effect" });
   }
 
-  function createPlayer(index, factionId, isAI) {
+  function createPlayer(index, factionId, isAI, heroIdOverride) {
     const faction = D.FACTIONS[factionId];
-    const heroId = faction.hero;
+    // 同阵营两位领袖：调用方指定且合法时用指定的，否则回落到该阵营默认领袖
+    const heroId = (heroIdOverride && D.HEROES[heroIdOverride]) ? heroIdOverride : faction.hero;
     const baseHero = hero(heroId);
     // 每个玩家持有独立的英雄数据副本，遗物替换技能时不会污染其他对局。
     const heroDef = Object.assign({}, baseHero, {
@@ -5121,8 +5122,8 @@ function processDeaths(state) {
         firstPlayer: null
       }
     };
-    state.players.push(createPlayer(0, faction1, !!config.p1AI));
-    state.players.push(createPlayer(1, faction2, !!config.p2AI));
+    state.players.push(createPlayer(0, faction1, !!config.p1AI, config.p1HeroId));
+    state.players.push(createPlayer(1, faction2, !!config.p2AI, config.p2HeroId));
 
     state.players[0].name = config.p1Name || (config.p1AI ? D.FACTIONS[faction1].name + "推演体" : "玩家 1");
     state.players[1].name = config.p2Name || (config.p2AI ? D.FACTIONS[faction2].name + "推演体" : "玩家 2");
