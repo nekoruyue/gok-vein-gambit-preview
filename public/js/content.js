@@ -290,7 +290,8 @@
   }
   function ledgerStart() {
     const data = load();
-    const luck = (data.perks && data.perks.arcade_luck) ? 1 : 0;
+    const ledgerPerks = data.perks || {};
+    const luck = ledgerPerks.arcade_luck_2 ? 2 : ledgerPerks.arcade_luck ? 1 : 0;
     ledgerState = {
       bank: 5 + luck,
       startBank: 5 + luck,
@@ -615,27 +616,50 @@
   }
 
   const MARKET = [
-    { id: "exp_hp", name: "远征体魄", desc: "每次远征开局生命上限 +3。", cost: 2 },
-    { id: "exp_armor", name: "远征护甲", desc: "每次远征开局护甲 +1。", cost: 1 },
-    { id: "exp_gold", name: "远征盘缠", desc: "每次远征开局金币 +5。", cost: 1 },
-    { id: "arena_armor", name: "竞技场护甲", desc: "竞技场战斗开局护甲 +2。", cost: 1 },
-    { id: "battler_gold", name: "战棋盘缠", desc: "战棋开局额外 +2 账。", cost: 2 },
-    { id: "battler_armor", name: "战棋护甲", desc: "战棋开局额外 +2 护甲。", cost: 1 },
-    { id: "arcade_luck", name: "街机好运", desc: "账牌/三骰开局底账 +1。", cost: 1 }
+    // 远征（读取点 content.js 开局）
+    { id: "exp_hp", base: "exp_hp", tier: 1, name: "远征体魄 I", desc: "远征开局生命上限 +3。", cost: 2 },
+    { id: "exp_hp_2", base: "exp_hp", tier: 2, name: "远征体魄 II", desc: "远征开局生命上限 +6。", cost: 4 },
+    { id: "exp_hp_3", base: "exp_hp", tier: 3, name: "远征体魄 III", desc: "远征开局生命上限 +9。", cost: 7 },
+    { id: "exp_armor", base: "exp_armor", tier: 1, name: "远征护甲 I", desc: "远征开局护甲 +1。", cost: 1 },
+    { id: "exp_armor_2", base: "exp_armor", tier: 2, name: "远征护甲 II", desc: "远征开局护甲 +2。", cost: 3 },
+    { id: "exp_gold", base: "exp_gold", tier: 1, name: "远征盘缠 I", desc: "远征开局金币 +5。", cost: 1 },
+    { id: "exp_gold_2", base: "exp_gold", tier: 2, name: "远征盘缠 II", desc: "远征开局金币 +10。", cost: 3 },
+    // 竞技场
+    { id: "arena_armor", base: "arena_armor", tier: 1, name: "竞技场护甲 I", desc: "竞技场战斗开局护甲 +2。", cost: 1 },
+    { id: "arena_armor_2", base: "arena_armor", tier: 2, name: "竞技场护甲 II", desc: "竞技场战斗开局护甲 +4。", cost: 3 },
+    // 战棋
+    { id: "battler_armor", base: "battler_armor", tier: 1, name: "战棋护甲 I", desc: "战棋开局护甲 +2。", cost: 1 },
+    { id: "battler_armor_2", base: "battler_armor", tier: 2, name: "战棋护甲 II", desc: "战棋开局护甲 +4。", cost: 3 },
+    { id: "battler_gold", base: "battler_gold", tier: 1, name: "战棋盘缠 I", desc: "战棋开局额外 +2 账。", cost: 2 },
+    { id: "battler_gold_2", base: "battler_gold", tier: 2, name: "战棋盘缠 II", desc: "战棋开局额外 +4 账。", cost: 4 },
+    // 街机（账牌 / 三骰共用）
+    { id: "arcade_luck", base: "arcade_luck", tier: 1, name: "街机好运 I", desc: "账牌与三骰开局底账 +1。", cost: 1 },
+    { id: "arcade_luck_2", base: "arcade_luck", tier: 2, name: "街机好运 II", desc: "账牌与三骰开局底账 +2。", cost: 3 }
   ];
   function renderMarket(box, data) {
     const panel = el("div", "mode-panel market-panel");
     panel.appendChild(el("div", "panel-label", "档案市场 / 印记消费"));
-    panel.appendChild(el("p", null, "档案印记可以从竞技场获得。购买后的强化会永久记录在内容档案中。"));
+    panel.appendChild(el("p", null, "档案印记来自竞技场、远征与每日任务。买下的强化永久记录在内容档案里；同一项买更高档会顶替低档，已过的低档不会再提示兑换。"));
     const row = el("div", "market-grid");
+    const perks = data.perks || {};
+    const tierOf = (base) => (perks[base + "_3"] ? 3 : perks[base + "_2"] ? 2 : perks[base] ? 1 : 0);
     for (const item of MARKET) {
-      const owned = data.perks && data.perks[item.id];
+      const owned = !!perks[item.id];
+      const best = tierOf(item.base || item.id);
+      const superseded = !owned && best > (item.tier || 1);
       const card = el("div", "market-item" + (owned ? " owned" : ""));
       card.appendChild(el("strong", null, item.name));
       card.appendChild(el("p", null, item.desc));
-      const b = el("button", "btn btn-small " + (owned ? "btn-ghost" : "btn-primary"), owned ? "已拥有" : "兑换 · " + item.cost + " 印记");
-      b.disabled = owned || (data.marks || 0) < item.cost;
-      b.onclick = () => { if ((data.marks || 0) < item.cost || (data.perks && data.perks[item.id])) return; data.marks -= item.cost; data.perks = data.perks || {}; data.perks[item.id] = true; save(data); renderHub(); };
+      const label = owned ? "已拥有" : superseded ? "已有更高档" : "兑换 · " + item.cost + " 印记";
+      const b = el("button", "btn btn-small " + (owned || superseded ? "btn-ghost" : "btn-primary"), label);
+      b.disabled = owned || superseded || (data.marks || 0) < item.cost;
+      b.onclick = () => {
+        if ((data.marks || 0) < item.cost || (data.perks && data.perks[item.id])) return;
+        data.marks -= item.cost;
+        data.perks = data.perks || {};
+        data.perks[item.id] = true;
+        save(data); renderHub();
+      };
       card.appendChild(b);
       row.appendChild(card);
     }
@@ -790,7 +814,8 @@
   function startExpedition(faction) {
     const data = load();
     const perks = data.perks || {};
-    data.expedition = { faction, deck: factionDeck(faction), nodes: ["battle", "event", "battle", "elite", "shop", "camp", "battle", "boss"], node: 0, finished: false, victory: false, reward: null, eliteBoon: false, eliteMod: null, bossMod: null, gold: perks.exp_gold ? 5 : 0, boons: { maxHp: perks.exp_hp ? 3 : 0, armor: perks.exp_armor ? 1 : 0 } };
+    const expTier = (b) => (perks[b + "_3"] ? 3 : perks[b + "_2"] ? 2 : perks[b] ? 1 : 0);
+    data.expedition = { faction, deck: factionDeck(faction), nodes: ["battle", "event", "battle", "elite", "shop", "camp", "battle", "boss"], node: 0, finished: false, victory: false, reward: null, eliteBoon: false, eliteMod: null, bossMod: null, gold: expTier("exp_gold") * 5, boons: { maxHp: expTier("exp_hp") * 3, armor: expTier("exp_armor") } };
     save(data);
     renderExpedition();
   }
@@ -1000,7 +1025,8 @@
   function startArenaBattle(run) {
     const opponent = randomOpponent(run.faction);
     const data = load(); data.arena = run; save(data);
-    const perc = (data.perks || {}).arena_armor;
+    const arenaPerks = data.perks || {};
+    const arenaTier = arenaPerks.arena_armor_2 ? 2 : arenaPerks.arena_armor ? 1 : 0;
     runMode("arena", "竞技场");
     global.GokUI.startGame({
       faction: run.faction,
@@ -1010,7 +1036,7 @@
       aiDifficulty: run.wins >= 2 ? "nightmare" : "hard",
       first: run.wins % 2,
       seed: seedFrom("arena:" + run.wins + ":" + run.losses + ":" + Date.now()),
-      setup: perc ? (state) => { state.players[0].armor += 2; } : undefined
+      setup: arenaTier ? (state) => { state.players[0].armor += arenaTier * 2; } : undefined
     });
   }
   function arenaAfter(data, state) {

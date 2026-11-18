@@ -82,7 +82,8 @@
   function openDice() {
     if (global.GokUI) global.GokUI.showScreen("arcade");
     const archive = load(); const prev = (archive.arcade && archive.arcade.dice) || {};
-    const luck = (archive.perks && archive.perks.arcade_luck) ? 1 : 0;
+    const arcadePerks = archive.perks || {};
+    const luck = arcadePerks.arcade_luck_2 ? 2 : arcadePerks.arcade_luck ? 1 : 0;
     diceState = { bank: 5 + luck, start: 5 + luck, round: 1, phase: "roll", player: [], dealer: [], used: false, log: ["铁序三点赌开盘：底账 5，押 1。"], bestBank: prev.bestBank || 0, bestStreak: prev.bestStreak || 0, streak: 0, runs: prev.runs || 0 };
     rollRound(); renderDice();
   }

@@ -1,15 +1,19 @@
 {
   "channel": "preview",
-  "version": "1.3.0",
-  "build": "20261118e3",
-  "publishedAt": "2026-11-17T07:28:03+08:00",
+  "version": "1.3.1",
+  "build": "20261118e9",
+  "publishedAt": "2026-11-18T05:31:37+08:00",
   "mandatory": false,
   "minSupportedVersion": "0.9.0",
-  "size": 257728045,
-  "sha256": "3519d8dec3b21bb128c99ede5b06b51bb83e32e20e5240aa71929d78a3dd1056",
-  "url": "https://gok-vein-gambit-preview.onrender.com/downloads/GokVeinGambit-Setup-1.3.0.exe",
-  "title": "1.3.0 网页离线与首屏提速",
+  "size": 227163861,
+  "sha256": "702727c0a7085c77bd46b9a6831232fcf970c6ae8a94d8f1e5b29209327140e5",
+  "url": "https://gok-vein-gambit-preview.onrender.com/downloads/GokVeinGambit-Setup-1.3.1.exe",
+  "title": "1.3.1 · 第二领袖与成就",
   "notes": [
-    "网页端可作为应用安装、断网也能开；首页冷启动体积 3.75MB -> 2.09MB；首页新增关于面板与七款作品列表"
+    "同阵营第二位领袖可以选了：准备页多了领袖切换，16 位领袖全部可上场",
+    "成就 11 → 25 条，称号池扩到 16 条",
+    "修刻脉判定区文案（1 格 → 2 格，之前把新玩法教反了）",
+    "修主页领完前三章显示「第undefined章」",
+    "public 瘦身 35.6MB：清掉音频备份、旧世界观页与废弃资源"
   ]
 }

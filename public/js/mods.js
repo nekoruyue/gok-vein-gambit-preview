@@ -26,13 +26,34 @@
     return h >>> 0;
   }
 
-  /** 同一天：1 主 + 1 副，类别不同；7 天内主修饰器不重复（用日期序列保证） */
+  /** 同一天：1 主 + 1 副，类别不同。
+   *  7 天内主修饰器不重复（滑动窗口，不是自然周——自然周会在跨周时撞车）。
+   *  做法：从锚点日推到现在，每天在「排除掉最近 6 天用过的主修饰器」的池子里挑一个。
+   *  只用 hash 定序，不碰 Math.random，所以同一天任何时候算出来都一样。 */
+  const DAILY_ANCHOR_DAY = Math.floor(Date.UTC(2026, 0, 1) / 86400000);
+  const dailyPickCache = new Map();
+  function mainModForDay(dayNum, pool) {
+    const key = dayNum + "|" + pool.length;
+    if (dailyPickCache.has(key)) return dailyPickCache.get(key);
+    const start = Math.max(DAILY_ANCHOR_DAY, dayNum - 30);   // 回放 30 天足够把 6 天窗口填满
+    const recent = [];
+    let picked = pool[0];
+    for (let d = start; d <= dayNum; d++) {
+      const used = new Set(recent);
+      const cands = pool.filter((m) => !used.has(m.id));
+      picked = cands.length ? cands[hash("daily-slide:" + d) % cands.length] : pool[hash("daily:" + d) % pool.length];
+      recent.push(picked.id);
+      if (recent.length > 6) recent.shift();
+    }
+    dailyPickCache.set(key, picked);
+    return picked;
+  }
   function pickDaily(dateKey, count) {
     const pool = list("daily");
     if (!pool.length) return [];
-    const seed = hash("daily-pick:" + dateKey);
-    const main = pool[seed % pool.length];
-    const subPool = pool.filter((m) => m.category !== main.category && m.id !== main.id);
+    const dayNum = Math.floor(Date.parse(dateKey + "T00:00:00Z") / 86400000);
+    const main = mainModForDay(dayNum, pool);
+    const subPool = pool.filter((m) => m.id !== main.id && m.category !== main.category);
     const sub = subPool.length ? subPool[hash("daily-sub:" + dateKey) % subPool.length] : null;
     return [main].concat(sub ? [sub] : []).slice(0, count || 2);
   }
@@ -130,6 +151,33 @@
     desc: "本局双方都不能使用领袖技能。",
     apply(state) { eachPlayer(state, (p) => { p.heroPowerBlocked = true; }); }
   });
+  register({
+    id: "swapBlood", name: "换血", category: "规则", scopes: ["daily"],
+    desc: "双方领袖生命在开局互换（各自不超过生命上限）。",
+    apply(state) {
+      const ps = (state && state.players) || [];
+      if (ps.length < 2) return;
+      const a = ps[0].hp, b = ps[1].hp;
+      ps[0].hp = Math.max(1, Math.min(b, ps[0].maxHp || b));
+      ps[1].hp = Math.max(1, Math.min(a, ps[1].maxHp || a));
+    }
+  });
+  register({
+    id: "burnDeck", name: "焚页", category: "规则", scopes: ["daily"],
+    desc: "双方牌库开局各被烧掉 6 张进弃牌堆（牌库保底留 8 张）。",
+    apply(state) {
+      for (const p of (state && state.players) || []) {
+        const deck = Array.isArray(p.deck) ? p.deck : [];
+        const burn = Math.min(6, Math.max(0, deck.length - 8));
+        p.discard = Array.isArray(p.discard) ? p.discard : [];
+        for (let i = 0; i < burn; i++) {
+          const idx = deck.length > 1 ? (hash("burn:" + state.seed + ":" + p.index + ":" + i) % deck.length) : 0;
+          const c = deck.splice(idx, 1)[0];
+          if (c) p.discard.push(c);
+        }
+      }
+    }
+  });
 
   /* ===== 流脉 ===== */
   register({
@@ -174,6 +222,29 @@
     desc: "开盘流脉 +3。",
     apply(state) { state.vein = Math.min(12, (state.vein || 0) + 3); }
   });
+  register({
+    id: "reshuffleOpening", name: "重洗起手", category: "开场", scopes: ["daily"],
+    desc: "双方起手全部洗回牌库，再按原张数重新抽（留牌不再由你决定）。",
+    apply(state) {
+      for (const p of (state && state.players) || []) {
+        const hand = Array.isArray(p.hand) ? p.hand : [];
+        if (!hand.length) continue;
+        const n = hand.length;
+        p.deck = (Array.isArray(p.deck) ? p.deck : []).concat(hand);
+        p.hand = [];
+        let s = hash("reshuffle:" + state.seed + ":" + p.index) || 1;
+        for (let i = p.deck.length - 1; i > 0; i--) {
+          s = Math.imul(s ^ (i + 1), 16777619) >>> 0;
+          const j = s % (i + 1);
+          const t = p.deck[i]; p.deck[i] = p.deck[j]; p.deck[j] = t;
+        }
+        for (let i = 0; i < n; i++) {
+          const c = p.deck.shift();
+          if (c) p.hand.push(c);
+        }
+      }
+    }
+  });
 
   /* ===== 牌库 =====
    * kind:"deck" 的修饰器不改 state，改的是发牌前那套牌：
@@ -198,6 +269,16 @@
     id: "highCostDeck", name: "高费牌库", category: "牌库", kind: "deck", scopes: ["daily"],
     desc: "双方牌组里 2 费以下的卡全部移除。",
     filter(faction, cards) { return cards.filter((id) => { const c = global.GokData && global.GokData.CARDS[id]; return !c || (c.cost || 0) >= 2; }); }
+  });
+  register({
+    id: "lowCostDeck", name: "快攻牌库", category: "牌库", kind: "deck", scopes: ["daily"],
+    desc: "双方牌组只保留 3 费及以下的卡。",
+    filter(faction, cards) { return cards.filter((id) => { const c = global.GokData && global.GokData.CARDS[id]; return !c || (c.cost || 0) <= 3; }); }
+  });
+  register({
+    id: "noEquipmentDeck", name: "轻装牌库", category: "牌库", kind: "deck", scopes: ["daily"],
+    desc: "双方牌组不带装备与阵型，只剩随从与战术。",
+    filter(faction, cards) { return cards.filter((id) => { const c = global.GokData && global.GokData.CARDS[id]; return !c || (c.type !== "equipment" && c.type !== "formation"); }); }
   });
 
   global.GokMods = {

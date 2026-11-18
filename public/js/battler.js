@@ -176,14 +176,15 @@
     const heroList = HEROES[fac] || HEROES.pus;
     const hero = heroList.find(h => h.id === (config && config.hero)) || heroList[0];
     const perks = loadData().perks || {};
-    const you = { id: "you", name: "你", hp: 30, tier: 1, armor: perks.battler_armor ? 2 : 0, board: [], alive: true, you: true, faction: fac, hero, heroUsed: false };
+    const perkTier = (b) => (perks[b + "_2"] ? 2 : perks[b] ? 1 : 0);
+    const you = { id: "you", name: "你", hp: 30, tier: 1, armor: perkTier("battler_armor") * 2, board: [], alive: true, you: true, faction: fac, hero, heroUsed: false };
     const starters = (config && config.starters || []).map(id => D.CARDS[id]).filter(Boolean).slice(0, 3);
     for (const def of starters) you.board.push(makeUnit(def, false));
     const ais = AI_NAMES.map((name, i) => makeAI(name, i));
     const s = {
-      player: you, players: [you].concat(ais), round: 1, gold: 3 + (perks.battler_gold ? 2 : 0),
+      player: you, players: [you].concat(ais), round: 1, gold: 3 + perkTier("battler_gold") * 2,
       shop: [], opponent: null, phase: "shop", lastBattle: null,
-      log: ["八人入局。账在桌上，命在阵里。" + (perks.battler_gold ? " 战棋盘缠 +2 账。" : "") + (perks.battler_armor ? " 战棋护幕 +2。" : "")], rank: null, rewarded: false,
+      log: ["八人入局。账在桌上，命在阵里。" + (perkTier("battler_gold") ? " 战棋盘缠 +" + (perkTier("battler_gold") * 2) + " 账。" : "") + (perkTier("battler_armor") ? " 战棋护幕 +" + (perkTier("battler_armor") * 2) + "。" : "")], rank: null, rewarded: false,
       heroUsed: false, upgradeDiscount: 0, nextBomb: 0, discoverOptions: null, difficulty, cardPool: initCardPool()
     };
     for (const ai of ais) fillAI(ai, 1, difficulty);

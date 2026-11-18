@@ -133,6 +133,8 @@
   // 列表/网格里用的缩略图：放宽 256 的 webp（原图 768×1024，一张近百 KB）
   function thumbUrl(url) {
     if (!url || typeof url !== "string") return url;
+    // SVG 是矢量的，本身就没多大，也没有对应的 thumbs 副本——直接给原图，否则必 404
+    if (/\.svg(\?|$)/.test(url)) return url;
     return url
       .replace("/assets/generated/", "/assets/thumbs/generated/")
       .replace("assets/generated/", "assets/thumbs/generated/")
@@ -7971,7 +7973,7 @@
       "随从当回合不能攻击，下一回合才可以；先遣随从登场当回合能攻击随从，但不能攻击领袖。随从互殴双方同时受伤，生命归零离场。",
       "记住一个最稳的新手顺序：低费随从站场 → 用战术处理威胁 → 随从交换 → 领袖技能 → 结束回合。先站住，再谈斩杀。"
     ] },
-    { id: "advanced", level: 1, title: "游戏进阶规则", desc: "五类卡牌 · 关键词 · 流脉事件", xp: 120, keywords: true, body: [
+    { id: "advanced", level: 2, title: "游戏进阶规则", desc: "五类卡牌 · 关键词 · 流脉事件", xp: 120, keywords: true, body: [
       "卡牌现在分六类：随从卡、战术卡、阵型卡、装备卡、债务卡、刻脉卡。随从卡站场，战术卡一次性结算，阵型卡挂在一个阵位上持续生效，装备卡给领袖持续增益，债务卡塞进对手牌库，刻脉卡暗置在对方判定区等待判定。",
       "债务卡打出后会洗进对手牌库；对手抽到并打出时才开始任务，完不成会在回合结束受到伤害。它更像干扰，不是稳定直伤。",
       "装备最多同时两件，阵型最多三张；阵型只影响一个阵位，装备影响全局，价值不能直接对比。",
@@ -7980,7 +7982,7 @@
       "对局模式分单人 AI、在线匹配、组队码房间和局域网。游客可以休闲和房间，排位必须登录账号；其他模式仍在实验，遇到问题直接返回。",
       "进阶的目标不是背规则，而是每回合问自己：场面站住了吗？关键威胁解掉了吗？下回合对手最可能做什么？"
     ] },
-    { id: "phase", level: 1, title: "回合阶段与刻脉卡", desc: "五阶段 · 判定 · 刻脉卡 · 墓地", xp: 120, body: [
+    { id: "phase", level: 3, title: "回合阶段与刻脉卡", desc: "五阶段 · 判定 · 刻脉卡 · 墓地", xp: 120, body: [
       "一个完整回合拆成五个阶段，按顺序走：回合开始 → 判定 → 抽牌 → 出牌 → 结束。手牌上方那条阶段条就是当前进度，正在走的阶段会亮。",
       "回合开始：回合数 +1、行动力上限 +1 并回满，装备光环、阵型倒计时、持续效果都在这一段结算。这一段没有东西要结算时会很快过去，不用干等。",
       "判定：只看你自己的判定区。里面若有对手盖的刻脉卡，就在这一刻翻开，按卡面写的条件比一次——成立就吃惩罚，不成立什么都不会发生。没有刻脉卡时这个阶段一闪就过。",
@@ -7992,16 +7994,17 @@
       "新手常犯的错：把刻脉卡当成即时伤害打出去，指望这一回合就掉血。它是两回合后才可能兑现的赌注，落空就白费一张牌，所以要么早盖给对手压力，要么留到你能控制条件的时候再盖。",
       "一个实用节奏：先看对手这回合有没有可能改条件（比如手里留着镇脉、场面有守备），再决定盖哪张刻脉卡。猜对了，对手要么吃伤害，要么为了躲它打乱自己的出牌顺序。"
     ] },
-    { id: "deck", level: 1, title: "组卡教学", desc: "30 张 · 曲线 · 品级 · 标签", xp: 120, body: [
-      "先定方向：快攻、中速、控制、组合。先想清楚这套牌靠什么赢，再决定带哪些卡；不要把所有强卡塞在一起。",
-      "固定 30 张，随从卡 / 战术卡 / 阵型卡 / 装备卡 / 刻脉卡自由混编；阵型最多 3 张，装备不限件数；同名卡数量受品级和卡牌规则限制。",
-      "曲线参考：2–3 费 8–12 张，4–5 费 8–10 张，6 费以上别太多。前 3 回合有牌可出，比单卡强度更重要。",
-      "品级上限：本阵营传说最多 2 张、中立传说最多 1 张，史诗最多 6 张，稀有最多 10 张；未拥有的传说不能加入自定义牌组，官方预组可以试玩。",
-      "新手先用预设或自动构筑生成 30 张，再手动替换 3–5 张；不要从零硬凑，也不要为了“完美”反复推翻整套牌。",
-      "牌组保存前要起名字，并加流派标签：流脉、快攻、中速、控制、组合、娱乐。准备阶段按名字和标签选择，别只留一个默认牌组。",
-      "检查清单：30 张、2 件装备、阵型合法、没有未拥有传说、曲线不空、同名不超限。满足这些，才算一套能上桌的牌。"
+    { id: "deck", level: 5, title: "组卡课堂", desc: "五步走完一套 30 张 · 真的保存才算过", xp: 150, body: [
+      "这门课不是读完就给经验：要走完下面五步，并且在组卡页真的保存下一套 30 张的牌组，才能领奖励。",
+      "流派标签（快攻 / 中速 / 控制 / 组合 / 娱乐 / 流脉）只帮你整理牌组，不改变对局规则；准备阶段按牌组名和标签选择。"
+    ], steps: [
+      { title: "1 · 看曲线", desc: "打开图鉴，按费用从低到高扫一遍。记住 2–3 费有多少张能站场——前 3 回合有牌可出，比单卡强度更重要。", goto: "codex" },
+      { title: "2 · 认品级", desc: "在图鉴里按品级筛一遍。本阵营传说最多 2 张、中立传说最多 1 张、史诗 6 张、稀有 10 张；未拥有的传说进不了自定义牌组。", goto: "codex" },
+      { title: "3 · 自动构筑一套", desc: "进组卡页，先点「自动构筑」生成 30 张。不要从零硬凑，也别为了完美反复推翻整套牌。", goto: "deck" },
+      { title: "4 · 手换 3 张", desc: "在生成的牌组里替换 3–5 张：补一张解场、一张低费、一张高费终端。改完回头看曲线有没有空洞。", goto: "deck" },
+      { title: "5 · 起名并保存", desc: "起个名字、加流派标签，然后保存。这一步做完，套牌才算真的成立，本课也才能结算。", goto: "deck" }
     ] },
-    { id: "drill", level: 1, title: "实战演练", desc: "起手 · 守备 · 流脉 · 斩杀", xp: 100, drill: true, body: [
+    { id: "drill", level: 6, title: "实战演练", desc: "起手 · 守备 · 流脉 · 斩杀", xp: 100, drill: true, body: [
       "规则看懂不等于会打。下面准备了几种小局面，挑一个进入牌桌，只练一个目标，不要急着赢。",
       "起手演练：只练换牌，目标是留下 1–3 费能打出的牌；守备演练：对面有守备，先想办法处理守备，再打有守备随从的阵位。",
       "流脉演练：把流脉推到阈值附近，观察世界事件什么时候来；斩杀演练：对方生命不高，先算清楚伤害再动手。",
@@ -8009,19 +8012,6 @@
     ] }
   ];
 
-  const DECK_CLASS_LESSON = {
-    id: "deck_class", level: 1, title: "组卡课堂", desc: "30 张 · 曲线 · 品级 · 流派标签", textOnly: true,
-    body: [
-      "先定方向：快攻、中速、控制、组合。先想清楚这套牌靠什么赢，再往里面塞卡。",
-      "固定 30 张，阵型最多 3 张，装备不限件数。",
-      "曲线参考：2–3 费 8–12 张，4–5 费 8–10 张，6 费以上不要太多；先保证每回合有事做。",
-      "品级上限：本阵营传说最多 2 张、中立传说最多 1 张，史诗最多 6 张，稀有最多 10 张；未拥有的传说不能加入自定义牌组。",
-      "先用「预设牌组」试玩；Lv.5 后可以复制为自定义牌组，再改名、加流派标签、手动替换。",
-      "流派标签建议：快攻、中速、控制、组合、娱乐、流脉。标签只帮你整理牌组，不改变对局规则。",
-      "自动构筑适合新手：先生成 30 张，再手动替换 3–5 张，不要从零硬凑。",
-      "保存前检查：数量 30、装备 2、阵型合法、没有未拥有传说。准备阶段按牌组名和标签选择。",
-    ]
-  };
   function lessonCompleted(id) {
     const p = ensureAccount().progress;
     return !!(p.tutorials && p.tutorials[id]);
@@ -8117,6 +8107,25 @@
     const objectives = el("div", "lesson-objectives");
     for (const line of lesson.body) objectives.appendChild(el("div", null, line));
     card.appendChild(objectives);
+    if (lesson.steps) {
+      const stepHost = el("div", "lesson-objectives");
+      for (const step of lesson.steps) {
+        const row = el("div", null);
+        row.appendChild(el("strong", null, step.title));
+        row.appendChild(el("div", null, step.desc));
+        if (step.goto) {
+          const go = el("button", "btn btn-small btn-ghost", step.goto === "codex" ? "打开图鉴" : "打开组卡");
+          go.onclick = () => {
+            app.lessonReturn = "tasks";
+            if (step.goto === "codex") openCodex();
+            else openDeckBuilder(app.faction || "pus", "tasks");
+          };
+          row.appendChild(go);
+        }
+        stepHost.appendChild(row);
+      }
+      card.appendChild(stepHost);
+    }
     if (lesson.keywords) {
       const kwHead = el("div", "lesson-kicker", "关键词完整解析");
       card.appendChild(kwHead);
@@ -8144,16 +8153,15 @@
       full.onclick = () => startTutorial();
       card.appendChild(full);
     }
-    const done = !lesson.textOnly && lessonCompleted(lesson.id);
+    const done = lessonCompleted(lesson.id);
+    // 组卡课堂：必须真的保存过一套 30 张牌组，点按钮跳不过去
+    const savedDeck = !!(app.customDecks && Object.keys(app.customDecks).some(
+      (k) => Array.isArray(app.customDecks[k]) && app.customDecks[k].length >= 30));
+    const gated = lesson.id === "deck" && !savedDeck && !done;
     const actions = el("div", "lesson-actions");
-    if (lesson.textOnly) {
-      const back = el("button", "btn btn-primary", "返回开始推演");
-      back.onclick = () => showScreen(app.lessonReturn || "mode");
-      actions.appendChild(back); card.appendChild(actions); root.appendChild(card); return;
-    }
     actions.appendChild(el("span", "lesson-progress", done ? "已完成 · +" + lesson.xp + " XP" : "完成奖励 +" + lesson.xp + " XP"));
-    const finish = el("button", "btn btn-primary " + (done ? "btn-ghost" : ""), done ? "已完成" : "完成本课");
-    finish.disabled = done;
+    const finish = el("button", "btn btn-primary " + (done || gated ? "btn-ghost" : ""), done ? "已完成" : gated ? "先保存一套 30 张牌组" : "完成本课");
+    finish.disabled = done || gated;
     finish.onclick = () => {
       const p = ensureAccount().progress;
       if (p.tutorials[lesson.id]) return;
