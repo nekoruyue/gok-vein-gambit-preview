@@ -308,7 +308,8 @@ const server = http.createServer(async (req, res) => {
       let room;
       try {
         room = authoritative.createRoom({ faction1: body.faction1, faction2: body.faction2, seed: body.seed,
-          deck1: body.deck1, deck2: body.deck2, name1: body.name1, name2: body.name2 });
+          deck1: body.deck1, deck2: body.deck2, name1: body.name1, name2: body.name2,
+          hero1: body.hero1, hero2: body.hero2, waiting: body.waiting });
       } catch (e) {
         json(res, 400, { ok: false, error: String((e && e.message) || e) });
         return;
@@ -498,7 +499,9 @@ const server = http.createServer(async (req, res) => {
         try {
           const aroom = authoritative.createRoom({
             faction1: (waiting && waiting.faction) || "pus",
-            faction2: matchBody.faction || "academy"
+            faction2: matchBody.faction || "academy",
+            hero1: waiting && waiting.hero,
+            hero2: matchBody.hero
           });
           // 2026-11-15：排位匹配出的服务端权威对局，开局先套本周赛季规则
           if (matchRanked) {
@@ -519,7 +522,7 @@ const server = http.createServer(async (req, res) => {
       json(res, 200, { ok: true, matched: true, ticket, room: code, role: "guest", ranked: matchRanked, names: room.names, auth: (authInfo && authInfo.me) || null });
         return;
       }
-      matchQueue.set(ticket, { at: now, seen: now, ranked: matchRanked, name: matchName, rank: matchRank, faction: (matchBody.faction || "") });
+      matchQueue.set(ticket, { at: now, seen: now, ranked: matchRanked, name: matchName, rank: matchRank, faction: (matchBody.faction || ""), hero: (typeof matchBody.hero === "string" ? matchBody.hero.slice(0, 24) : "") });
       json(res, 200, { ok: true, waiting: true, ticket, waitMs: 0, ranked: matchRanked });
       return;
     }

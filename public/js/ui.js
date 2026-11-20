@@ -205,9 +205,11 @@
   }
   function portraitImage(id) {
     // 第二领袖没有专属头像图，回落到同阵营主领袖那张，避免 404
+    // ⚠ 这里不能用 HERO_IMAGE_FILE：那是 heroes/ 目录下的文件名（如 otto_centered），
+    //   portraits/ 里并没有同名文件（只有 otto.webp），套上去就是稳定的 404。
     const GD = window.GokData;
-    let file = HERO_IMAGE_FILE[id];
-    if (!file && GD && GD.HEROES && GD.HEROES[id]) {
+    let file = null;
+    if (GD && GD.HEROES && GD.HEROES[id]) {
       const def = GD.HEROES[id];
       const mainId = def.faction && GD.FACTIONS && GD.FACTIONS[def.faction] ? GD.FACTIONS[def.faction].hero : null;
       if (mainId && mainId !== id && GD.HEROES[mainId]) file = GD.HEROES[mainId].art || mainId;
@@ -3929,7 +3931,11 @@
       const cost = E.getCardCost(s, player, c);
       const card = createHandCard(def, c, player, cost, s);
       const offset = i - (total - 1) / 2;
-      const fan = Math.max(-3, Math.min(3, offset * (total >= 6 ? 0.9 : 1.6)));
+      // 影之诗式手牌：张数少时角度给大一点才看得出弧线；张数多时收窄，免得两侧被裁掉
+      // 真正的「弧」靠 sv-look.css 把旋转圆心压到卡片下方（transform-origin: 50% 300%）
+      const fanLimit = isPhoneLayout() ? 4.5 : 8;
+      const fanStep = total >= 6 ? 1.9 : 4.4;
+      const fan = Math.max(-fanLimit, Math.min(fanLimit, offset * fanStep));
       card.style.setProperty("--fan", fan.toFixed(2) + "deg");
       const isNew = !!(previous && previous.indexOf(c.uid) < 0);
       // 「手牌进场」动画只在这一手牌真的变多时播：开局、读档、联机重同步、换屏重绘都不播
@@ -13436,7 +13442,7 @@ const tabs = $("deck-faction-tabs");
         else pollTimer = setTimeout(poll, 800);
       }).catch(() => { if (!finished) pollTimer = setTimeout(poll, 900); });
     }
-    fetch("/api/match/join", { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ranked: !!ranked, rank: rankPoints, name: accountDisplayName(), build: global.__GOK_BUILD__ || "" }) }).then(async (res) => {
+    fetch("/api/match/join", { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ranked: !!ranked, rank: rankPoints, name: accountDisplayName(), build: global.__GOK_BUILD__ || "", faction: faction, hero: (app.heroChoice && app.heroChoice[faction]) || undefined }) }).then(async (res) => {
       const data = await res.json().catch(() => ({}));
       if (res.status === 409 && data.code === "stale_client") {
         // 客户端比服务器旧：直接劝更新，别让它静默匹配失败
@@ -13602,7 +13608,7 @@ const tabs = $("deck-faction-tabs");
           setTimeout(() => { if (!finished) fallbackAi(); }, 1200);
           return;
         }
-        fetch("/api/match/join", { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ranked: true, rank: rankPoints, name: accountDisplayName() }) }).then(async (res) => {
+        fetch("/api/match/join", { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ranked: true, rank: rankPoints, name: accountDisplayName(), faction: app.faction, hero: (app.heroChoice && app.heroChoice[app.faction]) || undefined }) }).then(async (res) => {
           const data = await res.json().catch(() => ({}));
           if (!res.ok || !data.ok) throw new Error(data.error || "匹配服务不可用");
           if (finished) return;
@@ -13720,15 +13726,16 @@ const tabs = $("deck-faction-tabs");
     const actions = el("div", "room-lobby-actions");
     const create = el("button", "btn btn-primary", "创建组队码");
     create.onclick = async () => {
+      if (!global.GokAuthority) { toast("联机模块没有加载。"); return; }
       create.disabled = true; create.textContent = "创建中…";
       try {
-        const res = await fetch("/api/room/create", { method: "POST", cache: "no-store" });
-        const data = await res.json();
-        if (!res.ok || !data.code) throw new Error(data.error || "创建失败");
-        const url = new URL(location.href);
-        url.searchParams.set("room", data.code);
-        url.searchParams.set("host", "1");
-        location.href = url.toString();
+        // 走服务端权威房：规则在服务器算，房主浏览器不作数
+        const GD = global.GokData;
+        const faction = GD && GD.FACTIONS[app.faction] ? app.faction : "pus";
+        const hero = (app.heroChoice && app.heroChoice[faction]) || undefined;
+        const d = await global.GokAuthority.createRoom({ waiting: true, faction1: faction, hero1: hero });
+        if (!d.ok || !d.code) throw new Error(d.error || "创建失败");
+        renderRoomWaiting({ code: d.code, seat: d.seat, token: d.token });
       } catch (e) {
         create.disabled = false; create.textContent = "创建组队码";
         toast("创建房间失败：" + (e.message || e));
@@ -13736,17 +13743,15 @@ const tabs = $("deck-faction-tabs");
     };
     const join = el("button", "btn btn-ghost", "加入房间");
     join.onclick = async () => {
-      const code = input.value.trim().toLowerCase();
-      if (!/^[a-z0-9]{6}$/.test(code)) { toast("请输入 6 位组队码。"); return; }
+      if (!global.GokAuthority) { toast("联机模块没有加载。"); return; }
+      const code = input.value.trim().toUpperCase();
+      if (!/^[A-Z0-9]{6}$/.test(code)) { toast("请输入 6 位组队码。"); return; }
       join.disabled = true; join.textContent = "加入中…";
       try {
-        const res = await fetch("/api/status?room=" + encodeURIComponent(code), { cache: "no-store" });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "房间不存在");
-        const url = new URL(location.href);
-        url.searchParams.set("room", code);
-        url.searchParams.delete("host");
-        location.href = url.toString();
+        const d = await global.GokAuthority.joinRoom(code);
+        if (!d.ok) throw new Error(d.error || "房间不存在");
+        // 坐进去就算开局了，服务端会解锁等待态并开始推状态
+        enterAuthorityRoom({ code, seat: d.seat, token: d.token });
       } catch (e) {
         join.disabled = false; join.textContent = "加入房间";
         toast("无法加入：" + (e.message || e));
@@ -13758,6 +13763,58 @@ const tabs = $("deck-faction-tabs");
     card.appendChild(actions);
     card.appendChild(el("p", "room-page-hint", "进入对局后，顶栏会继续显示组队码；对方断线后可凭组队码重新进入。"));
     root.appendChild(card);
+  }
+
+  /** 组队码建好、等对手入座：显示码并轮询，服务端一开局就自动进对局 */
+  function renderRoomWaiting(session) {
+    const root = $("room-page-root");
+    if (!root) return;
+    if (app.roomWaitTimer) { clearInterval(app.roomWaitTimer); app.roomWaitTimer = 0; }
+    clear(root);
+    const card = el("div", "panel room-lobby-card");
+    card.appendChild(el("div", "eyebrow", "等待对手 / WAITING"));
+    card.appendChild(el("h3", null, "组队码已创建"));
+    card.appendChild(el("h2", null, session.code));
+    card.appendChild(el("p", null, "把这 6 位码发给对手。他一坐下对局就自动开始，你不用刷新页面。"));
+    const status = el("p", "room-page-hint", "正在等待对手入座…");
+    card.appendChild(status);
+    const invite = el("button", "btn btn-ghost", "复制邀请链接");
+    invite.onclick = () => {
+      const link = location.origin + "/?room=" + encodeURIComponent(session.code);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(() => toast("邀请链接已复制。")).catch(() => toast(link));
+      } else toast(link);
+    };
+    const cancel = el("button", "btn btn-small btn-ghost", "取消");
+    cancel.onclick = () => {
+      if (app.roomWaitTimer) { clearInterval(app.roomWaitTimer); app.roomWaitTimer = 0; }
+      renderRoomPage();
+    };
+    const actions = el("div", "room-lobby-actions");
+    actions.appendChild(invite); actions.appendChild(cancel);
+    card.appendChild(actions);
+    root.appendChild(card);
+
+    let ticks = 0;
+    app.roomWaitTimer = setInterval(async () => {
+      ticks += 1;
+      try {
+        const d = await global.GokAuthority.fetchState(session);
+        if (!d.ok) {
+          clearInterval(app.roomWaitTimer); app.roomWaitTimer = 0;
+          toast("房间已失效，请重新创建。");
+          renderRoomPage();
+          return;
+        }
+        if (d.status === "playing" && d.state) {
+          clearInterval(app.roomWaitTimer); app.roomWaitTimer = 0;
+          status.textContent = "对手已入座，正在开局…";
+          enterAuthorityRoom(session);
+        } else if (ticks > 1) {
+          status.textContent = "正在等待对手入座…（已等 " + Math.round(ticks * 1.5) + " 秒）";
+        }
+      } catch (e) { /* 网络抖动，下一轮再试 */ }
+    }, 1500);
   }
 
   function openOnlineLobby() {
@@ -13776,15 +13833,18 @@ const tabs = $("deck-faction-tabs");
       const actions = el("div", "modal-actions online-actions");
       const create = el("button", "btn btn-primary", "创建组队码");
       create.onclick = async () => {
+        if (!global.GokAuthority) { toast("联机模块没有加载。"); return; }
         create.disabled = true;
         try {
-          const res = await fetch("/api/room/create", { method: "POST", cache: "no-store" });
-          const data = await res.json();
-          if (!res.ok || !data.code) throw new Error(data.error || "创建失败");
-          const url = new URL(location.href);
-          url.searchParams.set("room", data.code);
-          url.searchParams.set("host", "1");
-          location.href = url.toString();
+          // 同样走服务端权威房，与房间页一致
+          const GD = global.GokData;
+          const faction = GD && GD.FACTIONS[app.faction] ? app.faction : "pus";
+          const hero = (app.heroChoice && app.heroChoice[faction]) || undefined;
+          const d = await global.GokAuthority.createRoom({ waiting: true, faction1: faction, hero1: hero });
+          if (!d.ok || !d.code) throw new Error(d.error || "创建失败");
+          closeModal(true);
+          showScreen("room");
+          renderRoomWaiting({ code: d.code, seat: d.seat, token: d.token });
         } catch (e) {
           create.disabled = false;
           toast("创建房间失败：" + (e.message || e));
@@ -13792,17 +13852,15 @@ const tabs = $("deck-faction-tabs");
       };
       const join = el("button", "btn btn-ghost", "加入房间");
       join.onclick = async () => {
-        const code = input.value.trim().toLowerCase();
-        if (!/^[a-z0-9]{6}$/.test(code)) { toast("请输入 6 位组队码。"); return; }
+        if (!global.GokAuthority) { toast("联机模块没有加载。"); return; }
+        const code = input.value.trim().toUpperCase();
+        if (!/^[A-Z0-9]{6}$/.test(code)) { toast("请输入 6 位组队码。"); return; }
         join.disabled = true;
         try {
-          const res = await fetch("/api/status?room=" + encodeURIComponent(code), { cache: "no-store" });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "房间不存在");
-          const url = new URL(location.href);
-          url.searchParams.set("room", code);
-          url.searchParams.delete("host");
-          location.href = url.toString();
+          const d = await global.GokAuthority.joinRoom(code);
+          if (!d.ok) throw new Error(d.error || "房间不存在");
+          closeModal(true);
+          enterAuthorityRoom({ code, seat: d.seat, token: d.token });
         } catch (e) {
           join.disabled = false;
           toast("无法加入：" + (e.message || e));
@@ -14569,7 +14627,7 @@ const tabs = $("deck-faction-tabs");
   setTimeout(reinforceHandCardText, 80);
 
 
-  global.GokUI = { init: init, app: app, startGame: startGame, showScreen: showScreen, runSimulation: runSimulation, renderGame: renderGame, audio: AudioBox, showVersionBlocked: showVersionBlocked, enterAuthorityRoom: enterAuthorityRoom, authSend: authSend, endTurn: endTurn, addExperience: addExperience, debug: GOK_DEBUG, build: global.__GOK_BUILD__ || "" };
+  global.GokUI = { init: init, app: app, startGame: startGame, showScreen: showScreen, runSimulation: runSimulation, renderGame: renderGame, audio: AudioBox, showVersionBlocked: showVersionBlocked, enterAuthorityRoom: enterAuthorityRoom, authSend: authSend, endTurn: endTurn, addExperience: addExperience, openRoomPage: openRoomPage, debug: GOK_DEBUG, build: global.__GOK_BUILD__ || "" };
 
 })(window);
 

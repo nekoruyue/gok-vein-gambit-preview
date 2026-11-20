@@ -2364,7 +2364,6 @@ function processDeaths(state) {
         else if (op.op === "markBountyTarget" && target && !target.dead) markBounty(state, player, target);
         else if (op.op === "freezeAllEnemies") { for (const m of aliveMinions(opponentOf(state, player))) freezeMinion(state, m); }
         else if (op.op === "summon") summonMinion(state, player, op.token, openZones(player)[0], null);
-        else if (op.op === "markBounty" && target && !target.dead) markBounty(state, player, target);
         else if (op.op === "markRandomBounties") { const foes = aliveMinions(opponentOf(state, player)).slice(); for (let i = 0; i < (op.count || 1) && foes.length; i++) { const pick = foes.splice(randomInt(state, foes.length), 1)[0]; if (pick) markBounty(state, player, pick); } }
         else if (op.op === "grantRushAll") { for (const m of aliveMinions(player)) grantRush(state, m); }
         else if (op.op === "buffSelf" && minion) buffMinion(state, minion, op.attack || 0, op.health || 0, "补丁", true);

@@ -18557,7 +18557,7 @@
       "siege_train": "连携；登场：若你本回合获得过护甲，则对所有敌方随从造成 2 点伤害；否则对所有敌方随从造成 1 点伤害",
       "void_titan": "登场：消灭所有敌方随从",
       "borrow_vein": "召唤 1 个医疗学徒；若你本回合使用过战术牌，则召唤 1 个医疗学徒",
-      "reflux": "你的领袖失去 1 点生命；若本回合受到过伤害，则获得 4 点护甲；否则获得 2 点护甲",
+      "reflux": "血祭 1；若本回合受到过伤害，则获得 4 点护甲；否则获得 2 点护甲",
       "stabilize": "逆脉 2；获得 2 点护甲",
       "pressure_vein": "从坟场招魂 1 个行动力消耗不高于 5 的随从",
       "return_tide": "逆脉 2；你的领袖恢复 2 点生命，抽 1 张牌",
@@ -20478,6 +20478,93 @@
   for (const id of Object.keys(CARDS)) {
     if (/^(pl_|vn_)/.test(id)) { delete CARDS[id].art; CARDS[id].noGeneratedArt = true; }
   }
+  /* ===== 2026-11-21 补卡 =====
+   * 由来：docs/卡池机制薄点清单.md 的统计结论——吸血全池 1 张（只在普卫岛）、
+   * 剧毒 2 张（只在洛斯汰），这两个机制成不了可构筑的路线。
+   * 同时接上两个「引擎写了分支但没有任何卡调用」的动词：
+   *   buffZone  → 学院（机制密度最低，每 10 张只摊到 3.4 种）
+   *   graveDraw → 帝国（引擎里那段注释原文就写着「帝国招魂」）
+   * 稀有度只动 common/rare，史诗/传说配额不变；每阵营总数已同步进 card-assertions.js。
+   */
+  const NEW_CARDS_20261121 = [
+    {
+      id: "pus_leech_sentry", name: "卢门哨兵", faction: "pus", type: "minion",
+      cost: 2, rarity: "common", attack: 2, health: 2,
+      keywords: ["lifesteal"], target: "none",
+      flavor: "他站在门口，血从门缝流回来。",
+      text: "血偿"
+    },
+    {
+      id: "pus_bloodwall_knight", name: "血墙骑士", faction: "pus", type: "minion",
+      cost: 5, rarity: "rare", attack: 4, health: 5,
+      keywords: ["lifesteal", "taunt"], target: "none",
+      flavor: "墙是他，血是他的砖。",
+      text: "血偿；守备"
+    },
+    {
+      id: "lt_venom_skulk", name: "蚀尾潜伏者", faction: "losutai", type: "minion",
+      cost: 2, rarity: "common", attack: 1, health: 2,
+      keywords: ["poisonous"], target: "none",
+      flavor: "聚落的孩子先学认尾巴，再学认人。",
+      text: "蚀毒"
+    },
+    {
+      id: "lt_venom_maw", name: "毒颚巨蜥", faction: "losutai", type: "minion",
+      cost: 4, rarity: "rare", attack: 3, health: 4,
+      keywords: ["poisonous"], target: "none",
+      flavor: "它咬人从不留齿痕，只留一种颜色。",
+      text: "蚀毒"
+    },
+    {
+      id: "academy_zone_drill", name: "同阵演武", faction: "academy", type: "minion",
+      cost: 3, rarity: "common", attack: 2, health: 3,
+      keywords: ["battlecry"], target: "none",
+      flavor: "阵位是纪律，不是出身。",
+      battlecry: { type: "ops", ops: [{ op: "buffZone", attack: 1, health: 1 }] },
+      text: "登场：使同一阵位的友方随从获得 +1/+1"
+    },
+    {
+      id: "empire_grave_recall", name: "招魂点名", faction: "empire", type: "spell",
+      cost: 2, rarity: "common", target: "none",
+      flavor: "名字还在，人就还没走完。",
+      spell: { type: "ops", ops: [{ op: "graveDraw", count: 1, costPenalty: 1 }] },
+      text: "从坟场选择 1 张牌收回手牌，其行动力消耗 +1"
+    }
+  ];
+  for (const c of NEW_CARDS_20261121) CARDS[c.id] = c;
+
+  /* ===== 2026-11-21 平衡：按 docs/内容审查报告.md 调 4 张卡 =====
+   * 这里是「覆盖」而不是改原始定义：这些卡的身材被前面的 patch 链动过
+   * （例如 buff("page_scholar", 0, 1) 把 2/4 加成 2/5），
+   * 改原始定义会被 patch 再叠回去，所以放在所有 patch 之后直接定值。
+   *
+   * 页隙学者 2/5 -> 2/3   2 费身材均值 4.7，原 7（1.49 倍）还带正收益战吼，普通卡越级
+   * 学院讲师 2/4 -> 3/5   6 费均值 9.8，原 6（0.61 倍），2/4 上场即被换，余响拿不到
+   * 莉泽     7/7 -> 5/5   4 费均值 7.5，原 14（近两倍）；战吼「可能弃 1 张」的代价撑不起
+   * 米娅·科尔贝 2/1 -> 2/3  2 费最弱身材的传说；机制是「临时借起手手牌」，效果不动
+   *
+   * 注：「攻击力 → 攻」那条审查结论已撤回：角标是缩写、文案是完整表述，本就一致，
+   * 强行替换会让「吞噬你攻击力最低的友方随从」这类句子变别扭。
+   */
+  if (CARDS.page_scholar) Object.assign(CARDS.page_scholar, { health: 3 });
+  if (CARDS.lecturer) Object.assign(CARDS.lecturer, { attack: 3, health: 5 });
+  if (CARDS.lize) Object.assign(CARDS.lize, { attack: 5, health: 5 });
+  if (CARDS.mia) Object.assign(CARDS.mia, { health: 3 });
+
+  /* ===== 2026-11-21 修：补漏掉的守备关键词 =====
+   * guard / vein_oracle / deepvein_guard 的文案以「守备；」开头，明确写着自身有守备，
+   * 但 keywords 里没有 taunt。引擎判定守备只看 keywords
+   * （`(def.keywords||[]).includes("taunt")`），所以这三张的守备一直是摆设——
+   * 卡面上写着，实际不挡攻击。文案表达的是设计意图，这里补数据、不改文案。
+   *
+   * 只补「文案开头就声明守备」的；写着「获得守备」「若你控制守备随从」的卡
+   * 是靠效果临时获得、或在判断别人，本来就不该有 taunt 关键词，不要一起加。
+   */
+  for (const id of ["guard", "vein_oracle", "deepvein_guard"]) {
+    const c = CARDS[id];
+    if (c && Array.isArray(c.keywords) && c.keywords.indexOf("taunt") < 0) c.keywords.push("taunt");
+  }
+
   return { FACTIONS, FACTION_IDS, nextFaction, HEROES, CARDS, DECKS, NEUTRAL_DECK, KEYWORDS, DECK_STRATEGIES, DECK_SPECIALS, DECK_TRIM, DECK_RARITY_LIMITS, cardPool, deckRarityCounts, isExactPreset, validateDeck, autoBuildDeck, maxCopies };
 });
 

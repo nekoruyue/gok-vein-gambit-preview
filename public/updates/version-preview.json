@@ -1,19 +1,21 @@
 {
   "channel": "preview",
-  "version": "1.3.1",
-  "build": "20261118e9",
-  "publishedAt": "2026-11-18T05:31:37+08:00",
+  "version": "1.3.2",
+  "build": "20261118e19",
+  "publishedAt": "2026-11-18T16:24:58+08:00",
   "mandatory": false,
   "minSupportedVersion": "0.9.0",
-  "size": 227163861,
-  "sha256": "702727c0a7085c77bd46b9a6831232fcf970c6ae8a94d8f1e5b29209327140e5",
-  "url": "https://gok-vein-gambit-preview.onrender.com/downloads/GokVeinGambit-Setup-1.3.1.exe",
-  "title": "1.3.1 · 第二领袖与成就",
+  "size": 227867987,
+  "sha256": "daafbba63f509ea9d58af05364a618e44f001bfa24fc6b874208bc1b35ce18d5",
+  "url": "https://gok-vein-gambit-preview.onrender.com/downloads/GokVeinGambit-Setup-1.3.2.exe",
+  "title": "1.3.2 · 修饰器、印记、教程",
   "notes": [
-    "同阵营第二位领袖可以选了：准备页多了领袖切换，16 位领袖全部可上场",
-    "成就 11 → 25 条，称号池扩到 16 条",
-    "修刻脉判定区文案（1 格 → 2 格，之前把新玩法教反了）",
-    "修主页领完前三章显示「第undefined章」",
-    "public 瘦身 35.6MB：清掉音频备份、旧世界观页与废弃资源"
+    "每日挑战修饰器 22 → 29 条，新增换血/焚页/重洗起手/快攻牌库/轻装牌库",
+    "修掉「7 天内主修饰器不重复」的空承诺，改为滑动窗口",
+    "档案市场 7 件 → 15 件（分 I/II/III 档），总价 9 → 39 枚印记",
+    "修 13 个缺失的卡图资源（11 缩略图 + 2 立绘）与 SVG 缩略图 404",
+    "教程五课按等级开放，组卡课堂改成五步并要求真的保存牌组",
+    "修复上一构建引入的教程屏崩溃（TUTORIAL_TABS 未定义）",
+    "新增资源完整性检查并纳入回归，58 套全部通过"
   ]
 }

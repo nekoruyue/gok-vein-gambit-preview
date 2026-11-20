@@ -38,12 +38,16 @@ function createRoom(opts) {
   const v2 = rules.validateDeck(deck2, faction2);
   if (opts.deck2 && !v2.ok) throw new Error("座位 1 牌组不合法：" + v2.error);
 
+  // 同阵营两位领袖：只接受属于该阵营的 id，传错就当没传（回落阵营默认）
+  const heroOk = (hid, fac) => (hid && D.HEROES[hid] && D.HEROES[hid].faction === fac) ? String(hid) : undefined;
   const game = E.createGame({
     faction1, faction2,
     p1AI: false, p2AI: false,
     mulligan: !!opts.mulligan,
     p1Deck: deck1,
     p2Deck: deck2,
+    p1HeroId: heroOk(opts.hero1, faction1),
+    p2HeroId: heroOk(opts.hero2, faction2),
     p1Name: opts.name1 || undefined,
     p2Name: opts.name2 || undefined,
     seed
@@ -57,6 +61,7 @@ function createRoom(opts) {
     touchedAt: Date.now(),
     lastActionAt: Date.now(),      // 上一次有人动作的时间（用来判超时）
     actions: 0,                    // 双方已执行的动作数（0 = 还没开局，可换牌组）
+    waitingForOpponent: !!opts.waiting, // 组队码建房：座位 1 空着时冻结对局，等人来了才开跑
     leftAt: [0, 0],                // 每个座位「最后看到在线」的时间，0 = 一直在线
     seats: [null, null],           // 每个座位放 { token }，token 不对外广播
     clients: new Set(),            // SSE 响应对象
@@ -99,6 +104,11 @@ function join(room, seatHint) {
   const token = makeToken();
   room.seats[seat] = { token };
   room.touchedAt = Date.now();
+  // 两人都坐下了才算真正开局：等待期不计入回合超时
+  if (room.waitingForOpponent && room.seats[0] && room.seats[1]) {
+    room.waitingForOpponent = false;
+    room.lastActionAt = Date.now();
+  }
   bump(room, "join");
   return { ok: true, seat, token };
 }
@@ -110,6 +120,21 @@ function authorized(room, player, token) {
 
 /** 脱敏：对手手牌只给数量，不给具体卡 */
 function snapshotFor(room, player) {
+  // 等待对手：不给对局状态，只告诉你「坐下了、等谁来」
+  if (room.waitingForOpponent) {
+    return {
+      room: room.id,
+      version: room.version,
+      you: player,
+      online: [room.seats[0] ? true : false, room.seats[1] ? true : false],
+      waiting: true,
+      status: "waiting",
+      current: null,
+      round: 0,
+      turnNumber: 0,
+      state: null
+    };
+  }
   const g = room.game;
   const clone = JSON.parse(JSON.stringify(g));
   if (clone.players && clone.players[1 - player]) {
@@ -173,6 +198,7 @@ function attachStream(room, player, res) {
 
 /** 应用一个动作：全部由服务器用引擎校验 */
 function act(room, player, action) {
+  if (room.waitingForOpponent) return { ok: false, error: "还在等对手入座" };
   const g = room.game;
   if (g.status !== "playing") return { ok: false, error: "对局已结束" };
   action = action || {};
@@ -240,6 +266,8 @@ function sweep(now) {
   const t = now || Date.now();
   const events = [];
   for (const room of rooms.values()) {
+    // 组队码房还在等对手：既不算回合超时，也不算掉线——人还没来，谈不上掉线
+    if (room.waitingForOpponent) continue;
     const g = room.game;
     if (g.status !== "playing") continue;
     // 掉线判负（两边都得有人，才谈得上掉线）
@@ -269,7 +297,7 @@ function sweep(now) {
 }
 
 function stats() {
-  return { rooms: rooms.size, list: [...rooms.values()].map((r) => ({ id: r.id, version: r.version, joined: r.seats.filter(Boolean).length, status: r.game.status })) };
+  return { rooms: rooms.size, list: [...rooms.values()].map((r) => ({ id: r.id, version: r.version, joined: r.seats.filter(Boolean).length, status: r.waitingForOpponent ? "waiting" : r.game.status })) };
 }
 
 function cleanup() {

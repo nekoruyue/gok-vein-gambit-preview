@@ -1499,6 +1499,13 @@
   }
 
   /* ===== mirror ===== */
+  /* 镜像三档：同阵营同预组，只调整「你」的起手劣势，难度越高印记越多 */
+  const MIRROR_MODES = [
+    { id: "even", name: "对等镜像", desc: "先手随机，纯看操作。赢 +1 印记。", marks: 1 },
+    { id: "second", name: "让先", desc: "你固定后手，对手先动。赢 +2 印记。", marks: 2, first: 1 },
+    { id: "bleed", name: "让血", desc: "你的领袖开局少 5 点生命上限。赢 +3 印记。", marks: 3, hp: 5 }
+  ];
+
   function renderMirror() {
     const box = root(); clear(box);
     const head = el("div", "content-subhead");
@@ -1516,35 +1523,48 @@
       app.contentMirrorFaction = id;
       renderMirror();
     }));
-    const start = el("button", "btn btn-primary", "以" + factionName(app.contentMirrorFaction) + "开始镜像");
-    start.onclick = () => startMirror(app.contentMirrorFaction);
-    panel.appendChild(start);
+    panel.appendChild(el("p", null, "三档难度只调整你的起手劣势，双方仍是同一套牌："));
+    const modeRow = el("div", "market-grid");
+    for (const mode of MIRROR_MODES) {
+      const card = el("div", "market-item");
+      card.appendChild(el("strong", null, mode.name));
+      card.appendChild(el("p", null, mode.desc));
+      const b = el("button", "btn btn-small btn-primary", "以" + factionName(app.contentMirrorFaction) + "开打");
+      b.onclick = () => startMirror(app.contentMirrorFaction, mode.id);
+      card.appendChild(b);
+      modeRow.appendChild(card);
+    }
+    panel.appendChild(modeRow);
     box.appendChild(panel);
   }
 
-  function startMirror(faction) {
+  function startMirror(faction, modeId) {
     faction = D.FACTIONS[faction] ? faction : (D.FACTIONS[app.faction] ? app.faction : "pus");
+    const mode = MIRROR_MODES.find((m) => m.id === modeId) || MIRROR_MODES[0];
     const deck = factionDeck(faction);
-    runMode("mirror", "镜像对决 · " + factionName(faction));
+    app.contentMirrorMode = mode.id;
+    runMode("mirror", "镜像对决 · " + factionName(faction) + " · " + mode.name);
     global.GokUI.startGame({
       faction: faction,
       opponent: faction,
       p1Deck: deck.slice(),
       p2Deck: deck.slice(),
       aiDifficulty: "hard",
-      first: Math.floor(Math.random() * 2),
-      seed: seedFrom("mirror:" + faction + ":" + Date.now())
+      first: mode.first == null ? Math.floor(Math.random() * 2) : mode.first,
+      seed: seedFrom("mirror:" + faction + ":" + mode.id + ":" + Date.now()),
+      setup: mode.hp ? (state) => { const me = state.players[0]; me.maxHp = Math.max(10, me.maxHp - mode.hp); me.hp = Math.min(me.hp, me.maxHp); } : undefined
     });
   }
   function mirrorAfter(data, state) {
+    const mode = MIRROR_MODES.find((m) => m.id === app.contentMirrorMode) || MIRROR_MODES[0];
     data.mirror = data.mirror || { wins: 0, losses: 0 };
     if (state.winner === 0) {
       data.mirror.wins = (data.mirror.wins || 0) + 1;
-      data.marks = (data.marks || 0) + 1;
+      data.marks = (data.marks || 0) + mode.marks;
     } else {
       data.mirror.losses = (data.mirror.losses || 0) + 1;
     }
-    data.mirror.last = { faction: app.contentMirrorFaction || app.faction, at: Date.now(), win: state.winner === 0 };
+    data.mirror.last = { faction: app.contentMirrorFaction || app.faction, mode: mode.id, at: Date.now(), win: state.winner === 0 };
     save(data);
     renderHub();
   }
